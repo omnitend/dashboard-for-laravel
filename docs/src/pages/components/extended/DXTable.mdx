@@ -1,0 +1,95 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXTable
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import DXTableExample from '../../../examples/DXTableExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import EventsTable from '../../../components/EventsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+
+# DXTable
+
+A comprehensive data table component with built-in pagination, loading states, and error handling for Laravel dashboards.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<script setup>
+import { ref } from 'vue';
+import { DXTable } from '@omni-tend/dashboard-for-laravel';
+
+const customerFields = [
+  { key: 'id', label: 'ID', sortable: true },
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'email', label: 'Email' },
+  { key: 'company', label: 'Company', sortable: true },
+  { key: 'status', label: 'Status' },
+];
+
+const customerItems = ref([
+  { id: 1, name: 'John Smith', email: 'john@example.com', company: 'Acme Ltd', status: 'Active' },
+  { id: 2, name: 'Jane Doe', email: 'jane@example.com', company: 'Tech Corp', status: 'Active' },
+  { id: 3, name: 'Bob Johnson', email: 'bob@example.com', company: 'Global Industries', status: 'Inactive' },
+  { id: 4, name: 'Alice Williams', email: 'alice@example.com', company: 'Digital Solutions', status: 'Active' },
+  { id: 5, name: 'Charlie Brown', email: 'charlie@example.com', company: 'Cloud Systems', status: 'Pending' },
+]);
+
+const paginationData = ref({
+  currentPage: 1,
+  perPage: 10,
+  total: 5,
+  from: 1,
+  to: 5,
+});
+</script>
+
+<template>
+  <DXTable
+    :items="customerItems"
+    :fields="customerFields"
+    :pagination="paginationData"
+    title="Customers"
+  />
+</template>`}
+>
+  <DXTableExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'title', type: 'string', required: 'No', default: '-', description: 'Table title' },
+  { name: 'items', type: 'TItem[]', required: 'Yes', default: '-', description: 'Table data items' },
+  { name: 'fields', type: 'TableField[]', required: 'Yes', default: '-', description: 'Table field definitions' },
+  { name: 'loading', type: 'boolean', required: 'No', default: 'false', description: 'Loading state' },
+  { name: 'loadingText', type: 'string', required: 'No', default: 'Loading...', description: 'Loading text' },
+  { name: 'error', type: 'string | null', required: 'No', default: 'null', description: 'Error message' },
+  { name: 'pagination', type: 'PaginationData', required: 'No', default: 'function', description: 'Pagination data' },
+  { name: 'showPagination', type: 'boolean', required: 'No', default: 'true', description: 'Show pagination controls' },
+  { name: 'striped', type: 'boolean', required: 'No', default: 'true', description: 'Striped rows' },
+  { name: 'hover', type: 'boolean', required: 'No', default: 'true', description: 'Hover effect on rows' },
+  { name: 'responsive', type: 'boolean', required: 'No', default: 'true', description: 'Responsive table' },
+  { name: 'fluid', type: 'boolean', required: 'No', default: 'false', description: 'Fluid container' },
+  { name: 'containerClass', type: 'string', required: 'No', default: 'py-5', description: 'Container CSS class' },
+  { name: 'columnSize', type: 'string | number', required: 'No', default: '12', description: 'Column size (Bootstrap grid)' },
+]} />
+
+## Events
+
+<EventsTable client:load events={[
+  { name: 'pageChange', params: 'page: number', description: 'Emitted when the page changes' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'header', description: 'Custom header content' },
+]} />
+
+## Extended Component
+
+This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
+providing additional functionality specific to Laravel dashboards.

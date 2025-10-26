@@ -1,0 +1,41 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DTooltip
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DTooltipExample from '../../../examples/DTooltipExample.vue';
+
+# DTooltip
+
+Type-safe wrapper around Bootstrap Vue Next BTooltip component. Display helpful tooltips when hovering over elements.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DTooltip target="tooltip-top" placement="top">
+  Tooltip on top
+</DTooltip>
+
+<DButton id="tooltip-right" variant="primary">Right</DButton>
+<DTooltip target="tooltip-right" placement="right">
+  Tooltip on right
+</DTooltip>
+
+<DButton id="tooltip-bottom" variant="primary">Bottom</DButton>
+<DTooltip target="tooltip-bottom" placement="bottom">
+  Tooltip on bottom
+</DTooltip>
+
+<DButton id="tooltip-left" variant="primary">Left</DButton>
+<DTooltip target="tooltip-left" placement="left">
+  Tooltip on left
+</DTooltip>`}
+>
+  <DTooltipExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DTooltip" />

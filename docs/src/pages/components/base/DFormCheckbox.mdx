@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormCheckbox
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormCheckboxExample from '../../../examples/DFormCheckboxExample.vue';
+import DFormCheckboxExampleRaw from '../../../examples/DFormCheckboxExample.vue?raw';
+
+# DFormCheckbox
+
+DFormCheckbox - A type-safe wrapper around Bootstrap Vue Next's BFormCheckbox component. Custom checkbox input with support for v-model binding, validation states, and switch styling.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DFormCheckboxExampleRaw}
+>
+  <DFormCheckboxExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DFormCheckbox" />

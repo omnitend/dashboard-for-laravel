@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DPopover
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DPopoverExample from '../../../examples/DPopoverExample.vue';
+
+# DPopover
+
+Type-safe wrapper around Bootstrap Vue Next BPopover component. Overlay component for displaying rich content in a popup.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DPopover target="popover-button" triggers="hover" placement="top">
+  <template #title>Popover Title`}
+>
+  <DPopoverExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DPopover" />

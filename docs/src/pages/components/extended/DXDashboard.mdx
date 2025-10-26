@@ -1,0 +1,133 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXDashboard
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXDashboardExample from '../../../examples/DXDashboardExample.vue';
+import DXDashboardExampleRaw from '../../../examples/DXDashboardExample.vue?raw';
+
+# DXDashboard
+
+Complete dashboard layout component that combines sidebar navigation, top navbar, and content area. Handles all state management and provides extensive customisation through slots.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DXDashboardExampleRaw}
+>
+  <DXDashboardExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'navigation', type: 'Navigation', default: 'required', description: 'Navigation structure with groups and items' },
+  { name: 'currentUrl', type: 'string', default: 'required', description: 'Current URL path for active state detection' },
+  { name: 'title', type: 'string', default: '\'Dashboard\'', description: 'Dashboard title shown in sidebar brand' },
+  { name: 'pageTitle', type: 'string', default: '\'\'', description: 'Page title shown in navbar' },
+  { name: 'user', type: '{ name: string; email: string } | null', default: 'null', description: 'User object for navbar dropdown' },
+  { name: 'logoutUrl', type: 'string', default: '\'/logout\'', description: 'Logout URL for navbar dropdown' },
+  { name: 'storageKey', type: 'string', default: '\'dashboard-sidebar-hidden\'', description: 'LocalStorage key for sidebar state persistence' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'default', props: '-', description: 'Main page content rendered in the content area' },
+  { name: 'sidebar-brand', props: '{ collapsed: boolean, title: string }', description: 'Custom brand/logo content for sidebar header' },
+  { name: 'sidebar-link', props: '{ item: NavigationItem, isActive: boolean, collapsed: boolean }', description: 'Custom link rendering in sidebar navigation' },
+  { name: 'navbar-menu-icon', props: '-', description: 'Custom hamburger menu icon for navbar' },
+  { name: 'navbar-search', props: '-', description: 'Custom search component for navbar' },
+  { name: 'navbar-user-icon', props: '{ initial: string }', description: 'Custom user icon/avatar in navbar dropdown' },
+  { name: 'navbar-user-menu', props: '{ user: User }', description: 'Custom user dropdown menu content' },
+]} />
+
+## Features
+
+- **Combined Layout** - Integrates DXDashboardSidebar and DXDashboardNavbar
+- **State Management** - Handles sidebar toggle and localStorage persistence
+- **Responsive** - Works on mobile and desktop
+- **Customisable** - Extensive slot system for customisation
+- **Type-Safe** - Full TypeScript support with proper types
+
+## Usage Example
+
+```vue
+<template>
+  <DXDashboard
+    :navigation="navigation"
+    :current-url="route.path"
+    title="My Application"
+    :page-title="pageTitle"
+    :user="authUser"
+  >
+    <!-- Your page content here -->
+    <h1>Welcome to the Dashboard</h1>
+  </DXDashboard>
+</template>
+
+<script setup lang="ts">
+import { DXDashboard } from '@omni-tend/dashboard-for-laravel';
+
+const navigation = [
+  {
+    label: 'Main',
+    items: [
+      { label: 'Dashboard', url: '/dashboard' },
+      { label: 'Customers', url: '/customers' },
+    ],
+  },
+];
+
+const authUser = { name: 'John Doe', email: 'john@example.com' };
+const pageTitle = 'Dashboard';
+</script>
+```
+
+## Custom Branding
+
+```vue
+<DXDashboard :navigation="navigation" current-url="/dashboard">
+  <template #sidebar-brand="{ collapsed }">
+    <div class="d-flex align-items-center">
+      <img v-if="!collapsed" src="/logo.svg" alt="Logo" />
+      <span v-else>L</span>
+    </div>
+  </template>
+
+  <!-- content -->
+</DXDashboard>
+```
+
+## Notes
+
+This component requires CSS for sidebar visibility control. Add this to your global styles or layout:
+
+```css
+.dashboard-sidebar {
+  display: none !important;
+}
+
+html.sidebar-visible .dashboard-sidebar {
+  display: block !important;
+}
+```
+
+For Astro projects with SSR, add an inline script to prevent flicker:
+
+```html
+<script is:inline>
+  (function() {
+    try {
+      const hidden = localStorage.getItem('dashboard-sidebar-hidden');
+      if (hidden === 'false') {
+        document.documentElement.classList.add('sidebar-visible');
+      }
+    } catch (e) {}
+  })();
+</script>
+```

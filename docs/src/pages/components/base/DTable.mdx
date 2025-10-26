@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DTable
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DTableExample from '../../../examples/DTableExample.vue';
+import DTableExampleRaw from '../../../examples/DTableExample.vue?raw';
+
+# DTable
+
+DTable - A type-safe wrapper around Bootstrap Vue Next's BTable component. Feature-rich data table with sorting, filtering, custom cell rendering, and responsive design.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DTableExampleRaw}
+>
+  <DTableExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DTable" />

@@ -1,0 +1,26 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DPlaceholder
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DPlaceholderExample from '../../../examples/DPlaceholderExample.vue';
+
+# DPlaceholder
+
+Type-safe wrapper around Bootstrap Vue Next BPlaceholder component. Loading placeholder component to indicate content is still loading.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DPlaceholder animation="wave" width="100%" height="20px" class="mb-2" />
+<DPlaceholder animation="wave" width="75%" height="20px" class="mb-2" />
+<DPlaceholder animation="wave" width="50%" height="20px" />`}
+>
+  <DPlaceholderExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DPlaceholder" />

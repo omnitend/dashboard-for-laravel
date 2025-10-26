@@ -1,0 +1,32 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DInputGroup
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DInputGroupExample from '../../../examples/DInputGroupExample.vue';
+
+# DInputGroup
+
+Type-safe wrapper around Bootstrap Vue Next BInputGroup component. Easily extend form controls by adding text, buttons, or button groups.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DInputGroup prepend="@">
+  <DFormInput placeholder="Username" />
+</DInputGroup>
+
+<h5>Input Group with Button</h5>
+<DInputGroup>
+  <DFormInput placeholder="Search..." />
+  <template #append>
+    <DButton variant="primary">Search</DButton>`}
+>
+  <DInputGroupExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DInputGroup" />

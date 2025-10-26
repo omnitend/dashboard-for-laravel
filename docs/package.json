@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "@pagefind/default-ui": "^1.4.0",
+    "pagefind": "^1.4.0",
+    "prismjs": "^1.30.0"
+  }
+}

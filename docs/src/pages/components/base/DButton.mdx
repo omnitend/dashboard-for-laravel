@@ -1,0 +1,24 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DButton
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DButtonExample from '../../../examples/DButtonExample.vue';
+import DButtonExampleRaw from '../../../examples/DButtonExample.vue?raw';
+
+# DButton
+
+DButton - A type-safe wrapper around Bootstrap Vue Next's BButton component
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DButtonExampleRaw}
+>
+  <DButtonExample client:load />
+</ComponentExample>
+
+<BootstrapVueNextReference client:load componentName="DButton" />

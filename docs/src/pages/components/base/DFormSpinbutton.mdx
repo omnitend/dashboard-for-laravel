@@ -1,0 +1,30 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormSpinbutton
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormSpinbuttonExample from '../../../examples/DFormSpinbuttonExample.vue';
+
+# DFormSpinbutton
+
+Type-safe wrapper around Bootstrap Vue Next BFormSpinbutton component. Number input with increment/decrement buttons.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DFormSpinbutton
+  v-model="value"
+  :min="0"
+  :max="100"
+  :step="5"
+/>
+<p class="mt-2">Value: <strong>{{ value }}</strong></p>`}
+>
+  <DFormSpinbuttonExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DFormSpinbutton" />

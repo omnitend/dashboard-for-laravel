@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DNav
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DNavExample from '../../../examples/DNavExample.vue';
+import DNavExampleRaw from '../../../examples/DNavExample.vue?raw';
+
+# DNav
+
+DNav - A type-safe wrapper around Bootstrap Vue Next's BNav component. Navigation component with support for tabs, pills, vertical layouts, and alignment options.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DNavExampleRaw}
+>
+  <DNavExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DNav" />

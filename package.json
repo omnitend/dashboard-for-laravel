@@ -1,0 +1,78 @@
+{
+  "name": "@omni-tend/dashboard-for-laravel",
+  "version": "0.1.0",
+  "description": "Vue 3 dashboard components for Laravel with Bootstrap Vue Next",
+  "type": "module",
+  "main": "./dist/dashboard-for-laravel.umd.cjs",
+  "module": "./dist/dashboard-for-laravel.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/dashboard-for-laravel.js",
+      "require": "./dist/dashboard-for-laravel.umd.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./style.css": "./dist/style.css",
+    "./theme.css": "./dist/style.css",
+    "./theme.scss": "./resources/css/theme.scss"
+  },
+  "files": [
+    "dist",
+    "resources"
+  ],
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
+    "typecheck": "vue-tsc --noEmit",
+    "docs:dev": "astro dev",
+    "docs:build": "astro build",
+    "docs:preview": "astro preview",
+    "docs:generate": "node scripts/generate-component-docs.mjs",
+    "docs:all": "npm run docs:generate && npm run docs:build"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0"
+  },
+  "dependencies": {
+    "bootstrap-vue-next": "^0.28.0",
+    "highlight.js": "^11.11.1"
+  },
+  "devDependencies": {
+    "@astrojs/mdx": "^4.3.8",
+    "@astrojs/sitemap": "^3.6.0",
+    "@astrojs/vue": "^5.1.1",
+    "@iconify-json/lucide": "^1.2.71",
+    "@iconify/json": "^2.2.397",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "astro": "^5.15.1",
+    "bootstrap": "^5.3.8",
+    "pagefind": "^1.4.0",
+    "sass-embedded": "^1.93.2",
+    "typescript": "^5.9.3",
+    "unplugin-icons": "^22.5.0",
+    "unplugin-vue-components": "^30.0.0",
+    "vite": "^6.4.1",
+    "vue-tsc": "^2.2.12"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "laravel",
+    "bootstrap",
+    "dashboard",
+    "components",
+    "forms",
+    "inertia",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "Omni Tend",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/omnitend/dashboard-for-laravel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/omnitend/dashboard-for-laravel/issues"
+  },
+  "homepage": "https://github.com/omnitend/dashboard-for-laravel#readme"
+}

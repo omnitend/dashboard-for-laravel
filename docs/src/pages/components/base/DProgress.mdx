@@ -1,0 +1,28 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DProgress
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DProgressExample from '../../../examples/DProgressExample.vue';
+
+# DProgress
+
+Type-safe wrapper around Bootstrap Vue Next BProgress component. Progress bar for displaying simple or complex progress indicators.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`  <DProgress :value="25" variant="primary" show-progress />
+<div class="mb-3">
+  <DProgress :value="50" variant="success" striped />
+<div>
+  <DProgress :value="75" variant="warning" animated striped />`}
+>
+  <DProgressExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DProgress" />

@@ -1,0 +1,34 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DButtonToolbar
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DButtonToolbarExample from '../../../examples/DButtonToolbarExample.vue';
+
+# DButtonToolbar
+
+Type-safe wrapper around Bootstrap Vue Next BButtonToolbar component. Group button groups and input groups together on a single line.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DButtonToolbar>
+  <DButtonGroup class="me-2">
+    <DButton variant="primary">1</DButton>
+    <DButton variant="primary">2</DButton>
+    <DButton variant="primary">3</DButton>
+  <DButtonGroup class="me-2">
+    <DButton variant="secondary">4</DButton>
+    <DButton variant="secondary">5</DButton>
+  <DButtonGroup>
+    <DButton variant="success">6</DButton>
+</DButtonToolbar>`}
+>
+  <DButtonToolbarExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DButtonToolbar" />

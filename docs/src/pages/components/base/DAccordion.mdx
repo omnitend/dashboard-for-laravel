@@ -1,0 +1,31 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DAccordion
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DAccordionExample from '../../../examples/DAccordionExample.vue';
+
+# DAccordion
+
+Type-safe wrapper around Bootstrap Vue Next BAccordion component. Easily toggle content visibility with collapsible accordions.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DAccordion>
+  <BAccordionItem title="Accordion Item #1" visible>
+    <strong>This is the first item's content.</strong> It is shown by default.
+  <BAccordionItem title="Accordion Item #2">
+    This is the second item's content.
+  <BAccordionItem title="Accordion Item #3">
+    This is the third item's content.
+</DAccordion>`}
+>
+  <DAccordionExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DAccordion" />

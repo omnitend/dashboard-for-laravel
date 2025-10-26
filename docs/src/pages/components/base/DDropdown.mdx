@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DDropdown
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DDropdownExample from '../../../examples/DDropdownExample.vue';
+import DDropdownExampleRaw from '../../../examples/DDropdownExample.vue?raw';
+
+# DDropdown
+
+DDropdown - A type-safe wrapper around Bootstrap Vue Next's BDropdown component. Toggleable, contextual overlay for displaying lists of links, actions, and more.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DDropdownExampleRaw}
+>
+  <DDropdownExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DDropdown" />

@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DToast
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DToastExample from '../../../examples/DToastExample.vue';
+import DToastExampleRaw from '../../../examples/DToastExample.vue?raw';
+
+# DToast
+
+DToast - A type-safe wrapper around Bootstrap Vue Next's BToast component. Lightweight notification component for push messages and alerts that appear temporarily.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DToastExampleRaw}
+>
+  <DToastExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DToast" />

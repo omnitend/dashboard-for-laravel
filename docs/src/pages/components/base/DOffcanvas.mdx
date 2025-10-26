@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DOffcanvas
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DOffcanvasExample from '../../../examples/DOffcanvasExample.vue';
+import DOffcanvasExampleRaw from '../../../examples/DOffcanvasExample.vue?raw';
+
+# DOffcanvas
+
+DOffcanvas - A type-safe wrapper around Bootstrap Vue Next's BOffcanvas component. Hidden sidebar component for navigation, shopping carts, or additional content that slides in from any screen edge.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DOffcanvasExampleRaw}
+>
+  <DOffcanvasExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DOffcanvas" />

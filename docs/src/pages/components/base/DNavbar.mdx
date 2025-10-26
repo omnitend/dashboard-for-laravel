@@ -1,0 +1,31 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DNavbar
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DNavbarExample from '../../../examples/DNavbarExample.vue';
+
+# DNavbar
+
+Type-safe wrapper around Bootstrap Vue Next BNavbar component. Responsive navigation header with support for branding, navigation, and more.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DNavbar variant="dark" type="dark">
+  <BNavbarBrand href="#">Brand</BNavbarBrand>
+  <BNavbarToggle target="nav-collapse" />
+  <BCollapse id="nav-collapse" is-nav>
+    <BNavbarNav>
+      <BNavItem href="#" active>Home</BNavItem>
+      <BNavItem href="#">Link</BNavItem>
+</DNavbar>`}
+>
+  <DNavbarExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DNavbar" />

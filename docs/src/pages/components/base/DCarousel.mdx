@@ -1,0 +1,28 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DCarousel
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DCarouselExample from '../../../examples/DCarouselExample.vue';
+
+# DCarousel
+
+Type-safe wrapper around Bootstrap Vue Next BCarousel component. Slideshow component for cycling through images or content.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DCarousel id="carousel-example" :interval="3000" controls indicators>
+  <BCarouselSlide img-src="https://picsum.photos/800/400?random=1" />
+  <BCarouselSlide img-src="https://picsum.photos/800/400?random=2" />
+  <BCarouselSlide img-src="https://picsum.photos/800/400?random=3" />
+</DCarousel>`}
+>
+  <DCarouselExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DCarousel" />

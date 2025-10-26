@@ -1,0 +1,137 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXDashboardSidebar
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import DXDashboardSidebarExample from '../../../examples/DXDashboardSidebarExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import EventsTable from '../../../components/EventsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+
+# DXDashboardSidebar
+
+A collapsible sidebar navigation component for Laravel dashboards with support for navigation groups, icons, badges, and active state highlighting.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<script setup>
+import { ref } from 'vue';
+import { DXDashboardSidebar } from '@omni-tend/dashboard-for-laravel';
+import type { Navigation } from '@omni-tend/dashboard-for-laravel';
+
+const collapsed = ref(false);
+const currentUrl = ref('/dashboard');
+
+const navigation: Navigation = [
+  {
+    items: [
+      { label: 'Dashboard', url: '/dashboard', icon: '📊' },
+      { label: 'Analytics', url: '/analytics', icon: '📈' },
+    ],
+  },
+  {
+    label: 'Management',
+    items: [
+      { label: 'Users', url: '/users', icon: '👥', badge: '12', badgeColor: 'danger' },
+      { label: 'Products', url: '/products', icon: '📦' },
+      { label: 'Orders', url: '/orders', icon: '🛒', badge: '5', badgeColor: 'warning' },
+    ],
+  },
+];
+
+const handleNavClick = (item) => {
+  currentUrl.value = item.url;
+};
+</script>
+
+<template>
+  <DXDashboardSidebar
+    :navigation="navigation"
+    :current-url="currentUrl"
+    :collapsed="collapsed"
+    title="My Dashboard"
+    @toggle="collapsed = !collapsed"
+  >
+    <template #link="{ item, isActive, collapsed }">
+      <a
+        :href="item.url"
+        class="nav-link"
+        :class="{ 'active': isActive }"
+        @click.prevent="handleNavClick(item)"
+      >
+        <span v-if="item.icon">{{ item.icon }}</span>
+        <span v-if="!collapsed">{{ item.label }}</span>
+      </a>
+    </template>
+  </DXDashboardSidebar>
+</template>`}
+>
+  <DXDashboardSidebarExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'navigation', type: 'Navigation', required: 'Yes', default: '-', description: 'Navigation structure with groups and items. See Navigation type definition below' },
+  { name: 'currentUrl', type: 'string', required: 'Yes', default: '-', description: 'Current URL for determining active navigation items' },
+  { name: 'collapsed', type: 'boolean', required: 'No', default: 'false', description: 'Whether the sidebar is collapsed' },
+  { name: 'title', type: 'string', required: 'No', default: 'Dashboard', description: 'Sidebar title shown in the header' },
+]} />
+
+## Events
+
+<EventsTable client:load events={[
+  { name: 'toggle', params: 'none', description: 'Emitted when the sidebar should toggle between collapsed and expanded states' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'brand', description: 'Custom brand/logo content in the sidebar header. Receives collapsed (boolean) and title (string) as slot props' },
+  { name: 'link', description: 'Custom navigation link rendering. Receives item (NavigationItem), isActive (boolean), and collapsed (boolean) as slot props' },
+]} />
+
+## Extended Component
+
+This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
+providing additional functionality specific to Laravel dashboards.
+
+## Navigation Type
+
+The `Navigation` type is an array of `NavigationGroup` objects:
+
+```typescript
+interface NavigationItem {
+  label: string;
+  url: string;
+  icon?: string;              // Icon component or emoji
+  badge?: string | number;    // Badge content
+  badgeColor?: string;        // Bootstrap colour variant
+  active?: boolean;
+  visible?: boolean;
+}
+
+interface NavigationGroup {
+  label?: string;             // Group label (optional)
+  items: NavigationItem[];
+  collapsible?: boolean;
+  collapsed?: boolean;
+  visible?: boolean;
+}
+
+type Navigation = NavigationGroup[];
+```
+
+## Features
+
+- **Collapsible Design**: Toggle between expanded and collapsed states
+- **Navigation Groups**: Organise navigation items into logical groups with labels
+- **Active State**: Automatically highlights active navigation items based on current URL
+- **Icon Support**: Display icons next to navigation items (works with component icons or emojis)
+- **Badges**: Show notification badges on navigation items
+- **Sticky Positioning**: Sidebar stays in view when scrolling
+- **Custom Scrollbar**: Styled scrollbar for better aesthetics
+- **Flexible Rendering**: Use slots to completely customise brand and link rendering

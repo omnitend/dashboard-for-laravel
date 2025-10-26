@@ -1,0 +1,88 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXForm
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import DXFormExample from '../../../examples/DXFormExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import EventsTable from '../../../components/EventsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+
+# DXForm
+
+Form object from defineForm
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<script setup>
+import { DXForm, defineForm } from '@omni-tend/dashboard-for-laravel';
+
+const contactForm = defineForm([
+  {
+    key: 'name',
+    label: 'Name',
+    type: 'text',
+    required: true,
+    placeholder: 'Enter your name',
+    default: '',
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    type: 'email',
+    required: true,
+    placeholder: 'your@email.com',
+    default: '',
+  },
+  {
+    key: 'message',
+    label: 'Message',
+    type: 'textarea',
+    required: true,
+    placeholder: 'Your message here...',
+    default: '',
+  },
+] as const);
+
+const handleSubmit = () => {
+  alert(\`Form submitted! Name: \${contactForm.form.data.name}\`);
+};
+</script>
+
+<template>
+  <DXForm
+    :form="contactForm"
+    submit-text="Send Message"
+    @submit="handleSubmit"
+  />
+</template>`}
+>
+  <DXFormExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'form', type: 'DefineFormReturn<any>', required: 'Yes', default: '-', description: 'Form object from defineForm' },
+  { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text' },
+  { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text' },
+  { name: 'showSubmit', type: 'boolean', required: 'No', default: 'true', description: 'Show submit button' },
+]} />
+
+## Events
+
+<EventsTable client:load events={[
+  { name: 'submit', params: 'none', description: 'Emitted when the form is submitted' },
+]} />
+
+## Slots
+
+<SlotsTable client:load dynamicForwarding={true} slots={[]} />
+
+## Extended Component
+
+This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
+providing additional functionality specific to Laravel dashboards.

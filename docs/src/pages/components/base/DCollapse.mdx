@@ -1,0 +1,26 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DCollapse
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DCollapseExample from '../../../examples/DCollapseExample.vue';
+import DCollapseExampleRaw from '../../../examples/DCollapseExample.vue?raw';
+
+# DCollapse
+
+DCollapse - A type-safe wrapper around Bootstrap Vue Next's BCollapse component Toggles the visibility of content with smooth collapse/expand animations.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DCollapseExampleRaw}
+>
+  <DCollapseExample client:load />
+</ComponentExample>
+
+
+
+<BootstrapVueNextReference client:load componentName="DCollapse" />

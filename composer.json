@@ -1,0 +1,45 @@
+{
+    "name": "omni-tend/dashboard-for-laravel",
+    "description": "Laravel dashboard components with Vue 3, Inertia, and Bootstrap Vue Next",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Omni Tend",
+            "homepage": "https://github.com/omnitend"
+        }
+    ],
+    "homepage": "https://github.com/omnitend/dashboard-for-laravel",
+    "support": {
+        "issues": "https://github.com/omnitend/dashboard-for-laravel/issues",
+        "source": "https://github.com/omnitend/dashboard-for-laravel"
+    },
+    "keywords": ["laravel", "vue", "dashboard", "components", "bootstrap", "inertia"],
+    "autoload": {
+        "psr-4": {
+            "OmniTend\\LaravelDashboard\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OmniTend\\LaravelDashboard\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "orchestra/testbench": "^9.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "OmniTend\\LaravelDashboard\\LaravelDashboardServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

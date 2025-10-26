@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DAlert
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DAlertExample from '../../../examples/DAlertExample.vue';
+import DAlertExampleRaw from '../../../examples/DAlertExample.vue?raw';
+
+# DAlert
+
+DAlert - A type-safe wrapper around Bootstrap Vue Next's BAlert component. Provides contextual feedback messages for typical user actions with a handful of available and flexible alert variants.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DAlertExampleRaw}
+>
+  <DAlertExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DAlert" />
