@@ -1,0 +1,176 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import { getNavigationWithActive } from '../config/navigation';
+import DashboardLayoutWrapper from '../components/DashboardLayoutWrapper.vue';
+import '../../../dist/style.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Vue 3 dashboard components for Laravel with Bootstrap Vue Next' } = Astro.props;
+
+// Get current URL path
+const currentPath = Astro.url.pathname;
+
+// Get navigation with active page marked
+const navigation = getNavigationWithActive(currentPath);
+
+const dashboardTitle = 'Dashboard for Laravel';
+const dashboardSubtitle = 'Vue 3 + Bootstrap Components';
+
+// Don't show page title in navbar for Home page
+const pageTitle = title === 'Home' ? '' : title;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} | {dashboardTitle}</title>
+
+    <!-- Enable client-side routing for SPA-like navigation -->
+    <ClientRouter />
+
+    <!-- Prevent sidebar flicker by applying state before first paint -->
+    <script is:inline>
+      (function() {
+        try {
+          const hidden = localStorage.getItem('dashboard-sidebar-hidden');
+          // If sidebar should be visible (hidden is 'false' or not set), add class
+          if (hidden === 'false') {
+            document.documentElement.classList.add('sidebar-visible');
+          }
+        } catch (e) {
+          // Ignore localStorage errors (private browsing, etc.)
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <DashboardLayoutWrapper
+      client:only="vue"
+      navigation={navigation}
+      currentUrl={currentPath}
+      title={dashboardTitle}
+      pageTitle={pageTitle}
+    >
+      <div data-pagefind-body>
+        <slot />
+      </div>
+    </DashboardLayoutWrapper>
+  </body>
+</html>
+
+<style is:global>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+
+  /* Sidebar visibility controlled by HTML class to prevent flicker */
+  /* Default: sidebar hidden */
+  .dashboard-sidebar {
+    display: none !important;
+  }
+
+  /* Show sidebar when HTML has sidebar-visible class */
+  html.sidebar-visible .dashboard-sidebar {
+    display: block !important;
+  }
+
+  /* Disable default ClientRouter fade animation - make transitions instant */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+
+  /* Content typography */
+  .dashboard-content h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  .dashboard-content h2 {
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-content h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .dashboard-content p {
+    line-height: 1.75;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-content ul,
+  .dashboard-content ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+  }
+
+  .dashboard-content li {
+    line-height: 1.75;
+    margin-bottom: 0.5rem;
+  }
+
+  .dashboard-content a {
+    color: var(--bs-link-color);
+    text-decoration: none;
+  }
+
+  .dashboard-content a:hover {
+    text-decoration: underline;
+  }
+
+  .dashboard-content code {
+    background-color: rgba(55, 65, 81, 0.1);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.875em;
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  .dashboard-content pre {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-content pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+  }
+
+  .dashboard-content blockquote {
+    border-left: 4px solid var(--bs-border-color);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+    opacity: 0.8;
+  }
+</style>

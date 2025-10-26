@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormSelect
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormSelectExample from '../../../examples/DFormSelectExample.vue';
+import DFormSelectExampleRaw from '../../../examples/DFormSelectExample.vue?raw';
+
+# DFormSelect
+
+DFormSelect - A type-safe wrapper around Bootstrap Vue Next's BFormSelect component. Custom select dropdown with support for single/multiple selection, groups, validation states, and sizes.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DFormSelectExampleRaw}
+>
+  <DFormSelectExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DFormSelect" />

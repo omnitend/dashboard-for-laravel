@@ -1,0 +1,26 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DCard
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DCardExample from '../../../examples/DCardExample.vue';
+import DCardExampleRaw from '../../../examples/DCardExample.vue?raw';
+
+# DCard
+
+DCard - A type-safe wrapper around Bootstrap Vue Next's BCard component Provides a flexible content container with optional header and footer sections.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DCardExampleRaw}
+>
+  <DCardExample client:load />
+</ComponentExample>
+
+
+
+<BootstrapVueNextReference client:load componentName="DCard" />

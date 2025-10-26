@@ -1,0 +1,29 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DOverlay
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DOverlayExample from '../../../examples/DOverlayExample.vue';
+
+# DOverlay
+
+Type-safe wrapper around Bootstrap Vue Next BOverlay component. Overlay component for indicating loading states or blocking content.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DOverlay :show="showOverlay" variant="light" opacity="0.85" blur="2px">
+  <DCard class="text-center">
+    <p>This content can be overlaid</p>
+    <DButton @click="showOverlay = !showOverlay" variant="primary">
+      Toggle Overlay
+</DOverlay>`}
+>
+  <DOverlayExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DOverlay" />

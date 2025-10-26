@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DContainer
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DContainerExample from '../../../examples/DContainerExample.vue';
+import DContainerExampleRaw from '../../../examples/DContainerExample.vue?raw';
+
+# DContainer
+
+DContainer - A type-safe wrapper around Bootstrap Vue Next's BContainer component. Provides a responsive fixed-width or fluid-width container for wrapping page content.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DContainerExampleRaw}
+>
+  <DContainerExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DContainer" />

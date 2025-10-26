@@ -1,0 +1,88 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXBasicForm
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import DXBasicFormExample from '../../../examples/DXBasicFormExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import EventsTable from '../../../components/EventsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+
+# DXBasicForm
+
+Form instance from useForm composable
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<script setup>
+import { useForm } from '@omni-tend/dashboard-for-laravel';
+
+const form = useForm({
+  name: '',
+  email: '',
+  message: '',
+});
+
+const fields = [
+  {
+    key: 'name',
+    label: 'Name',
+    type: 'text',
+    required: true,
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    type: 'email',
+    required: true,
+  },
+  {
+    key: 'message',
+    label: 'Message',
+    type: 'textarea',
+    required: true,
+  },
+];
+</script>
+
+<template>
+  <DXBasicForm
+    :fields="fields"
+    :form="form"
+    submit-text="Send"
+    @submit="handleSubmit"
+  />
+</template>`}
+>
+  <DXBasicFormExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance from useForm composable' },
+  { name: 'fields', type: 'FieldDefinition[]', required: 'Yes', default: '-', description: 'Field definitions' },
+  { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text' },
+  { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text' },
+  { name: 'showSubmit', type: 'boolean', required: 'No', default: 'true', description: 'Show submit button' },
+]} />
+
+## Events
+
+<EventsTable client:load events={[
+  { name: 'submit', params: 'none', description: 'Emitted when the form is submitted' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'default', description: 'Default slot for custom form content' },
+]} />
+
+## Extended Component
+
+This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
+providing additional functionality specific to Laravel dashboards.

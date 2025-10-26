@@ -1,0 +1,32 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DAvatar
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DAvatarExample from '../../../examples/DAvatarExample.vue';
+
+# DAvatar
+
+Type-safe wrapper around Bootstrap Vue Next BAvatar component. Display user profiles as pictures, icons, or short text.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`  <DAvatar size="sm" text="SM" variant="primary" />
+  <DAvatar text="MD" variant="secondary" />
+  <DAvatar size="lg" text="LG" variant="success" />
+
+<h5>Avatar with Image</h5>
+<DAvatar
+  src="https://picsum.photos/100"
+  alt="User Avatar"
+/>`}
+>
+  <DAvatarExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DAvatar" />

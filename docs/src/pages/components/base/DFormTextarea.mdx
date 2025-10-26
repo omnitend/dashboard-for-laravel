@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormTextarea
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormTextareaExample from '../../../examples/DFormTextareaExample.vue';
+import DFormTextareaExampleRaw from '../../../examples/DFormTextareaExample.vue?raw';
+
+# DFormTextarea
+
+DFormTextarea - A type-safe wrapper around Bootstrap Vue Next's BFormTextarea component. Multi-line text input with support for auto-height, validation states, and configurable rows.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DFormTextareaExampleRaw}
+>
+  <DFormTextareaExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DFormTextarea" />

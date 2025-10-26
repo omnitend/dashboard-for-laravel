@@ -1,0 +1,33 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormRadio
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormRadioExample from '../../../examples/DFormRadioExample.vue';
+
+# DFormRadio
+
+Type-safe wrapper around Bootstrap Vue Next BFormRadio component. Custom radio button input with accessibility markup.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`  <DFormRadio v-model="selected" name="radio-options" value="A">
+    Option A
+  </DFormRadio>
+  <DFormRadio v-model="selected" name="radio-options" value="B">
+    Option B
+  </DFormRadio>
+  <DFormRadio v-model="selected" name="radio-options" value="C">
+    Option C
+  </DFormRadio>
+<p>Selected: <strong>{{ selected }}</strong></p>`}
+>
+  <DFormRadioExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DFormRadio" />

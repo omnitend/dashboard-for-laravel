@@ -1,0 +1,110 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXDashboardNavbar
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import DXDashboardNavbarExample from '../../../examples/DXDashboardNavbarExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import EventsTable from '../../../components/EventsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+
+# DXDashboardNavbar
+
+A responsive top navigation bar component for Laravel dashboards with user menu, search functionality, and sidebar toggle.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<script setup>
+import { ref } from 'vue';
+import {
+  DXDashboardNavbar,
+  DDropdownItem,
+  DDropdownDivider
+} from '@omni-tend/dashboard-for-laravel';
+
+const currentUser = ref({
+  name: 'Sarah Johnson',
+  email: 'sarah@example.com',
+});
+
+const pageTitle = ref('Dashboard Overview');
+
+const handleToggle = () => {
+  console.log('Sidebar toggle clicked');
+};
+
+const handleLogout = () => {
+  console.log('Logout clicked');
+};
+</script>
+
+<template>
+  <DXDashboardNavbar
+    :user="currentUser"
+    :page-title="pageTitle"
+    @toggle-sidebar="handleToggle"
+  >
+    <template #search>
+      <input
+        type="text"
+        class="form-control form-control-sm"
+        placeholder="Search..."
+      />
+    </template>
+
+    <template #user-menu-items="{ user }">
+      <DDropdownItem href="/profile">
+        Profile
+      </DDropdownItem>
+      <DDropdownItem href="/settings">
+        Settings
+      </DDropdownItem>
+      <DDropdownDivider />
+      <DDropdownItem @click="handleLogout">
+        Log out
+      </DDropdownItem>
+    </template>
+  </DXDashboardNavbar>
+</template>`}
+>
+  <DXDashboardNavbarExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'user', type: '{ name: string; email: string; [key: string]: any } | null', required: 'No', default: 'null', description: 'Current user object with name and email' },
+  { name: 'pageTitle', type: 'string', required: 'No', default: 'Dashboard', description: 'Page title displayed in the navbar' },
+]} />
+
+## Events
+
+<EventsTable client:load events={[
+  { name: 'toggle-sidebar', params: 'none', description: 'Emitted when the hamburger menu is clicked to toggle the sidebar' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'menu-icon', description: 'Custom hamburger menu icon (default: three horizontal lines SVG)' },
+  { name: 'search', description: 'Search input or component for the centre of the navbar' },
+  { name: 'user-menu', description: 'Complete custom user menu (replaces default dropdown). Receives user as slot prop' },
+  { name: 'user-icon', description: 'Custom user avatar/icon. Receives initial (first letter of name) as slot prop' },
+  { name: 'user-menu-items', description: 'Custom dropdown menu items for the user dropdown. Receives user as slot prop' },
+]} />
+
+## Extended Component
+
+This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
+providing additional functionality specific to Laravel dashboards.
+
+## Features
+
+- **Responsive Design**: Adapts to different screen sizes with mobile-friendly layout
+- **User Avatar**: Automatically generates avatar with user initials
+- **Flexible Search**: Customisable search slot for your search implementation
+- **Sticky Positioning**: Stays at the top of the page when scrolling
+- **Customisable Slots**: Multiple slots for complete customisation of layout and functionality

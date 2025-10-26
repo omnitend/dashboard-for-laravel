@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DNavItem
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DNavItemExample from '../../../examples/DNavItemExample.vue';
+import DNavItemExampleRaw from '../../../examples/DNavItemExample.vue?raw';
+
+# DNavItem
+
+DNavItem - A type-safe wrapper around Bootstrap Vue Next's BNavItem component. Individual navigation item within a nav component, supporting active states, disabled states, and click handlers.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DNavItemExampleRaw}
+>
+  <DNavItemExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DNavItem" />

@@ -1,0 +1,31 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DTabs
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DTabsExample from '../../../examples/DTabsExample.vue';
+
+# DTabs
+
+Type-safe wrapper around Bootstrap Vue Next BTabs component. Create tabbed panes of local content with customisable navigation.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DTabs content-class="mt-3">
+  <BTab title="First Tab" active>
+    <p>This is the content of the first tab.</p>
+  <BTab title="Second Tab">
+    <p>This is the content of the second tab.</p>
+  <BTab title="Disabled Tab" disabled>
+    <p>This tab is disabled.</p>
+</DTabs>`}
+>
+  <DTabsExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DTabs" />

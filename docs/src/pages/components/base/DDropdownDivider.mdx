@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DDropdownDivider
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DDropdownDividerExample from '../../../examples/DDropdownDividerExample.vue';
+import DDropdownDividerExampleRaw from '../../../examples/DDropdownDividerExample.vue?raw';
+
+# DDropdownDivider
+
+DDropdownDivider - A type-safe wrapper around Bootstrap Vue Next's BDropdownDivider component. Adds a horizontal divider to separate groups of dropdown items.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DDropdownDividerExampleRaw}
+>
+  <DDropdownDividerExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DDropdownDivider" />

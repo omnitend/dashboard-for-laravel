@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DBadge
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DBadgeExample from '../../../examples/DBadgeExample.vue';
+import DBadgeExampleRaw from '../../../examples/DBadgeExample.vue?raw';
+
+# DBadge
+
+DBadge - A type-safe wrapper around Bootstrap Vue Next's BBadge component. Small count and labelling component useful for displaying status, counts, or categories.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DBadgeExampleRaw}
+>
+  <DBadgeExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DBadge" />

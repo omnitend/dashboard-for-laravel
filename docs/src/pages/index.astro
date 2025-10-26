@@ -1,0 +1,252 @@
+---
+import { Code } from 'astro:components';
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import IconFileCode from '~icons/lucide/file-code';
+import IconPackage from '~icons/lucide/package';
+import IconLayout from '~icons/lucide/layout-dashboard';
+import IconBox from '~icons/lucide/box';
+import IconServer from '~icons/lucide/server';
+import IconPalette from '~icons/lucide/palette';
+---
+
+<DashboardLayout title="Home">
+  <div class="hero">
+    <h1>Dashboard for Laravel</h1>
+    <p class="tagline">Type-safe Vue 3 components for Laravel dashboards</p>
+    <p class="description">
+      Production-ready component library built on Vue 3, Inertia.js, and Bootstrap Vue Next
+    </p>
+
+    <div class="actions">
+      <a href="/guide/getting-started" class="button primary">Get Started</a>
+      <a href="/components" class="button secondary">View Components</a>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">
+        <IconFileCode />
+      </div>
+      <h3>TypeScript First</h3>
+      <p>Full TypeScript support with type-safe forms, composables, and component props</p>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">
+        <IconPackage />
+      </div>
+      <h3>Composition API</h3>
+      <p>Modern Vue 3 Composition API with reusable composables like useForm for validation and submission</p>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">
+        <IconLayout />
+      </div>
+      <h3>Extended Components</h3>
+      <p>Dashboard-ready components: sidebar navigation, tables with pagination, form builders, and layouts</p>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">
+        <IconBox />
+      </div>
+      <h3>Bootstrap Wrappers</h3>
+      <p>Type-safe wrappers around Bootstrap Vue Next with dynamic slot forwarding and API stability</p>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">
+        <IconServer />
+      </div>
+      <h3>Laravel Integration</h3>
+      <p>PHP utilities for API responses, form requests, and paginated resources with type-safe interfaces</p>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">
+        <IconPalette />
+      </div>
+      <h3>Customisable Theme</h3>
+      <p>Bootstrap 5 SCSS theme with CSS variables for consistent styling across your application</p>
+    </div>
+  </div>
+
+  <div class="quick-start">
+    <h2>Installation</h2>
+
+    <div class="install-section">
+      <h3>NPM Package</h3>
+      <Code code="npm install @omni-tend/dashboard-for-laravel" lang="bash" theme="github-dark" />
+    </div>
+
+    <div class="install-section">
+      <h3>Composer Package</h3>
+      <Code code="composer require omni-tend/dashboard-for-laravel" lang="bash" theme="github-dark" />
+    </div>
+
+    <div class="install-section">
+      <h3>Usage</h3>
+      <Code code={`import { DXDashboardSidebar, useForm } from '@omni-tend/dashboard-for-laravel'
+import '@omni-tend/dashboard-for-laravel/theme.css'
+
+const form = useForm({ name: '', email: '' })
+await form.post('/api/customers')`} lang="typescript" theme="github-dark" />
+    </div>
+  </div>
+</DashboardLayout>
+
+<style>
+  .hero {
+    text-align: center;
+    padding: 4rem 0;
+  }
+
+  .hero h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .tagline {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    color: var(--bs-primary);
+  }
+
+  .description {
+    font-size: 1.125rem;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+    color: var(--bs-secondary);
+  }
+
+  .actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+
+  .button {
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-block;
+  }
+
+  .button.primary {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+    border: 1px solid var(--bs-primary);
+  }
+
+  .button.primary:hover {
+    background-color: var(--bs-primary-border-subtle);
+    border-color: var(--bs-primary-border-subtle);
+    color: var(--bs-white);
+    text-decoration: none;
+  }
+
+  .button.secondary {
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-body-color);
+    background-color: var(--bs-white);
+  }
+
+  .button.secondary:hover {
+    border-color: var(--bs-primary);
+    color: var(--bs-primary);
+    text-decoration: none;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin: 4rem 0;
+  }
+
+  .feature {
+    padding: 1.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    background-color: var(--bs-white);
+    transition: box-shadow 0.2s ease;
+  }
+
+  .feature:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-icon :global(svg) {
+    width: 24px;
+    height: 24px;
+  }
+
+  .feature h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: var(--bs-dark);
+  }
+
+  .feature p {
+    line-height: 1.6;
+    color: var(--bs-secondary);
+    margin-bottom: 0;
+  }
+
+  .quick-start {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--bs-border-color);
+  }
+
+  .quick-start h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .quick-start p {
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .install-section {
+    margin-top: 2rem;
+  }
+
+  .install-section h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+  }
+
+  /* Style Astro Code component */
+  .install-section :global(pre) {
+    border-radius: 0.5rem;
+    margin-top: 0;
+  }
+
+  .install-section :global(code) {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+</style>

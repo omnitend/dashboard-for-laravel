@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+/vendor
+composer.lock
+package-lock.json
+
+# Build output
+/dist
+/docs/dist
+*.map
+.astro/
+docs/.astro/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.phpunit.result.cache
+
+# Temp files
+*.tmp
+.cache/
+
+# Claude Code internal files
+.claude/
+CLAUDE_CONTEXT.md
+**/CLAUDE_CONTEXT.md
+
+# Git backup
+.git.backup/

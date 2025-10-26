@@ -1,0 +1,265 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Vue 3 dashboard components for Laravel with Bootstrap Vue Next' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} | @omni-tend/dashboard-for-laravel</title>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-content">
+          <a href="/" class="logo">
+            <h1>Dashboard for Laravel</h1>
+          </a>
+
+          <nav class="nav">
+            <section>
+              <h3>Guide</h3>
+              <ul>
+                <li><a href="/guide/getting-started">Getting Started</a></li>
+                <li><a href="/guide/installation">Installation</a></li>
+                <li><a href="/guide/theming">Theming</a></li>
+                <li><a href="/guide/forms">Forms</a></li>
+                <li><a href="/guide/typescript">TypeScript</a></li>
+              </ul>
+            </section>
+
+            <section>
+              <h3>Components</h3>
+              <ul>
+                <li><a href="/components/">Overview</a></li>
+                <li><a href="/components/base">Base Components</a></li>
+                <li><a href="/components/extended">Extended Components</a></li>
+              </ul>
+            </section>
+
+            <section>
+              <h3>Examples</h3>
+              <ul>
+                <li><a href="/examples/common-patterns">Common Patterns</a></li>
+              </ul>
+            </section>
+          </nav>
+        </div>
+      </aside>
+
+      <main class="main">
+        <article class="content">
+          <slot />
+        </article>
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  :root {
+    --color-bg: #ffffff;
+    --color-text: #213547;
+    --color-border: #e2e8f0;
+    --color-link: #3b82f6;
+    --color-link-hover: #2563eb;
+    --sidebar-width: 280px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg: #1a1a1a;
+      --color-text: #e5e7eb;
+      --color-border: #374151;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  body {
+    margin: 0;
+  }
+
+  .layout {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: var(--sidebar-width);
+    border-right: 1px solid var(--color-border);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .logo h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    color: var(--color-text);
+  }
+
+  .logo {
+    text-decoration: none;
+  }
+
+  .nav section {
+    margin-bottom: 2rem;
+  }
+
+  .nav h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    color: var(--color-text);
+    opacity: 0.7;
+  }
+
+  .nav ul {
+    list-style: none;
+  }
+
+  .nav li {
+    margin-bottom: 0.5rem;
+  }
+
+  .nav a {
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    transition: color 0.2s;
+  }
+
+  .nav a:hover {
+    color: var(--color-link);
+  }
+
+  .main {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    padding: 3rem 2rem;
+  }
+
+  .content {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  /* Typography */
+  .content :global(h1) {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.5rem;
+  }
+
+  .content :global(h2) {
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(h3) {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .content :global(p) {
+    line-height: 1.75;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(ul),
+  .content :global(ol) {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+  }
+
+  .content :global(li) {
+    line-height: 1.75;
+    margin-bottom: 0.5rem;
+  }
+
+  .content :global(a) {
+    color: var(--color-link);
+    text-decoration: none;
+  }
+
+  .content :global(a:hover) {
+    text-decoration: underline;
+  }
+
+  .content :global(code) {
+    background-color: rgba(55, 65, 81, 0.1);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.875em;
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  .content :global(pre) {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(pre code) {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+  }
+
+  .content :global(blockquote) {
+    border-left: 4px solid var(--color-border);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+    color: var(--color-text);
+    opacity: 0.8;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      display: none;
+    }
+
+    .main {
+      margin-left: 0;
+    }
+  }
+</style>

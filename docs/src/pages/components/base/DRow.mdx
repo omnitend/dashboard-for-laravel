@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DRow
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DRowExample from '../../../examples/DRowExample.vue';
+import DRowExampleRaw from '../../../examples/DRowExample.vue?raw';
+
+# DRow
+
+DRow - A type-safe wrapper around Bootstrap Vue Next's BRow component. Container for columns within Bootstrap's grid system, supporting flexible alignment and gutter spacing.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DRowExampleRaw}
+>
+  <DRowExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DRow" />

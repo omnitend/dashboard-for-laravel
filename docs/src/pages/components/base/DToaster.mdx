@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DToaster
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DToasterExample from '../../../examples/DToasterExample.vue';
+import DToasterExampleRaw from '../../../examples/DToasterExample.vue?raw';
+
+# DToaster
+
+DToaster - A type-safe wrapper around Bootstrap Vue Next's BToaster component. Container for managing and displaying multiple toast notifications with configurable positioning.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DToasterExampleRaw}
+>
+  <DToasterExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DToaster" />

@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DSpinner
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DSpinnerExample from '../../../examples/DSpinnerExample.vue';
+import DSpinnerExampleRaw from '../../../examples/DSpinnerExample.vue?raw';
+
+# DSpinner
+
+DSpinner - A type-safe wrapper around Bootstrap Vue Next's BSpinner component. Loading indicator to show activity or progress, available in border and grow variants.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DSpinnerExampleRaw}
+>
+  <DSpinnerExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DSpinner" />

@@ -1,0 +1,27 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DLink
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DLinkExample from '../../../examples/DLinkExample.vue';
+
+# DLink
+
+Type-safe wrapper around Bootstrap Vue Next BLink component. Enhanced link component with router support and accessibility features.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DLink href="#">Default Link</DLink>
+<DLink href="#" variant="primary">Primary Link</DLink>
+<DLink href="#" variant="success">Success Link</DLink>
+<DLink href="#" disabled>Disabled Link</DLink>`}
+>
+  <DLinkExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DLink" />

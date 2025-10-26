@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormInput
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormInputExample from '../../../examples/DFormInputExample.vue';
+import DFormInputExampleRaw from '../../../examples/DFormInputExample.vue?raw';
+
+# DFormInput
+
+DFormInput - A type-safe wrapper around Bootstrap Vue Next's BFormInput component. Text input with support for various types, validation states, and sizes.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DFormInputExampleRaw}
+>
+  <DFormInputExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DFormInput" />

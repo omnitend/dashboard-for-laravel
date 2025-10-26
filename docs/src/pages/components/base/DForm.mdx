@@ -1,0 +1,44 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DForm
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormExample from '../../../examples/DFormExample.vue';
+
+# DForm
+
+Type-safe wrapper around Bootstrap Vue Next BForm component. Form component with support for inline styles and validation states.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DForm @submit.prevent="handleSubmit">
+  <DFormGroup label="Email address" label-for="email-input">
+    <DFormInput
+      id="email-input"
+      v-model="formData.email"
+      type="email"
+      placeholder="Enter email"
+      required
+    />
+
+  <DFormGroup label="Password" label-for="password-input">
+    <DFormInput
+      id="password-input"
+      v-model="formData.password"
+      type="password"
+      placeholder="Password"
+      required
+    />
+
+  <DButton type="submit" variant="primary">Submit</DButton>
+</DForm>`}
+>
+  <DFormExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DForm" />

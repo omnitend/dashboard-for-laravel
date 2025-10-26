@@ -1,0 +1,36 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DImage
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DImageExample from '../../../examples/DImageExample.vue';
+
+# DImage
+
+Type-safe wrapper around Bootstrap Vue Next BImg component. Responsive image component with optional lazy loading and fluid sizing.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={`<DImage
+  src="https://picsum.photos/400/300"
+  alt="Example image"
+  fluid
+  rounded
+/>
+
+<h5>Thumbnail</h5>
+<DImage
+  src="https://picsum.photos/200/200"
+  alt="Thumbnail"
+  thumbnail
+/>`}
+>
+  <DImageExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DImage" />

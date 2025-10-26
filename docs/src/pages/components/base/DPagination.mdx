@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DPagination
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DPaginationExample from '../../../examples/DPaginationExample.vue';
+import DPaginationExampleRaw from '../../../examples/DPaginationExample.vue?raw';
+
+# DPagination
+
+DPagination - A type-safe wrapper around Bootstrap Vue Next's BPagination component. Provides navigation for content spread across multiple pages with customisable appearance and behaviour.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DPaginationExampleRaw}
+>
+  <DPaginationExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DPagination" />

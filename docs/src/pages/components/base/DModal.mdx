@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DModal
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DModalExample from '../../../examples/DModalExample.vue';
+import DModalExampleRaw from '../../../examples/DModalExample.vue?raw';
+
+# DModal
+
+DModal - A type-safe wrapper around Bootstrap Vue Next's BModal component. Modal dialogs for lightboxes, user notifications, forms, or completely custom content.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DModalExampleRaw}
+>
+  <DModalExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DModal" />

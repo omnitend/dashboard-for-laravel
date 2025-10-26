@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DDropdownItem
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DDropdownItemExample from '../../../examples/DDropdownItemExample.vue';
+import DDropdownItemExampleRaw from '../../../examples/DDropdownItemExample.vue?raw';
+
+# DDropdownItem
+
+DDropdownItem - A type-safe wrapper around Bootstrap Vue Next's BDropdownItem component. Individual actionable or linked item within a dropdown menu.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DDropdownItemExampleRaw}
+>
+  <DDropdownItemExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DDropdownItem" />

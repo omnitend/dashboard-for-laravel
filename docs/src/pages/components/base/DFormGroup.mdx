@@ -1,0 +1,25 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormGroup
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormGroupExample from '../../../examples/DFormGroupExample.vue';
+import DFormGroupExampleRaw from '../../../examples/DFormGroupExample.vue?raw';
+
+# DFormGroup
+
+DFormGroup - A type-safe wrapper around Bootstrap Vue Next's BFormGroup component. Groups form inputs with labels, help text, validation feedback, and consistent spacing.
+
+## Live Examples
+
+<ComponentExample
+  client:only="vue"
+  code={DFormGroupExampleRaw}
+>
+  <DFormGroupExample client:load />
+</ComponentExample>
+
+
+<BootstrapVueNextReference client:load componentName="DFormGroup" />

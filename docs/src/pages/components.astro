@@ -1,0 +1,119 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import ComponentsTable from '../components/ComponentsTable.vue';
+
+const components = [
+  {
+    name: 'DXDashboard',
+    description: 'Complete dashboard layout combining sidebar, navbar, and content area with state management',
+    type: 'Extended',
+    url: '/components/extended/dxdashboard',
+  },
+  {
+    name: 'DXBasicForm',
+    description: 'Form component that renders from field definitions with built-in validation',
+    type: 'Extended',
+    url: '/components/extended/dxbasicform',
+  },
+  {
+    name: 'DXDashboardNavbar',
+    description: 'Top navigation bar with hamburger menu, page title, and user dropdown',
+    type: 'Extended',
+    url: '/components/extended/dxdashboardnavbar',
+  },
+  {
+    name: 'DXDashboardSidebar',
+    description: 'Responsive collapsible sidebar with navigation, localStorage persistence, and custom branding',
+    type: 'Extended',
+    url: '/components/extended/dxdashboardsidebar',
+  },
+  {
+    name: 'DXForm',
+    description: 'Advanced form component with validation, error handling, and submit states',
+    type: 'Extended',
+    url: '/components/extended/dxform',
+  },
+  {
+    name: 'DXTable',
+    description: 'Data table with pagination, sorting, and custom cell rendering',
+    type: 'Extended',
+    url: '/components/extended/dxtable',
+  },
+];
+
+const fields = [
+  { key: 'name', label: 'Component', sortable: true },
+  { key: 'description', label: 'Description' },
+  { key: 'type', label: 'Type' },
+];
+---
+
+<DashboardLayout title="Components">
+  <div class="components-page">
+    <h1>Component Library</h1>
+    <p class="lead">
+      Dashboard for Laravel provides extended dashboard components and type-safe wrappers around Bootstrap Vue Next.
+    </p>
+
+    <section class="section">
+      <h2>Extended Components</h2>
+      <p>Dashboard-ready components built specifically for Laravel applications:</p>
+
+      <ComponentsTable client:load components={components} />
+    </section>
+
+    <section class="section">
+      <h2>Base Components</h2>
+      <p>
+        Type-safe wrappers around Bootstrap Vue Next components with dynamic slot forwarding and API stability.
+        All 46 base components (D* prefix) forward props, events, and slots from their Bootstrap Vue Next counterparts.
+      </p>
+      <p>
+        <a href="/components/base/dbutton">View all base components →</a>
+      </p>
+      <p class="text-muted">
+        For complete API documentation of base components, refer to the
+        <a href="https://bootstrap-vue-next.github.io/bootstrap-vue-next/" target="_blank" rel="noopener">
+          Bootstrap Vue Next documentation
+        </a>.
+      </p>
+    </section>
+  </div>
+</DashboardLayout>
+
+<style>
+  .components-page {
+    max-width: 1200px;
+  }
+
+  .lead {
+    font-size: 1.25rem;
+    color: var(--bs-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .section {
+    margin-top: 3rem;
+  }
+
+  .section h2 {
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--bs-dark);
+  }
+
+  .section p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  :global(.components-table) {
+    margin-top: 1.5rem;
+  }
+
+  .text-muted {
+    color: var(--bs-secondary);
+    font-size: 0.875rem;
+  }
+</style>
