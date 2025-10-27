@@ -45,9 +45,8 @@
 </template>
 
 <script setup lang="ts">
-import DDropdown from '../../../resources/js/components/base/DDropdown.vue';
-import DDropdownItem from '../../../resources/js/components/base/DDropdownItem.vue';
-import DDropdownDivider from '../../../resources/js/components/base/DDropdownDivider.vue';
+import { DDropdown, DDropdownItem, DDropdownDivider } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

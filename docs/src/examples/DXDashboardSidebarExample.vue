@@ -79,9 +79,9 @@
 </template>
 
 <script setup lang="ts">
+import { DXDashboardSidebar } from '@omni-tend/dashboard-for-laravel';
+
 import { ref, computed } from 'vue';
-import DXDashboardSidebar from '../../../resources/js/components/extended/DXDashboardSidebar.vue';
-import type { Navigation } from '../../../resources/js/types/navigation';
 
 const collapsed = ref(false);
 const currentUrl = ref('/dashboard');

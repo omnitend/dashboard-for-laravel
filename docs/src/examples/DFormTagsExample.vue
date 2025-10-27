@@ -13,8 +13,9 @@
 </template>
 
 <script setup lang="ts">
+import { DFormTags } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from "vue";
-import DFormTags from "../../../resources/js/components/base/DFormTags.vue";
 
 const tags = ref(["vue", "bootstrap", "typescript"]);
 </script>

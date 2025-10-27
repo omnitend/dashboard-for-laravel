@@ -13,5 +13,6 @@
 </template>
 
 <script setup lang="ts">
-import DLink from "../../../resources/js/components/base/DLink.vue";
+import { DLink } from '@omni-tend/dashboard-for-laravel';
+
 </script>

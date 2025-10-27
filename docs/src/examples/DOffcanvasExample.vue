@@ -90,15 +90,9 @@
 </template>
 
 <script setup lang="ts">
+import { DButton, DOffcanvas, DNav, DNavItem, DFormGroup, DFormInput, DFormTextarea, DFormSelect } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DButton from '../../../resources/js/components/base/DButton.vue';
-import DOffcanvas from '../../../resources/js/components/base/DOffcanvas.vue';
-import DNav from '../../../resources/js/components/base/DNav.vue';
-import DNavItem from '../../../resources/js/components/base/DNavItem.vue';
-import DFormGroup from '../../../resources/js/components/base/DFormGroup.vue';
-import DFormInput from '../../../resources/js/components/base/DFormInput.vue';
-import DFormTextarea from '../../../resources/js/components/base/DFormTextarea.vue';
-import DFormSelect from '../../../resources/js/components/base/DFormSelect.vue';
 
 const showStartOffcanvas = ref(false);
 const showEndOffcanvas = ref(false);

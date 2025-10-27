@@ -20,7 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import DInputGroup from "../../../resources/js/components/base/DInputGroup.vue";
-import DFormInput from "../../../resources/js/components/base/DFormInput.vue";
-import DButton from "../../../resources/js/components/base/DButton.vue";
+import { DInputGroup, DFormInput, DButton } from '@omni-tend/dashboard-for-laravel';
+
 </script>

@@ -53,8 +53,9 @@
 </template>
 
 <script setup lang="ts">
+import { DFormCheckbox } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DFormCheckbox from '../../../resources/js/components/base/DFormCheckbox.vue';
 
 const checkbox1 = ref(false);
 const checkbox2 = ref(false);

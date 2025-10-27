@@ -39,5 +39,8 @@ export default defineConfig({
         '@components': '/resources/js/components',
       },
     },
+    optimizeDeps: {
+      exclude: ['@omni-tend/dashboard-for-laravel'],
+    },
   },
 });

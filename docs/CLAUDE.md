@@ -17,8 +17,8 @@ This documentation site is built with Astro, Vue 3, and MDX. It provides live, i
 3. **Live Interactive Examples** - All examples are fully functional Vue components
 4. **Single Source of Truth** - Code examples are always in sync with actual implementation
 5. **Collapsible Code Blocks** - Users can show/hide code with copy functionality
-6. **Client-Side Routing** - Astro ClientRouter for SPA-like navigation without page reloads
-7. **Static Navigation** - No deprecated Astro.glob, uses static config for better maintainability
+6. **Static Navigation** - Uses static config for better maintainability
+7. **SSR Compatible** - Components use `client:load` with proper SSR guards for localStorage/document access
 
 ## Architecture
 
@@ -341,42 +341,14 @@ import DX{ComponentName}ExampleRaw from '../../../examples/DX{ComponentName}Exam
 - **Borders**: `--bs-border-color`, `--bs-border-radius`
 - **Spacing**: `--bs-gutter-x`, `--bs-gutter-y`
 
-## Client-Side Routing with Astro ClientRouter
+## Vue Component Hydration
 
-The docs site uses Astro's ClientRouter (View Transitions API) for SPA-like navigation:
-
-**Benefits:**
-- ✅ No full page reloads on navigation
-- ✅ Instant content updates
-- ✅ Sidebar state persists across pages
-- ✅ Much faster than traditional multi-page navigation
-- ✅ Smooth user experience like Astro's own docs
+The docs site uses `client:load` for the DashboardLayoutWrapper component:
 
 **Implementation:**
 ```astro
-// docs/src/layouts/DashboardLayout.astro
-import { ClientRouter } from 'astro:transitions';
-
-<ClientRouter />  <!-- In <head> -->
-```
-
-**Important:** Default fade animation is disabled for instant transitions:
-```css
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-}
-```
-
-### Vue Component Integration with ClientRouter
-
-**Critical: Use `client:only="vue"`**
-
-The DashboardLayoutWrapper must use `client:only="vue"` instead of `client:load` to prevent hydration mismatches:
-
-```astro
 <DashboardLayoutWrapper
-  client:only="vue"
+  client:load
   navigation={navigation}
   currentUrl={currentPath}
 >
@@ -384,11 +356,20 @@ The DashboardLayoutWrapper must use `client:only="vue"` instead of `client:load`
 </DashboardLayoutWrapper>
 ```
 
-**Why `client:only`?**
-- Skips SSR entirely - no server-side rendering
-- Prevents hydration mismatch errors between server and client
-- Component initializes once in browser with correct localStorage state
-- Works perfectly with ClientRouter for content updates
+**Why `client:load`?**
+- Enables SSR for better initial page load performance
+- Component renders on server, then hydrates on client
+- Works reliably with traditional page navigation
+- Requires SSR guards for localStorage/document access
+
+**SSR Guards:**
+DXDashboard component includes guards for browser-only APIs:
+```javascript
+if (typeof window === 'undefined') {
+  // Skip during SSR
+  return defaultValue;
+}
+```
 
 ### Static Navigation Configuration
 
@@ -422,21 +403,25 @@ export function getNavigationWithActive(currentPath: string): Navigation {
 
 ### Sidebar State Management
 
-**Sidebar visibility persists across ClientRouter navigation using two mechanisms:**
+**Sidebar visibility persists across page loads using localStorage:**
 
-1. **Inline Script** (runs before first paint):
+1. **Inline Script** (runs before first paint to prevent flicker):
 ```javascript
-// Sets HTML class from localStorage
+// Sets HTML class from localStorage before page renders
 if (localStorage.getItem('dashboard-sidebar-hidden') === 'false') {
   document.documentElement.classList.add('sidebar-visible');
 }
 ```
 
-2. **Vue Component Sync** (on every navigation):
+2. **Vue Component** (manages state after hydration):
 ```typescript
-// Reads localStorage AND syncs HTML class
-// Critical for ClientRouter navigation where inline script doesn't re-run
+// Reads localStorage and syncs HTML class
+// Includes SSR guard for server-side rendering
 const getInitialHiddenState = (): boolean => {
+  if (typeof window === 'undefined') {
+    return !props.dashboardId; // SSR default
+  }
+
   const isHidden = JSON.parse(localStorage.getItem('dashboard-sidebar-hidden'));
 
   // Sync HTML class with localStorage
@@ -464,7 +449,7 @@ html.sidebar-visible .dashboard-sidebar {
 ### Sidebar Navigation Features
 
 - **Hidden state** - Completely hide the sidebar (not just collapse)
-- **LocalStorage persistence** - Sidebar state persists across sessions AND ClientRouter navigation
+- **LocalStorage persistence** - Sidebar state persists across sessions and page loads
 - **Scroll-to-active** - Automatically scrolls to the active page
   - Initial load: Instant scroll (no animation)
   - Navigation: Smooth scroll for better UX
@@ -539,9 +524,9 @@ The built site will be in `docs/dist/`.
 ```
 
 **Why not in the Vue component?**
-- `client:only="vue"` skips SSR - component only renders in browser
+- Vue component uses `client:load` which renders on server first
 - Pagefind runs during build and needs the attribute in static HTML
-- If the attribute is inside the Vue component, pagefind can't find it
+- The attribute must be in the Astro layout for pagefind to find it
 
 ## Common Issues and Solutions
 
@@ -652,17 +637,17 @@ The main layout is in `docs/src/components/DashboardLayoutWrapper.vue` and uses:
 
 ## Key Technical Decisions
 
-### Why ClientRouter (View Transitions)?
-- Eliminates full page reloads for instant navigation
-- Provides SPA-like experience while maintaining MPA architecture
-- Sidebar state naturally persists without complex workarounds
-- Same approach used by Astro's own documentation
+### Why `client:load` with SSR Guards?
+- Enables server-side rendering for better initial page load
+- Prevents blank screens on direct page loads
+- Requires SSR guards (`typeof window === 'undefined'`) for browser APIs
+- Works reliably without ClientRouter complexity
 
-### Why `client:only="vue"` instead of `client:load`?
-- Prevents hydration mismatch errors
-- Server can't know localStorage state, causing SSR/client diff
-- Component only renders in browser with correct initial state
-- Works seamlessly with ClientRouter for content updates
+### Why No ClientRouter?
+- Traditional page navigation is simpler and more reliable
+- ClientRouter + nested Vue islands caused hydration issues in dev mode
+- Page loads are fast enough with Astro's optimizations
+- Sidebar state persists correctly with localStorage + inline script
 
 ### Why Static Navigation Config?
 - `Astro.glob` is deprecated in favour of Content Collections
@@ -678,7 +663,6 @@ The main layout is in `docs/src/components/DashboardLayoutWrapper.vue` and uses:
 ## Resources
 
 - [Astro Documentation](https://docs.astro.build/)
-- [Astro ClientRouter (View Transitions)](https://docs.astro.build/en/guides/view-transitions/)
 - [MDX Documentation](https://mdxjs.com/)
 - [Highlight.js Documentation](https://highlightjs.org/)
 - [Bootstrap Vue Next Documentation](https://bootstrap-vue-next.github.io/bootstrap-vue-next/)

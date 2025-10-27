@@ -24,8 +24,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import DXBasicForm from '../../../resources/js/components/extended/DXBasicForm.vue';
-import { useForm } from '../../../resources/js/composables/useForm';
+import { DXBasicForm, useForm } from '@omni-tend/dashboard-for-laravel';
 
 // Contact form
 const contactForm = useForm({

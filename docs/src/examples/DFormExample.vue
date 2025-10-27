@@ -30,11 +30,9 @@
 </template>
 
 <script setup lang="ts">
+import { DForm, DFormGroup, DFormInput, DButton } from '@omni-tend/dashboard-for-laravel';
+
 import { reactive } from "vue";
-import DForm from "../../../resources/js/components/base/DForm.vue";
-import DFormGroup from "../../../resources/js/components/base/DFormGroup.vue";
-import DFormInput from "../../../resources/js/components/base/DFormInput.vue";
-import DButton from "../../../resources/js/components/base/DButton.vue";
 
 const formData = reactive({
   email: "",

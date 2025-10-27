@@ -15,10 +15,9 @@
 </template>
 
 <script setup lang="ts">
+import { DOverlay, DCard, DButton } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from "vue";
-import DOverlay from "../../../resources/js/components/base/DOverlay.vue";
-import DCard from "../../../resources/js/components/base/DCard.vue";
-import DButton from "../../../resources/js/components/base/DButton.vue";
 
 const showOverlay = ref(false);
 </script>

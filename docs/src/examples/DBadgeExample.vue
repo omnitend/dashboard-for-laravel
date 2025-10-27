@@ -47,7 +47,8 @@
 </template>
 
 <script setup lang="ts">
-import DBadge from '../../../resources/js/components/base/DBadge.vue';
+import { DBadge } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

@@ -19,8 +19,9 @@
 </template>
 
 <script setup lang="ts">
+import { DFormRadio } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from "vue";
-import DFormRadio from "../../../resources/js/components/base/DFormRadio.vue";
 
 const selected = ref("A");
 </script>

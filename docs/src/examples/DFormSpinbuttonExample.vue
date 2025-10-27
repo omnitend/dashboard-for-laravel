@@ -14,8 +14,9 @@
 </template>
 
 <script setup lang="ts">
+import { DFormSpinbutton } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from "vue";
-import DFormSpinbutton from "../../../resources/js/components/base/DFormSpinbutton.vue";
 
 const value = ref(50);
 </script>

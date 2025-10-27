@@ -37,7 +37,8 @@
 </template>
 
 <script setup lang="ts">
-import DToast from '../../../resources/js/components/base/DToast.vue';
+import { DToast } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

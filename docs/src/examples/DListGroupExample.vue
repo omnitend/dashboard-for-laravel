@@ -3,16 +3,16 @@
     <div class="example-section">
       <h5>Basic List Group</h5>
       <DListGroup>
-        <BListGroupItem>First item</BListGroupItem>
-        <BListGroupItem active>Second item (active)</BListGroupItem>
-        <BListGroupItem>Third item</BListGroupItem>
-        <BListGroupItem disabled>Fourth item (disabled)</BListGroupItem>
+        <DListGroupItem>First item</DListGroupItem>
+        <DListGroupItem active>Second item (active)</DListGroupItem>
+        <DListGroupItem>Third item</DListGroupItem>
+        <DListGroupItem disabled>Fourth item (disabled)</DListGroupItem>
       </DListGroup>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import DListGroup from "../../../resources/js/components/base/DListGroup.vue";
-import { BListGroupItem } from "bootstrap-vue-next";
+import { DListGroup, DListGroupItem } from '@omni-tend/dashboard-for-laravel';
+
 </script>

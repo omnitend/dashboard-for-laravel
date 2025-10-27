@@ -45,10 +45,9 @@
 </template>
 
 <script setup lang="ts">
+import { DXDashboardNavbar, DDropdownItem, DDropdownDivider } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DXDashboardNavbar from '../../../resources/js/components/extended/DXDashboardNavbar.vue';
-import DDropdownItem from '../../../resources/js/components/base/DDropdownItem.vue';
-import DDropdownDivider from '../../../resources/js/components/base/DDropdownDivider.vue';
 
 const currentUser = ref({
   name: 'Sarah Johnson',

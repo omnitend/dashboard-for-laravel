@@ -12,6 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import DPopover from "../../../resources/js/components/base/DPopover.vue";
-import DButton from "../../../resources/js/components/base/DButton.vue";
+import { DPopover, DButton } from '@omni-tend/dashboard-for-laravel';
+
 </script>

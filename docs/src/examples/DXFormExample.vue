@@ -11,8 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import DXForm from '../../../resources/js/components/extended/DXForm.vue';
-import { defineForm } from '../../../resources/js/composables/defineForm';
+import { DXForm, defineForm } from '@omni-tend/dashboard-for-laravel';
 
 const contactForm = defineForm([
   {

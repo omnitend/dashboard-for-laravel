@@ -42,7 +42,8 @@
 </template>
 
 <script setup lang="ts">
-import DButton from '../../../resources/js/components/base/DButton.vue';
+import { DButton } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

@@ -33,8 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import DTable from '../../../resources/js/components/base/DTable.vue';
-import DBadge from '../../../resources/js/components/base/DBadge.vue';
+import { DTable, DBadge } from '@omni-tend/dashboard-for-laravel';
+
 
 interface PropDefinition {
   name: string;

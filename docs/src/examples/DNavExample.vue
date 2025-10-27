@@ -93,8 +93,8 @@
 </template>
 
 <script setup lang="ts">
-import DNav from '../../../resources/js/components/base/DNav.vue';
-import DNavItem from '../../../resources/js/components/base/DNavItem.vue';
+import { DNav, DNavItem } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

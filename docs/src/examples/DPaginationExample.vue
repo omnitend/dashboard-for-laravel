@@ -113,8 +113,9 @@
 </template>
 
 <script setup lang="ts">
+import { DPagination } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DPagination from '../../../resources/js/components/base/DPagination.vue';
 
 const currentPage1 = ref(1);
 const currentPage2 = ref(1);

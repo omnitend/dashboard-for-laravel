@@ -28,6 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import DTooltip from "../../../resources/js/components/base/DTooltip.vue";
-import DButton from "../../../resources/js/components/base/DButton.vue";
+import { DTooltip, DButton } from '@omni-tend/dashboard-for-laravel';
+
 </script>

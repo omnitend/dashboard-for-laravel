@@ -62,9 +62,9 @@
 </template>
 
 <script setup lang="ts">
+import { DNav, DNavItem } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DNav from '../../../resources/js/components/base/DNav.vue';
-import DNavItem from '../../../resources/js/components/base/DNavItem.vue';
 
 const lastClicked = ref<string | null>(null);
 const activeTab = ref('overview');

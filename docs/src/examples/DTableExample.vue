@@ -84,10 +84,9 @@
 </template>
 
 <script setup lang="ts">
+import { DTable, DBadge, DButton } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DTable from '../../../resources/js/components/base/DTable.vue';
-import DBadge from '../../../resources/js/components/base/DBadge.vue';
-import DButton from '../../../resources/js/components/base/DButton.vue';
 
 const selectedProduct = ref<any>(null);
 

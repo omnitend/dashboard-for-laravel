@@ -20,5 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import DAvatar from "../../../resources/js/components/base/DAvatar.vue";
+import { DAvatar } from '@omni-tend/dashboard-for-laravel';
+
 </script>

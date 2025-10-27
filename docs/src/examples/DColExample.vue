@@ -60,9 +60,8 @@
 </template>
 
 <script setup lang="ts">
-import DContainer from '../../../resources/js/components/base/DContainer.vue';
-import DRow from '../../../resources/js/components/base/DRow.vue';
-import DCol from '../../../resources/js/components/base/DCol.vue';
+import { DContainer, DRow, DCol } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

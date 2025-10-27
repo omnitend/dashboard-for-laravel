@@ -33,7 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import DTable from '../../../resources/js/components/base/DTable.vue';
+import { DTable } from '@omni-tend/dashboard-for-laravel';
+
 
 interface SlotDefinition {
   name: string;

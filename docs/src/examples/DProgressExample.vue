@@ -16,5 +16,6 @@
 </template>
 
 <script setup lang="ts">
-import DProgress from "../../../resources/js/components/base/DProgress.vue";
+import { DProgress } from '@omni-tend/dashboard-for-laravel';
+
 </script>

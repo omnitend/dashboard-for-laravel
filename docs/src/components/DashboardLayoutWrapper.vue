@@ -50,9 +50,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import DXDashboard from '../../../resources/js/components/extended/DXDashboard.vue';
+import { DXDashboard } from '@omni-tend/dashboard-for-laravel';
+import type { Navigation } from '@omni-tend/dashboard-for-laravel';
 import Search from './Search.vue';
-import type { Navigation } from '../../../resources/js/types/navigation';
 
 interface Props {
   navigation: Navigation;

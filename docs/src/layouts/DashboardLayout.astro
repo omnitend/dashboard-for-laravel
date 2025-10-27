@@ -1,5 +1,4 @@
 ---
-import { ClientRouter } from 'astro:transitions';
 import { getNavigationWithActive } from '../config/navigation';
 import DashboardLayoutWrapper from '../components/DashboardLayoutWrapper.vue';
 import '../../../dist/style.css';
@@ -34,9 +33,6 @@ const pageTitle = title === 'Home' ? '' : title;
     <meta name="generator" content={Astro.generator} />
     <title>{title} | {dashboardTitle}</title>
 
-    <!-- Enable client-side routing for SPA-like navigation -->
-    <ClientRouter />
-
     <!-- Prevent sidebar flicker by applying state before first paint -->
     <script is:inline>
       (function() {
@@ -54,7 +50,7 @@ const pageTitle = title === 'Home' ? '' : title;
   </head>
   <body>
     <DashboardLayoutWrapper
-      client:only="vue"
+      client:load
       navigation={navigation}
       currentUrl={currentPath}
       title={dashboardTitle}

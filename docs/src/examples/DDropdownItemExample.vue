@@ -61,10 +61,9 @@
 </template>
 
 <script setup lang="ts">
+import { DDropdown, DDropdownItem, DDropdownDivider } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DDropdown from '../../../resources/js/components/base/DDropdown.vue';
-import DDropdownItem from '../../../resources/js/components/base/DDropdownItem.vue';
-import DDropdownDivider from '../../../resources/js/components/base/DDropdownDivider.vue';
 
 const lastAction = ref<string | null>(null);
 

@@ -21,6 +21,6 @@
 </template>
 
 <script setup lang="ts">
-import DButtonGroup from "../../../resources/js/components/base/DButtonGroup.vue";
-import DButton from "../../../resources/js/components/base/DButton.vue";
+import { DButtonGroup, DButton } from '@omni-tend/dashboard-for-laravel';
+
 </script>
