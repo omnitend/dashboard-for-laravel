@@ -1,6 +1,6 @@
 {
-  "name": "@omni-tend/dashboard-for-laravel",
-  "version": "0.1.0",
+  "name": "@omnitend/dashboard-for-laravel",
+  "version": "0.2.0",
   "description": "Vue 3 dashboard components for Laravel with Bootstrap Vue Next",
   "type": "module",
   "main": "./dist/dashboard-for-laravel.umd.cjs",
@@ -24,6 +24,9 @@
     "dev": "vite build --watch",
     "build": "vite build && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
     "typecheck": "vue-tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:headless": "vitest --run --browser.headless",
     "docs:dev": "astro dev",
     "docs:build": "astro build",
     "docs:preview": "astro preview",
@@ -44,14 +47,21 @@
     "@iconify-json/lucide": "^1.2.71",
     "@iconify/json": "^2.2.397",
     "@vitejs/plugin-vue": "^5.2.4",
+    "@vitest/browser": "^4.0.3",
+    "@vitest/browser-playwright": "^4.0.3",
+    "@vue/test-utils": "^2.4.6",
     "astro": "^5.15.1",
     "bootstrap": "^5.3.8",
+    "happy-dom": "^20.0.8",
     "pagefind": "^1.4.0",
+    "playwright": "^1.56.1",
     "sass-embedded": "^1.93.2",
     "typescript": "^5.9.3",
     "unplugin-icons": "^22.5.0",
     "unplugin-vue-components": "^30.0.0",
     "vite": "^6.4.1",
+    "vitest": "^4.0.3",
+    "vitest-browser-vue": "^2.0.0",
     "vue-tsc": "^2.2.12"
   },
   "keywords": [
@@ -74,5 +84,8 @@
   "bugs": {
     "url": "https://github.com/omnitend/dashboard-for-laravel/issues"
   },
-  "homepage": "https://github.com/omnitend/dashboard-for-laravel#readme"
+  "homepage": "https://github.com/omnitend/dashboard-for-laravel#readme",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 }
