@@ -86,8 +86,9 @@
 </template>
 
 <script setup lang="ts">
+import { DFormTextarea } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DFormTextarea from '../../../resources/js/components/base/DFormTextarea.vue';
 
 const basicText = ref('');
 const smallText = ref('');

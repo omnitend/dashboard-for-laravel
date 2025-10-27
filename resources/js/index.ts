@@ -14,6 +14,7 @@ export { default as DXDashboardNavbar } from "./components/extended/DXDashboardN
 
 // Base components (wrapped Bootstrap with theming)
 export { default as DAccordion } from "./components/base/DAccordion.vue";
+export { default as DAccordionItem } from "./components/base/DAccordionItem.vue";
 export { default as DAlert } from "./components/base/DAlert.vue";
 export { default as DAvatar } from "./components/base/DAvatar.vue";
 export { default as DBadge } from "./components/base/DBadge.vue";
@@ -23,6 +24,7 @@ export { default as DButtonGroup } from "./components/base/DButtonGroup.vue";
 export { default as DButtonToolbar } from "./components/base/DButtonToolbar.vue";
 export { default as DCard } from "./components/base/DCard.vue";
 export { default as DCarousel } from "./components/base/DCarousel.vue";
+export { default as DCarouselSlide } from "./components/base/DCarouselSlide.vue";
 export { default as DCol } from "./components/base/DCol.vue";
 export { default as DCollapse } from "./components/base/DCollapse.vue";
 export { default as DContainer } from "./components/base/DContainer.vue";
@@ -42,9 +44,13 @@ export { default as DImage } from "./components/base/DImage.vue";
 export { default as DInputGroup } from "./components/base/DInputGroup.vue";
 export { default as DLink } from "./components/base/DLink.vue";
 export { default as DListGroup } from "./components/base/DListGroup.vue";
+export { default as DListGroupItem } from "./components/base/DListGroupItem.vue";
 export { default as DModal } from "./components/base/DModal.vue";
 export { default as DNav } from "./components/base/DNav.vue";
 export { default as DNavbar } from "./components/base/DNavbar.vue";
+export { default as DNavbarBrand } from "./components/base/DNavbarBrand.vue";
+export { default as DNavbarNav } from "./components/base/DNavbarNav.vue";
+export { default as DNavbarToggle } from "./components/base/DNavbarToggle.vue";
 export { default as DNavItem } from "./components/base/DNavItem.vue";
 export { default as DOffcanvas } from "./components/base/DOffcanvas.vue";
 export { default as DOverlay } from "./components/base/DOverlay.vue";
@@ -55,6 +61,7 @@ export { default as DProgress } from "./components/base/DProgress.vue";
 export { default as DRow } from "./components/base/DRow.vue";
 export { default as DSpinner } from "./components/base/DSpinner.vue";
 export { default as DTable } from "./components/base/DTable.vue";
+export { default as DTab } from "./components/base/DTab.vue";
 export { default as DTabs } from "./components/base/DTabs.vue";
 export { default as DToast } from "./components/base/DToast.vue";
 export { default as DToaster } from "./components/base/DToaster.vue";

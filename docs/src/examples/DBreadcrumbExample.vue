@@ -8,7 +8,8 @@
 </template>
 
 <script setup lang="ts">
-import DBreadcrumb from "../../../resources/js/components/base/DBreadcrumb.vue";
+import { DBreadcrumb } from '@omni-tend/dashboard-for-laravel';
+
 
 const items = [
   { text: "Home", href: "/" },

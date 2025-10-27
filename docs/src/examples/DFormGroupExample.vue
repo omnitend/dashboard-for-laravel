@@ -83,11 +83,9 @@
 </template>
 
 <script setup lang="ts">
+import { DFormGroup, DFormInput, DFormSelect, DFormTextarea } from '@omni-tend/dashboard-for-laravel';
+
 import { ref, computed } from 'vue';
-import DFormGroup from '../../../resources/js/components/base/DFormGroup.vue';
-import DFormInput from '../../../resources/js/components/base/DFormInput.vue';
-import DFormSelect from '../../../resources/js/components/base/DFormSelect.vue';
-import DFormTextarea from '../../../resources/js/components/base/DFormTextarea.vue';
 
 const email = ref('');
 const name = ref('');

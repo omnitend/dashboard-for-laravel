@@ -96,9 +96,9 @@
 </template>
 
 <script setup lang="ts">
+import { DSpinner, DButton } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DSpinner from '../../../resources/js/components/base/DSpinner.vue';
-import DButton from '../../../resources/js/components/base/DButton.vue';
 
 const isLoading = ref(false);
 const loadingComplete = ref(false);

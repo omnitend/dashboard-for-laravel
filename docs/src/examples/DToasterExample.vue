@@ -60,7 +60,8 @@
 </template>
 
 <script setup lang="ts">
-import DToaster from '../../../resources/js/components/base/DToaster.vue';
+import { DToaster } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

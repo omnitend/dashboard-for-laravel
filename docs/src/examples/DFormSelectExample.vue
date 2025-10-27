@@ -43,8 +43,9 @@
 </template>
 
 <script setup lang="ts">
+import { DFormSelect } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DFormSelect from '../../../resources/js/components/base/DFormSelect.vue';
 
 const selectedCountry = ref('');
 const selectedAnimal = ref('');

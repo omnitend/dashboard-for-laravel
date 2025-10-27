@@ -130,6 +130,11 @@ const navbarSlots = computed(() => {
 
 // Initialize sidebar visibility from localStorage
 const getInitialHiddenState = (): boolean => {
+  // Skip during SSR - no access to localStorage or document
+  if (typeof window === 'undefined') {
+    return !props.dashboardId; // Default: hidden for global, visible for scoped
+  }
+
   try {
     const savedHidden = localStorage.getItem(props.storageKey);
     if (savedHidden !== null) {
@@ -162,6 +167,9 @@ const hidden = ref(getInitialHiddenState());
 
 const toggleSidebar = () => {
   hidden.value = !hidden.value;
+
+  // Skip during SSR
+  if (typeof window === 'undefined') return;
 
   // If no dashboard ID (global instance), update HTML class
   if (!props.dashboardId) {

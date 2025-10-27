@@ -22,5 +22,6 @@
 </template>
 
 <script setup lang="ts">
-import DImage from "../../../resources/js/components/base/DImage.vue";
+import { DImage } from '@omni-tend/dashboard-for-laravel';
+
 </script>

@@ -88,12 +88,9 @@
 </template>
 
 <script setup lang="ts">
+import { DButton, DModal, DFormGroup, DFormInput, DFormSelect } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DButton from '../../../resources/js/components/base/DButton.vue';
-import DModal from '../../../resources/js/components/base/DModal.vue';
-import DFormGroup from '../../../resources/js/components/base/DFormGroup.vue';
-import DFormInput from '../../../resources/js/components/base/DFormInput.vue';
-import DFormSelect from '../../../resources/js/components/base/DFormSelect.vue';
 
 const showBasicModal = ref(false);
 const showSmallModal = ref(false);

@@ -12,7 +12,7 @@ This is **@omni-tend/dashboard-for-laravel**, a reusable full-stack component li
 
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
-2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next
+2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (53 components)
 3. **Form System** - Type-safe form handling with validation
 4. **Composables** - Reusable Vue composition functions
 5. **Theme** - Bootstrap 5 custom SCSS theme
@@ -104,6 +104,33 @@ In the consuming app's package.json:
   }
 }
 ```
+
+### Documentation Development
+
+The documentation site imports from the **built package** using `npm link`:
+
+**Setup:**
+```bash
+# In root directory
+npm run build  # Build the package
+npm link       # Create global symlink
+
+# In docs directory (already configured)
+cd docs
+npm link @omni-tend/dashboard-for-laravel
+```
+
+**How it works:**
+- Docs import from `@omni-tend/dashboard-for-laravel` (the package)
+- `npm link` creates a symlink: `docs/node_modules/@omni-tend/dashboard-for-laravel` → root
+- Changes require rebuilding: `npm run build` (or `npm run dev` for watch mode)
+- This ensures docs consume the library exactly like end users would
+
+**Important:**
+- Docs should NEVER import from `../../../resources/js` directly
+- All imports must be from `@omni-tend/dashboard-for-laravel`
+- This prevents module resolution issues and matches real-world usage
+- Components in the package must include SSR guards for browser-only APIs (localStorage, document)
 
 ## Component Guidelines
 
@@ -628,6 +655,26 @@ Icons from unplugin-icons work differently in the library vs consuming apps:
 - Follow Vue 3 best practices
 - Document complex components with JSDoc comments
 - Keep components focused and single-purpose
+
+### Documentation Examples
+
+**CRITICAL**: All documentation examples MUST use only D* and DX* components.
+
+- ✅ **Correct**: Import from `resources/js/components/base/DButton.vue`
+- ❌ **Wrong**: Import from `bootstrap-vue-next`
+
+**Why?**
+- Examples demonstrate how consumers use the library
+- `docs:dev` loads raw source files - if examples import from `bootstrap-vue-next`, they'll fail (404)
+- Examples should only use the public API (D*/DX* components)
+
+**If a child component isn't wrapped:**
+1. Create the D* wrapper (e.g., `DCarouselSlide.vue` for `BCarouselSlide`)
+2. Export from main index
+3. Use the wrapper in examples
+
+**The only place `bootstrap-vue-next` should appear:**
+- Inside `resources/js/components/base/D*.vue` wrapper implementations
 
 ## Version Management
 

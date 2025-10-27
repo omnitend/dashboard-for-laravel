@@ -18,7 +18,8 @@
 </template>
 
 <script setup lang="ts">
-import DAlert from '../../../resources/js/components/base/DAlert.vue';
+import { DAlert } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

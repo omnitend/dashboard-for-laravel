@@ -11,8 +11,9 @@
 </template>
 
 <script setup lang="ts">
+import { DXTable } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DXTable from '../../../resources/js/components/extended/DXTable.vue';
 
 const customerFields = [
   { key: 'id', label: 'ID', sortable: true },

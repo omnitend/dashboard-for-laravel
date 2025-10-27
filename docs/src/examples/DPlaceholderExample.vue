@@ -12,6 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import DPlaceholder from "../../../resources/js/components/base/DPlaceholder.vue";
-import DCard from "../../../resources/js/components/base/DCard.vue";
+import { DPlaceholder, DCard } from '@omni-tend/dashboard-for-laravel';
+
 </script>

@@ -5,14 +5,14 @@ title: Getting Started
 
 # Getting Started
 
-@omni-tend/laravel-dashboard is a reusable full-stack component library for building Laravel dashboards with Vue 3, Inertia.js, and Bootstrap Vue Next.
+@omni-tend/dashboard-for-laravel is a reusable full-stack component library for building Laravel dashboards with Vue 3, Inertia.js, and Bootstrap Vue Next.
 
 ## What's Included
 
 This library provides:
 
 1. **Vue 3 Components** - Reusable dashboard UI components
-2. **O* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next
+2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (53 components)
 3. **Form System** - Type-safe form handling with validation
 4. **Composables** - Reusable Vue composition functions
 5. **Theme** - Bootstrap 5 custom SCSS theme
@@ -24,8 +24,8 @@ Here's a simple example using the library:
 
 ```vue
 <script setup lang="ts">
-import { OCard, OButton, OBasicForm, useForm } from '@omni-tend/laravel-dashboard'
-import '@omni-tend/laravel-dashboard/theme.css'
+import { DCard, DButton, DXBasicForm, useForm } from '@omni-tend/dashboard-for-laravel'
+import '@omni-tend/dashboard-for-laravel/theme.css'
 
 const form = useForm({
   name: '',
@@ -53,25 +53,25 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <OCard>
+  <DCard>
     <template #header>
       <h3>Create User</h3>
     </template>
 
-    <OBasicForm
+    <DXBasicForm
       :fields="fields"
       :form="form"
       @submit="handleSubmit"
     />
-  </OCard>
+  </DCard>
 </template>
 ```
 
 ## Core Concepts
 
-### O* Wrapper Components
+### D* Wrapper Components
 
-All Bootstrap Vue Next components are wrapped in O* components to provide:
+All Bootstrap Vue Next components are wrapped in D* components to provide:
 
 - **Consistent API** across projects
 - **Type safety** with TypeScript
@@ -90,14 +90,6 @@ The library includes a powerful form system with:
 - Auto-generated forms from field definitions
 
 Learn more in the [Forms guide](/guide/forms).
-
-### British English
-
-This library uses British English spelling and UK-specific terminology throughout:
-
-- "colour" not "color"
-- "organise" not "organize"
-- "postal code" not "zip code"
 
 ## Next Steps
 

@@ -35,8 +35,8 @@
 </template>
 
 <script setup lang="ts">
-import DCard from '../../../resources/js/components/base/DCard.vue';
-import DButton from '../../../resources/js/components/base/DButton.vue';
+import { DCard, DButton } from '@omni-tend/dashboard-for-laravel';
+
 </script>
 
 <style scoped>

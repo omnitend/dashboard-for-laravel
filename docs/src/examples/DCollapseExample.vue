@@ -66,10 +66,9 @@
 </template>
 
 <script setup lang="ts">
+import { DCollapse, DButton, DCard } from '@omni-tend/dashboard-for-laravel';
+
 import { ref, reactive } from 'vue';
-import DCollapse from '../../../resources/js/components/base/DCollapse.vue';
-import DButton from '../../../resources/js/components/base/DButton.vue';
-import DCard from '../../../resources/js/components/base/DCard.vue';
 
 const visible = ref(false);
 const accordionStates = reactive<Record<number, boolean>>({

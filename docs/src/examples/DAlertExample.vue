@@ -54,9 +54,9 @@
 </template>
 
 <script setup lang="ts">
+import { DAlert, DButton } from '@omni-tend/dashboard-for-laravel';
+
 import { ref } from 'vue';
-import DAlert from '../../../resources/js/components/base/DAlert.vue';
-import DButton from '../../../resources/js/components/base/DButton.vue';
 
 const showAlert1 = ref(true);
 const showAlert2 = ref(true);
