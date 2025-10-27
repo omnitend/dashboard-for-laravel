@@ -84,6 +84,104 @@ npm run dev
 npm run typecheck
 ```
 
+### Testing
+
+The project uses **Vitest Browser Mode** for component testing with visual output.
+
+**Running Tests:**
+```bash
+# Run tests in browser (visual mode, window opens)
+npm test
+
+# Run tests with Vitest UI (web-based test runner)
+npm run test:ui
+
+# Run tests headless (for CI)
+npm run test:headless
+```
+
+**Test Structure:**
+```
+tests/
+├── components/           # Component tests
+│   └── DXTable.test.ts  # Example: DXTable tests
+├── fixtures/            # Test data
+│   └── tableData.ts     # Table test fixtures
+└── setup.ts             # Test environment setup
+```
+
+**Writing Tests:**
+
+Tests use `vitest-browser-vue` for rendering components in a real browser:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen } from 'vitest-browser-vue';
+import { userEvent } from '@vitest/browser/context';
+import DXTable from '../../resources/js/components/extended/DXTable.vue';
+
+describe('DXTable', () => {
+  it('renders table with data', async () => {
+    const { container } = render(DXTable, {
+      props: {
+        title: 'Customers',
+        items: customerData,
+        fields: customerFields,
+        pagination: paginationData,
+      },
+    });
+
+    // Visual: Component renders in browser window
+    // Programmatic: Assert data is correct
+    const title = await screen.getByText('Customers');
+    expect(title).toBeInTheDocument();
+
+    const rows = container.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(5);
+  });
+
+  it('handles pagination clicks', async () => {
+    const { emitted } = render(DXTable, {
+      props: {
+        items: data,
+        fields: fields,
+        pagination: { currentPage: 1, perPage: 10, total: 25 },
+      },
+    });
+
+    // Visual: See pagination in browser
+    // Programmatic: Test interaction
+    const page2 = await screen.getByRole('button', { name: '2' });
+    await userEvent.click(page2);
+
+    expect(emitted()['page-change'][0]).toEqual([2]);
+  });
+});
+```
+
+**Benefits of Browser Mode:**
+- **Visual feedback:** See components rendered in real browser
+- **Programmatic assertions:** Full testing-library API
+- **Real browser environment:** No JSDOM limitations
+- **Interactive debugging:** Can interact with components during test runs
+- **Fast HMR:** Changes to tests reload instantly
+
+**Test Fixtures:**
+
+Create reusable test data in `tests/fixtures/`:
+
+```typescript
+export const customerData = [
+  { id: 1, name: 'John Smith', email: 'john@example.com' },
+  // ... more test data
+];
+
+export const customerFields = [
+  { key: 'id', label: 'ID', sortable: true },
+  { key: 'name', label: 'Name', sortable: true },
+];
+```
+
 ### Using in Local Projects
 
 When developing this library alongside consuming apps:
