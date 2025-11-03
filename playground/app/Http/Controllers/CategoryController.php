@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Category;
+use Illuminate\Http\Request;
+use OmniTend\LaravelDashboard\Traits\HasTableFilters;
+
+class CategoryController extends Controller
+{
+    use HasTableFilters;
+
+    protected array $allowedFilters = [
+        'name' => 'like',
+        'is_active' => 'boolean',
+    ];
+
+    protected array $allowedSortColumns = ['name', 'slug', 'product_count', 'is_active', 'created_at'];
+
+    protected string $defaultSortColumn = 'name';
+    protected string $defaultSortOrder = 'asc';
+
+    public function index(Request $request)
+    {
+        $query = Category::query();
+        $this->applyTableQuery($query, $request);
+
+        return $this->tableResponse($query, $request, Category::class, 'Categories/Index', 'categories');
+    }
+}

@@ -186,10 +186,82 @@ interface Props {
 **That's it!** Just pass `inertia-url` and DXTable handles everything:
 - Sorting (click column headers)
 - Pagination (click page numbers)
+- Filtering (inline inputs beneath headers)
 - State preservation
 - Server requests with correct parameters
 
 No handlers, no refs, no boilerplate!
+
+### Adding Filters
+
+Add inline filters by specifying `filter` in field definitions:
+
+```typescript
+const fields = [
+  { key: 'sku', label: 'SKU', sortable: true },
+  { key: 'name', label: 'Name', sortable: true, filter: 'text' },
+  { key: 'category', label: 'Category', sortable: true, filter: 'select', filterOptions: [
+    { value: 'Electronics', text: 'Electronics' },
+    { value: 'Clothing', text: 'Clothing' },
+    { value: 'Books', text: 'Books' },
+  ]},
+  { key: 'price', label: 'Price', sortable: true, filter: 'number' },
+  { key: 'stock', label: 'Stock', sortable: true, filter: 'number' },
+];
+```
+
+**Filter Types:**
+- `'text'` - Text input with 300ms debounce for LIKE searches
+- `'select'` - Dropdown with options (automatically adds "All" option)
+- `'number'` - Number input for exact matches
+- `'date'` - Date input for date filtering
+- `false` or omit - No filter for this column
+
+Filters appear inline beneath the table headers and trigger server requests automatically.
+
+### Backend Filter Handling
+
+Update your controller to accept and apply filters:
+
+```php
+public function index(Request $request)
+{
+    // ... sorting code ...
+
+    // Build query with filters
+    $query = Product::query();
+
+    // Apply filters
+    $filters = $request->input('filters', []);
+
+    // Text filters (LIKE search)
+    if (!empty($filters['name'])) {
+        $query->where('name', 'LIKE', '%' . $filters['name'] . '%');
+    }
+
+    // Exact match filters
+    if (!empty($filters['category'])) {
+        $query->where('category', $filters['category']);
+    }
+
+    if (!empty($filters['price'])) {
+        $query->where('price', '=', $filters['price']);
+    }
+
+    $products = $query->orderBy($sortBy, $sortOrder)->paginate($perPage);
+
+    return Inertia::render('Products/Index', [
+        'products' => new PaginatedResource($products),
+    ]);
+}
+```
+
+**Filter Behavior:**
+- Text filters automatically debounce (300ms) to reduce server load
+- Filtering resets to page 1
+- Empty filters are removed from request
+- Filters preserve sort state
+- Works identically in both Inertia and API modes
 
 ### Key Points
 
