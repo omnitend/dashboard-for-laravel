@@ -36,6 +36,14 @@
   "peerDependencies": {
     "vue": "^3.4.0"
   },
+  "peerDependenciesMeta": {
+    "@inertiajs/vue3": {
+      "optional": true
+    },
+    "axios": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "bootstrap-vue-next": "^0.28.0",
     "highlight.js": "^11.11.1"
@@ -46,6 +54,7 @@
     "@astrojs/vue": "^5.1.1",
     "@iconify-json/lucide": "^1.2.71",
     "@iconify/json": "^2.2.397",
+    "@inertiajs/vue3": "^2.2.15",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vitest/browser": "^4.0.3",
     "@vitest/browser-playwright": "^4.0.3",

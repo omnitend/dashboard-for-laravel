@@ -89,6 +89,308 @@ const paginationData = ref({
   { name: 'header', description: 'Custom header content' },
 ]} />
 
+## Server-Side Pagination
+
+DXTable works seamlessly with Laravel's pagination and the package's `PaginatedResource` helper.
+
+### Laravel Backend Setup
+
+Use the `PaginatedResource` to format your paginated data:
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use OmniTend\LaravelDashboard\Http\Resources\PaginatedResource;
+
+class ProductController extends Controller
+{
+    public function index(Request $request)
+    {
+        $perPage = $request->input('perPage', 10);
+        $products = Product::orderBy('created_at', 'desc')->paginate($perPage);
+
+        return Inertia::render('Products/Index', [
+            'products' => new PaginatedResource($products),
+        ]);
+    }
+}
+```
+
+### Vue Frontend Implementation
+
+```vue
+<script setup lang="ts">
+import { DXTable } from '@omni-tend/dashboard-for-laravel';
+import type { PaginationData } from '@omni-tend/dashboard-for-laravel';
+
+interface Product {
+  id: number;
+  sku: string;
+  name: string;
+  price: string;
+  stock: number;
+}
+
+interface Props {
+  products: PaginationData & { data: Product[] };
+}
+
+defineProps<Props>();
+
+const fields = [
+  { key: 'sku', label: 'SKU', sortable: true },
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'price', label: 'Price', sortable: true },
+  { key: 'stock', label: 'Stock', sortable: true },
+];
+</script>
+
+<template>
+  <DXTable
+    title="Products"
+    :items="products.data"
+    :fields="fields"
+    :pagination="products"
+    inertia-url="/"
+  />
+</template>
+```
+
+Or create a reusable type helper:
+
+```typescript
+// types/index.ts
+export interface PaginatedData<T> {
+  data: T[];
+  current_page: number;
+  per_page: number;
+  total: number;
+  from: number;
+  to: number;
+  last_page: number;
+}
+
+// Your page component
+import type { PaginatedData } from '@/types';
+
+interface Props {
+  products: PaginatedData<Product>;
+}
+```
+
+**That's it!** Just pass `inertia-url` and DXTable handles everything:
+- Sorting (click column headers)
+- Pagination (click page numbers)
+- State preservation
+- Server requests with correct parameters
+
+No handlers, no refs, no boilerplate!
+
+### Key Points
+
+- **Batteries Included**: Just pass `inertia-url` - DXTable handles all sorting and pagination automatically
+- **PaginatedResource**: Returns data in the exact format DXTable expects (snake_case Laravel convention)
+- **No Boilerplate**: No need to write handlers, manage sortBy refs, or handle events
+- **Single-Column Sort**: Automatically normalizes multi-column sorts to single-column for Laravel
+- **Server-Side Only**: Disables client-side sorting (`:no-local-sorting="true"`) automatically
+- **State Preservation**: Uses `preserveState: true` for smooth navigation
+- **Security**: Always whitelist allowed sort columns on the backend
+- **Snake Case Properties**: Uses `current_page`, `per_page`, `total`, `from`, `to`, `last_page` to match Laravel conventions
+
+### Advanced Usage (Custom Handlers)
+
+If you need custom behavior, you can still handle events manually by omitting `inertia-url`:
+
+```vue
+<DXTable
+  :items="products.data"
+  :fields="fields"
+  :pagination="products"
+  @page-change="customPageHandler"
+  @sort-change="customSortHandler"
+/>
+```
+
+## API Mode (Provider Pattern)
+
+DXTable also supports the traditional AJAX/API pattern using Bootstrap-Vue-Next's provider functionality. This is perfect for:
+- Migrating from Bootstrap-Vue (Vue 2) to modern stack
+- Existing Laravel apps with API endpoints
+- SPAs that don't use Inertia.js
+
+### Laravel Backend (API Endpoint)
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use Illuminate\Http\Request;
+
+class ProductController extends Controller
+{
+    public function apiIndex(Request $request)
+    {
+        $page = $request->input('page', 1);
+        $perPage = $request->input('perPage', 10);
+        $sortBy = $request->input('sortBy', 'created_at');
+        $sortOrder = $request->input('sortOrder', 'desc');
+
+        // Whitelist allowed sort columns for security
+        $allowedSortColumns = ['sku', 'name', 'price', 'stock', 'created_at'];
+
+        if (!in_array($sortBy, $allowedSortColumns)) {
+            $sortBy = 'created_at';
+        }
+
+        if (!in_array(strtolower($sortOrder), ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
+
+        $products = Product::orderBy($sortBy, $sortOrder)
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => $products->items(),
+            'pagination' => [
+                'current_page' => $products->currentPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+                'from' => $products->firstItem(),
+                'to' => $products->lastItem(),
+                'last_page' => $products->lastPage(),
+            ],
+        ]);
+    }
+}
+```
+
+**Route:**
+```php
+// routes/api.php
+Route::get('/products', [ProductController::class, 'apiIndex']);
+```
+
+### Vue Frontend (Simple API Mode)
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { DXTable } from '@omni-tend/dashboard-for-laravel';
+
+const fields = [
+  { key: 'sku', label: 'SKU', sortable: true },
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'price', label: 'Price', sortable: true },
+  { key: 'stock', label: 'Stock', sortable: true },
+];
+
+const busy = ref(false);
+</script>
+
+<template>
+  <DXTable
+    title="Products"
+    api-url="/api/products"
+    :fields="fields"
+    v-model:busy="busy"
+    :per-page="10"
+  />
+</template>
+```
+
+**That's it!** Just pass `api-url` and DXTable handles:
+- AJAX requests with axios
+- Sorting parameters
+- Pagination parameters
+- Data extraction from `response.data.data`
+- Error handling
+
+### Advanced: Custom Provider Function
+
+For custom API logic (auth headers, data transformation, etc.), provide your own `provider`:
+
+```vue
+<script setup>
+const customProvider = async (context) => {
+  const response = await fetch('/api/products', {
+    headers: { 'Authorization': `Bearer ${token}` },
+    ...
+  });
+  const json = await response.json();
+  return json.items; // Custom response structure
+};
+</script>
+
+<template>
+  <DXTable :provider="customProvider" :fields="fields" />
+</template>
+```
+
+### Key Differences: Inertia vs API Mode
+
+| Feature | Inertia Mode | API Mode |
+|---------|--------------|----------|
+| **Prop** | `inertia-url="/"` | `api-url="/api/products"` |
+| **Data Source** | `:items` + `:pagination` | Auto-fetched via axios |
+| **Pagination** | Server-side with Inertia | BTable via `:per-page` |
+| **Sorting** | Server-side with Inertia | Auto-handled by provider |
+| **Loading State** | `:loading` prop | `v-model:busy` |
+| **URL Updates** | Yes (full page navigation) | No (AJAX only) |
+| **Backend** | Inertia render + PaginatedResource | JSON endpoint |
+| **Best For** | Modern Laravel + Inertia | Traditional SPAs, Bootstrap-Vue migrations |
+| **Setup** | 1 line | 1 line |
+
+### Provider Function Details
+
+The provider function receives a context object:
+
+```typescript
+interface BTableProviderContext {
+  sortBy?: BTableSortBy[];      // Current sort state
+  filter?: string;               // Filter string (if filtering enabled)
+  currentPage: number;           // Current page number
+  perPage: number;               // Items per page
+}
+```
+
+**Important:**
+- Return an array of items (or Promise that resolves to array)
+- BTable handles pagination UI automatically
+- No need to show "Showing X to Y" text (provider mode)
+- Sorting and pagination trigger automatic provider calls
+
+### Manual Refresh
+
+Access the `refresh()` method for manual data reloading:
+
+```vue
+<script setup>
+import { ref } from 'vue';
+
+const tableRef = ref(null);
+
+const refreshData = () => {
+  tableRef.value?.refresh();
+};
+</script>
+
+<template>
+  <DButton @click="refreshData">Refresh</DButton>
+  <DXTable
+    ref="tableRef"
+    :provider="fetchProducts"
+    :fields="fields"
+  />
+</template>
+```
+
 ## Extended Component
 
 This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
