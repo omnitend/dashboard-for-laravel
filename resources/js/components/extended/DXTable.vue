@@ -27,15 +27,64 @@
                         :provider="effectiveProvider"
                         :fields="fields"
                         :sort-by="effectiveSortBy"
-                        :per-page="perPage"
+                        :per-page="effectivePerPage"
+                        :current-page="apiCurrentPage"
                         :multisort="false"
                         :striped="striped"
                         :hover="hover"
                         :responsive="responsive"
                         :busy="busy"
                         @update:sort-by="handleSortChange"
+                        @update:current-page="apiCurrentPage = $event"
                         @update:busy="handleBusyChange"
                     >
+                        <!-- Inline Filter Row -->
+                        <template v-if="hasFilters" #thead-top>
+                            <tr class="filter-row">
+                                <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
+                                    <!-- Text Filter -->
+                                    <DFormInput
+                                        v-if="field.filter === 'text'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Select Filter -->
+                                    <DFormSelect
+                                        v-else-if="field.filter === 'select'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :options="[{ value: '', text: 'All' }, ...getFieldFilterOptions(field)]"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Number Filter -->
+                                    <DFormInput
+                                        v-else-if="field.filter === 'number'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
+                                        type="number"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Date Filter -->
+                                    <DFormInput
+                                        v-else-if="field.filter === 'date'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        type="date"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- No filter for this column -->
+                                    <div v-else></div>
+                                </th>
+                            </tr>
+                        </template>
+
                         <!-- Pass through all cell slots -->
                         <template
                             v-for="(_, name) in $slots"
@@ -63,6 +112,53 @@
                         :busy="effectiveBusy"
                         @update:sort-by="handleSortChange"
                     >
+                        <!-- Inline Filter Row -->
+                        <template v-if="hasFilters" #thead-top>
+                            <tr class="filter-row">
+                                <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
+                                    <!-- Text Filter -->
+                                    <DFormInput
+                                        v-if="field.filter === 'text'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Select Filter -->
+                                    <DFormSelect
+                                        v-else-if="field.filter === 'select'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :options="[{ value: '', text: 'All' }, ...getFieldFilterOptions(field)]"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Number Filter -->
+                                    <DFormInput
+                                        v-else-if="field.filter === 'number'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
+                                        type="number"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Date Filter -->
+                                    <DFormInput
+                                        v-else-if="field.filter === 'date'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        type="date"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- No filter for this column -->
+                                    <div v-else></div>
+                                </th>
+                            </tr>
+                        </template>
+
                         <!-- Pass through all cell slots -->
                         <template
                             v-for="(_, name) in $slots"
@@ -76,20 +172,83 @@
                         </template>
                     </DTable>
 
-                    <!-- Pagination (Inertia mode only) -->
+                    <!-- Pagination and Controls (Inertia mode) -->
                     <div
-                        v-if="isInertiaMode && showPagination && pagination && pagination.total > pagination.per_page"
+                        v-if="isInertiaMode && pagination"
                         class="d-flex justify-content-between align-items-center mt-3"
                     >
-                        <div class="text-muted">
-                            Showing {{ pagination.from }} to {{ pagination.to }} of
-                            {{ pagination.total }} entries
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Info text -->
+                            <span class="text-muted">
+                                <template v-if="pagination.total > pagination.per_page">
+                                    Showing {{ pagination.from }} to {{ pagination.to }} of {{ pagination.total }} {{ itemName }}
+                                </template>
+                                <template v-else>
+                                    Showing all {{ pagination.total }} {{ itemName }}
+                                </template>
+                            </span>
+
+                            <!-- Per-page selector (always shown) -->
+                            <div v-if="showPerPageSelector" class="d-flex align-items-center gap-2 ms-3">
+                                <label for="perPageSelect" class="text-muted mb-0 small">Show:</label>
+                                <DFormSelect
+                                    id="perPageSelect"
+                                    :model-value="effectivePerPage"
+                                    :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
+                                    size="sm"
+                                    style="width: 80px;"
+                                    @update:model-value="handlePerPageChange"
+                                />
+                            </div>
                         </div>
+
+                        <!-- Pagination controls (only when multiple pages) -->
                         <DPagination
+                            v-if="showPagination && pagination.total > pagination.per_page"
                             :model-value="pagination.current_page"
                             :total-rows="pagination.total"
                             :per-page="pagination.per_page"
                             @update:model-value="handlePageChange"
+                        />
+                    </div>
+
+                    <!-- Pagination and Controls (API mode) -->
+                    <div
+                        v-if="isProviderMode && apiPaginationMeta"
+                        class="d-flex justify-content-between align-items-center mt-3"
+                    >
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Info text -->
+                            <span class="text-muted">
+                                <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
+                                    Showing {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} of {{ apiPaginationMeta.total }} {{ itemName }}
+                                </template>
+                                <template v-else>
+                                    Showing all {{ apiPaginationMeta.total }} {{ itemName }}
+                                </template>
+                            </span>
+
+                            <!-- Per-page selector (always shown) -->
+                            <div v-if="showPerPageSelector" class="d-flex align-items-center gap-2 ms-3">
+                                <label for="perPageSelectApi" class="text-muted mb-0 small">Show:</label>
+                                <DFormSelect
+                                    id="perPageSelectApi"
+                                    :model-value="effectivePerPage"
+                                    :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
+                                    size="sm"
+                                    style="width: 80px;"
+                                    @update:model-value="handlePerPageChange"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Pagination controls (only when multiple pages) -->
+                        <DPagination
+                            v-if="showPagination && apiPaginationMeta.total > apiPaginationMeta.per_page"
+                            :model-value="apiPaginationMeta.current_page"
+                            :total-rows="apiPaginationMeta.total"
+                            :per-page="apiPaginationMeta.per_page"
+                            @update:model-value="handleApiPageChange"
                         />
                     </div>
                 </DCard>
@@ -99,7 +258,7 @@
 </template>
 
 <script setup lang="ts" generic="T = any">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
 import axios from "axios";
 import DContainer from "../base/DContainer.vue";
@@ -109,10 +268,22 @@ import DCard from "../base/DCard.vue";
 import DSpinner from "../base/DSpinner.vue";
 import DTable from "../base/DTable.vue";
 import DPagination from "../base/DPagination.vue";
+import DFormInput from "../base/DFormInput.vue";
+import DFormSelect from "../base/DFormSelect.vue";
+export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
+
+export interface FilterOption {
+    value: string;
+    text: string;
+}
+
 export interface TableField {
     key: string;
     label?: string;
     sortable?: boolean;
+    filter?: FilterType;
+    filterOptions?: FilterOption[];
+    filterPlaceholder?: string;
     [key: string]: any;
 }
 
@@ -145,6 +316,9 @@ export interface Props<TItem = any> {
     /** Table title */
     title?: string;
 
+    /** Name for items (plural) - used in pagination text (e.g., "products", "customers") */
+    itemName?: string;
+
     /** Table data items (Inertia mode) */
     items?: TItem[];
 
@@ -159,6 +333,12 @@ export interface Props<TItem = any> {
 
     /** Sort configuration (v-model support) */
     sortBy?: BTableSortBy[];
+
+    /** Filter values (v-model support) - key is field key, value is filter string */
+    filters?: Record<string, string>;
+
+    /** Dynamic filter options from server - key is field key, value is array of values */
+    filterValues?: Record<string, string[]>;
 
     /** Inertia route URL (if provided, handles navigation automatically) */
     inertiaUrl?: string;
@@ -181,10 +361,16 @@ export interface Props<TItem = any> {
     /** Show pagination controls */
     showPagination?: boolean;
 
+    /** Show per-page selector */
+    showPerPageSelector?: boolean;
+
+    /** Per-page options for selector */
+    perPageOptions?: number[];
+
     /** Current page (for provider mode) */
     currentPage?: number;
 
-    /** Items per page (for provider mode) */
+    /** Items per page (for provider mode, v-model support) */
     perPage?: number;
 
     /** Striped rows */
@@ -207,6 +393,7 @@ export interface Props<TItem = any> {
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
+    itemName: "items",
     loading: false,
     busy: false,
     loadingText: "Loading...",
@@ -219,8 +406,10 @@ const props = withDefaults(defineProps<Props<T>>(), {
         to: 0,
     }),
     showPagination: true,
+    showPerPageSelector: true,
+    perPageOptions: () => [10, 25, 50, 100],
     currentPage: 1,
-    perPage: 10,
+    // perPage: 10,  // Don't set default - let internalPerPage handle it
     striped: true,
     hover: true,
     responsive: true,
@@ -232,7 +421,12 @@ const props = withDefaults(defineProps<Props<T>>(), {
 const emit = defineEmits<{
     pageChange: [page: number];
     sortChange: [sort: { key: string; order: 'asc' | 'desc' }];
+    filterChange: [filters: Record<string, string>];
+    perPageChange: [perPage: number];
+    rowClicked: [item: T, index: number, event: MouseEvent];
     'update:sortBy': [sortBy: BTableSortBy[]];
+    'update:filters': [filters: Record<string, string>];
+    'update:perPage': [perPage: number];
     'update:busy': [busy: boolean];
 }>();
 
@@ -250,6 +444,93 @@ const internalSortBy = ref<BTableSortBy[]>([]);
 // Computed effective sortBy (use external if provided, otherwise internal)
 const effectiveSortBy = computed(() => props.sortBy !== undefined ? props.sortBy : internalSortBy.value);
 
+// Internal filters state for auto modes
+const internalFilters = ref<Record<string, string>>({});
+
+// Computed effective filters (use external if provided, otherwise internal)
+const effectiveFilters = computed(() => props.filters !== undefined ? props.filters : internalFilters.value);
+
+// Computed: check if any field has filtering enabled
+const hasFilters = computed(() => props.fields.some(field => field.filter !== false && field.filter !== undefined));
+
+// API mode pagination metadata (extracted from responses)
+const apiPaginationMeta = ref<PaginationData | null>(null);
+
+// API mode filter values (extracted from responses)
+const apiFilterValues = ref<Record<string, string[]>>({});
+
+// Computed: Get effective filter options for a field
+const getFieldFilterOptions = (field: TableField): FilterOption[] => {
+    // If field has static filterOptions, use those
+    if (field.filterOptions && field.filterOptions.length > 0) {
+        return field.filterOptions;
+    }
+
+    // Otherwise, check for server-provided values
+    const serverValues = props.filterValues?.[field.key] || apiFilterValues.value[field.key];
+
+    if (serverValues && serverValues.length > 0) {
+        // Convert string array to FilterOption array
+        return serverValues.map(value => ({ value, text: value }));
+    }
+
+    return [];
+};
+
+// LocalStorage key for perPage preference
+const perPageStorageKey = computed(() => {
+    const url = props.inertiaUrl || props.apiUrl || 'table';
+    return `dxtable-perpage-${url.replace(/\//g, '-')}`;
+});
+
+// Load perPage from localStorage or use default
+const getInitialPerPage = (): number => {
+    if (typeof window === 'undefined') return props.perPage || 10;
+
+    try {
+        const saved = localStorage.getItem(perPageStorageKey.value);
+        if (saved !== null) {
+            const parsed = parseInt(saved, 10);
+            // Validate it's in the allowed options
+            if (props.perPageOptions.includes(parsed)) {
+                return parsed;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading perPage from localStorage:', error);
+    }
+
+    return props.perPage || 10;
+};
+
+// Internal perPage state
+const internalPerPage = ref<number>(getInitialPerPage());
+
+// Watch pagination.per_page and sync with internalPerPage (after Inertia navigation)
+watch(() => props.pagination?.per_page, (newPerPage) => {
+    if (newPerPage && newPerPage !== internalPerPage.value) {
+        internalPerPage.value = newPerPage;
+        // Also update localStorage to stay in sync
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem(perPageStorageKey.value, newPerPage.toString());
+            } catch (error) {
+                console.error('Error saving perPage from watcher:', error);
+            }
+        }
+    }
+});
+
+// Computed effective perPage (use external if provided, otherwise internal)
+const effectivePerPage = computed(() => props.perPage !== undefined ? props.perPage : internalPerPage.value);
+
+// Detect which fields need server filter values
+const fieldsNeedingFilterValues = computed(() => {
+    return props.fields
+        .filter(field => field.filter === 'select' && (!field.filterOptions || field.filterOptions.length === 0))
+        .map(field => field.key);
+});
+
 // Internal provider function when apiUrl is provided
 const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProviderContext>) => {
     if (!props.apiUrl) return [];
@@ -259,14 +540,31 @@ const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProvi
             ? context.sortBy[0]
             : { key: 'created_at', order: 'desc' };
 
-        const response = await axios.get(props.apiUrl, {
-            params: {
-                page: context.currentPage,
-                perPage: context.perPage,
-                sortBy: sort.key,
-                sortOrder: sort.order || 'desc',
-            },
-        });
+        // Build request parameters
+        const params: any = {
+            page: context.currentPage,
+            perPage: effectivePerPage.value,
+            sortBy: sort.key,
+            sortOrder: sort.order || 'desc',
+            filters: effectiveFilters.value,
+        };
+
+        // Request filter values on initial load
+        if (context.currentPage === 1 && fieldsNeedingFilterValues.value.length > 0 && Object.keys(apiFilterValues.value).length === 0) {
+            params.filterValues = fieldsNeedingFilterValues.value;
+        }
+
+        const response = await axios.get(props.apiUrl, { params });
+
+        // Extract and store pagination metadata for display
+        if (response.data.pagination) {
+            apiPaginationMeta.value = response.data.pagination;
+        }
+
+        // Extract and store filter values
+        if (response.data.filterValues) {
+            apiFilterValues.value = { ...apiFilterValues.value, ...response.data.filterValues };
+        }
 
         return response.data.data;
     } catch (error) {
@@ -288,6 +586,8 @@ const handlePageChange = (page: number) => {
                 page,
                 sortBy: currentSort.key,
                 sortOrder: currentSort.order,
+                filters: effectiveFilters.value,
+                perPage: effectivePerPage.value,
             },
             { preserveState: true }
         );
@@ -295,6 +595,14 @@ const handlePageChange = (page: number) => {
 
     // Always emit event for backward compatibility
     emit("pageChange", page);
+};
+
+// API mode page change - update BTable's internal current page
+const apiCurrentPage = ref(1);
+
+const handleApiPageChange = (page: number) => {
+    apiCurrentPage.value = page;
+    // BTable should automatically call provider when currentPage prop changes
 };
 
 const handleSortChange = (sortBy: BTableSortBy[]) => {
@@ -329,6 +637,8 @@ const handleSortChange = (sortBy: BTableSortBy[]) => {
                 page: props.pagination?.current_page || 1,
                 sortBy: normalizedSortBy[0].key,
                 sortOrder: normalizedSortBy[0].order || 'asc',
+                filters: effectiveFilters.value,
+                perPage: effectivePerPage.value,
             },
             { preserveState: true }
         );
@@ -345,6 +655,103 @@ const handleSortChange = (sortBy: BTableSortBy[]) => {
 
 const handleBusyChange = (busy: boolean) => {
     emit('update:busy', busy);
+};
+
+// Debounce timer for filter changes
+let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const handlePerPageChange = (newPerPage: number | string) => {
+    const perPageNum = typeof newPerPage === 'string' ? parseInt(newPerPage, 10) : newPerPage;
+
+    // Update internal state if not using external perPage
+    if (props.perPage === undefined) {
+        internalPerPage.value = perPageNum;
+    }
+
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+        try {
+            localStorage.setItem(perPageStorageKey.value, perPageNum.toString());
+        } catch (error) {
+            console.error('Error saving perPage to localStorage:', error);
+        }
+    }
+
+    // Emit v-model update
+    emit('update:perPage', perPageNum);
+
+    // Handle navigation automatically
+    if (hasInertiaUrl.value && isInertiaMode.value) {
+        const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
+        router.get(
+            props.inertiaUrl!,
+            {
+                page: 1, // Reset to first page when changing perPage
+                sortBy: currentSort.key,
+                sortOrder: currentSort.order,
+                filters: effectiveFilters.value,
+                perPage: perPageNum,
+            },
+            { preserveState: true }
+        );
+    }
+
+    // For API mode, trigger provider refresh
+    if (isProviderMode.value && tableRef.value) {
+        refresh();
+    }
+
+    // Emit event for backward compatibility
+    emit('perPageChange', perPageNum);
+};
+
+const handleFilterChange = (fieldKey: string, value: string) => {
+    // Update filters
+    const newFilters = { ...effectiveFilters.value, [fieldKey]: value };
+
+    // Remove empty filters
+    if (!value || value.trim() === '') {
+        delete newFilters[fieldKey];
+    }
+
+    // Update internal state if not using external filters
+    if (props.filters === undefined) {
+        internalFilters.value = newFilters;
+    }
+
+    // Emit v-model update
+    emit('update:filters', newFilters);
+
+    // Debounce server requests for text inputs
+    if (filterDebounceTimer) {
+        clearTimeout(filterDebounceTimer);
+    }
+
+    filterDebounceTimer = setTimeout(() => {
+        // Handle Inertia navigation automatically if URL provided
+        if (hasInertiaUrl.value && isInertiaMode.value) {
+            const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
+            router.get(
+                props.inertiaUrl!,
+                {
+                    page: 1, // Reset to first page when filtering
+                    sortBy: currentSort.key,
+                    sortOrder: currentSort.order,
+                    filters: newFilters,
+                },
+                { preserveState: true }
+            );
+        }
+
+        // For API mode, provider will be called automatically by BTable
+        // when we trigger a refresh
+        if (isProviderMode.value && tableRef.value) {
+            refresh();
+        }
+
+        // Emit filterChange event for backward compatibility
+        emit('filterChange', newFilters);
+    }, 300); // 300ms debounce
 };
 
 // Reference to the DTable component (for exposing refresh method)
