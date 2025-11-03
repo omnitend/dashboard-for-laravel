@@ -39,11 +39,13 @@ export default defineConfig({
     },
     rollupOptions: {
       // Externalize deps that shouldn't be bundled
-      external: ['vue'],
+      external: ['vue', '@inertiajs/vue3', 'axios'],
       output: {
         // Provide global variables to use in the UMD build
         globals: {
           vue: 'Vue',
+          '@inertiajs/vue3': 'Inertia',
+          axios: 'axios',
         },
         assetFileNames: 'style.css',
       },

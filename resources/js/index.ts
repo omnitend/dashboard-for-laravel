@@ -103,6 +103,9 @@ export type {
 export type {
     TableField,
     PaginationData,
+    BTableSortBy,
+    BTableProvider,
+    BTableProviderContext,
 } from "./components/extended/DXTable.vue";
 
 export type {
