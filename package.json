@@ -7,7 +7,7 @@
   "module": "./dist/dashboard-for-laravel.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "dashboard-docs-mcp": "./scripts/mcp-server.mjs"
+    "dashboard-docs-mcp": "scripts/mcp-server.mjs"
   },
   "exports": {
     ".": {
