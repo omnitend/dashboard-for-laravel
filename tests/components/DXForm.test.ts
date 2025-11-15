@@ -43,8 +43,8 @@ describe('DXForm', () => {
     it('shows validation errors', async () => {
       const form = defineForm(contactFormFields);
 
-      // Set validation errors
-      form.errors = {
+      // Set validation errors on the underlying form instance
+      form.form.errors = {
         email: ['Invalid email format'],
       };
 
@@ -60,7 +60,7 @@ describe('DXForm', () => {
 
     it('disables submit button when processing', async () => {
       const form = defineForm(contactFormFields);
-      form.processing = true;
+      form.form.processing = true;
 
       const screen = render(DXForm, {
         props: {
@@ -78,6 +78,11 @@ describe('DXForm', () => {
   describe('Form Submission', () => {
     it('emits submit event when form is submitted', async () => {
       const form = defineForm(contactFormFields);
+
+      // Fill required fields to pass HTML5 validation
+      form.form.data.name = 'John Doe';
+      form.form.data.email = 'john@example.com';
+      form.form.data.message = 'Test message';
 
       const screen = render(DXForm, {
         props: {

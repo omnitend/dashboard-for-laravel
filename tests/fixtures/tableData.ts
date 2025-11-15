@@ -62,16 +62,16 @@ export const customerData: Customer[] = [
 ];
 
 export const paginationData: PaginationData = {
-  currentPage: 1,
-  perPage: 10,
+  current_page: 1,
+  per_page: 10,
   total: 5,
   from: 1,
   to: 5,
 };
 
 export const largePaginationData: PaginationData = {
-  currentPage: 1,
-  perPage: 10,
+  current_page: 1,
+  per_page: 10,
   total: 25,
   from: 1,
   to: 10,
