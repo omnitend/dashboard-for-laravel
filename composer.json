@@ -1,5 +1,5 @@
 {
-    "name": "omni-tend/dashboard-for-laravel",
+    "name": "omnitend/dashboard-for-laravel",
     "description": "Laravel dashboard components with Vue 3, Inertia, and Bootstrap Vue Next",
     "type": "library",
     "license": "MIT",

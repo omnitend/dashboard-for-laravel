@@ -24,7 +24,7 @@ yarn add @omnitend/dashboard-for-laravel
 Install the PHP utilities via Composer:
 
 ```bash
-composer require omni-tend/dashboard-for-laravel
+composer require omnitend/dashboard-for-laravel
 ```
 
 ## Import Styles

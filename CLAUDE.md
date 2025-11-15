@@ -6,7 +6,7 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 
 **Package Type**: Dual package (NPM + Composer)
 **NPM Package**: `@omnitend/dashboard-for-laravel`
-**Composer Package**: `omni-tend/dashboard-for-laravel`
+**Composer Package**: `omnitend/dashboard-for-laravel`
 
 ## Purpose
 
