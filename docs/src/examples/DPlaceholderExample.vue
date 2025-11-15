@@ -12,6 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import { DPlaceholder, DCard } from '@omni-tend/dashboard-for-laravel';
+import { DPlaceholder, DCard } from '@omnitend/dashboard-for-laravel';
 
 </script>

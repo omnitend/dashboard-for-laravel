@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { DOverlay, DCard, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DOverlay, DCard, DButton } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from "vue";
 

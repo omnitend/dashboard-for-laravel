@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { DXForm, defineForm } from '@omni-tend/dashboard-for-laravel';
+import { DXForm, defineForm } from '@omnitend/dashboard-for-laravel';
 
 const contactForm = defineForm([
   {

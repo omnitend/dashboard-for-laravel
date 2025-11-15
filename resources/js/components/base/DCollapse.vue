@@ -7,7 +7,7 @@
  * @component
  * @example
  * import { ref } from 'vue'
- * import { DButton, DCollapse } from '@omni-tend/dashboard-for-laravel'
+ * import { DButton, DCollapse } from '@omnitend/dashboard-for-laravel'
  *
  * const visible = ref(false)
  *

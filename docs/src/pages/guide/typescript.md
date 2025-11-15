@@ -18,7 +18,7 @@ import {
   type FieldDefinition,
   type UseFormReturn,
   type ValidationErrors
-} from '@omni-tend/dashboard-for-laravel'
+} from '@omnitend/dashboard-for-laravel'
 ```
 
 ## Component Props
@@ -27,7 +27,7 @@ All components have full TypeScript prop definitions:
 
 ```vue
 <script setup lang="ts">
-import { DButton } from '@omni-tend/dashboard-for-laravel'
+import { DButton } from '@omnitend/dashboard-for-laravel'
 import type { ButtonVariant, Size } from 'bootstrap-vue-next'
 
 // TypeScript knows about all valid props
@@ -47,7 +47,7 @@ const size: Size = 'lg'
 ### UseFormReturn
 
 ```typescript
-import type { UseFormReturn } from '@omni-tend/dashboard-for-laravel'
+import type { UseFormReturn } from '@omnitend/dashboard-for-laravel'
 
 interface UserForm {
   name: string
@@ -70,7 +70,7 @@ form.invalid // ✗ Error
 ### FieldDefinition
 
 ```typescript
-import type { FieldDefinition } from '@omni-tend/dashboard-for-laravel'
+import type { FieldDefinition } from '@omnitend/dashboard-for-laravel'
 
 const fields: FieldDefinition[] = [
   {
@@ -93,7 +93,7 @@ const fields: FieldDefinition[] = [
 ### ValidationErrors
 
 ```typescript
-import type { ValidationErrors } from '@omni-tend/dashboard-for-laravel'
+import type { ValidationErrors } from '@omnitend/dashboard-for-laravel'
 
 const errors: ValidationErrors = {
   email: ['The email field is required.'],
@@ -118,7 +118,7 @@ import type {
   FormSubmitOptions,
   FormState,
   UseFormReturn
-} from '@omni-tend/dashboard-for-laravel'
+} from '@omnitend/dashboard-for-laravel'
 ```
 
 ### Component Types
@@ -130,7 +130,7 @@ import type {
   NavigationItem,
   NavigationGroup,
   Navigation
-} from '@omni-tend/dashboard-for-laravel'
+} from '@omnitend/dashboard-for-laravel'
 ```
 
 ### API Types
@@ -139,7 +139,7 @@ import type {
 import type {
   ApiError,
   ApiResponse
-} from '@omni-tend/dashboard-for-laravel'
+} from '@omnitend/dashboard-for-laravel'
 ```
 
 ## Type Inference
@@ -187,7 +187,7 @@ Slots are typed with their bindings:
 
 ```vue
 <script setup lang="ts">
-import { DDropdown } from '@omni-tend/dashboard-for-laravel'
+import { DDropdown } from '@omnitend/dashboard-for-laravel'
 
 interface User {
   name: string
@@ -239,7 +239,7 @@ const form = useForm<Customer>({
 Always type your field definitions:
 
 ```typescript
-import type { FieldDefinition } from '@omni-tend/dashboard-for-laravel'
+import type { FieldDefinition } from '@omnitend/dashboard-for-laravel'
 
 const fields: FieldDefinition[] = [
   // Fields here are type-checked
@@ -251,8 +251,8 @@ const fields: FieldDefinition[] = [
 Import types separately for clarity:
 
 ```typescript
-import { useForm } from '@omni-tend/dashboard-for-laravel'
-import type { ValidationErrors } from '@omni-tend/dashboard-for-laravel'
+import { useForm } from '@omnitend/dashboard-for-laravel'
+import type { ValidationErrors } from '@omnitend/dashboard-for-laravel'
 ```
 
 ### 4. Enable Strict Mode
@@ -290,7 +290,7 @@ The library works great with:
 Make sure the package is installed:
 
 ```bash
-npm install @omni-tend/dashboard-for-laravel
+npm install @omnitend/dashboard-for-laravel
 ```
 
 ### Circular dependency errors
@@ -299,10 +299,10 @@ This usually means types aren't properly imported. Use `import type`:
 
 ```typescript
 // Good
-import type { UseFormReturn } from '@omni-tend/dashboard-for-laravel'
+import type { UseFormReturn } from '@omnitend/dashboard-for-laravel'
 
 // Avoid
-import { UseFormReturn } from '@omni-tend/dashboard-for-laravel'
+import { UseFormReturn } from '@omnitend/dashboard-for-laravel'
 ```
 
 ### Volar not working

@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { DToast } from '@omni-tend/dashboard-for-laravel';
+import { DToast } from '@omnitend/dashboard-for-laravel';
 
 </script>
 

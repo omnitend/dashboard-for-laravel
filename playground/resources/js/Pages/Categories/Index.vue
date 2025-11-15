@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PlaygroundLayout from '../../Layouts/PlaygroundLayout.vue';
-import { DXTable, DBadge } from '@omni-tend/dashboard-for-laravel';
+import { DXTable, DBadge } from '@omnitend/dashboard-for-laravel';
 import type { PaginatedData } from '../../types';
 
 interface Category {

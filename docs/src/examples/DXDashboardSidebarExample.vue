@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { DXDashboardSidebar } from '@omni-tend/dashboard-for-laravel';
+import { DXDashboardSidebar } from '@omnitend/dashboard-for-laravel';
 
 import { ref, computed } from 'vue';
 

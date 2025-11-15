@@ -18,6 +18,6 @@
 </template>
 
 <script setup lang="ts">
-import { DAccordion, DAccordionItem } from '@omni-tend/dashboard-for-laravel';
+import { DAccordion, DAccordionItem } from '@omnitend/dashboard-for-laravel';
 
 </script>

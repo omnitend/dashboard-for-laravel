@@ -15,7 +15,7 @@ The `useForm` composable provides type-safe form state management and submission
 
 ```vue
 <script setup lang="ts">
-import { useForm, DButton, DFormInput } from '@omni-tend/dashboard-for-laravel'
+import { useForm, DButton, DFormInput } from '@omnitend/dashboard-for-laravel'
 
 const form = useForm({
   name: '',
@@ -141,8 +141,8 @@ Auto-generate forms from field definitions:
 
 ```vue
 <script setup lang="ts">
-import { useForm, DXBasicForm } from '@omni-tend/dashboard-for-laravel'
-import type { FieldDefinition } from '@omni-tend/dashboard-for-laravel'
+import { useForm, DXBasicForm } from '@omnitend/dashboard-for-laravel'
+import type { FieldDefinition } from '@omnitend/dashboard-for-laravel'
 
 const form = useForm({
   name: '',
@@ -232,7 +232,7 @@ Advanced form component with more control:
 
 ```vue
 <script setup lang="ts">
-import { useForm, DXForm, DFormInput, DButton } from '@omni-tend/dashboard-for-laravel'
+import { useForm, DXForm, DFormInput, DButton } from '@omnitend/dashboard-for-laravel'
 
 const form = useForm({
   name: '',
@@ -320,9 +320,9 @@ The form composable will automatically:
 
 ```vue
 <script setup lang="ts">
-import { useForm, DCard, DXBasicForm } from '@omni-tend/dashboard-for-laravel'
+import { useForm, DCard, DXBasicForm } from '@omnitend/dashboard-for-laravel'
 import { useRouter } from 'vue-router'
-import { useToast } from '@omni-tend/dashboard-for-laravel'
+import { useToast } from '@omnitend/dashboard-for-laravel'
 
 const router = useRouter()
 const toast = useToast()

@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { DFormInput } from '@omni-tend/dashboard-for-laravel';
+import { DFormInput } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

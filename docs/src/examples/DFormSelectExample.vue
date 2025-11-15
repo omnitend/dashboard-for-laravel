@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { DFormSelect } from '@omni-tend/dashboard-for-laravel';
+import { DFormSelect } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

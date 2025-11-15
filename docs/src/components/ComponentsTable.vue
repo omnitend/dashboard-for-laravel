@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { DTable } from '@omni-tend/dashboard-for-laravel';
+import { DTable } from '@omnitend/dashboard-for-laravel';
 
 
 interface Component {

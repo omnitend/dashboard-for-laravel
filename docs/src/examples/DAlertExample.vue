@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { DAlert, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DAlert, DButton } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

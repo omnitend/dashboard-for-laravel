@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { DFormTags } from '@omni-tend/dashboard-for-laravel';
+import { DFormTags } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from "vue";
 

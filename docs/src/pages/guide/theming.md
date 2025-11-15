@@ -215,7 +215,7 @@ Use Bootstrap's responsive utilities:
 Make sure you've imported the theme CSS:
 
 ```typescript
-import '@omni-tend/dashboard-for-laravel/theme.css'
+import '@omnitend/dashboard-for-laravel/theme.css'
 ```
 
 ### Component styles missing

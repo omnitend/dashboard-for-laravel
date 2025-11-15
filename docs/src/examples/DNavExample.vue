@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { DNav, DNavItem } from '@omni-tend/dashboard-for-laravel';
+import { DNav, DNavItem } from '@omnitend/dashboard-for-laravel';
 
 </script>
 

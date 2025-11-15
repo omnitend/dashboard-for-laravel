@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import PlaygroundLayout from '../../Layouts/PlaygroundLayout.vue';
-import { DXTable, DButton, DButtonGroup } from '@omni-tend/dashboard-for-laravel';
+import { DXTable, DButton, DButtonGroup } from '@omnitend/dashboard-for-laravel';
 import type { PaginatedData } from '../../types';
 
 interface Product {

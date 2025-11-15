@@ -21,6 +21,6 @@
 </template>
 
 <script setup lang="ts">
-import { DButtonToolbar, DButtonGroup, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DButtonToolbar, DButtonGroup, DButton } from '@omnitend/dashboard-for-laravel';
 
 </script>

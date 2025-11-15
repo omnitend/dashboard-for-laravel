@@ -5,7 +5,7 @@ title: Getting Started
 
 # Getting Started
 
-@omni-tend/dashboard-for-laravel is a reusable full-stack component library for building Laravel dashboards with Vue 3, Inertia.js, and Bootstrap Vue Next.
+@omnitend/dashboard-for-laravel is a reusable full-stack component library for building Laravel dashboards with Vue 3, Inertia.js, and Bootstrap Vue Next.
 
 ## What's Included
 
@@ -24,8 +24,8 @@ Here's a simple example using the library:
 
 ```vue
 <script setup lang="ts">
-import { DCard, DButton, DXBasicForm, useForm } from '@omni-tend/dashboard-for-laravel'
-import '@omni-tend/dashboard-for-laravel/theme.css'
+import { DCard, DButton, DXBasicForm, useForm } from '@omnitend/dashboard-for-laravel'
+import '@omnitend/dashboard-for-laravel/theme.css'
 
 const form = useForm({
   name: '',

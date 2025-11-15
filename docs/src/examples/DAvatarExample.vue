@@ -20,6 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import { DAvatar } from '@omni-tend/dashboard-for-laravel';
+import { DAvatar } from '@omnitend/dashboard-for-laravel';
 
 </script>

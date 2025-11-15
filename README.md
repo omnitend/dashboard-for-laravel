@@ -4,7 +4,7 @@ A full-stack package for building Laravel dashboards with Vue 3, Inertia.js, and
 
 ## Documentation
 
-📚 **[Full Documentation](docs/src/pages/)** | 📦 **[NPM Package](https://www.npmjs.com/package/@omni-tend/dashboard-for-laravel)**
+📚 **[Full Documentation](docs/src/pages/)** | 📦 **[NPM Package](https://www.npmjs.com/package/@omnitend/dashboard-for-laravel)**
 
 - [Getting Started Guide](docs/src/pages/guide/getting-started.md)
 - [Installation Guide](docs/src/pages/guide/installation.md)
@@ -27,7 +27,7 @@ A full-stack package for building Laravel dashboards with Vue 3, Inertia.js, and
 ### NPM Package
 
 ```bash
-npm install @omni-tend/dashboard-for-laravel
+npm install @omnitend/dashboard-for-laravel
 ```
 
 ### Composer Package
@@ -55,7 +55,7 @@ The `defineForm` helper provides type-safe form definitions with minimal boilerp
 </template>
 
 <script setup lang="ts">
-import { defineForm, DXForm } from "@omni-tend/dashboard-for-laravel";
+import { defineForm, DXForm } from "@omnitend/dashboard-for-laravel";
 
 const loginForm = defineForm([
   {
@@ -105,7 +105,7 @@ For more control, use `useForm` and `DXBasicForm`:
 </template>
 
 <script setup lang="ts">
-import { useForm, DXBasicForm, type FieldDefinition } from "@omni-tend/dashboard-for-laravel";
+import { useForm, DXBasicForm, type FieldDefinition } from "@omnitend/dashboard-for-laravel";
 
 const form = useForm({
   name: "",
@@ -172,7 +172,7 @@ form.clearError("email"); // Clear specific field error
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { DXTable, type PaginationData, type TableField } from "@omni-tend/dashboard-for-laravel";
+import { DXTable, type PaginationData, type TableField } from "@omnitend/dashboard-for-laravel";
 
 interface User {
   id: number;
@@ -220,7 +220,7 @@ const fetchUsers = async (page: number = 1) => {
 </template>
 
 <script setup lang="ts">
-import { DXDashboard, DCard, type Navigation } from "@omni-tend/dashboard-for-laravel";
+import { DXDashboard, DCard, type Navigation } from "@omnitend/dashboard-for-laravel";
 
 const navigation: Navigation = [
   {

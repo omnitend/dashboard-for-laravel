@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { DBadge } from '@omni-tend/dashboard-for-laravel';
+import { DBadge } from '@omnitend/dashboard-for-laravel';
 
 </script>
 

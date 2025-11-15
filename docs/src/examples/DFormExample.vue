@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { DForm, DFormGroup, DFormInput, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DForm, DFormGroup, DFormInput, DButton } from '@omnitend/dashboard-for-laravel';
 
 import { reactive } from "vue";
 

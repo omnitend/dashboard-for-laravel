@@ -2,7 +2,7 @@
 
 ## Overview
 
-This documentation site is built with Astro, Vue 3, and MDX. It provides live, interactive examples for all components in the `@omni-tend/dashboard-for-laravel` package with automatic code extraction and syntax highlighting.
+This documentation site is built with Astro, Vue 3, and MDX. It provides live, interactive examples for all components in the `@omnitend/dashboard-for-laravel` package with automatic code extraction and syntax highlighting.
 
 ## Current State
 

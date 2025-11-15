@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { DAlert } from '@omni-tend/dashboard-for-laravel';
+import { DAlert } from '@omnitend/dashboard-for-laravel';
 
 </script>
 

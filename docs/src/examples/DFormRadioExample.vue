@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { DFormRadio } from '@omni-tend/dashboard-for-laravel';
+import { DFormRadio } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from "vue";
 

@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { DPagination } from '@omni-tend/dashboard-for-laravel';
+import { DPagination } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

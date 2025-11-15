@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { DXBasicForm, useForm } from '@omni-tend/dashboard-for-laravel';
+import { DXBasicForm, useForm } from '@omnitend/dashboard-for-laravel';
 
 // Contact form
 const contactForm = useForm({
