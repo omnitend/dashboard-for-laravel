@@ -1,0 +1,17 @@
+{
+  "name": "dashboard-for-laravel-docs",
+  "version": "0.3.1",
+  "description": "MCP server providing structured access to Dashboard for Laravel documentation",
+  "command": "node",
+  "args": ["scripts/mcp-server.mjs"],
+  "capabilities": {
+    "tools": [
+      "list_components",
+      "get_component",
+      "search_components",
+      "get_guide",
+      "get_overview",
+      "get_docs_map"
+    ]
+  }
+}

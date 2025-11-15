@@ -21,6 +21,7 @@ A full-stack package for building Laravel dashboards with Vue 3, Inertia.js, and
 - **Navigation**: Responsive sidebar navigation
 - **API Client**: Type-safe HTTP client with Laravel integration
 - **Laravel Helpers**: Backend utilities for consistent API responses
+- **MCP Server**: Query documentation via AI agents ([setup guide](MCP_SERVER.md))
 
 ## Installation
 
