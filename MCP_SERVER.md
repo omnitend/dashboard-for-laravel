@@ -122,16 +122,15 @@ Add to your Claude Desktop config file:
 
 ### Claude Code Configuration
 
-Add to `.claude/settings.json`:
+The MCP server is automatically configured via `.mcp.json` in the project root.
+
+When you open this project in Claude Code, it will prompt you to enable the MCP server. Simply accept the prompt.
+
+Alternatively, you can manually enable it by adding to `.claude/settings.local.json`:
 
 ```json
 {
-  "mcpServers": {
-    "dashboard-for-laravel-docs": {
-      "command": "node",
-      "args": ["scripts/mcp-server.mjs"]
-    }
-  }
+  "enabledMcpjsonServers": ["dashboard-for-laravel-docs"]
 }
 ```
 

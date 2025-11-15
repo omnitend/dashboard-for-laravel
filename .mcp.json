@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dashboard-for-laravel-docs": {
+      "command": "node",
+      "args": ["scripts/mcp-server.mjs"]
+    }
+  }
+}
