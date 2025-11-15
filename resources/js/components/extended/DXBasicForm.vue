@@ -81,14 +81,14 @@
                     />
 
                     <!-- Validation error -->
-                    <BFormInvalidFeedback v-if="form.hasError(field.key)">
+                    <DFormInvalidFeedback v-if="form.hasError(field.key)">
                         {{ form.getError(field.key) }}
-                    </BFormInvalidFeedback>
+                    </DFormInvalidFeedback>
 
                     <!-- Help text -->
-                    <BFormText v-if="field.help">
+                    <DFormText v-if="field.help">
                         {{ field.help }}
-                    </BFormText>
+                    </DFormText>
                 </DFormGroup>
             </slot>
         </template>
@@ -111,13 +111,15 @@
 </template>
 
 <script setup lang="ts">
-import { BForm, BFormRadioGroup, BFormInvalidFeedback, BFormText } from "bootstrap-vue-next";
+import { BForm, BFormRadioGroup } from "bootstrap-vue-next";
 import DAlert from "../base/DAlert.vue";
 import DFormGroup from "../base/DFormGroup.vue";
 import DFormInput from "../base/DFormInput.vue";
 import DFormTextarea from "../base/DFormTextarea.vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import DFormCheckbox from "../base/DFormCheckbox.vue";
+import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
+import DFormText from "../base/DFormText.vue";
 import DButton from "../base/DButton.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { FieldDefinition, FieldType } from "../../types";
