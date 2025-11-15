@@ -46,7 +46,7 @@ The `defineForm` helper provides type-safe form definitions with minimal boilerp
 
 ```vue
 <template>
-  <OForm
+  <DXForm
     :form="loginForm"
     submit-text="Login"
     submit-loading-text="Logging in..."
@@ -55,7 +55,7 @@ The `defineForm` helper provides type-safe form definitions with minimal boilerp
 </template>
 
 <script setup lang="ts">
-import { defineForm, OForm } from "@omni-tend/dashboard-for-laravel";
+import { defineForm, DXForm } from "@omni-tend/dashboard-for-laravel";
 
 const loginForm = defineForm([
   {
@@ -93,11 +93,11 @@ const handleLogin = async () => {
 
 #### Using `useForm` Directly
 
-For more control, use `useForm` and `OBasicForm`:
+For more control, use `useForm` and `DXBasicForm`:
 
 ```vue
 <template>
-  <OBasicForm
+  <DXBasicForm
     :form="form"
     :fields="fields"
     @submit="handleSubmit"
@@ -105,7 +105,7 @@ For more control, use `useForm` and `OBasicForm`:
 </template>
 
 <script setup lang="ts">
-import { useForm, OBasicForm, type FieldDefinition } from "@omni-tend/dashboard-for-laravel";
+import { useForm, DXBasicForm, type FieldDefinition } from "@omni-tend/dashboard-for-laravel";
 
 const form = useForm({
   name: "",
@@ -156,12 +156,10 @@ form.clearError("email"); // Clear specific field error
 
 ```vue
 <template>
-  <DataTable
+  <DXTable
     title="Users"
     :items="users"
     :fields="fields"
-    :loading="loading"
-    :error="error"
     :pagination="pagination"
     @page-change="fetchUsers"
   >
@@ -169,12 +167,12 @@ form.clearError("email"); // Clear specific field error
     <template #cell(created_at)="{ item }">
       {{ formatDate(item.created_at) }}
     </template>
-  </DataTable>
+  </DXTable>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { api, DataTable, type PaginationData, type TableField } from "@omni-tend/dashboard-for-laravel";
+import { DXTable, type PaginationData, type TableField } from "@omni-tend/dashboard-for-laravel";
 
 interface User {
   id: number;
@@ -184,14 +182,10 @@ interface User {
 }
 
 const users = ref<User[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
 const pagination = ref<PaginationData>({
   currentPage: 1,
   perPage: 15,
   total: 0,
-  from: 0,
-  to: 0,
 });
 
 const fields: TableField[] = [
@@ -202,84 +196,52 @@ const fields: TableField[] = [
 ];
 
 const fetchUsers = async (page: number = 1) => {
-  loading.value = true;
-  try {
-    const { data } = await api.get<any>("/api/users", { page });
-    users.value = data.data;
-    pagination.value = {
-      currentPage: data.current_page,
-      perPage: data.per_page,
-      total: data.total,
-      from: data.from,
-      to: data.to,
-    };
-  } catch (err: any) {
-    error.value = err.message;
-  } finally {
-    loading.value = false;
-  }
+  // Fetch logic here
 };
 </script>
 ```
 
-### Sidebar Navigation
+### Dashboard Layout
 
 ```vue
 <template>
-  <Sidebar :title="Navigation" :items="navItems" />
+  <DXDashboard
+    :navigation="navigation"
+    :current-url="currentUrl"
+    title="My App"
+    page-title="Dashboard"
+    :user="user"
+  >
+    <!-- Page content goes here -->
+    <DCard>
+      <h1>Welcome to the Dashboard</h1>
+    </DCard>
+  </DXDashboard>
 </template>
 
 <script setup lang="ts">
-import { Sidebar, type NavigationItem } from "@omni-tend/dashboard-for-laravel";
+import { DXDashboard, DCard, type Navigation } from "@omni-tend/dashboard-for-laravel";
 
-const navItems: NavigationItem[] = [
+const navigation: Navigation = [
   {
-    key: "dashboard",
-    label: "Dashboard",
-    href: "/dashboard",
+    label: "Main",
+    items: [
+      { label: "Dashboard", url: "/dashboard" },
+      { label: "Users", url: "/users" },
+    ],
   },
   {
-    key: "users",
-    label: "Users",
-    href: "/users",
-  },
-  { divider: true },
-  {
-    key: "logout",
-    label: "Logout",
-    href: "#",
-    class: "text-danger",
-    onClick: handleLogout,
+    label: "Settings",
+    items: [
+      { label: "Profile", url: "/profile" },
+      { label: "Logout", url: "/logout" },
+    ],
   },
 ];
 
-const handleLogout = () => {
-  // Logout logic
-};
+const currentUrl = "/dashboard";
+const user = { name: "John Doe", email: "john@example.com" };
 </script>
-```
-
-### API Client
-
-```typescript
-import { api } from "@omni-tend/dashboard-for-laravel";
-
-// GET request
-const { data } = await api.get<User[]>("/api/users");
-
-// POST request
-const { data } = await api.post<User>("/api/users", {
-  name: "John Doe",
-  email: "john@example.com",
-});
-
-// With query parameters
-const { data } = await api.get("/api/users", { page: 1, per_page: 15 });
-
-// With FormData
-const formData = new FormData();
-formData.append("file", file);
-await api.post("/api/upload", formData);
 ```
 
 ## Backend Usage
