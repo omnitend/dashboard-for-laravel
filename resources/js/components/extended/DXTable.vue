@@ -37,6 +37,7 @@
                         @update:sort-by="handleSortChange"
                         @update:current-page="apiCurrentPage = $event"
                         @update:busy="handleBusyChange"
+                        @row-clicked="handleRowClick"
                     >
                         <!-- Inline Filter Row -->
                         <template v-if="hasFilters" #thead-top>
@@ -111,6 +112,7 @@
                         :responsive="responsive"
                         :busy="effectiveBusy"
                         @update:sort-by="handleSortChange"
+                        @row-clicked="handleRowClick"
                     >
                         <!-- Inline Filter Row -->
                         <template v-if="hasFilters" #thead-top>
@@ -254,6 +256,35 @@
                 </DCard>
             </DCol>
         </DRow>
+
+        <!-- Edit Modal (if editFields provided) -->
+        <DModal
+            v-if="editFields && editFields.length > 0"
+            v-model="showEditModal"
+            :title="editModalTitle || `Edit ${itemName.slice(0, -1)}`"
+            :size="editModalSize"
+        >
+            <DXBasicForm
+                v-if="editForm"
+                :form="editForm"
+                :fields="editFields"
+                submit-text="Save Changes"
+                @submit="handleEditSave"
+            />
+
+            <template #footer>
+                <DButton variant="secondary" @click="handleEditCancel">
+                    Cancel
+                </DButton>
+                <DButton
+                    variant="primary"
+                    :disabled="editForm?.processing"
+                    @click="handleEditSave"
+                >
+                    {{ editForm?.processing ? 'Saving...' : 'Save Changes' }}
+                </DButton>
+            </template>
+        </DModal>
     </DContainer>
 </template>
 
@@ -270,6 +301,9 @@ import DTable from "../base/DTable.vue";
 import DPagination from "../base/DPagination.vue";
 import DFormInput from "../base/DFormInput.vue";
 import DFormSelect from "../base/DFormSelect.vue";
+import DModal from "../base/DModal.vue";
+import DButton from "../base/DButton.vue";
+import DXBasicForm from "./DXBasicForm.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
 export interface FilterOption {
@@ -390,6 +424,19 @@ export interface Props<TItem = any> {
 
     /** Column size (Bootstrap grid) */
     columnSize?: string | number;
+
+    // Edit Modal Props
+    /** Form field definitions for edit modal (if provided, enables edit on row click) */
+    editFields?: any[]; // FieldDefinition[] - using any to avoid circular import
+
+    /** Edit modal title (default: "Edit {itemName}") */
+    editModalTitle?: string;
+
+    /** Edit modal size */
+    editModalSize?: 'sm' | 'md' | 'lg' | 'xl';
+
+    /** API endpoint pattern for updates (e.g., "/api/products/:id") */
+    editUrl?: string;
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
@@ -416,6 +463,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     fluid: false,
     containerClass: "py-5",
     columnSize: "12",
+    editModalSize: "lg",
 });
 
 const emit = defineEmits<{
@@ -424,6 +472,8 @@ const emit = defineEmits<{
     filterChange: [filters: Record<string, string>];
     perPageChange: [perPage: number];
     rowClicked: [item: T, index: number, event: MouseEvent];
+    rowUpdated: [item: T, response: any];
+    editError: [item: T, error: any];
     'update:sortBy': [sortBy: BTableSortBy[]];
     'update:filters': [filters: Record<string, string>];
     'update:perPage': [perPage: number];
@@ -761,6 +811,85 @@ const tableRef = ref<InstanceType<typeof DTable> | null>(null);
 const refresh = () => {
     if (tableRef.value && typeof (tableRef.value as any).refresh === 'function') {
         (tableRef.value as any).refresh();
+    }
+};
+
+// Edit Modal State
+const showEditModal = ref(false);
+const selectedItem = ref<T | null>(null);
+const editForm = ref<any>(null);
+
+// Handle row click for editing
+const handleRowClick = (item: T, index: number, event: MouseEvent) => {
+    // Always emit rowClicked for custom handling
+    emit('rowClicked', item, index, event);
+
+    // If editFields provided, open edit modal
+    if (props.editFields && props.editFields.length > 0) {
+        selectedItem.value = item;
+
+        // Initialize form with item data
+        if (!editForm.value) {
+            // Dynamically import useForm to avoid circular dependency
+            import('../../composables/useForm').then(({ useForm }) => {
+                const formData: Record<string, any> = {};
+                props.editFields!.forEach(field => {
+                    formData[field.key] = (item as any)[field.key] ?? field.default ?? '';
+                });
+                editForm.value = useForm(formData);
+                showEditModal.value = true;
+            });
+        } else {
+            // Update existing form
+            props.editFields.forEach(field => {
+                editForm.value.data[field.key] = (item as any)[field.key] ?? field.default ?? '';
+            });
+            editForm.value.clearErrors();
+            showEditModal.value = true;
+        }
+    }
+};
+
+// Handle save from edit modal
+const handleEditSave = async () => {
+    if (!editForm.value || !selectedItem.value) return;
+
+    try {
+        // If editUrl provided, handle API call internally
+        if (props.editUrl) {
+            const itemId = (selectedItem.value as any).id;
+            const url = props.editUrl.replace(':id', itemId);
+
+            await editForm.value.put(url, {
+                onSuccess: (data: any) => {
+                    emit('rowUpdated', selectedItem.value as T, data);
+                    showEditModal.value = false;
+                    selectedItem.value = null;
+
+                    // Refresh table data
+                    refresh();
+                },
+                onError: (errors: any) => {
+                    emit('editError', selectedItem.value as T, errors);
+                }
+            });
+        } else {
+            // No editUrl - just emit event for custom handling
+            emit('rowUpdated', selectedItem.value as T, editForm.value.data);
+            showEditModal.value = false;
+            selectedItem.value = null;
+        }
+    } catch (error) {
+        emit('editError', selectedItem.value as T, error);
+    }
+};
+
+// Handle edit modal close
+const handleEditCancel = () => {
+    showEditModal.value = false;
+    selectedItem.value = null;
+    if (editForm.value) {
+        editForm.value.clearErrors();
     }
 };
 

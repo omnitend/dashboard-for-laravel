@@ -46,6 +46,16 @@ const fields = [
     ],
   },
 ];
+
+// Edit form fields (for edit modal)
+const editFields = [
+  { key: 'sku', label: 'SKU', type: 'text', required: true },
+  { key: 'name', label: 'Product Name', type: 'text', required: true },
+  { key: 'description', label: 'Description', type: 'textarea', required: false },
+  { key: 'price', label: 'Price', type: 'number', required: true },
+  { key: 'category', label: 'Category', type: 'text', required: true },
+  { key: 'stock', label: 'Stock', type: 'number', required: true },
+];
 </script>
 
 <template>
@@ -79,12 +89,15 @@ const fields = [
     <DXTable
       v-if="mode === 'inertia'"
       key="inertia-table"
-      title="Product Inventory (Inertia Mode)"
+      title="Product Inventory (Inertia Mode) - Click to Edit"
       item-name="products"
       :items="products.data"
       :fields="fields"
       :pagination="products"
       :filter-values="filterValues"
+      :edit-fields="editFields"
+      edit-url="/api/products/:id"
+      edit-modal-title="Edit Product"
       inertia-url="/"
       striped
       hover
@@ -111,10 +124,13 @@ const fields = [
     <DXTable
       v-else
       key="api-table"
-      title="Product Inventory (API Mode)"
+      title="Product Inventory (API Mode) - Click to Edit"
       item-name="products"
       api-url="/api/products"
       :fields="fields"
+      :edit-fields="editFields"
+      edit-url="/api/products/:id"
+      edit-modal-title="Edit Product"
       v-model:busy="busy"
       striped
       hover

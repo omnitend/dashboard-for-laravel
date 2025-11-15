@@ -31,4 +31,24 @@ class ProductController extends Controller
 
         return $this->tableResponse($query, $request, Product::class, 'Products/Index', 'products');
     }
+
+    public function update(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'sku' => 'required|string|max:50',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'category' => 'required|string|max:100',
+            'stock' => 'required|integer|min:0',
+        ]);
+
+        $product->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product updated successfully',
+            'data' => $product,
+        ]);
+    }
 }
