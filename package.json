@@ -8,9 +8,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/dashboard-for-laravel.js",
-      "require": "./dist/dashboard-for-laravel.umd.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/dashboard-for-laravel.umd.cjs"
     },
     "./style.css": "./dist/style.css",
     "./theme.css": "./dist/style.css",
