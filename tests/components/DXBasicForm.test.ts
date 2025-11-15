@@ -17,10 +17,14 @@ describe('DXBasicForm', () => {
         },
       });
 
-      // Check all field labels are rendered
-      await expect.element(screen.getByText('Full Name')).toBeVisible();
-      await expect.element(screen.getByText('Email Address')).toBeVisible();
-      await expect.element(screen.getByText('Message')).toBeVisible();
+      // Check all field labels are rendered (use specific queries to avoid ambiguity)
+      const fullNameLabel = screen.container.querySelector('label[for="name"]');
+      const emailLabel = screen.container.querySelector('label[for="email"]');
+      const messageLabel = screen.container.querySelector('label[for="message"]');
+
+      expect(fullNameLabel?.textContent).toBe('Full Name');
+      expect(emailLabel?.textContent).toBe('Email Address');
+      expect(messageLabel?.textContent).toBe('Message');
 
       // Check submit button
       await expect.element(screen.getByRole('button', { name: 'Send Message' })).toBeVisible();
