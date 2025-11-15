@@ -11,6 +11,11 @@ package-lock.json
 .astro/
 docs/.astro/
 
+# Auto-generated AI documentation files
+docs/public/llms.txt
+docs/public/api-reference.json
+docs/public/docs-map.md
+
 # IDE
 .idea/
 .vscode/
