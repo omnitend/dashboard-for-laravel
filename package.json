@@ -6,6 +6,9 @@
   "main": "./dist/dashboard-for-laravel.umd.cjs",
   "module": "./dist/dashboard-for-laravel.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "dashboard-docs-mcp": "./scripts/mcp-server.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,7 +21,11 @@
   },
   "files": [
     "dist",
-    "resources"
+    "resources",
+    "scripts/mcp-server.mjs",
+    "docs/public/llms.txt",
+    "docs/public/api-reference.json",
+    "docs/public/docs-map.md"
   ],
   "scripts": {
     "dev": "vite build --watch",
