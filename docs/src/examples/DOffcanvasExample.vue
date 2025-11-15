@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { DButton, DOffcanvas, DNav, DNavItem, DFormGroup, DFormInput, DFormTextarea, DFormSelect } from '@omni-tend/dashboard-for-laravel';
+import { DButton, DOffcanvas, DNav, DNavItem, DFormGroup, DFormInput, DFormTextarea, DFormSelect } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

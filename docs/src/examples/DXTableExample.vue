@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { DXTable } from '@omni-tend/dashboard-for-laravel';
+import { DXTable } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

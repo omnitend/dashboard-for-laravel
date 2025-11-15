@@ -20,6 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import { DInputGroup, DFormInput, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DInputGroup, DFormInput, DButton } from '@omnitend/dashboard-for-laravel';
 
 </script>

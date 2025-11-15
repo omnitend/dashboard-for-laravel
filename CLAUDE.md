@@ -2,10 +2,10 @@
 
 ## Project Overview
 
-This is **@omni-tend/dashboard-for-laravel**, a reusable full-stack component library for building Laravel dashboards with Vue 3, Inertia.js, and Bootstrap Vue Next.
+This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component library for building Laravel dashboards with Vue 3, Inertia.js, and Bootstrap Vue Next.
 
 **Package Type**: Dual package (NPM + Composer)
-**NPM Package**: `@omni-tend/dashboard-for-laravel`
+**NPM Package**: `@omnitend/dashboard-for-laravel`
 **Composer Package**: `omni-tend/dashboard-for-laravel`
 
 ## Purpose
@@ -193,7 +193,7 @@ npm run build  # or npm run dev for watch mode
 npm link
 
 # In your consuming app
-npm link @omni-tend/dashboard-for-laravel
+npm link @omnitend/dashboard-for-laravel
 ```
 
 **Option 2: File reference**
@@ -201,7 +201,7 @@ In the consuming app's package.json:
 ```json
 {
   "dependencies": {
-    "@omni-tend/dashboard-for-laravel": "file:../dashboard-for-laravel"
+    "@omnitend/dashboard-for-laravel": "file:../dashboard-for-laravel"
   }
 }
 ```
@@ -218,18 +218,18 @@ npm link       # Create global symlink
 
 # In docs directory (already configured)
 cd docs
-npm link @omni-tend/dashboard-for-laravel
+npm link @omnitend/dashboard-for-laravel
 ```
 
 **How it works:**
-- Docs import from `@omni-tend/dashboard-for-laravel` (the package)
-- `npm link` creates a symlink: `docs/node_modules/@omni-tend/dashboard-for-laravel` → root
+- Docs import from `@omnitend/dashboard-for-laravel` (the package)
+- `npm link` creates a symlink: `docs/node_modules/@omnitend/dashboard-for-laravel` → root
 - Changes require rebuilding: `npm run build` (or `npm run dev` for watch mode)
 - This ensures docs consume the library exactly like end users would
 
 **Important:**
 - Docs should NEVER import from `../../../resources/js` directly
-- All imports must be from `@omni-tend/dashboard-for-laravel`
+- All imports must be from `@omnitend/dashboard-for-laravel`
 - This prevents module resolution issues and matches real-world usage
 - Components in the package must include SSR guards for browser-only APIs (localStorage, document)
 
@@ -380,7 +380,7 @@ interface Props {
 </template>
 
 <script setup lang="ts">
-import { useForm, DXBasicForm } from '@omni-tend/dashboard-for-laravel';
+import { useForm, DXBasicForm } from '@omnitend/dashboard-for-laravel';
 
 const form = useForm({
   name: '',
@@ -602,8 +602,8 @@ dist/
 
 Consuming apps import from the package:
 ```typescript
-import { DButton, DCard, useForm } from '@omni-tend/dashboard-for-laravel';
-import '@omni-tend/dashboard-for-laravel/theme.css';
+import { DButton, DCard, useForm } from '@omnitend/dashboard-for-laravel';
+import '@omnitend/dashboard-for-laravel/theme.css';
 ```
 
 ### CSS Build Details
@@ -799,7 +799,7 @@ When releasing a new version:
 3. Add dynamic slot forwarding and attribute inheritance
 4. Export from main index file
 5. Build: `npm run build`
-6. Use in consuming apps: `import { DNewComponent } from '@omni-tend/dashboard-for-laravel'`
+6. Use in consuming apps: `import { DNewComponent } from '@omnitend/dashboard-for-laravel'`
 
 ### Adding a New Composable
 

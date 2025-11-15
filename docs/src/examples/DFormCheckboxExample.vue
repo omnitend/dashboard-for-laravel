@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { DFormCheckbox } from '@omni-tend/dashboard-for-laravel';
+import { DFormCheckbox } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

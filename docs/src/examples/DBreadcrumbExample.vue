@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { DBreadcrumb } from '@omni-tend/dashboard-for-laravel';
+import { DBreadcrumb } from '@omnitend/dashboard-for-laravel';
 
 
 const items = [

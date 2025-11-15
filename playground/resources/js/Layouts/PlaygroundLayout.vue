@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { DXDashboard } from '@omni-tend/dashboard-for-laravel';
-import type { Navigation } from '@omni-tend/dashboard-for-laravel';
-import '@omni-tend/dashboard-for-laravel/style.css';
+import { DXDashboard } from '@omnitend/dashboard-for-laravel';
+import type { Navigation } from '@omnitend/dashboard-for-laravel';
+import '@omnitend/dashboard-for-laravel/style.css';
 
 interface Props {
   currentUrl: string;

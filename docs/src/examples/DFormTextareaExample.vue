@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { DFormTextarea } from '@omni-tend/dashboard-for-laravel';
+import { DFormTextarea } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

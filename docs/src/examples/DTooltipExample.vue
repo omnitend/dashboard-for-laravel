@@ -28,6 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import { DTooltip, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DTooltip, DButton } from '@omnitend/dashboard-for-laravel';
 
 </script>

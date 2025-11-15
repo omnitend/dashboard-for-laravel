@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { DDropdown, DDropdownItem, DDropdownDivider } from '@omni-tend/dashboard-for-laravel';
+import { DDropdown, DDropdownItem, DDropdownDivider } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

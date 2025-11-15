@@ -10,13 +10,13 @@ title: Installation
 Install via npm:
 
 ```bash
-npm install @omni-tend/dashboard-for-laravel
+npm install @omnitend/dashboard-for-laravel
 ```
 
 Or with yarn:
 
 ```bash
-yarn add @omni-tend/dashboard-for-laravel
+yarn add @omnitend/dashboard-for-laravel
 ```
 
 ## Composer Package
@@ -32,7 +32,7 @@ composer require omni-tend/dashboard-for-laravel
 Import the theme CSS in your main entry file:
 
 ```typescript
-import '@omni-tend/dashboard-for-laravel/theme.css'
+import '@omnitend/dashboard-for-laravel/theme.css'
 ```
 
 ::: warning Important: Use Built CSS, Not Source SCSS
@@ -49,13 +49,13 @@ Always import `theme.css` (the built CSS), not `theme.scss` (the source).
 Import components as needed:
 
 ```typescript
-import { DButton, DCard, useForm } from '@omni-tend/dashboard-for-laravel'
+import { DButton, DCard, useForm } from '@omnitend/dashboard-for-laravel'
 ```
 
 Or import everything:
 
 ```typescript
-import * as Dashboard from '@omni-tend/dashboard-for-laravel'
+import * as Dashboard from '@omnitend/dashboard-for-laravel'
 ```
 
 ## TypeScript Support
@@ -63,7 +63,7 @@ import * as Dashboard from '@omni-tend/dashboard-for-laravel'
 The library includes full TypeScript declarations. Types are automatically available when you import components.
 
 ```typescript
-import type { FieldDefinition, UseFormReturn } from '@omni-tend/dashboard-for-laravel'
+import type { FieldDefinition, UseFormReturn } from '@omnitend/dashboard-for-laravel'
 ```
 
 ## Vite Configuration
@@ -74,7 +74,7 @@ If you're using this library in a consuming app with Vite, you may need to add i
 // vite.config.ts
 export default defineConfig({
   optimizeDeps: {
-    include: ['@omni-tend/dashboard-for-laravel']
+    include: ['@omnitend/dashboard-for-laravel']
   }
 })
 ```
@@ -123,7 +123,7 @@ npm run build  # or npm run dev for watch mode
 npm link
 
 # In your consuming app
-npm link @omni-tend/dashboard-for-laravel
+npm link @omnitend/dashboard-for-laravel
 ```
 
 ### Using File Reference
@@ -133,7 +133,7 @@ In the consuming app's `package.json`:
 ```json
 {
   "dependencies": {
-    "@omni-tend/dashboard-for-laravel": "file:../dashboard-for-laravel"
+    "@omnitend/dashboard-for-laravel": "file:../dashboard-for-laravel"
   }
 }
 ```
@@ -150,8 +150,8 @@ Create a test component to verify everything works:
 
 ```vue
 <script setup lang="ts">
-import { DButton } from '@omni-tend/dashboard-for-laravel'
-import '@omni-tend/dashboard-for-laravel/theme.css'
+import { DButton } from '@omnitend/dashboard-for-laravel'
+import '@omnitend/dashboard-for-laravel/theme.css'
 </script>
 
 <template>

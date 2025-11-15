@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { DCollapse, DButton, DCard } from '@omni-tend/dashboard-for-laravel';
+import { DCollapse, DButton, DCard } from '@omnitend/dashboard-for-laravel';
 
 import { ref, reactive } from 'vue';
 

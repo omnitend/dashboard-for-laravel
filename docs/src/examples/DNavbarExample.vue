@@ -17,6 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import { DNavbar, DNavbarBrand, DNavbarToggle, DCollapse, DNavbarNav, DNavItem } from '@omni-tend/dashboard-for-laravel';
+import { DNavbar, DNavbarBrand, DNavbarToggle, DCollapse, DNavbarNav, DNavItem } from '@omnitend/dashboard-for-laravel';
 
 </script>

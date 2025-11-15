@@ -13,6 +13,6 @@
 </template>
 
 <script setup lang="ts">
-import { DLink } from '@omni-tend/dashboard-for-laravel';
+import { DLink } from '@omnitend/dashboard-for-laravel';
 
 </script>

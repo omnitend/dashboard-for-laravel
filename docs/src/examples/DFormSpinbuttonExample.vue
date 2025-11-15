@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { DFormSpinbutton } from '@omni-tend/dashboard-for-laravel';
+import { DFormSpinbutton } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from "vue";
 

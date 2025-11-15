@@ -12,6 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import { DCarousel, DCarouselSlide } from '@omni-tend/dashboard-for-laravel';
+import { DCarousel, DCarouselSlide } from '@omnitend/dashboard-for-laravel';
 
 </script>

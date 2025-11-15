@@ -12,6 +12,6 @@
 </template>
 
 <script setup lang="ts">
-import { DPopover, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DPopover, DButton } from '@omnitend/dashboard-for-laravel';
 
 </script>

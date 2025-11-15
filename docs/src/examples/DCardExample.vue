@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { DCard, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DCard, DButton } from '@omnitend/dashboard-for-laravel';
 
 </script>
 

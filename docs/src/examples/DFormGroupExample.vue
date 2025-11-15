@@ -83,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { DFormGroup, DFormInput, DFormSelect, DFormTextarea } from '@omni-tend/dashboard-for-laravel';
+import { DFormGroup, DFormInput, DFormSelect, DFormTextarea } from '@omnitend/dashboard-for-laravel';
 
 import { ref, computed } from 'vue';
 

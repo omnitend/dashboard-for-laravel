@@ -1,6 +1,6 @@
 # Dashboard Playground
 
-This is a Laravel playground application for testing the `@omni-tend/dashboard-for-laravel` package with real server-generated data.
+This is a Laravel playground application for testing the `@omnitend/dashboard-for-laravel` package with real server-generated data.
 
 ## About
 
@@ -60,7 +60,7 @@ The playground is already set up, but if you need to reset it:
 
 ## Testing the Package
 
-This playground uses the `@omni-tend/dashboard-for-laravel` package via a file reference (`file:..`) in `package.json`. This means:
+This playground uses the `@omnitend/dashboard-for-laravel` package via a file reference (`file:..`) in `package.json`. This means:
 
 - Any changes to the main package will be reflected here after rebuilding
 - To rebuild the package: `cd .. && npm run build`

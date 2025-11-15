@@ -17,8 +17,8 @@ import {
   DXDashboardSidebar,
   DXDashboardNavbar,
   DContainer
-} from '@omni-tend/dashboard-for-laravel'
-import type { NavigationItem } from '@omni-tend/dashboard-for-laravel'
+} from '@omnitend/dashboard-for-laravel'
+import type { NavigationItem } from '@omnitend/dashboard-for-laravel'
 
 const user = {
   name: 'John Doe',
@@ -75,8 +75,8 @@ Display paginated data with a table:
 ```vue
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { DXTable, DCard, DButton } from '@omni-tend/dashboard-for-laravel'
-import { api } from '@omni-tend/dashboard-for-laravel'
+import { DXTable, DCard, DButton } from '@omnitend/dashboard-for-laravel'
+import { api } from '@omnitend/dashboard-for-laravel'
 
 const customers = ref([])
 const pagination = ref(null)
@@ -148,8 +148,8 @@ import {
   useToast,
   DCard,
   DXBasicForm
-} from '@omni-tend/dashboard-for-laravel'
-import type { FieldDefinition } from '@omni-tend/dashboard-for-laravel'
+} from '@omnitend/dashboard-for-laravel'
+import type { FieldDefinition } from '@omnitend/dashboard-for-laravel'
 
 const router = useRouter()
 const toast = useToast()
@@ -253,7 +253,7 @@ Use collapse for expandable content:
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { DCard, DButton, DCollapse } from '@omni-tend/dashboard-for-laravel'
+import { DCard, DButton, DCollapse } from '@omnitend/dashboard-for-laravel'
 
 const detailsVisible = ref(false)
 const settingsVisible = ref(false)
@@ -305,7 +305,7 @@ Show a modal for confirmations:
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { DButton, DModal } from '@omni-tend/dashboard-for-laravel'
+import { DButton, DModal } from '@omnitend/dashboard-for-laravel'
 
 const showDeleteModal = ref(false)
 
@@ -345,7 +345,7 @@ Show feedback to users with toasts:
 
 ```vue
 <script setup lang="ts">
-import { useToast, DButton, DCard } from '@omni-tend/dashboard-for-laravel'
+import { useToast, DButton, DCard } from '@omnitend/dashboard-for-laravel'
 
 const toast = useToast()
 
@@ -405,7 +405,7 @@ import {
   DFormInput,
   DFormSelect,
   DTable
-} from '@omni-tend/dashboard-for-laravel'
+} from '@omnitend/dashboard-for-laravel'
 
 const searchQuery = ref('')
 const statusFilter = ref('all')

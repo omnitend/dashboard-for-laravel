@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { DSpinner, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DSpinner, DButton } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

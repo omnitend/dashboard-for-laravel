@@ -16,6 +16,6 @@
 </template>
 
 <script setup lang="ts">
-import { DProgress } from '@omni-tend/dashboard-for-laravel';
+import { DProgress } from '@omnitend/dashboard-for-laravel';
 
 </script>

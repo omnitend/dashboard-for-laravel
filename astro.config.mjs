@@ -40,7 +40,7 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      exclude: ['@omni-tend/dashboard-for-laravel'],
+      exclude: ['@omnitend/dashboard-for-laravel'],
     },
   },
 });

@@ -22,6 +22,6 @@
 </template>
 
 <script setup lang="ts">
-import { DImage } from '@omni-tend/dashboard-for-laravel';
+import { DImage } from '@omnitend/dashboard-for-laravel';
 
 </script>

@@ -19,7 +19,7 @@ A comprehensive data table component with built-in pagination, loading states, a
   client:only="vue"
   code={`<script setup>
 import { ref } from 'vue';
-import { DXTable } from '@omni-tend/dashboard-for-laravel';
+import { DXTable } from '@omnitend/dashboard-for-laravel';
 
 const customerFields = [
   { key: 'id', label: 'ID', sortable: true },
@@ -125,8 +125,8 @@ class ProductController extends Controller
 
 ```vue
 <script setup lang="ts">
-import { DXTable } from '@omni-tend/dashboard-for-laravel';
-import type { PaginationData } from '@omni-tend/dashboard-for-laravel';
+import { DXTable } from '@omnitend/dashboard-for-laravel';
+import type { PaginationData } from '@omnitend/dashboard-for-laravel';
 
 interface Product {
   id: number;
@@ -354,7 +354,7 @@ Route::get('/products', [ProductController::class, 'apiIndex']);
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue';
-import { DXTable } from '@omni-tend/dashboard-for-laravel';
+import { DXTable } from '@omnitend/dashboard-for-laravel';
 
 const fields = [
   { key: 'sku', label: 'SKU', sortable: true },

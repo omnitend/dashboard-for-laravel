@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { DTable, DBadge } from '@omni-tend/dashboard-for-laravel';
+import { DTable, DBadge } from '@omnitend/dashboard-for-laravel';
 
 
 interface PropDefinition {

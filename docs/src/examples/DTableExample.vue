@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { DTable, DBadge, DButton } from '@omni-tend/dashboard-for-laravel';
+import { DTable, DBadge, DButton } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

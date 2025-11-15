@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { DContainer, DRow, DCol } from '@omni-tend/dashboard-for-laravel';
+import { DContainer, DRow, DCol } from '@omnitend/dashboard-for-laravel';
 
 </script>
 

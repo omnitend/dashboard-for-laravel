@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { DButton, DModal, DFormGroup, DFormInput, DFormSelect } from '@omni-tend/dashboard-for-laravel';
+import { DButton, DModal, DFormGroup, DFormInput, DFormSelect } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

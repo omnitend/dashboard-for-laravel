@@ -18,6 +18,6 @@
 </template>
 
 <script setup lang="ts">
-import { DTabs, DTab } from '@omni-tend/dashboard-for-laravel';
+import { DTabs, DTab } from '@omnitend/dashboard-for-laravel';
 
 </script>

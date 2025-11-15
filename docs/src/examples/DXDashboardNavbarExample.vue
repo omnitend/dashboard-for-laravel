@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { DXDashboardNavbar, DDropdownItem, DDropdownDivider } from '@omni-tend/dashboard-for-laravel';
+import { DXDashboardNavbar, DDropdownItem, DDropdownDivider } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 

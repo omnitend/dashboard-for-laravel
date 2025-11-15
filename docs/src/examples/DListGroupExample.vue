@@ -13,6 +13,6 @@
 </template>
 
 <script setup lang="ts">
-import { DListGroup, DListGroupItem } from '@omni-tend/dashboard-for-laravel';
+import { DListGroup, DListGroupItem } from '@omnitend/dashboard-for-laravel';
 
 </script>

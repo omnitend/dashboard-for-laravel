@@ -3,7 +3,7 @@
  * This replaces Astro.glob to avoid deprecation warnings
  */
 
-import type { Navigation } from '@omni-tend/dashboard-for-laravel';
+import type { Navigation } from '@omnitend/dashboard-for-laravel';
 
 export const navigationConfig: Navigation = [
   {

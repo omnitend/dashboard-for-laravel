@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { DToaster } from '@omni-tend/dashboard-for-laravel';
+import { DToaster } from '@omnitend/dashboard-for-laravel';
 
 </script>
 

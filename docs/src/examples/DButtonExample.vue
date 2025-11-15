@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { DButton } from '@omni-tend/dashboard-for-laravel';
+import { DButton } from '@omnitend/dashboard-for-laravel';
 
 </script>
 
