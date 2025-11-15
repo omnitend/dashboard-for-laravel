@@ -33,7 +33,7 @@ npm install @omnitend/dashboard-for-laravel
 ### Composer Package
 
 ```bash
-composer require omni-tend/dashboard-for-laravel
+composer require omnitend/dashboard-for-laravel
 ```
 
 ## Frontend Usage
