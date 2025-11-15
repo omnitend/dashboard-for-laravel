@@ -833,9 +833,37 @@ When releasing a new version:
 **Issue**: Hardcoded colours in components
 **Solution**: Always use `var(--bs-*)` CSS variables, never hardcoded hex values
 
+## MCP Server - AI-Agent-Friendly Documentation
+
+This project includes an MCP (Model Context Protocol) server that provides AI agents with structured access to documentation.
+
+**Setup:** See [MCP_SERVER.md](MCP_SERVER.md) for complete setup instructions.
+
+**Available Tools:**
+- `list_components` - List/filter components by category or tag
+- `get_component` - Get detailed API for a specific component
+- `search_components` - Search components by keyword
+- `get_guide` - Retrieve installation, forms, theming, typescript guides
+- `get_overview` - Get complete llms.txt overview
+- `get_docs_map` - Get hierarchical documentation structure
+
+**Usage:**
+```bash
+npm run mcp  # Start MCP server
+```
+
+**Auto-Generated Files:**
+All documentation files are auto-generated and kept in sync:
+- `/llms.txt` - AI discovery standard (llmstxt.org)
+- `/api-reference.json` - Machine-readable component API
+- `/docs-map.md` - Hierarchical documentation overview
+
+Run `npm run docs:generate:ai` to regenerate these files.
+
 ## Resources
 
 - [Bootstrap Vue Next Documentation](https://bootstrap-vue-next.github.io/bootstrap-vue-next/)
 - [Vue 3 Documentation](https://vuejs.org/)
 - [Vite Documentation](https://vite.dev/)
 - [TypeScript Documentation](https://www.typescriptlang.org/)
+- [MCP Documentation](https://modelcontextprotocol.io/)

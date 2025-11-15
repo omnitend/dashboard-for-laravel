@@ -33,7 +33,8 @@
     "docs:generate": "node scripts/generate-component-docs.mjs",
     "docs:generate:ai": "node scripts/generate-llms-txt.mjs && node scripts/generate-api-manifest.mjs && node scripts/generate-docs-map.mjs",
     "docs:enhance": "node scripts/enhance-frontmatter.mjs",
-    "docs:all": "npm run docs:generate && npm run docs:generate:ai && npm run docs:build"
+    "docs:all": "npm run docs:generate && npm run docs:generate:ai && npm run docs:build",
+    "mcp": "node scripts/mcp-server.mjs"
   },
   "peerDependencies": {
     "vue": "^3.4.0"
@@ -57,6 +58,7 @@
     "@iconify-json/lucide": "^1.2.71",
     "@iconify/json": "^2.2.397",
     "@inertiajs/vue3": "^2.2.15",
+    "@modelcontextprotocol/sdk": "^1.22.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vitest/browser": "^4.0.3",
     "@vitest/browser-playwright": "^4.0.3",
