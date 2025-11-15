@@ -12,14 +12,14 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
-2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (53 base components)
+2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (55 base components)
 3. **DX* Extended Components** - Complex dashboard layouts and forms (6 components)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 59 components** (53 base + 6 extended)
+**Total: 61 components** (55 base + 6 extended)
 
 ## Project Structure
 
