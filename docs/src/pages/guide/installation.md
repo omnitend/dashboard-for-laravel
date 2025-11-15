@@ -10,13 +10,13 @@ title: Installation
 Install via npm:
 
 ```bash
-npm install @omni-tend/laravel-dashboard
+npm install @omni-tend/dashboard-for-laravel
 ```
 
 Or with yarn:
 
 ```bash
-yarn add @omni-tend/laravel-dashboard
+yarn add @omni-tend/dashboard-for-laravel
 ```
 
 ## Composer Package
@@ -24,7 +24,7 @@ yarn add @omni-tend/laravel-dashboard
 Install the PHP utilities via Composer:
 
 ```bash
-composer require omni-tend/laravel-dashboard
+composer require omni-tend/dashboard-for-laravel
 ```
 
 ## Import Styles
@@ -32,7 +32,7 @@ composer require omni-tend/laravel-dashboard
 Import the theme CSS in your main entry file:
 
 ```typescript
-import '@omni-tend/laravel-dashboard/theme.css'
+import '@omni-tend/dashboard-for-laravel/theme.css'
 ```
 
 ::: warning Important: Use Built CSS, Not Source SCSS
@@ -49,13 +49,13 @@ Always import `theme.css` (the built CSS), not `theme.scss` (the source).
 Import components as needed:
 
 ```typescript
-import { OButton, OCard, useForm } from '@omni-tend/laravel-dashboard'
+import { DButton, DCard, useForm } from '@omni-tend/dashboard-for-laravel'
 ```
 
 Or import everything:
 
 ```typescript
-import * as Dashboard from '@omni-tend/laravel-dashboard'
+import * as Dashboard from '@omni-tend/dashboard-for-laravel'
 ```
 
 ## TypeScript Support
@@ -63,7 +63,7 @@ import * as Dashboard from '@omni-tend/laravel-dashboard'
 The library includes full TypeScript declarations. Types are automatically available when you import components.
 
 ```typescript
-import type { FieldDefinition, UseFormReturn } from '@omni-tend/laravel-dashboard'
+import type { FieldDefinition, UseFormReturn } from '@omni-tend/dashboard-for-laravel'
 ```
 
 ## Vite Configuration
@@ -74,7 +74,7 @@ If you're using this library in a consuming app with Vite, you may need to add i
 // vite.config.ts
 export default defineConfig({
   optimizeDeps: {
-    include: ['@omni-tend/laravel-dashboard']
+    include: ['@omni-tend/dashboard-for-laravel']
   }
 })
 ```
@@ -118,12 +118,12 @@ If you're developing this library alongside consuming apps:
 ### Using npm link
 
 ```bash
-# In laravel-dashboard/
+# In dashboard-for-laravel/
 npm run build  # or npm run dev for watch mode
 npm link
 
 # In your consuming app
-npm link @omni-tend/laravel-dashboard
+npm link @omni-tend/dashboard-for-laravel
 ```
 
 ### Using File Reference
@@ -133,7 +133,7 @@ In the consuming app's `package.json`:
 ```json
 {
   "dependencies": {
-    "@omni-tend/laravel-dashboard": "file:../laravel-dashboard"
+    "@omni-tend/dashboard-for-laravel": "file:../dashboard-for-laravel"
   }
 }
 ```
@@ -150,14 +150,14 @@ Create a test component to verify everything works:
 
 ```vue
 <script setup lang="ts">
-import { OButton } from '@omni-tend/laravel-dashboard'
-import '@omni-tend/laravel-dashboard/theme.css'
+import { DButton } from '@omni-tend/dashboard-for-laravel'
+import '@omni-tend/dashboard-for-laravel/theme.css'
 </script>
 
 <template>
-  <OButton variant="primary">
+  <DButton variant="primary">
     It works!
-  </OButton>
+  </DButton>
 </template>
 ```
 

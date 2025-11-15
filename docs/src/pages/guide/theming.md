@@ -141,9 +141,9 @@ const toggleDarkMode = () => {
 </script>
 
 <template>
-  <OButton @click="toggleDarkMode">
+  <DButton @click="toggleDarkMode">
     Toggle Dark Mode
-  </OButton>
+  </DButton>
 </template>
 ```
 
@@ -215,7 +215,7 @@ Use Bootstrap's responsive utilities:
 Make sure you've imported the theme CSS:
 
 ```typescript
-import '@omni-tend/laravel-dashboard/theme.css'
+import '@omni-tend/dashboard-for-laravel/theme.css'
 ```
 
 ### Component styles missing

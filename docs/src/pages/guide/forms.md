@@ -15,7 +15,7 @@ The `useForm` composable provides type-safe form state management and submission
 
 ```vue
 <script setup lang="ts">
-import { useForm, OButton, OFormInput } from '@omni-tend/laravel-dashboard'
+import { useForm, DButton, DFormInput } from '@omni-tend/dashboard-for-laravel'
 
 const form = useForm({
   name: '',
@@ -37,17 +37,17 @@ const handleSubmit = async () => {
 
 <template>
   <form @submit.prevent="handleSubmit">
-    <OFormGroup label="Name" :error="form.errors.name">
-      <OFormInput v-model="form.name" />
-    </OFormGroup>
+    <DFormGroup label="Name" :error="form.errors.name">
+      <DFormInput v-model="form.name" />
+    </DFormGroup>
 
-    <OFormGroup label="Email" :error="form.errors.email">
-      <OFormInput v-model="form.email" type="email" />
-    </OFormGroup>
+    <DFormGroup label="Email" :error="form.errors.email">
+      <DFormInput v-model="form.email" type="email" />
+    </DFormGroup>
 
-    <OButton type="submit" :disabled="form.processing">
+    <DButton type="submit" :disabled="form.processing">
       {{ form.processing ? 'Submitting...' : 'Submit' }}
-    </OButton>
+    </DButton>
   </form>
 </template>
 ```
@@ -119,30 +119,30 @@ const form = useForm({
 
 <template>
   <!-- Show error for specific field -->
-  <OFormGroup label="Email" :error="form.errors.email">
-    <OFormInput v-model="form.email" />
-  </OFormGroup>
+  <DFormGroup label="Email" :error="form.errors.email">
+    <DFormInput v-model="form.email" />
+  </DFormGroup>
 
   <!-- Clear specific error -->
-  <OButton @click="form.clearError('email')">
+  <DButton @click="form.clearError('email')">
     Clear Email Error
-  </OButton>
+  </DButton>
 
   <!-- Clear all errors -->
-  <OButton @click="form.clearErrors()">
+  <DButton @click="form.clearErrors()">
     Clear All Errors
-  </OButton>
+  </DButton>
 </template>
 ```
 
-## OBasicForm Component
+## DXBasicForm Component
 
 Auto-generate forms from field definitions:
 
 ```vue
 <script setup lang="ts">
-import { useForm, OBasicForm } from '@omni-tend/laravel-dashboard'
-import type { FieldDefinition } from '@omni-tend/laravel-dashboard'
+import { useForm, DXBasicForm } from '@omni-tend/dashboard-for-laravel'
+import type { FieldDefinition } from '@omni-tend/dashboard-for-laravel'
 
 const form = useForm({
   name: '',
@@ -190,7 +190,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <OBasicForm
+  <DXBasicForm
     :fields="fields"
     :form="form"
     submit-text="Create Account"
@@ -226,13 +226,13 @@ interface FieldDefinition {
 }
 ```
 
-## OForm Component
+## DXForm Component
 
 Advanced form component with more control:
 
 ```vue
 <script setup lang="ts">
-import { useForm, OForm, OFormInput, OButton } from '@omni-tend/laravel-dashboard'
+import { useForm, DXForm, DFormInput, DButton } from '@omni-tend/dashboard-for-laravel'
 
 const form = useForm({
   name: '',
@@ -245,19 +245,19 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <OForm :form="form" @submit="handleSubmit">
-    <OFormGroup label="Name">
-      <OFormInput v-model="form.name" />
-    </OFormGroup>
+  <DXForm :form="form" @submit="handleSubmit">
+    <DFormGroup label="Name">
+      <DFormInput v-model="form.name" />
+    </DFormGroup>
 
-    <OFormGroup label="Email">
-      <OFormInput v-model="form.email" type="email" />
-    </OFormGroup>
+    <DFormGroup label="Email">
+      <DFormInput v-model="form.email" type="email" />
+    </DFormGroup>
 
-    <OButton type="submit">
+    <DButton type="submit">
       Submit
-    </OButton>
-  </OForm>
+    </DButton>
+  </DXForm>
 </template>
 ```
 
@@ -320,9 +320,9 @@ The form composable will automatically:
 
 ```vue
 <script setup lang="ts">
-import { useForm, OCard, OBasicForm } from '@omni-tend/laravel-dashboard'
+import { useForm, DCard, DXBasicForm } from '@omni-tend/dashboard-for-laravel'
 import { useRouter } from 'vue-router'
-import { useToast } from '@omni-tend/laravel-dashboard'
+import { useToast } from '@omni-tend/dashboard-for-laravel'
 
 const router = useRouter()
 const toast = useToast()
@@ -368,23 +368,23 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <OCard>
+  <DCard>
     <template #header>
       <h3>Create User</h3>
     </template>
 
-    <OBasicForm
+    <DXBasicForm
       :fields="fields"
       :form="form"
       submit-text="Create User"
       @submit="handleSubmit"
     />
-  </OCard>
+  </DCard>
 </template>
 ```
 
 ## Next Steps
 
-- [Component Reference](/components/OForm) - OForm component API
-- [Component Reference](/components/OBasicForm) - OBasicForm component API
+- [Component Reference](/components/DXForm) - DXForm component API
+- [Component Reference](/components/DXBasicForm) - DXBasicForm component API
 - [Examples](/examples/common-patterns) - More form examples

@@ -14,11 +14,11 @@ A typical dashboard layout with sidebar and navbar:
 ```vue
 <script setup lang="ts">
 import {
-  DashboardSidebar,
-  DashboardNavbar,
-  OContainer
-} from '@omni-tend/laravel-dashboard'
-import type { NavigationItem } from '@omni-tend/laravel-dashboard'
+  DXDashboardSidebar,
+  DXDashboardNavbar,
+  DContainer
+} from '@omni-tend/dashboard-for-laravel'
+import type { NavigationItem } from '@omni-tend/dashboard-for-laravel'
 
 const user = {
   name: 'John Doe',
@@ -54,15 +54,15 @@ const navigation: NavigationItem[] = [
 
 <template>
   <div class="d-flex">
-    <DashboardSidebar :navigation="navigation" :user="user" />
+    <DXDashboardSidebar :navigation="navigation" :user="user" />
 
     <div class="flex-grow-1">
-      <DashboardNavbar :user="user" />
+      <DXDashboardNavbar :user="user" />
 
-      <OContainer fluid class="p-4">
+      <DContainer fluid class="p-4">
         <!-- Page content -->
         <slot />
-      </OContainer>
+      </DContainer>
     </div>
   </div>
 </template>
@@ -75,8 +75,8 @@ Display paginated data with a table:
 ```vue
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { DataTable, OCard, OButton } from '@omni-tend/laravel-dashboard'
-import { api } from '@omni-tend/laravel-dashboard'
+import { DXTable, DCard, DButton } from '@omni-tend/dashboard-for-laravel'
+import { api } from '@omni-tend/dashboard-for-laravel'
 
 const customers = ref([])
 const pagination = ref(null)
@@ -105,17 +105,17 @@ onMounted(() => loadCustomers())
 </script>
 
 <template>
-  <OCard>
+  <DCard>
     <template #header>
       <div class="d-flex justify-content-between align-items-centre">
         <h3>Customers</h3>
-        <OButton variant="primary" @click="$router.push('/customers/create')">
+        <DButton variant="primary" @click="$router.push('/customers/create')">
           Add Customer
-        </OButton>
+        </DButton>
       </div>
     </template>
 
-    <DataTable
+    <DXTable
       :items="customers"
       :fields="fields"
       :pagination="pagination"
@@ -123,16 +123,16 @@ onMounted(() => loadCustomers())
       @page-changed="loadCustomers"
     >
       <template #cell(actions)="{ item }">
-        <OButton
+        <DButton
           variant="link"
           size="sm"
           @click="$router.push(`/customers/${item.id}/edit`)"
         >
           Edit
-        </OButton>
+        </DButton>
       </template>
-    </DataTable>
-  </OCard>
+    </DXTable>
+  </DCard>
 </template>
 ```
 
@@ -146,10 +146,10 @@ import { useRouter } from 'vue-router'
 import {
   useForm,
   useToast,
-  OCard,
-  OBasicForm
-} from '@omni-tend/laravel-dashboard'
-import type { FieldDefinition } from '@omni-tend/laravel-dashboard'
+  DCard,
+  DXBasicForm
+} from '@omni-tend/dashboard-for-laravel'
+import type { FieldDefinition } from '@omni-tend/dashboard-for-laravel'
 
 const router = useRouter()
 const toast = useToast()
@@ -231,18 +231,18 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <OCard>
+  <DCard>
     <template #header>
       <h3>Create Customer</h3>
     </template>
 
-    <OBasicForm
+    <DXBasicForm
       :fields="fields"
       :form="form"
       submit-text="Create Customer"
       @submit="handleSubmit"
     />
-  </OCard>
+  </DCard>
 </template>
 ```
 
@@ -253,48 +253,48 @@ Use collapse for expandable content:
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { OCard, OButton, OCollapse } from '@omni-tend/laravel-dashboard'
+import { DCard, DButton, DCollapse } from '@omni-tend/dashboard-for-laravel'
 
 const detailsVisible = ref(false)
 const settingsVisible = ref(false)
 </script>
 
 <template>
-  <OCard>
+  <DCard>
     <div class="d-flex justify-content-between align-items-centre mb-3">
       <h4>Customer Details</h4>
-      <OButton
+      <DButton
         variant="link"
         @click="detailsVisible = !detailsVisible"
       >
         {{ detailsVisible ? 'Hide' : 'Show' }} Details
-      </OButton>
+      </DButton>
     </div>
 
-    <OCollapse v-model="detailsVisible">
+    <DCollapse v-model="detailsVisible">
       <div class="card card-body">
         <p><strong>Business:</strong> Acme Ltd</p>
         <p><strong>Contact:</strong> John Smith</p>
         <p><strong>Email:</strong> john@acme.com</p>
       </div>
-    </OCollapse>
+    </DCollapse>
 
     <div class="d-flex justify-content-between align-items-centre mb-3 mt-4">
       <h4>Settings</h4>
-      <OButton
+      <DButton
         variant="link"
         @click="settingsVisible = !settingsVisible"
       >
         {{ settingsVisible ? 'Hide' : 'Show' }} Settings
-      </OButton>
+      </DButton>
     </div>
 
-    <OCollapse v-model="settingsVisible">
+    <DCollapse v-model="settingsVisible">
       <div class="card card-body">
         <p>Settings content here...</p>
       </div>
-    </OCollapse>
-  </OCard>
+    </DCollapse>
+  </DCard>
 </template>
 ```
 
@@ -305,7 +305,7 @@ Show a modal for confirmations:
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { OButton, OModal } from '@omni-tend/laravel-dashboard'
+import { DButton, DModal } from '@omni-tend/dashboard-for-laravel'
 
 const showDeleteModal = ref(false)
 
@@ -318,23 +318,23 @@ const handleDelete = async () => {
 
 <template>
   <div>
-    <OButton variant="danger" @click="showDeleteModal = true">
+    <DButton variant="danger" @click="showDeleteModal = true">
       Delete Customer
-    </OButton>
+    </DButton>
 
-    <OModal v-model="showDeleteModal" title="Confirm Delete">
+    <DModal v-model="showDeleteModal" title="Confirm Delete">
       <p>Are you sure you want to delete this customer?</p>
       <p class="text-muted">This action cannot be undone.</p>
 
       <template #footer>
-        <OButton variant="secondary" @click="showDeleteModal = false">
+        <DButton variant="secondary" @click="showDeleteModal = false">
           Cancel
-        </OButton>
-        <OButton variant="danger" @click="handleDelete">
+        </DButton>
+        <DButton variant="danger" @click="handleDelete">
           Delete
-        </OButton>
+        </DButton>
       </template>
-    </OModal>
+    </DModal>
   </div>
 </template>
 ```
@@ -345,7 +345,7 @@ Show feedback to users with toasts:
 
 ```vue
 <script setup lang="ts">
-import { useToast, OButton, OCard } from '@omni-tend/laravel-dashboard'
+import { useToast, DButton, DCard } from '@omni-tend/dashboard-for-laravel'
 
 const toast = useToast()
 
@@ -367,29 +367,29 @@ const showWarning = () => {
 </script>
 
 <template>
-  <OCard>
+  <DCard>
     <template #header>
       <h3>Toast Examples</h3>
     </template>
 
     <div class="d-flex gap-2">
-      <OButton variant="success" @click="showSuccess">
+      <DButton variant="success" @click="showSuccess">
         Success Toast
-      </OButton>
+      </DButton>
 
-      <OButton variant="danger" @click="showError">
+      <DButton variant="danger" @click="showError">
         Error Toast
-      </OButton>
+      </DButton>
 
-      <OButton variant="info" @click="showInfo">
+      <DButton variant="info" @click="showInfo">
         Info Toast
-      </OButton>
+      </DButton>
 
-      <OButton variant="warning" @click="showWarning">
+      <DButton variant="warning" @click="showWarning">
         Warning Toast
-      </OButton>
+      </DButton>
     </div>
-  </OCard>
+  </DCard>
 </template>
 ```
 
@@ -401,11 +401,11 @@ Implement search and filtering:
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import {
-  OCard,
-  OFormInput,
-  OFormSelect,
-  OTable
-} from '@omni-tend/laravel-dashboard'
+  DCard,
+  DFormInput,
+  DFormSelect,
+  DTable
+} from '@omni-tend/dashboard-for-laravel'
 
 const searchQuery = ref('')
 const statusFilter = ref('all')
@@ -438,30 +438,30 @@ const fields = [
 </script>
 
 <template>
-  <OCard>
+  <DCard>
     <template #header>
       <h3>Customers</h3>
     </template>
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <OFormInput
+        <DFormInput
           v-model="searchQuery"
           placeholder="Search customers..."
         />
       </div>
 
       <div class="col-md-6">
-        <OFormSelect v-model="statusFilter">
+        <DFormSelect v-model="statusFilter">
           <option value="all">All Status</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
-        </OFormSelect>
+        </DFormSelect>
       </div>
     </div>
 
-    <OTable :items="filteredCustomers" :fields="fields" />
-  </OCard>
+    <DTable :items="filteredCustomers" :fields="fields" />
+  </DCard>
 </template>
 ```
 

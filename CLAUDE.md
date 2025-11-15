@@ -799,7 +799,7 @@ When releasing a new version:
 3. Add dynamic slot forwarding and attribute inheritance
 4. Export from main index file
 5. Build: `npm run build`
-6. Use in consuming apps: `import { ONewComponent } from '@omni-tend/dashboard-for-laravel'`
+6. Use in consuming apps: `import { DNewComponent } from '@omni-tend/dashboard-for-laravel'`
 
 ### Adding a New Composable
 
