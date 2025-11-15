@@ -92,21 +92,58 @@ Get hierarchical map of all available documentation.
 
 ## Setup
 
-### Prerequisites
+There are three ways to use this MCP server, depending on your use case:
 
-1. **Generate documentation files:**
-   ```bash
-   npm run docs:generate:ai
-   ```
+### Option 1: In This Project (Automatic)
 
-2. **MCP SDK is installed** (already in devDependencies)
+If you're working in this repository with Claude Code, the MCP server is already configured via `.mcp.json`.
 
-### Claude Desktop Configuration
+**Setup:** Claude Code will automatically prompt you to enable it. Just accept!
 
-Add to your Claude Desktop config file:
+### Option 2: In Other Projects (via NPM Package)
+
+After publishing, other projects can use the MCP server by installing the package.
+
+**In the other project's `.mcp.json`:**
+```json
+{
+  "mcpServers": {
+    "dashboard-for-laravel-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@omnitend/dashboard-for-laravel",
+        "dashboard-docs-mcp"
+      ]
+    }
+  }
+}
+```
+
+**Or for Claude Desktop:**
 
 **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 
+```json
+{
+  "mcpServers": {
+    "dashboard-for-laravel-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@omnitend/dashboard-for-laravel",
+        "dashboard-docs-mcp"
+      ]
+    }
+  }
+}
+```
+
+### Option 3: From Local Path (Development)
+
+Point directly to this repository from another project.
+
+**In the other project's `.mcp.json`:**
 ```json
 {
   "mcpServers": {
@@ -118,6 +155,14 @@ Add to your Claude Desktop config file:
     }
   }
 }
+```
+
+### Prerequisites
+
+The MCP server requires the auto-generated documentation files. These are included in the published NPM package, or you can generate them locally:
+
+```bash
+npm run docs:generate:ai
 ```
 
 ### Claude Code Configuration
