@@ -875,6 +875,7 @@ const handleEditSave = async () => {
                             title: 'Success',
                             body: `${props.itemName.slice(0, -1)} updated successfully`,
                             variant: 'success',
+                            value: 3000, // Auto-dismiss after 3 seconds
                         }
                     });
 
@@ -892,6 +893,7 @@ const handleEditSave = async () => {
                             title: 'Error',
                             body: 'Failed to update. Please check the form for errors.',
                             variant: 'danger',
+                            value: 5000, // Auto-dismiss after 5 seconds
                         }
                     });
                     emit('editError', selectedItem.value as T, errors);
@@ -921,3 +923,14 @@ defineExpose({
     refresh,
 });
 </script>
+
+<style scoped>
+/* Add pointer cursor to table rows when editFields is enabled */
+:deep(tbody tr) {
+    cursor: v-bind('editFields && editFields.length > 0 ? "pointer" : "default"');
+}
+
+:deep(tbody tr:hover) {
+    background-color: v-bind('editFields && editFields.length > 0 ? "var(--bs-table-hover-bg)" : "inherit"');
+}
+</style>
