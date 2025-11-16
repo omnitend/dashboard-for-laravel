@@ -1,1 +1,1 @@
-export { useToastController as useToast } from 'bootstrap-vue-next';
+export { useToast } from 'bootstrap-vue-next';

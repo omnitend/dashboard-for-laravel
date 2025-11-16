@@ -1,50 +1,46 @@
 <script setup lang="ts">
 import PlaygroundLayout from '../../Layouts/PlaygroundLayout.vue';
-import { DCard, DButton, DButtonGroup, useToast } from '@omnitend/dashboard-for-laravel';
+import { DCard, DButton, useToast } from '@omnitend/dashboard-for-laravel';
 
 const toast = useToast();
+const { create } = toast;
 
 const showSuccessToast = () => {
-  toast.show?.({
-    props: {
-      title: 'Success',
-      body: 'This is a success message!',
-      variant: 'success',
-      value: 3000,
-    }
+  console.log('Toast object:', toast);
+  console.log('create exists?', !!create);
+
+  create?.({
+    title: 'Success',
+    body: 'This is a success message!',
+    variant: 'success',
+    modelValue: 3000,
   });
 };
 
 const showErrorToast = () => {
-  toast.show?.({
-    props: {
-      title: 'Error',
-      body: 'This is an error message!',
-      variant: 'danger',
-      value: 5000,
-    }
+  create?.({
+    title: 'Error',
+    body: 'This is an error message!',
+    variant: 'danger',
+    modelValue: 5000,
   });
 };
 
 const showInfoToast = () => {
-  toast.show?.({
-    props: {
-      title: 'Info',
-      body: 'This is an informational message.',
-      variant: 'info',
-      value: 4000,
-    }
+  create?.({
+    title: 'Info',
+    body: 'This is an informational message.',
+    variant: 'info',
+    modelValue: 4000,
   });
 };
 
 const showWarningToast = () => {
-  toast.show?.({
-    props: {
-      title: 'Warning',
-      body: 'This is a warning message!',
-      variant: 'warning',
-      value: 4000,
-    }
+  create?.({
+    title: 'Warning',
+    body: 'This is a warning message!',
+    variant: 'warning',
+    modelValue: 4000,
   });
 };
 </script>
@@ -58,7 +54,7 @@ const showWarningToast = () => {
 
       <div class="p-4">
         <p class="mb-4">
-          Click the buttons below to test toast notifications. Toasts will appear in the top-right corner.
+          Click the buttons below to test toast notifications with Bootstrap Vue Next 0.40.7.
         </p>
 
         <div class="d-flex flex-wrap gap-3">
@@ -81,21 +77,19 @@ const showWarningToast = () => {
 
         <hr class="my-4">
 
-        <h5 class="mb-3">Toast API Details</h5>
-        <pre class="bg-light p-3 rounded"><code>const toast = useToast();
+        <h5 class="mb-3">Toast API (Bootstrap Vue Next 0.40.7)</h5>
+        <pre class="bg-light p-3 rounded"><code>const { create } = useToast();
 
-toast.show?.({
-  props: {
-    title: 'Success',
-    body: 'Message here',
-    variant: 'success',
-    value: 3000, // Auto-dismiss after 3 seconds
-  }
+create?.({
+  title: 'Success',
+  body: 'Message here',
+  variant: 'success',
+  modelValue: 3000, // Auto-dismiss after 3 seconds
 });</code></pre>
 
         <p class="text-muted small mt-3">
           Note: DToaster component must be present in the layout for toasts to appear.
-          Check PlaygroundLayout.vue to see it's included.
+          Check PlaygroundLayout.vue - it's already included.
         </p>
       </div>
     </DCard>

@@ -824,7 +824,7 @@ const refresh = () => {
 const showEditModal = ref(false);
 const selectedItem = ref<T | null>(null);
 const editForm = ref<any>(null);
-const toast = useToast();
+const { create: createToast } = useToast();
 
 // Handle row click for editing
 const handleRowClick = (item: T, index: number, event: MouseEvent) => {
@@ -870,13 +870,11 @@ const handleEditSave = async () => {
             await editForm.value.put(url, {
                 onSuccess: (data: any) => {
                     // Show success toast
-                    toast.show?.({
-                        props: {
-                            title: 'Success',
-                            body: `${props.itemName.slice(0, -1)} updated successfully`,
-                            variant: 'success',
-                            value: 3000, // Auto-dismiss after 3 seconds
-                        }
+                    createToast?.({
+                        title: 'Success',
+                        body: `${props.itemName.slice(0, -1)} updated successfully`,
+                        variant: 'success',
+                        modelValue: 3000, // Auto-dismiss after 3 seconds
                     });
 
                     emit('rowUpdated', selectedItem.value as T, data);
@@ -888,13 +886,11 @@ const handleEditSave = async () => {
                 },
                 onError: (errors: any) => {
                     // Show error toast
-                    toast.show?.({
-                        props: {
-                            title: 'Error',
-                            body: 'Failed to update. Please check the form for errors.',
-                            variant: 'danger',
-                            value: 5000, // Auto-dismiss after 5 seconds
-                        }
+                    createToast?.({
+                        title: 'Error',
+                        body: 'Failed to update. Please check the form for errors.',
+                        variant: 'danger',
+                        modelValue: 5000, // Auto-dismiss after 5 seconds
                     });
                     emit('editError', selectedItem.value as T, errors);
                 }
