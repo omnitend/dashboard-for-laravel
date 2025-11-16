@@ -112,13 +112,15 @@ After publishing, other projects can use the MCP server by installing the packag
       "command": "npx",
       "args": [
         "-y",
-        "@omnitend/dashboard-for-laravel",
+        "@omnitend/dashboard-for-laravel@latest",
         "dashboard-docs-mcp"
       ]
     }
   }
 }
 ```
+
+**Note:** Specify `@latest` or a specific version (e.g., `@0.3.3`) to avoid npm cache issues.
 
 **Or for Claude Desktop:**
 
