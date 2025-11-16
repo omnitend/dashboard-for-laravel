@@ -41,7 +41,8 @@
     "docs:generate:ai": "node scripts/generate-llms-txt.mjs && node scripts/generate-api-manifest.mjs && node scripts/generate-docs-map.mjs",
     "docs:enhance": "node scripts/enhance-frontmatter.mjs",
     "docs:all": "npm run docs:generate && npm run docs:generate:ai && npm run docs:build",
-    "mcp": "node scripts/mcp-server.mjs"
+    "mcp": "node scripts/mcp-server.mjs",
+    "release": "bash scripts/release.sh"
   },
   "peerDependencies": {
     "vue": "^3.4.0"
