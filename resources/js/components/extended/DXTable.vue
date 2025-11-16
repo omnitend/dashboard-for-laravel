@@ -870,7 +870,13 @@ const handleEditSave = async () => {
             await editForm.value.put(url, {
                 onSuccess: (data: any) => {
                     // Show success toast
-                    toast.success(`${props.itemName.slice(0, -1)} updated successfully`);
+                    toast.show?.({
+                        props: {
+                            title: 'Success',
+                            body: `${props.itemName.slice(0, -1)} updated successfully`,
+                            variant: 'success',
+                        }
+                    });
 
                     emit('rowUpdated', selectedItem.value as T, data);
                     showEditModal.value = false;
@@ -881,7 +887,13 @@ const handleEditSave = async () => {
                 },
                 onError: (errors: any) => {
                     // Show error toast
-                    toast.error('Failed to update. Please check the form for errors.');
+                    toast.show?.({
+                        props: {
+                            title: 'Error',
+                            body: 'Failed to update. Please check the form for errors.',
+                            variant: 'danger',
+                        }
+                    });
                     emit('editError', selectedItem.value as T, errors);
                 }
             });

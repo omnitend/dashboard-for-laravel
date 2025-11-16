@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DXDashboard } from '@omnitend/dashboard-for-laravel';
+import { DXDashboard, DToaster } from '@omnitend/dashboard-for-laravel';
 import type { Navigation } from '@omnitend/dashboard-for-laravel';
 import '@omnitend/dashboard-for-laravel/style.css';
 
@@ -44,4 +44,7 @@ const user = {
   >
     <slot />
   </DXDashboard>
+
+  <!-- Toast notifications -->
+  <DToaster />
 </template>
