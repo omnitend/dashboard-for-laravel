@@ -15,6 +15,7 @@ const navigation: Navigation = [
     items: [
       { label: 'Products', url: '/', active: false },
       { label: 'Categories', url: '/categories', active: false },
+      { label: 'Toasts', url: '/toasts', active: false },
       { label: 'Orders', url: '/orders', active: false },
     ],
   },
