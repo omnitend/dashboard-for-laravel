@@ -816,7 +816,7 @@ const refresh = () => {
     }
     // Inertia mode: reload current page to refresh data
     else if (isInertiaMode.value && props.inertiaUrl) {
-        router.reload({ preserveState: true, preserveScroll: true });
+        router.reload({ preserveScroll: true });
     }
 };
 
