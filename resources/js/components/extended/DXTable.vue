@@ -292,6 +292,7 @@
 import { computed, ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
 import axios from "axios";
+import { useToast } from "../../composables/useToast";
 import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
 import DCol from "../base/DCol.vue";
@@ -807,10 +808,15 @@ const handleFilterChange = (fieldKey: string, value: string) => {
 // Reference to the DTable component (for exposing refresh method)
 const tableRef = ref<InstanceType<typeof DTable> | null>(null);
 
-// Expose refresh method for provider mode
+// Expose refresh method for both modes
 const refresh = () => {
-    if (tableRef.value && typeof (tableRef.value as any).refresh === 'function') {
+    // Provider/API mode: call refresh on BTable
+    if (isProviderMode.value && tableRef.value && typeof (tableRef.value as any).refresh === 'function') {
         (tableRef.value as any).refresh();
+    }
+    // Inertia mode: reload current page with existing query params
+    else if (isInertiaMode.value && props.inertiaUrl) {
+        router.reload({ only: [props.inertiaUrl.split('/').pop() || 'data'] });
     }
 };
 
@@ -818,6 +824,7 @@ const refresh = () => {
 const showEditModal = ref(false);
 const selectedItem = ref<T | null>(null);
 const editForm = ref<any>(null);
+const toast = useToast();
 
 // Handle row click for editing
 const handleRowClick = (item: T, index: number, event: MouseEvent) => {
@@ -862,14 +869,19 @@ const handleEditSave = async () => {
 
             await editForm.value.put(url, {
                 onSuccess: (data: any) => {
+                    // Show success toast
+                    toast.success(`${props.itemName.slice(0, -1)} updated successfully`);
+
                     emit('rowUpdated', selectedItem.value as T, data);
                     showEditModal.value = false;
                     selectedItem.value = null;
 
-                    // Refresh table data
+                    // Refresh table data to show updated values
                     refresh();
                 },
                 onError: (errors: any) => {
+                    // Show error toast
+                    toast.error('Failed to update. Please check the form for errors.');
                     emit('editError', selectedItem.value as T, errors);
                 }
             });
