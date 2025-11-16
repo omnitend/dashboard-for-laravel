@@ -814,9 +814,9 @@ const refresh = () => {
     if (isProviderMode.value && tableRef.value && typeof (tableRef.value as any).refresh === 'function') {
         (tableRef.value as any).refresh();
     }
-    // Inertia mode: reload current page with existing query params
+    // Inertia mode: reload current page to refresh data
     else if (isInertiaMode.value && props.inertiaUrl) {
-        router.reload({ only: [props.inertiaUrl.split('/').pop() || 'data'] });
+        router.reload({ preserveState: true, preserveScroll: true });
     }
 };
 
