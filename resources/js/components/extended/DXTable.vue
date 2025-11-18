@@ -261,11 +261,76 @@
         <DModal
             v-if="editFields && editFields.length > 0"
             v-model="showEditModal"
-            :title="editModalTitle || `Edit ${itemName.slice(0, -1)}`"
+            :title="computedModalTitle"
             :size="editModalSize"
         >
+            <!-- Tabbed view (if editTabs provided) -->
+            <template v-if="editTabs && editTabs.length > 0 && editForm">
+                <DTabs v-model="activeTabIndex" card>
+                    <DTab
+                        v-for="tab in visibleTabs"
+                        :key="tab.key"
+                        :title="tab.label || tab.key"
+                        :lazy="tab.lazy"
+                    >
+                        <!-- Custom tab content slot -->
+                        <slot
+                            v-if="$slots[`tab-content(${tab.key})`]"
+                            :name="`tab-content(${tab.key})`"
+                            :item="selectedItem"
+                            :tab="tab"
+                        />
+
+                        <!-- Default: render fields for this tab -->
+                        <div v-else class="p-3">
+                            <!-- Before slot -->
+                            <slot :name="`tab-before(${tab.key})`" :item="selectedItem" :tab="tab" />
+
+                            <!-- Form fields for this tab -->
+                            <template v-for="fieldKey in tab.fieldKeys" :key="fieldKey">
+                                <div v-if="getField(fieldKey).span" class="mb-3">
+                                    <!-- Full-width span field -->
+                                    <slot
+                                        :name="`edit-span(${fieldKey})`"
+                                        :item="selectedItem"
+                                        :value="editForm.data[fieldKey]"
+                                        :update="(v: any) => editForm.data[fieldKey] = v"
+                                        :close="handleEditCancel"
+                                    />
+                                </div>
+                                <DFormGroup
+                                    v-else
+                                    :label="getField(fieldKey).label || fieldKey"
+                                    class="mb-3"
+                                >
+                                    <!-- Custom value slot or default input -->
+                                    <slot
+                                        v-if="$slots[`edit-value(${fieldKey})`]"
+                                        :name="`edit-value(${fieldKey})`"
+                                        :item="selectedItem"
+                                        :value="editForm.data[fieldKey]"
+                                        :update="(v: any) => editForm.data[fieldKey] = v"
+                                        :field="getField(fieldKey)"
+                                    />
+                                    <DFormInput
+                                        v-else
+                                        v-model="editForm.data[fieldKey]"
+                                        :type="getField(fieldKey).type || 'text'"
+                                        :required="getField(fieldKey).required"
+                                    />
+                                </DFormGroup>
+                            </template>
+
+                            <!-- After slot -->
+                            <slot :name="`tab-after(${tab.key})`" :item="selectedItem" :tab="tab" />
+                        </div>
+                    </DTab>
+                </DTabs>
+            </template>
+
+            <!-- Fallback: no tabs, render flat form (current behavior) -->
             <DXBasicForm
-                v-if="editForm"
+                v-else-if="editForm"
                 :form="editForm"
                 :fields="editFields"
                 submit-text="Save Changes"
@@ -304,6 +369,9 @@ import DFormInput from "../base/DFormInput.vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import DModal from "../base/DModal.vue";
 import DButton from "../base/DButton.vue";
+import DTabs from "../base/DTabs.vue";
+import DTab from "../base/DTab.vue";
+import DFormGroup from "../base/DFormGroup.vue";
 import DXBasicForm from "./DXBasicForm.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
@@ -346,6 +414,23 @@ export interface BTableProviderContext {
 export type BTableProvider<T = any> = (
     context: Readonly<BTableProviderContext>
 ) => Promise<T[] | undefined> | T[] | undefined;
+
+export interface EditTab {
+    /** Unique key for this tab */
+    key: string;
+
+    /** Display label (optional, auto-derived from key if omitted) */
+    label?: string;
+
+    /** Field keys to display in this tab (from editFields) */
+    fieldKeys: string[];
+
+    /** Conditional display (optional) */
+    when?: boolean | ((item: any) => boolean);
+
+    /** Lazy load tab content (optional, default false) */
+    lazy?: boolean;
+}
 
 export interface Props<TItem = any> {
     /** Table title */
@@ -430,8 +515,11 @@ export interface Props<TItem = any> {
     /** Form field definitions for edit modal (if provided, enables edit on row click) */
     editFields?: any[]; // FieldDefinition[] - using any to avoid circular import
 
-    /** Edit modal title (default: "Edit {itemName}") */
-    editModalTitle?: string;
+    /** Tab definitions for organizing edit modal content */
+    editTabs?: EditTab[];
+
+    /** Edit modal title (can be function for dynamic titles) */
+    editModalTitle?: string | ((item: any) => string);
 
     /** Edit modal size */
     editModalSize?: 'sm' | 'md' | 'lg' | 'xl';
@@ -824,7 +912,35 @@ const refresh = () => {
 const showEditModal = ref(false);
 const selectedItem = ref<T | null>(null);
 const editForm = ref<any>(null);
+const activeTabIndex = ref(0);
 const { create: createToast } = useToast();
+
+// Computed: Visible tabs (respects when condition)
+const visibleTabs = computed(() => {
+    if (!props.editTabs || props.editTabs.length === 0) return [];
+
+    return props.editTabs.filter(tab => {
+        if (tab.when === undefined) return true;
+        return typeof tab.when === 'function'
+            ? tab.when(selectedItem.value)
+            : tab.when;
+    });
+});
+
+// Helper: Get field by key
+const getField = (key: string) => {
+    return props.editFields?.find(f => f.key === key) || { key };
+};
+
+// Computed: Modal title (supports function)
+const computedModalTitle = computed(() => {
+    if (!props.editModalTitle) {
+        return `Edit ${props.itemName.slice(0, -1)}`;
+    }
+    return typeof props.editModalTitle === 'function'
+        ? props.editModalTitle(selectedItem.value)
+        : props.editModalTitle;
+});
 
 // Handle row click for editing
 const handleRowClick = (item: T, index: number, event: MouseEvent) => {
@@ -892,6 +1008,18 @@ const handleEditSave = async () => {
                         variant: 'danger',
                         modelValue: 5000, // Auto-dismiss after 5 seconds
                     });
+
+                    // Switch to tab containing error field
+                    if (props.editTabs && props.editTabs.length > 0) {
+                        const errorKeys = Object.keys(errors);
+                        const tabIndex = visibleTabs.value.findIndex(tab =>
+                            tab.fieldKeys.some(key => errorKeys.includes(key))
+                        );
+                        if (tabIndex !== -1) {
+                            activeTabIndex.value = tabIndex;
+                        }
+                    }
+
                     emit('editError', selectedItem.value as T, errors);
                 }
             });

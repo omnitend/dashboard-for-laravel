@@ -107,6 +107,7 @@ export type {
     PaginationData,
     BTableSortBy,
     BTableProvider,
+    EditTab,
     BTableProviderContext,
 } from "./components/extended/DXTable.vue";
 
