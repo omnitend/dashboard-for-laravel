@@ -183,10 +183,10 @@
                             <!-- Info text -->
                             <span class="text-muted">
                                 <template v-if="pagination.total > pagination.per_page">
-                                    Showing {{ pagination.from }} to {{ pagination.to }} of {{ pagination.total }} {{ itemName }}
+                                    Showing {{ pagination.from }} to {{ pagination.to }} of {{ pagination.total }} {{ pluralItemName }}
                                 </template>
                                 <template v-else>
-                                    Showing all {{ pagination.total }} {{ itemName }}
+                                    Showing all {{ pagination.total }} {{ pluralItemName }}
                                 </template>
                             </span>
 
@@ -223,10 +223,10 @@
                             <!-- Info text -->
                             <span class="text-muted">
                                 <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
-                                    Showing {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} of {{ apiPaginationMeta.total }} {{ itemName }}
+                                    Showing {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} of {{ apiPaginationMeta.total }} {{ pluralItemName }}
                                 </template>
                                 <template v-else>
-                                    Showing all {{ apiPaginationMeta.total }} {{ itemName }}
+                                    Showing all {{ apiPaginationMeta.total }} {{ pluralItemName }}
                                 </template>
                             </span>
 
@@ -266,12 +266,13 @@
         >
             <!-- Tabbed view (if editTabs provided) -->
             <template v-if="editTabs && editTabs.length > 0 && editForm">
-                <DTabs v-model="activeTabIndex" card>
+                <DTabs v-model="activeTabIndex">
                     <DTab
-                        v-for="tab in visibleTabs"
+                        v-for="(tab, index) in visibleTabs"
                         :key="tab.key"
                         :title="tab.label || tab.key"
                         :lazy="tab.lazy"
+                        :active="index === 0"
                     >
                         <!-- Custom tab content slot -->
                         <slot
@@ -298,12 +299,9 @@
                                         :close="handleEditCancel"
                                     />
                                 </div>
-                                <DFormGroup
-                                    v-else
-                                    :label="getField(fieldKey).label || fieldKey"
-                                    class="mb-3"
-                                >
-                                    <!-- Custom value slot or default input -->
+                                <!-- Checkbox (no label wrapper needed) -->
+                                <div v-else-if="getField(fieldKey).type === 'checkbox'" class="mb-3">
+                                    <!-- Custom value slot -->
                                     <slot
                                         v-if="$slots[`edit-value(${fieldKey})`]"
                                         :name="`edit-value(${fieldKey})`"
@@ -311,6 +309,34 @@
                                         :value="editForm.data[fieldKey]"
                                         :update="(v: any) => editForm.data[fieldKey] = v"
                                         :field="getField(fieldKey)"
+                                    />
+                                    <DFormCheckbox
+                                        v-else
+                                        v-model="editForm.data[fieldKey]"
+                                    >
+                                        {{ getField(fieldKey).label || fieldKey }}
+                                    </DFormCheckbox>
+                                </div>
+                                <!-- Other field types with label -->
+                                <DFormGroup
+                                    v-else
+                                    :label="getField(fieldKey).label || fieldKey"
+                                    class="mb-3"
+                                >
+                                    <!-- Custom value slot -->
+                                    <slot
+                                        v-if="$slots[`edit-value(${fieldKey})`]"
+                                        :name="`edit-value(${fieldKey})`"
+                                        :item="selectedItem"
+                                        :value="editForm.data[fieldKey]"
+                                        :update="(v: any) => editForm.data[fieldKey] = v"
+                                        :field="getField(fieldKey)"
+                                    />
+                                    <DFormTextarea
+                                        v-else-if="getField(fieldKey).type === 'textarea'"
+                                        v-model="editForm.data[fieldKey]"
+                                        :required="getField(fieldKey).required"
+                                        :rows="getField(fieldKey).rows || 3"
                                     />
                                     <DFormInput
                                         v-else
@@ -357,6 +383,7 @@
 import { computed, ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
 import axios from "axios";
+import pluralize from "pluralize";
 import { useToast } from "../../composables/useToast";
 import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
@@ -372,6 +399,8 @@ import DButton from "../base/DButton.vue";
 import DTabs from "../base/DTabs.vue";
 import DTab from "../base/DTab.vue";
 import DFormGroup from "../base/DFormGroup.vue";
+import DFormTextarea from "../base/DFormTextarea.vue";
+import DFormCheckbox from "../base/DFormCheckbox.vue";
 import DXBasicForm from "./DXBasicForm.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
@@ -436,7 +465,7 @@ export interface Props<TItem = any> {
     /** Table title */
     title?: string;
 
-    /** Name for items (plural) - used in pagination text (e.g., "products", "customers") */
+    /** Name for item (singular) - automatically pluralized (e.g., "product" → "products") */
     itemName?: string;
 
     /** Table data items (Inertia mode) */
@@ -529,7 +558,7 @@ export interface Props<TItem = any> {
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
-    itemName: "items",
+    itemName: "item",
     loading: false,
     busy: false,
     loadingText: "Loading...",
@@ -913,7 +942,16 @@ const showEditModal = ref(false);
 const selectedItem = ref<T | null>(null);
 const editForm = ref<any>(null);
 const activeTabIndex = ref(0);
-const { create: createToast } = useToast();
+
+// Toast (may not be available in test environment)
+let createToast: ((obj: any) => any) | undefined;
+try {
+    const toast = useToast();
+    createToast = toast.create;
+} catch (e) {
+    // BApp not available (test environment or missing setup)
+    createToast = undefined;
+}
 
 // Computed: Visible tabs (respects when condition)
 const visibleTabs = computed(() => {
@@ -932,10 +970,17 @@ const getField = (key: string) => {
     return props.editFields?.find(f => f.key === key) || { key };
 };
 
+// Computed: Singular and plural item names
+const singularItemName = computed(() => props.itemName);
+const pluralItemName = computed(() => pluralize(props.itemName));
+
 // Computed: Modal title (supports function)
 const computedModalTitle = computed(() => {
+    if (!selectedItem.value) {
+        return `Edit ${singularItemName.value}`;
+    }
     if (!props.editModalTitle) {
-        return `Edit ${props.itemName.slice(0, -1)}`;
+        return `Edit ${singularItemName.value}`;
     }
     return typeof props.editModalTitle === 'function'
         ? props.editModalTitle(selectedItem.value)
@@ -949,6 +994,7 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
 
     // If editFields provided, open edit modal
     if (props.editFields && props.editFields.length > 0) {
+        // Set selected item FIRST before any rendering
         selectedItem.value = item;
 
         // Initialize form with item data
@@ -960,6 +1006,8 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
                     formData[field.key] = (item as any)[field.key] ?? field.default ?? '';
                 });
                 editForm.value = useForm(formData);
+
+                // Open modal (watcher will handle tab selection)
                 showEditModal.value = true;
             });
         } else {
@@ -968,6 +1016,8 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
                 editForm.value.data[field.key] = (item as any)[field.key] ?? field.default ?? '';
             });
             editForm.value.clearErrors();
+
+            // Open modal (watcher will handle tab selection)
             showEditModal.value = true;
         }
     }
@@ -988,7 +1038,7 @@ const handleEditSave = async () => {
                     // Show success toast
                     createToast?.({
                         title: 'Success',
-                        body: `${props.itemName.slice(0, -1)} updated successfully`,
+                        body: `${singularItemName.value} updated successfully`,
                         variant: 'success',
                         modelValue: 3000, // Auto-dismiss after 3 seconds
                     });
@@ -1038,6 +1088,7 @@ const handleEditSave = async () => {
 const handleEditCancel = () => {
     showEditModal.value = false;
     selectedItem.value = null;
+    activeTabIndex.value = 0; // Reset tab for next time
     if (editForm.value) {
         editForm.value.clearErrors();
     }

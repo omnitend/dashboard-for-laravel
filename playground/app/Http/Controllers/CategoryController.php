@@ -27,4 +27,22 @@ class CategoryController extends Controller
 
         return $this->tableResponse($query, $request, Category::class, 'Categories/Index', 'categories');
     }
+
+    public function update(Request $request, Category $category)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean',
+        ]);
+
+        $category->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Category updated successfully',
+            'data' => $category,
+        ]);
+    }
 }

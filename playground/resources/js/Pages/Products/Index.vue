@@ -90,7 +90,7 @@ const editFields = [
       v-if="mode === 'inertia'"
       key="inertia-table"
       title="Product Inventory (Inertia Mode) - Click to Edit"
-      item-name="products"
+      item-name="product"
       :items="products.data"
       :fields="fields"
       :pagination="products"
@@ -125,7 +125,7 @@ const editFields = [
       v-else
       key="api-table"
       title="Product Inventory (API Mode) - Click to Edit"
-      item-name="products"
+      item-name="product"
       api-url="/api/products"
       :fields="fields"
       :edit-fields="editFields"
