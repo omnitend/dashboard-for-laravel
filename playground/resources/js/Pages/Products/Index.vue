@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import PlaygroundLayout from '../../Layouts/PlaygroundLayout.vue';
-import { DXTable } from '@omnitend/dashboard-for-laravel';
+import { DXTable, DButton } from '@omnitend/dashboard-for-laravel';
 import type { PaginatedData } from '../../types';
 
 interface Product {
@@ -22,6 +22,9 @@ interface Props {
 }
 
 defineProps<Props>();
+
+// Mode toggle state (defaults to API mode)
+const mode = ref<'inertia' | 'api'>('api');
 
 // Busy state for API mode
 const busy = ref(false);
@@ -77,6 +80,61 @@ const editFields = [
       hover
       responsive
     >
+      <template #header>
+        <div class="d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">Product Inventory - Click to Edit</h4>
+          <DButton
+            size="sm"
+            variant="outline-secondary"
+            @click="mode = mode === 'api' ? 'inertia' : 'api'"
+          >
+            {{ mode === 'api' ? 'Switch to Inertia' : 'Switch to API' }}
+          </DButton>
+        </div>
+      </template>
+      <template #cell(stock)="{ item }">
+        <span
+          :class="{
+            'badge bg-success': item.stock > 50,
+            'badge bg-warning text-dark': item.stock > 10 && item.stock <= 50,
+            'badge bg-danger': item.stock <= 10,
+          }"
+        >
+          {{ item.stock }}
+        </span>
+      </template>
+    </DXTable>
+
+    <!-- Inertia Mode Table (toggled) -->
+    <DXTable
+      v-else
+      key="inertia-table"
+      title="Product Inventory - Click to Edit"
+      item-name="product"
+      :items="products.data"
+      :fields="fields"
+      :pagination="products"
+      :filter-values="filterValues"
+      :edit-fields="editFields"
+      edit-url="/api/products/:id"
+      edit-modal-title="Edit Product"
+      inertia-url="/"
+      striped
+      hover
+      responsive
+    >
+      <template #header>
+        <div class="d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">Product Inventory - Click to Edit</h4>
+          <DButton
+            size="sm"
+            variant="outline-secondary"
+            @click="mode = mode === 'api' ? 'inertia' : 'api'"
+          >
+            {{ mode === 'api' ? 'Switch to Inertia' : 'Switch to API' }}
+          </DButton>
+        </div>
+      </template>
       <template #cell(stock)="{ item }">
         <span
           :class="{
