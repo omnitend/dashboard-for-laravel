@@ -69,58 +69,19 @@ const editFields = [
 <template>
   <PlaygroundLayout current-url="/" page-title="Products">
     <DXTable
-      v-if="mode === 'api'"
-      key="api-table"
+      :key="mode"
       title="Product Inventory"
       item-name="product"
-      api-url="/api/products"
+      :api-url="mode === 'api' ? '/api/products' : undefined"
+      :items="mode === 'inertia' ? products.data : undefined"
+      :pagination="mode === 'inertia' ? products : undefined"
+      :filter-values="mode === 'inertia' ? filterValues : undefined"
       :fields="fields"
       :edit-fields="editFields"
       edit-url="/api/products/:id"
       edit-modal-title="Edit Product"
+      :inertia-url="mode === 'inertia' ? '/' : undefined"
       v-model:busy="busy"
-      striped
-      hover
-      responsive
-    >
-      <template #header>
-        <div class="d-flex justify-content-between align-items-center">
-          <h4 class="mb-0">Product Inventory - Click to Edit</h4>
-          <DButton
-            size="sm"
-            variant="outline-secondary"
-            @click="mode = mode === 'api' ? 'inertia' : 'api'"
-          >
-            {{ mode === 'api' ? 'Switch to Inertia' : 'Switch to API' }}
-          </DButton>
-        </div>
-      </template>
-      <template #cell(stock)="{ item }">
-        <span
-          :class="{
-            'badge bg-success': item.stock > 50,
-            'badge bg-warning text-dark': item.stock > 10 && item.stock <= 50,
-            'badge bg-danger': item.stock <= 10,
-          }"
-        >
-          {{ item.stock }}
-        </span>
-      </template>
-    </DXTable>
-
-    <DXTable
-      v-if="mode === 'inertia'"
-      key="inertia-table"
-      title="Product Inventory"
-      item-name="product"
-      :items="products.data"
-      :fields="fields"
-      :pagination="products"
-      :filter-values="filterValues"
-      :edit-fields="editFields"
-      edit-url="/api/products/:id"
-      edit-modal-title="Edit Product"
-      inertia-url="/"
       striped
       hover
       responsive
