@@ -33,7 +33,12 @@ const fields = [
   { key: 'sku', label: 'SKU', sortable: true },
   { key: 'name', label: 'Product Name', sortable: true, filter: 'text' },
   { key: 'category', label: 'Category', sortable: true, filter: 'select' },
-  { key: 'price', label: 'Price', sortable: true },
+  {
+    key: 'price',
+    label: 'Price',
+    sortable: true,
+    formatter: (value: string) => `$${parseFloat(value).toFixed(2)}`
+  },
   {
     key: 'stock',
     label: 'Stock',
@@ -103,10 +108,6 @@ const editFields = [
       hover
       responsive
     >
-      <template #cell(price)="{ item }">
-        <strong>${{ parseFloat(item.price).toFixed(2) }}</strong>
-      </template>
-
       <template #cell(stock)="{ item }">
         <span
           :class="{
@@ -136,10 +137,6 @@ const editFields = [
       hover
       responsive
     >
-      <template #cell(price)="{ item }">
-        <strong>${{ parseFloat(item.price).toFixed(2) }}</strong>
-      </template>
-
       <template #cell(stock)="{ item }">
         <span
           :class="{
