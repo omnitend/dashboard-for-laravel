@@ -56,6 +56,8 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
 
 ## Usage Example
 
+### Basic Usage
+
 ```vue
 <template>
   <DXDashboard
@@ -86,6 +88,59 @@ const navigation = [
 const authUser = { name: 'John Doe', email: 'john@example.com' };
 const pageTitle = 'Dashboard';
 </script>
+```
+
+### With Icons
+
+Navigation items can include icons using unplugin-icons or any Vue component:
+
+```vue
+<script setup lang="ts">
+import { DXDashboard } from '@omnitend/dashboard-for-laravel';
+import IconHome from '~icons/lucide/home';
+import IconUsers from '~icons/lucide/users';
+import IconSettings from '~icons/lucide/settings';
+
+const navigation = [
+  {
+    items: [
+      { label: 'Dashboard', url: '/dashboard', icon: IconHome },
+      { label: 'Customers', url: '/customers', icon: IconUsers },
+    ],
+  },
+  {
+    label: 'Settings',
+    items: [
+      { label: 'Preferences', url: '/settings', icon: IconSettings },
+    ],
+  },
+];
+</script>
+```
+
+**Icon Setup (unplugin-icons):**
+
+Install packages:
+```bash
+npm install --save-dev unplugin-icons @iconify-json/lucide
+```
+
+Configure in `vite.config.ts`:
+```typescript
+import Icons from 'unplugin-icons/vite';
+
+export default defineConfig({
+  plugins: [
+    Icons({
+      compiler: 'vue3',
+    }),
+  ],
+});
+```
+
+Then import icons using the `~icons/` prefix:
+```typescript
+import IconName from '~icons/lucide/icon-name';
 ```
 
 ## Custom Branding
