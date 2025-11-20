@@ -122,18 +122,6 @@ const editFields = [
       hover
       responsive
     >
-      <template #header>
-        <div class="d-flex justify-content-between align-items-center">
-          <h4 class="mb-0">Product Inventory - Click to Edit</h4>
-          <DButton
-            size="sm"
-            variant="outline-secondary"
-            @click="mode = mode === 'api' ? 'inertia' : 'api'"
-          >
-            {{ mode === 'api' ? 'Switch to Inertia' : 'Switch to API' }}
-          </DButton>
-        </div>
-      </template>
       <template #cell(stock)="{ item }">
         <span
           :class="{
