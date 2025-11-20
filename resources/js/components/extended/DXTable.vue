@@ -997,6 +997,9 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
         // Set selected item FIRST before any rendering
         selectedItem.value = item;
 
+        // Reset to first tab
+        activeTabIndex.value = 0;
+
         // Initialize form with item data
         if (!editForm.value) {
             // Dynamically import useForm to avoid circular dependency
@@ -1007,7 +1010,7 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
                 });
                 editForm.value = useForm(formData);
 
-                // Open modal (watcher will handle tab selection)
+                // Open modal
                 showEditModal.value = true;
             });
         } else {
@@ -1017,7 +1020,7 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
             });
             editForm.value.clearErrors();
 
-            // Open modal (watcher will handle tab selection)
+            // Open modal
             showEditModal.value = true;
         }
     }
