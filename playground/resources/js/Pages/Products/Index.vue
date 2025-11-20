@@ -105,9 +105,8 @@ const editFields = [
       </template>
     </DXTable>
 
-    <!-- Inertia Mode Table (toggled) -->
     <DXTable
-      v-else
+      v-if="mode === 'inertia'"
       key="inertia-table"
       title="Product Inventory - Click to Edit"
       item-name="product"
