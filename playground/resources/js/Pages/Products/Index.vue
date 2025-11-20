@@ -69,7 +69,9 @@ const editFields = [
 <template>
   <PlaygroundLayout current-url="/" page-title="Products">
     <DXTable
-      title="Product Inventory - Click to Edit"
+      v-if="mode === 'api'"
+      key="api-table"
+      title="Product Inventory"
       item-name="product"
       api-url="/api/products"
       :fields="fields"
