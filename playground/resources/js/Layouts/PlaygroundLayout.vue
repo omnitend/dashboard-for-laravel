@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DXDashboard, DToaster } from '@omnitend/dashboard-for-laravel';
+import { DXDashboard, DToaster, DBadge } from '@omnitend/dashboard-for-laravel';
 import type { Navigation } from '@omnitend/dashboard-for-laravel';
 import '@omnitend/dashboard-for-laravel/style.css';
 import IconPackage from '~icons/lucide/package';
@@ -8,6 +8,7 @@ import IconBell from '~icons/lucide/bell';
 import IconShoppingCart from '~icons/lucide/shopping-cart';
 import IconUser from '~icons/lucide/user';
 import IconSettings from '~icons/lucide/settings';
+import { usePlaygroundMode } from '../composables/usePlaygroundMode';
 
 interface Props {
   currentUrl: string;
@@ -15,6 +16,8 @@ interface Props {
 }
 
 defineProps<Props>();
+
+const { mode, toggleMode } = usePlaygroundMode();
 
 const navigation: Navigation = [
   {
@@ -49,6 +52,16 @@ const user = {
     :user="user"
     dashboard-id="playground"
   >
+    <template #navbar-search>
+      <DBadge
+        :variant="mode === 'api' ? 'primary' : 'info'"
+        style="cursor: pointer; user-select: none;"
+        @click="toggleMode"
+      >
+        {{ mode === 'api' ? 'API Mode' : 'Inertia Mode' }}
+      </DBadge>
+    </template>
+
     <slot />
   </DXDashboard>
 

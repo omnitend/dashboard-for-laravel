@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import PlaygroundLayout from '../../Layouts/PlaygroundLayout.vue';
-import { DXTable, DButton } from '@omnitend/dashboard-for-laravel';
+import { DXTable } from '@omnitend/dashboard-for-laravel';
 import type { PaginatedData } from '../../types';
+import { usePlaygroundMode } from '../../composables/usePlaygroundMode';
 
 interface Product {
   id: number;
@@ -23,8 +24,8 @@ interface Props {
 
 defineProps<Props>();
 
-// Mode toggle state (defaults to API mode)
-const mode = ref<'inertia' | 'api'>('api');
+// Use global playground mode
+const { mode } = usePlaygroundMode();
 
 // Busy state for API mode
 const busy = ref(false);
