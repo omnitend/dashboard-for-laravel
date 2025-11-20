@@ -84,6 +84,7 @@ const editTabs = [
       :edit-fields="editFields"
       :edit-tabs="editTabs"
       edit-url="/api/categories/:id"
+      delete-url="/api/categories/:id"
       :edit-modal-title="(item) => `Edit Category: ${item.name}`"
       :inertia-url="mode === 'inertia' ? '/categories' : undefined"
       v-model:busy="busy"

@@ -389,21 +389,35 @@
                 v-else-if="editForm"
                 :form="editForm"
                 :fields="editFields"
-                submit-text="Save Changes"
+                :show-submit="false"
                 @submit="handleEditSave"
             />
 
             <template #footer>
-                <DButton variant="secondary" @click="handleEditCancel">
-                    Cancel
-                </DButton>
-                <DButton
-                    variant="primary"
-                    :disabled="editForm?.processing"
-                    @click="handleEditSave"
-                >
-                    {{ editForm?.processing ? 'Saving...' : 'Save Changes' }}
-                </DButton>
+                <div class="d-flex justify-content-between w-100">
+                    <div>
+                        <DButton
+                            v-if="deleteUrl"
+                            variant="danger"
+                            :disabled="editForm?.processing"
+                            @click="handleDelete"
+                        >
+                            {{ editForm?.processing ? 'Deleting...' : 'Delete' }}
+                        </DButton>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <DButton variant="secondary" @click="handleEditCancel">
+                            Cancel
+                        </DButton>
+                        <DButton
+                            variant="primary"
+                            :disabled="editForm?.processing"
+                            @click="handleEditSave"
+                        >
+                            {{ editForm?.processing ? 'Saving...' : 'Save Changes' }}
+                        </DButton>
+                    </div>
+                </div>
             </template>
         </DModal>
     </DContainer>
@@ -586,6 +600,9 @@ export interface Props<TItem = any> {
 
     /** API endpoint pattern for updates (e.g., "/api/products/:id") */
     editUrl?: string;
+
+    /** API endpoint pattern for deletions (e.g., "/api/products/:id") */
+    deleteUrl?: string;
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
@@ -623,6 +640,8 @@ const emit = defineEmits<{
     rowClicked: [item: T, index: number, event: MouseEvent];
     rowUpdated: [item: T, response: any];
     editError: [item: T, error: any];
+    rowDeleted: [item: T, response: any];
+    deleteError: [item: T, error: any];
     'update:sortBy': [sortBy: BTableSortBy[]];
     'update:filters': [filters: Record<string, string>];
     'update:perPage': [perPage: number];
@@ -1134,6 +1153,54 @@ const handleEditCancel = () => {
     activeTabIndex.value = 0; // Reset tab for next time
     if (editForm.value) {
         editForm.value.clearErrors();
+    }
+};
+
+// Handle delete from edit modal
+const handleDelete = async () => {
+    if (!editForm.value || !selectedItem.value || !props.deleteUrl) return;
+
+    // Confirm deletion
+    const itemName = (selectedItem.value as any).name || (selectedItem.value as any).title || singularItemName.value;
+    const confirmed = window.confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`);
+
+    if (!confirmed) return;
+
+    try {
+        const itemId = (selectedItem.value as any).id;
+        const url = props.deleteUrl.replace(':id', itemId);
+
+        await editForm.value.delete(url, {
+            onSuccess: (data: any) => {
+                // Show success toast
+                createToast?.({
+                    title: 'Success',
+                    body: `${singularItemName.value} deleted successfully`,
+                    variant: 'success',
+                    modelValue: 3000, // Auto-dismiss after 3 seconds
+                });
+
+                emit('rowDeleted', selectedItem.value as T, data);
+                showEditModal.value = false;
+                selectedItem.value = null;
+
+                // Refresh table data to remove deleted item
+                refresh();
+            },
+            onError: (errors: any) => {
+                // Show error toast
+                createToast?.({
+                    title: 'Error',
+                    body: 'Failed to delete. Please try again.',
+                    variant: 'danger',
+                    modelValue: 5000, // Auto-dismiss after 5 seconds
+                });
+
+                emit('deleteError', selectedItem.value as T, errors);
+            }
+        });
+    } catch (error) {
+        emit('deleteError', selectedItem.value as T, error);
     }
 };
 

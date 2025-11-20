@@ -79,6 +79,7 @@ const editFields = [
       :fields="fields"
       :edit-fields="editFields"
       edit-url="/api/products/:id"
+      delete-url="/api/products/:id"
       edit-modal-title="Edit Product"
       :inertia-url="mode === 'inertia' ? '/' : undefined"
       v-model:busy="busy"
