@@ -94,9 +94,10 @@
                                     <div class="fw-semibold">{{ label || field.key }}</div>
                                     <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
                                 </div>
-                                <span v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.875rem; opacity: 0.6;">
-                                    {{ getSortIndicator(field.key) }}
-                                </span>
+                                <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 0.6; display: flex; flex-direction: column; align-items: center;">
+                                    <span :style="{ opacity: getFieldSortState(field.key) === 'asc' ? 1 : 0.3 }">▲</span>
+                                    <span :style="{ opacity: getFieldSortState(field.key) === 'desc' ? 1 : 0.3 }">▼</span>
+                                </div>
                             </div>
                         </template>
 
@@ -183,9 +184,10 @@
                                     <div class="fw-semibold">{{ label || field.key }}</div>
                                     <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
                                 </div>
-                                <span v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.875rem; opacity: 0.6;">
-                                    {{ getSortIndicator(field.key) }}
-                                </span>
+                                <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 0.6; display: flex; flex-direction: column; align-items: center;">
+                                    <span :style="{ opacity: getFieldSortState(field.key) === 'asc' ? 1 : 0.3 }">▲</span>
+                                    <span :style="{ opacity: getFieldSortState(field.key) === 'desc' ? 1 : 0.3 }">▼</span>
+                                </div>
                             </div>
                         </template>
 
@@ -1016,11 +1018,10 @@ const computedModalTitle = computed(() => {
         : props.editModalTitle;
 });
 
-// Helper: Get sort indicator for a field
-const getSortIndicator = (fieldKey: string) => {
+// Helper: Get current sort state for a field
+const getFieldSortState = (fieldKey: string) => {
     const currentSort = effectiveSortBy.value.find(s => s.key === fieldKey);
-    if (!currentSort) return '↕'; // Unsorted
-    return currentSort.order === 'asc' ? '↑' : '↓';
+    return currentSort?.order || null;
 };
 
 // Handle row click for editing
