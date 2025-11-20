@@ -71,8 +71,9 @@ describe('DXTable Field Hints', () => {
     expect(theadHtml).toContain('Click to sort');
     expect(theadHtml).toContain('USD');
 
-    // Check sort indicators are present
-    expect(theadHtml).toContain('↕'); // Unsorted indicator
+    // Check sort indicators are present (stacked triangles)
+    expect(theadHtml).toContain('▲');
+    expect(theadHtml).toContain('▼');
   });
 
   it('hints work with formatters', async () => {
