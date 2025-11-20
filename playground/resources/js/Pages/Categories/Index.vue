@@ -22,13 +22,14 @@ interface Props {
 defineProps<Props>();
 
 const fields = [
-  { key: 'name', label: 'Category Name', sortable: true, filter: 'text' },
-  { key: 'slug', label: 'Slug', sortable: true },
-  { key: 'product_count', label: 'Products', sortable: true },
+  { key: 'name', label: 'Category Name', sortable: true, filter: 'text', hint: 'Search by name' },
+  { key: 'slug', label: 'Slug', sortable: true, hint: 'URL identifier' },
+  { key: 'product_count', label: 'Products', sortable: true, hint: 'Total products' },
   {
     key: 'is_active',
     label: 'Status',
     sortable: true,
+    hint: 'Filter by status',
     filter: 'select',
     filterOptions: [
       { value: '1', text: 'Active' },

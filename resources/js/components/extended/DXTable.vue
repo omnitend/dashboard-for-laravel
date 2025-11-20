@@ -86,6 +86,19 @@
                             </tr>
                         </template>
 
+                        <!-- Custom headers for all fields -->
+                        <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">{{ label || field.key }}</div>
+                                    <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
+                                </div>
+                                <span v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.875rem; opacity: 0.6;">
+                                    {{ getSortIndicator(field.key) }}
+                                </span>
+                            </div>
+                        </template>
+
                         <!-- Pass through all cell slots -->
                         <template
                             v-for="(_, name) in $slots"
@@ -159,6 +172,19 @@
                                     <div v-else></div>
                                 </th>
                             </tr>
+                        </template>
+
+                        <!-- Custom headers for all fields -->
+                        <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">{{ label || field.key }}</div>
+                                    <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
+                                </div>
+                                <span v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.875rem; opacity: 0.6;">
+                                    {{ getSortIndicator(field.key) }}
+                                </span>
+                            </div>
                         </template>
 
                         <!-- Pass through all cell slots -->
@@ -413,6 +439,7 @@ export interface TableField {
     key: string;
     label?: string;
     sortable?: boolean;
+    hint?: string;
     filter?: FilterType;
     filterOptions?: FilterOption[];
     filterPlaceholder?: string;
@@ -986,6 +1013,13 @@ const computedModalTitle = computed(() => {
         ? props.editModalTitle(selectedItem.value)
         : props.editModalTitle;
 });
+
+// Helper: Get sort indicator for a field
+const getSortIndicator = (fieldKey: string) => {
+    const currentSort = effectiveSortBy.value.find(s => s.key === fieldKey);
+    if (!currentSort) return '↕'; // Unsorted
+    return currentSort.order === 'asc' ? '↑' : '↓';
+};
 
 // Handle row click for editing
 const handleRowClick = (item: T, index: number, event: MouseEvent) => {

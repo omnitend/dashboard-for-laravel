@@ -30,19 +30,21 @@ const mode = ref<'inertia' | 'api'>('inertia');
 const busy = ref(false);
 
 const fields = [
-  { key: 'sku', label: 'SKU', sortable: true },
-  { key: 'name', label: 'Product Name', sortable: true, filter: 'text' },
-  { key: 'category', label: 'Category', sortable: true, filter: 'select' },
+  { key: 'sku', label: 'SKU', sortable: true, hint: 'Product code' },
+  { key: 'name', label: 'Product Name', sortable: true, filter: 'text', hint: 'Search by name' },
+  { key: 'category', label: 'Category', sortable: true, filter: 'select', hint: 'Filter by category' },
   {
     key: 'price',
     label: 'Price',
     sortable: true,
+    hint: 'USD',
     formatter: (value: string) => `$${parseFloat(value).toFixed(2)}`
   },
   {
     key: 'stock',
     label: 'Stock',
     sortable: true,
+    hint: 'Current inventory',
     filter: 'select',
     filterOptions: [
       { value: 'low', text: 'Low Stock (≤10)' },
