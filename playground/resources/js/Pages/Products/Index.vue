@@ -109,7 +109,7 @@ const editFields = [
     <DXTable
       v-if="mode === 'inertia'"
       key="inertia-table"
-      title="Product Inventory - Click to Edit"
+      title="Product Inventory"
       item-name="product"
       :items="products.data"
       :fields="fields"

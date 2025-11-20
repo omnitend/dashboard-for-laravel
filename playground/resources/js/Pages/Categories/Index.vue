@@ -76,7 +76,7 @@ const editTabs = [
     <DXTable
       v-if="mode === 'api'"
       key="api-table"
-      title="Product Categories - Click to Edit with Tabs"
+      title="Product Categories"
       item-name="category"
       api-url="/api/categories"
       :fields="fields"
@@ -131,7 +131,7 @@ const editTabs = [
     <DXTable
       v-if="mode === 'inertia'"
       key="inertia-table"
-      title="Product Categories - Click to Edit with Tabs"
+      title="Product Categories"
       item-name="category"
       :items="categories.data"
       :fields="fields"
