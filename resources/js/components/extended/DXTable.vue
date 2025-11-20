@@ -31,7 +31,6 @@
                         :current-page="apiCurrentPage"
                         :multisort="false"
                         :no-sortable-icon="true"
-                        :no-sort-reset="true"
                         :striped="striped"
                         :hover="hover"
                         :responsive="responsive"
@@ -124,7 +123,6 @@
                         :multisort="false"
                         :no-local-sorting="true"
                         :no-sortable-icon="true"
-                        :no-sort-reset="true"
                         :striped="striped"
                         :hover="hover"
                         :responsive="responsive"
@@ -831,18 +829,21 @@ const handleSortChange = (sortBy: BTableSortBy[]) => {
     emit('update:sortBy', normalizedSortBy);
 
     // Handle Inertia navigation automatically if URL provided
-    if (hasInertiaUrl.value && isInertiaMode.value && normalizedSortBy && normalizedSortBy.length > 0 && normalizedSortBy[0].key) {
-        router.get(
-            props.inertiaUrl!,
-            {
-                page: props.pagination?.current_page || 1,
-                sortBy: normalizedSortBy[0].key,
-                sortOrder: normalizedSortBy[0].order || 'asc',
-                filters: effectiveFilters.value,
-                perPage: effectivePerPage.value,
-            },
-            { preserveState: true }
-        );
+    if (hasInertiaUrl.value && isInertiaMode.value) {
+        // Build params based on whether sort is active
+        const params: any = {
+            page: props.pagination?.current_page || 1,
+            filters: effectiveFilters.value,
+            perPage: effectivePerPage.value,
+        };
+
+        // Add sort params only if sorting is active
+        if (normalizedSortBy && normalizedSortBy.length > 0 && normalizedSortBy[0].key) {
+            params.sortBy = normalizedSortBy[0].key;
+            params.sortOrder = normalizedSortBy[0].order || 'asc';
+        }
+
+        router.get(props.inertiaUrl!, params, { preserveState: true });
     }
 
     // Emit simplified sortChange event for backward compatibility
