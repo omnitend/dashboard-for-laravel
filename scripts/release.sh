@@ -93,11 +93,16 @@ npm publish
 print_step "Pushing to GitHub..."
 /usr/bin/git push origin main --tags
 
+# Step 10: Create GitHub Release
+print_step "Creating GitHub release..."
+gh release create "v${VERSION}" --title "Version ${VERSION}" --notes "${RELEASE_NOTES}"
+
 print_step "✅ Release ${VERSION} complete!"
 echo ""
 echo "Published:"
 echo "  - NPM: @omnitend/dashboard-for-laravel@${VERSION}"
 echo "  - Git: v${VERSION}"
+echo "  - GitHub Release: https://github.com/omnitend/dashboard-for-laravel/releases/tag/v${VERSION}"
 echo ""
 echo "Users can install with:"
 echo "  npm install @omnitend/dashboard-for-laravel@${VERSION}"
