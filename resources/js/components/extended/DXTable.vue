@@ -1187,16 +1187,20 @@ const handleDelete = async () => {
                 // Refresh table data to remove deleted item
                 refresh();
             },
-            onError: (errors: any) => {
-                // Show error toast
+            onError: (error: any) => {
+                // Extract error message from server response
+                const errorData = error?.response?.data ?? error?.data ?? error;
+                const errorMessage = errorData?.message ?? 'Failed to delete. Please try again.';
+
+                // Show error toast with server message
                 createToast?.({
                     title: 'Error',
-                    body: 'Failed to delete. Please try again.',
+                    body: errorMessage,
                     variant: 'danger',
                     modelValue: 5000, // Auto-dismiss after 5 seconds
                 });
 
-                emit('deleteError', selectedItem.value as T, errors);
+                emit('deleteError', selectedItem.value as T, error);
             }
         });
     } catch (error) {

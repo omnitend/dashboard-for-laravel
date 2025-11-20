@@ -48,6 +48,14 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        // Check if category has products
+        if ($category->product_count > 0) {
+            return response()->json([
+                'message' => "Cannot delete {$category->name}. This category has {$category->product_count} associated products. Please delete all products for this category first.",
+                'error' => 'Category has associated products',
+            ], 422);
+        }
+
         $category->delete();
 
         return response()->json([
