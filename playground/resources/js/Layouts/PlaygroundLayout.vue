@@ -53,13 +53,19 @@ const user = {
     dashboard-id="playground"
   >
     <template #navbar-search>
-      <DBadge
-        :variant="mode === 'api' ? 'primary' : 'info'"
-        style="cursor: pointer; user-select: none;"
+      <div
+        class="mode-toggle d-flex align-items-center gap-2 px-3 py-1 rounded"
+        style="cursor: pointer; user-select: none; background-color: var(--bs-light); border: 1px solid var(--bs-border-color);"
         @click="toggleMode"
       >
-        {{ mode === 'api' ? 'API Mode' : 'Inertia Mode' }}
-      </DBadge>
+        <span :style="{ fontWeight: mode === 'api' ? '600' : '400', color: mode === 'api' ? 'var(--bs-primary)' : 'var(--bs-secondary)' }">
+          API
+        </span>
+        <span style="color: var(--bs-secondary);">|</span>
+        <span :style="{ fontWeight: mode === 'inertia' ? '600' : '400', color: mode === 'inertia' ? 'var(--bs-primary)' : 'var(--bs-secondary)' }">
+          Inertia
+        </span>
+      </div>
     </template>
 
     <slot />
