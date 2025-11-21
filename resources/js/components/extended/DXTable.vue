@@ -220,7 +220,7 @@
                             <div v-else></div>
 
                             <!-- Per-page selector -->
-                            <div v-if="showPerPageSelector" class="d-flex align-items-center gap-2">
+                            <div v-if="shouldShowPerPageSelector" class="d-flex align-items-center gap-2">
                                 <label for="perPageSelect" class="mb-0 small text-muted">Per page</label>
                                 <DFormSelect
                                     id="perPageSelect"
@@ -245,9 +245,7 @@
                                 {{ pagination.total }} {{ pluralItemName }}.
                             </template>
                             <template v-if="hasActiveFilters && pagination.total_unfiltered">
-                                <div>
-                                    <small>Filtered from {{ pagination.total_unfiltered }} {{ pagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
-                                </div>
+                                <small> Filtered from {{ pagination.total_unfiltered }} {{ pagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
                             </template>
                         </div>
                     </div>
@@ -268,7 +266,7 @@
                             <div v-else></div>
 
                             <!-- Per-page selector -->
-                            <div v-if="showPerPageSelector" class="d-flex align-items-center gap-2">
+                            <div v-if="shouldShowPerPageSelector" class="d-flex align-items-center gap-2">
                                 <label for="perPageSelectApi" class="mb-0 small text-muted">Per page</label>
                                 <DFormSelect
                                     id="perPageSelectApi"
@@ -293,9 +291,7 @@
                                 {{ apiPaginationMeta.total }} {{ pluralItemName }}.
                             </template>
                             <template v-if="hasActiveFilters && apiPaginationMeta.total_unfiltered">
-                                <div>
-                                    <small>Filtered from {{ apiPaginationMeta.total_unfiltered }} {{ apiPaginationMeta.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
-                                </div>
+                                <small> Filtered from {{ apiPaginationMeta.total_unfiltered }} {{ apiPaginationMeta.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
                             </template>
                         </div>
                     </div>
@@ -764,6 +760,19 @@ watch(() => props.pagination?.per_page, (newPerPage) => {
 
 // Computed effective perPage (use external if provided, otherwise internal)
 const effectivePerPage = computed(() => props.perPage !== undefined ? props.perPage : internalPerPage.value);
+
+// Computed: determine if per-page selector should be shown
+// Hide it when total items is less than the smallest page size option
+const shouldShowPerPageSelector = computed(() => {
+    if (!props.showPerPageSelector) return false;
+
+    const smallestOption = Math.min(...props.perPageOptions);
+    const total = isInertiaMode.value
+        ? props.pagination?.total || 0
+        : apiPaginationMeta.value?.total || 0;
+
+    return total >= smallestOption;
+});
 
 // Detect which fields need server filter values
 const fieldsNeedingFilterValues = computed(() => {
