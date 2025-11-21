@@ -1,0 +1,108 @@
+name: Bug Report
+description: File a bug report to help us improve
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Example
+      description: If applicable, add a minimal code example that reproduces the issue
+      render: vue
+      placeholder: |
+        <template>
+          <DXTable :items="items" :fields="fields" />
+        </template>
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: Package Version
+      description: What version of the package are you using?
+      options:
+        - 0.4.7 (latest)
+        - 0.4.6
+        - 0.4.5
+        - 0.4.4
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: input
+    id: laravel-version
+    attributes:
+      label: Laravel Version
+      description: What version of Laravel are you using?
+      placeholder: "11.0"
+    validations:
+      required: true
+
+  - type: input
+    id: vue-version
+    attributes:
+      label: Vue Version
+      description: What version of Vue are you using?
+      placeholder: "3.4.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      description: Are you using Inertia mode or API mode?
+      options:
+        - Inertia mode
+        - API mode
+        - Both
+        - Not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: browser
+    attributes:
+      label: Browser & OS
+      description: What browser and operating system are you using?
+      placeholder: "Chrome 120 on macOS 14"
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here

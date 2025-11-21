@@ -1,0 +1,78 @@
+name: Feature Request
+description: Suggest an idea for this project
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide as much detail as possible.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear description of the problem you're facing
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen
+      placeholder: "I would like to see..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      description: Any alternative solutions or features you've considered
+    validations:
+      required: false
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which component does this relate to?
+      description: Select the component or area this feature would affect
+      options:
+        - DXTable
+        - DXForm / DXBasicForm
+        - DXDashboard
+        - useForm composable
+        - Base components (D*)
+        - Backend (PHP/Laravel)
+        - Documentation
+        - Other (please specify below)
+    validations:
+      required: false
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example Usage
+      description: Show how you would like to use this feature
+      render: vue
+      placeholder: |
+        <template>
+          <DXTable :new-feature="true" />
+        </template>
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Would you like to contribute this feature?
+      description: Are you willing to submit a pull request for this feature?
+      options:
+        - label: I would like to implement this feature myself
+          required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context or screenshots about the feature request here

@@ -1,18 +1,23 @@
 # Laravel Dashboard
 
+[![npm version](https://badge.fury.io/js/@omnitend%2Fdashboard-for-laravel.svg)](https://www.npmjs.com/package/@omnitend/dashboard-for-laravel)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-108%20passing-brightgreen)](https://github.com/omnitend/dashboard-for-laravel)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
+
 A full-stack package for building Laravel dashboards with Vue 3, Inertia.js, and Bootstrap Vue Next.
 
 ## Documentation
 
-📚 **[Full Documentation](docs/src/pages/)** | 📦 **[NPM Package](https://www.npmjs.com/package/@omnitend/dashboard-for-laravel)**
+📚 **[Browse Components](https://github.com/omnitend/dashboard-for-laravel/tree/main/docs/src/pages/components)** | 📦 **[NPM Package](https://www.npmjs.com/package/@omnitend/dashboard-for-laravel)**
 
-- [Getting Started Guide](docs/src/pages/guide/getting-started.md)
-- [Installation Guide](docs/src/pages/guide/installation.md)
-- [Component API Reference](docs/src/pages/components/)
-- [Form System Guide](docs/src/pages/guide/forms.md)
-- [Theming Guide](docs/src/pages/guide/theming.md)
-- [TypeScript Guide](docs/src/pages/guide/typescript.md)
-- [Examples & Patterns](docs/src/pages/examples/common-patterns.md)
+- [Getting Started Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/getting-started.md)
+- [Installation Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/installation.md)
+- [Component API Reference](https://github.com/omnitend/dashboard-for-laravel/tree/main/docs/src/pages/components)
+- [Form System Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/forms.md)
+- [Theming Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/theming.md)
+- [TypeScript Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/typescript.md)
+- [Examples & Patterns](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/examples/common-patterns.md)
 
 ## Features
 

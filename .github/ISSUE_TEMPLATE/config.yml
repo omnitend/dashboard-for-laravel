@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/omnitend/dashboard-for-laravel/tree/main/docs/src/pages
+    about: Browse the full documentation
+  - name: NPM Package
+    url: https://www.npmjs.com/package/@omnitend/dashboard-for-laravel
+    about: View the NPM package page
