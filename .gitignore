@@ -4,6 +4,11 @@ node_modules/
 composer.lock
 package-lock.json
 
+# Environment files
+.env
+.env.local
+.env.*.local
+
 # Build output
 /dist
 /docs/dist
