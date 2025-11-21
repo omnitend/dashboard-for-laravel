@@ -236,10 +236,20 @@
                         <!-- Bottom row: Info text -->
                         <div class="small text-muted">
                             <template v-if="pagination.total > pagination.per_page">
-                                {{ pagination.from }} to {{ pagination.to }} out of {{ pagination.total }} {{ pluralItemName }}.
+                                {{ pagination.from }} to {{ pagination.to }} out of {{ pagination.total }} {{ pagination.total === 1 ? singularItemName : pluralItemName }}.
                             </template>
                             <template v-else>
-                                Showing all {{ pagination.total }} {{ pluralItemName }}.
+                                <template v-if="pagination.total === 1">
+                                    Showing {{ pagination.total }} {{ singularItemName }}.
+                                </template>
+                                <template v-else>
+                                    Showing all {{ pagination.total }} {{ pluralItemName }}.
+                                </template>
+                            </template>
+                            <template v-if="hasActiveFilters">
+                                <div>
+                                    <small>Filtered from {{ pagination.total_unfiltered || pagination.total }} {{ (pagination.total_unfiltered || pagination.total) === 1 ? singularItemName : pluralItemName }}.</small>
+                                </div>
                             </template>
                         </div>
                     </div>
@@ -276,10 +286,20 @@
                         <!-- Bottom row: Info text -->
                         <div class="small text-muted">
                             <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
-                                {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} out of {{ apiPaginationMeta.total }} {{ pluralItemName }}.
+                                {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} out of {{ apiPaginationMeta.total }} {{ apiPaginationMeta.total === 1 ? singularItemName : pluralItemName }}.
                             </template>
                             <template v-else>
-                                Showing all {{ apiPaginationMeta.total }} {{ pluralItemName }}.
+                                <template v-if="apiPaginationMeta.total === 1">
+                                    Showing {{ apiPaginationMeta.total }} {{ singularItemName }}.
+                                </template>
+                                <template v-else>
+                                    Showing all {{ apiPaginationMeta.total }} {{ pluralItemName }}.
+                                </template>
+                            </template>
+                            <template v-if="hasActiveFilters">
+                                <div>
+                                    <small>Filtered from {{ apiPaginationMeta.total_unfiltered || apiPaginationMeta.total }} {{ (apiPaginationMeta.total_unfiltered || apiPaginationMeta.total) === 1 ? singularItemName : pluralItemName }}.</small>
+                                </div>
                             </template>
                         </div>
                     </div>
@@ -471,6 +491,7 @@ export interface PaginationData {
     from: number;
     to: number;
     last_page?: number;
+    total_unfiltered?: number;
 }
 
 export interface BTableSortBy {
@@ -670,6 +691,12 @@ const effectiveFilters = computed(() => props.filters !== undefined ? props.filt
 
 // Computed: check if any field has filtering enabled
 const hasFilters = computed(() => props.fields.some(field => field.filter !== false && field.filter !== undefined));
+
+// Computed: check if any filters are currently active
+const hasActiveFilters = computed(() => {
+    const filters = effectiveFilters.value;
+    return Object.keys(filters).some(key => filters[key] && filters[key].trim() !== '');
+});
 
 // API mode pagination metadata (extracted from responses)
 const apiPaginationMeta = ref<PaginationData | null>(null);
@@ -1221,5 +1248,24 @@ defineExpose({
 
 :deep(tbody tr:hover) {
     background-color: v-bind('editFields && editFields.length > 0 ? "var(--bs-table-hover-bg)" : "inherit"');
+}
+
+/* Improve pagination button sizing */
+:deep(.pagination) {
+    margin-bottom: 0;
+}
+
+:deep(.pagination .page-link) {
+    min-width: 2.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9375rem;
+}
+
+@media (min-width: 768px) {
+    :deep(.pagination .page-link) {
+        min-width: 3rem;
+        padding: 0.625rem 1rem;
+        font-size: 1rem;
+    }
 }
 </style>
