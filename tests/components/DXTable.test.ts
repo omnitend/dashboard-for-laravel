@@ -68,7 +68,7 @@ describe('DXTable', () => {
       });
 
       // Check pagination info text exists
-      await expect.element(screen.getByText(/Showing 1 to 10 of 25 items/)).toBeVisible();
+      await expect.element(screen.getByText(/1 to 10 out of 25 items/)).toBeVisible();
 
       // Check pagination buttons are rendered
       const paginationButtons = screen.container.querySelectorAll('.pagination .page-item');
@@ -107,7 +107,7 @@ describe('DXTable', () => {
       expect(pageItems.length).toBeGreaterThan(2);
 
       // Verify we're on page 1 (showing 1-10 of 25)
-      await expect.element(screen.getByText(/Showing 1 to 10 of 25/)).toBeVisible();
+      await expect.element(screen.getByText(/1 to 10 out of 25/)).toBeVisible();
     });
 
     it('emits pageChange event when pagination is clicked', async () => {

@@ -205,83 +205,83 @@
                     </DTable>
 
                     <!-- Pagination and Controls (Inertia mode) -->
-                    <div
-                        v-if="isInertiaMode && pagination"
-                        class="d-flex justify-content-between align-items-center mt-3"
-                    >
-                        <div class="d-flex align-items-center gap-2">
-                            <!-- Info text -->
-                            <span class="text-muted">
-                                <template v-if="pagination.total > pagination.per_page">
-                                    Showing {{ pagination.from }} to {{ pagination.to }} of {{ pagination.total }} {{ pluralItemName }}
-                                </template>
-                                <template v-else>
-                                    Showing all {{ pagination.total }} {{ pluralItemName }}
-                                </template>
-                            </span>
+                    <div v-if="isInertiaMode && pagination" class="mt-3">
+                        <!-- Top row: Pagination and Per-page selector -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <!-- Pagination controls (only when multiple pages) -->
+                            <DPagination
+                                v-if="showPagination && pagination.total > pagination.per_page"
+                                :model-value="pagination.current_page"
+                                :total-rows="pagination.total"
+                                :per-page="pagination.per_page"
+                                size="sm"
+                                @update:model-value="handlePageChange"
+                            />
+                            <div v-else></div>
 
-                            <!-- Per-page selector (always shown) -->
-                            <div v-if="showPerPageSelector" class="d-flex align-items-center gap-2 ms-3">
-                                <label for="perPageSelect" class="text-muted mb-0 small">Show:</label>
+                            <!-- Per-page selector -->
+                            <div v-if="showPerPageSelector" class="d-flex align-items-center gap-2">
+                                <label for="perPageSelect" class="mb-0 small text-muted">Per page</label>
                                 <DFormSelect
                                     id="perPageSelect"
                                     :model-value="effectivePerPage"
                                     :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
                                     size="sm"
-                                    style="width: 80px;"
+                                    style="width: 70px;"
                                     @update:model-value="handlePerPageChange"
                                 />
                             </div>
                         </div>
 
-                        <!-- Pagination controls (only when multiple pages) -->
-                        <DPagination
-                            v-if="showPagination && pagination.total > pagination.per_page"
-                            :model-value="pagination.current_page"
-                            :total-rows="pagination.total"
-                            :per-page="pagination.per_page"
-                            @update:model-value="handlePageChange"
-                        />
+                        <!-- Bottom row: Info text -->
+                        <div class="small text-muted">
+                            <template v-if="pagination.total > pagination.per_page">
+                                {{ pagination.from }} to {{ pagination.to }} out of {{ pagination.total }} {{ pluralItemName }}.
+                            </template>
+                            <template v-else>
+                                Showing all {{ pagination.total }} {{ pluralItemName }}.
+                            </template>
+                        </div>
                     </div>
 
                     <!-- Pagination and Controls (API mode) -->
-                    <div
-                        v-if="isProviderMode && apiPaginationMeta"
-                        class="d-flex justify-content-between align-items-center mt-3"
-                    >
-                        <div class="d-flex align-items-center gap-2">
-                            <!-- Info text -->
-                            <span class="text-muted">
-                                <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
-                                    Showing {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} of {{ apiPaginationMeta.total }} {{ pluralItemName }}
-                                </template>
-                                <template v-else>
-                                    Showing all {{ apiPaginationMeta.total }} {{ pluralItemName }}
-                                </template>
-                            </span>
+                    <div v-if="isProviderMode && apiPaginationMeta" class="mt-3">
+                        <!-- Top row: Pagination and Per-page selector -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <!-- Pagination controls (only when multiple pages) -->
+                            <DPagination
+                                v-if="showPagination && apiPaginationMeta.total > apiPaginationMeta.per_page"
+                                :model-value="apiPaginationMeta.current_page"
+                                :total-rows="apiPaginationMeta.total"
+                                :per-page="apiPaginationMeta.per_page"
+                                size="sm"
+                                @update:model-value="handleApiPageChange"
+                            />
+                            <div v-else></div>
 
-                            <!-- Per-page selector (always shown) -->
-                            <div v-if="showPerPageSelector" class="d-flex align-items-center gap-2 ms-3">
-                                <label for="perPageSelectApi" class="text-muted mb-0 small">Show:</label>
+                            <!-- Per-page selector -->
+                            <div v-if="showPerPageSelector" class="d-flex align-items-center gap-2">
+                                <label for="perPageSelectApi" class="mb-0 small text-muted">Per page</label>
                                 <DFormSelect
                                     id="perPageSelectApi"
                                     :model-value="effectivePerPage"
                                     :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
                                     size="sm"
-                                    style="width: 80px;"
+                                    style="width: 70px;"
                                     @update:model-value="handlePerPageChange"
                                 />
                             </div>
                         </div>
 
-                        <!-- Pagination controls (only when multiple pages) -->
-                        <DPagination
-                            v-if="showPagination && apiPaginationMeta.total > apiPaginationMeta.per_page"
-                            :model-value="apiPaginationMeta.current_page"
-                            :total-rows="apiPaginationMeta.total"
-                            :per-page="apiPaginationMeta.per_page"
-                            @update:model-value="handleApiPageChange"
-                        />
+                        <!-- Bottom row: Info text -->
+                        <div class="small text-muted">
+                            <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
+                                {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} out of {{ apiPaginationMeta.total }} {{ pluralItemName }}.
+                            </template>
+                            <template v-else>
+                                Showing all {{ apiPaginationMeta.total }} {{ pluralItemName }}.
+                            </template>
+                        </div>
                     </div>
                 </DCard>
             </DCol>
