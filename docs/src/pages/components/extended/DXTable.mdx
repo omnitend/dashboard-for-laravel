@@ -62,25 +62,55 @@ const paginationData = ref({
 
 <PropsTable client:load props={[
   { name: 'title', type: 'string', required: 'No', default: '-', description: 'Table title' },
-  { name: 'items', type: 'TItem[]', required: 'Yes', default: '-', description: 'Table data items' },
-  { name: 'fields', type: 'TableField[]', required: 'Yes', default: '-', description: 'Table field definitions' },
-  { name: 'loading', type: 'boolean', required: 'No', default: 'false', description: 'Loading state' },
+  { name: 'itemName', type: 'string', required: 'No', default: 'item', description: 'Singular item name (auto-pluralized for display)' },
+  { name: 'items', type: 'TItem[]', required: 'No', default: '-', description: 'Table data items (Inertia mode)' },
+  { name: 'provider', type: 'BTableProvider<TItem>', required: 'No', default: '-', description: 'Provider function for API mode' },
+  { name: 'apiUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint URL for auto-provider mode' },
+  { name: 'fields', type: 'TableField[]', required: 'Yes', default: '-', description: 'Table field definitions (see TableField interface)' },
+  { name: 'sortBy', type: 'BTableSortBy[]', required: 'No', default: '[]', description: 'Sort configuration (v-model support)' },
+  { name: 'filters', type: 'Record<string, string>', required: 'No', default: '{}', description: 'Filter values (v-model support)' },
+  { name: 'filterValues', type: 'Record<string, string[]>', required: 'No', default: '-', description: 'Dynamic filter options from server' },
+  { name: 'inertiaUrl', type: 'string', required: 'No', default: '-', description: 'Inertia route URL (enables auto-navigation)' },
+  { name: 'busy', type: 'boolean', required: 'No', default: 'false', description: 'Loading/busy state (v-model support, API mode)' },
+  { name: 'loading', type: 'boolean', required: 'No', default: 'false', description: 'Loading state (Inertia mode, deprecated - use busy)' },
   { name: 'loadingText', type: 'string', required: 'No', default: 'Loading...', description: 'Loading text' },
   { name: 'error', type: 'string | null', required: 'No', default: 'null', description: 'Error message' },
-  { name: 'pagination', type: 'PaginationData', required: 'No', default: 'function', description: 'Pagination data' },
+  { name: 'pagination', type: 'PaginationData', required: 'No', default: 'function', description: 'Pagination data (Inertia mode)' },
   { name: 'showPagination', type: 'boolean', required: 'No', default: 'true', description: 'Show pagination controls' },
+  { name: 'showPerPageSelector', type: 'boolean', required: 'No', default: 'true', description: 'Show per-page selector' },
+  { name: 'perPageOptions', type: 'number[]', required: 'No', default: '[10, 25, 50, 100]', description: 'Per-page options for selector' },
+  { name: 'currentPage', type: 'number', required: 'No', default: '1', description: 'Current page (for provider mode)' },
+  { name: 'perPage', type: 'number', required: 'No', default: '10', description: 'Items per page (v-model support)' },
   { name: 'striped', type: 'boolean', required: 'No', default: 'true', description: 'Striped rows' },
   { name: 'hover', type: 'boolean', required: 'No', default: 'true', description: 'Hover effect on rows' },
   { name: 'responsive', type: 'boolean', required: 'No', default: 'true', description: 'Responsive table' },
   { name: 'fluid', type: 'boolean', required: 'No', default: 'false', description: 'Fluid container' },
   { name: 'containerClass', type: 'string', required: 'No', default: 'py-5', description: 'Container CSS class' },
   { name: 'columnSize', type: 'string | number', required: 'No', default: '12', description: 'Column size (Bootstrap grid)' },
+  { name: 'editFields', type: 'FieldDefinition[]', required: 'No', default: '-', description: 'Form fields for edit modal (enables edit on row click)' },
+  { name: 'editTabs', type: 'EditTab[]', required: 'No', default: '-', description: 'Tab definitions for organizing edit modal content' },
+  { name: 'editModalTitle', type: 'string | ((item: any) => string)', required: 'No', default: '-', description: 'Edit modal title (string or function)' },
+  { name: 'editModalSize', type: 'sm | md | lg | xl', required: 'No', default: 'lg', description: 'Edit modal size' },
+  { name: 'editUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for updates (e.g., "/api/products/:id")' },
+  { name: 'deleteUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for deletions (e.g., "/api/products/:id")' },
 ]} />
 
 ## Events
 
 <EventsTable client:load events={[
   { name: 'pageChange', params: 'page: number', description: 'Emitted when the page changes' },
+  { name: 'sortChange', params: 'sort: { key: string, order: "asc" | "desc" }', description: 'Emitted when sort changes' },
+  { name: 'filterChange', params: 'filters: Record<string, string>', description: 'Emitted when filters change' },
+  { name: 'perPageChange', params: 'perPage: number', description: 'Emitted when per-page value changes' },
+  { name: 'rowClicked', params: 'item: T, index: number, event: MouseEvent', description: 'Emitted when a row is clicked' },
+  { name: 'rowUpdated', params: 'item: T, response: any', description: 'Emitted when a row is successfully updated' },
+  { name: 'editError', params: 'item: T, error: any', description: 'Emitted when row update fails' },
+  { name: 'rowDeleted', params: 'item: T, response: any', description: 'Emitted when a row is successfully deleted' },
+  { name: 'deleteError', params: 'item: T, error: any', description: 'Emitted when row deletion fails' },
+  { name: 'update:sortBy', params: 'sortBy: BTableSortBy[]', description: 'v-model update for sortBy' },
+  { name: 'update:filters', params: 'filters: Record<string, string>', description: 'v-model update for filters' },
+  { name: 'update:perPage', params: 'perPage: number', description: 'v-model update for perPage' },
+  { name: 'update:busy', params: 'busy: boolean', description: 'v-model update for busy state' },
 ]} />
 
 ## Slots
@@ -218,6 +248,34 @@ const fields = [
 - `false` or omit - No filter for this column
 
 Filters appear inline beneath the table headers and trigger server requests automatically.
+
+### Field Hints
+
+Add helpful hint text below column headers to guide users:
+
+```typescript
+const fields = [
+  { key: 'sku', label: 'SKU', sortable: true, hint: 'Product code' },
+  { key: 'name', label: 'Name', sortable: true, filter: 'text', hint: 'Search by name' },
+  { key: 'price', label: 'Price', sortable: true, hint: 'USD', formatter: (value) => `$${value}` },
+  { key: 'stock', label: 'Stock', sortable: true, hint: 'Current inventory' },
+];
+```
+
+**Features:**
+- Hint text appears below the column label in a smaller, muted font
+- Works with sortable columns (hint appears above sort indicators)
+- Works with filters (hint appears in column header, above filter input)
+- Useful for units (USD, kg), instructions (Search by name), or context (Current inventory)
+- Optional - only shows when `hint` property is provided
+
+**Example Output:**
+```
+Product Name    Price
+Search by name  USD
+↑↓              ↑↓
+[filter input]  [filter input]
+```
 
 ### Backend Filter Handling
 
@@ -461,6 +519,107 @@ const refreshData = () => {
     :fields="fields"
   />
 </template>
+```
+
+## TableField Interface
+
+Fields support the following properties:
+
+```typescript
+interface TableField {
+  key: string;                    // Required: Field key (matches data property)
+  label?: string;                 // Column header label
+  sortable?: boolean;             // Enable sorting for this column
+  hint?: string;                  // Hint text below column header
+  filter?: FilterType;            // Filter type: 'text' | 'select' | 'number' | 'date' | false
+  filterOptions?: FilterOption[]; // Options for select filters
+  filterPlaceholder?: string;     // Placeholder for filter input
+  formatter?: (value: any, key: string, item: any) => string; // Custom formatter function
+  [key: string]: any;             // Any other Bootstrap Vue Next BTable field props
+}
+```
+
+## Edit Modals
+
+Enable inline editing by providing `editFields` and `editUrl`:
+
+```vue
+<script setup>
+const fields = [
+  { key: 'name', label: 'Product Name', sortable: true },
+  { key: 'price', label: 'Price', sortable: true },
+];
+
+const editFields = [
+  { key: 'name', label: 'Product Name', type: 'text', required: true },
+  { key: 'description', label: 'Description', type: 'textarea' },
+  { key: 'price', label: 'Price', type: 'number', required: true },
+  { key: 'stock', label: 'Stock', type: 'number', required: true },
+];
+</script>
+
+<template>
+  <DXTable
+    :items="products.data"
+    :fields="fields"
+    :edit-fields="editFields"
+    edit-url="/api/products/:id"
+    edit-modal-title="Edit Product"
+  />
+</template>
+```
+
+**Features:**
+- Click any row to open edit modal
+- Form fields auto-populated from row data
+- Save button submits PUT request to `editUrl` (`:id` replaced with item.id)
+- Success/error toasts shown automatically
+- Table refreshes after successful save
+- Validation errors displayed inline
+
+## Delete Functionality
+
+Enable deletion with the `deleteUrl` prop:
+
+```vue
+<template>
+  <DXTable
+    :items="products.data"
+    :fields="fields"
+    :edit-fields="editFields"
+    edit-url="/api/products/:id"
+    delete-url="/api/products/:id"
+    @row-deleted="handleDeleted"
+    @delete-error="handleDeleteError"
+  />
+</template>
+```
+
+**Features:**
+- Delete button appears in modal footer (red/danger variant)
+- Confirmation dialog before deletion
+- Success/error toasts with server messages
+- Table auto-refreshes after successful deletion
+- Displays server validation errors (e.g., "Cannot delete. This category has 42 products.")
+
+**Backend Example:**
+```php
+public function destroy(Product $product)
+{
+    // Optional: Add validation
+    if ($product->orders()->count() > 0) {
+        return response()->json([
+            'message' => "Cannot delete {$product->name}. This product has orders.",
+        ], 422);
+    }
+
+    $product->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Product deleted successfully',
+    ]);
+}
 ```
 
 ## Extended Component
