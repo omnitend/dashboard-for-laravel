@@ -227,7 +227,7 @@
                                     :model-value="effectivePerPage"
                                     :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
                                     size="sm"
-                                    style="width: 70px;"
+                                    style="width: 85px;"
                                     @update:model-value="handlePerPageChange"
                                 />
                             </div>
@@ -273,7 +273,7 @@
                                     :model-value="effectivePerPage"
                                     :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
                                     size="sm"
-                                    style="width: 70px;"
+                                    style="width: 85px;"
                                     @update:model-value="handlePerPageChange"
                                 />
                             </div>
