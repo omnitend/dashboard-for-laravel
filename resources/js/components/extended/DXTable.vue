@@ -759,7 +759,18 @@ watch(() => props.pagination?.per_page, (newPerPage) => {
 });
 
 // Computed effective perPage (use external if provided, otherwise internal)
-const effectivePerPage = computed(() => props.perPage !== undefined ? props.perPage : internalPerPage.value);
+const effectivePerPage = computed(() => {
+    // For Inertia mode, prefer pagination.per_page (actual server value)
+    if (isInertiaMode.value && props.pagination?.per_page) {
+        return props.pagination.per_page;
+    }
+    // For API mode, prefer apiPaginationMeta.per_page (actual server value)
+    if (isProviderMode.value && apiPaginationMeta.value?.per_page) {
+        return apiPaginationMeta.value.per_page;
+    }
+    // Fallback to prop or internal state
+    return props.perPage !== undefined ? props.perPage : internalPerPage.value;
+});
 
 // Computed: determine if per-page selector should be shown
 // Hide it when total items is less than the smallest page size option

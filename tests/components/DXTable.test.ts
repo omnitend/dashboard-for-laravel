@@ -151,6 +151,32 @@ describe('DXTable', () => {
       expect(pageChangeEvents![0][0]).toBe(2);
     });
 
+    it('displays correct per-page value from pagination data', async () => {
+      const screen = render(DXTable, {
+        props: {
+          items: customerData.slice(0, 2),
+          fields: customerFields,
+          pagination: {
+            current_page: 1,
+            per_page: 10, // Server says 10
+            total: 25,
+            from: 1,
+            to: 10,
+          },
+          showPagination: true,
+          showPerPageSelector: true,
+          perPageOptions: [10, 25, 50, 100],
+        },
+      });
+
+      // Find the per-page select
+      const perPageSelect = screen.container.querySelector('#perPageSelect') as HTMLSelectElement;
+      expect(perPageSelect).toBeTruthy();
+
+      // Should show 10 (from pagination.per_page), not localStorage or default
+      expect(perPageSelect?.value).toBe('10');
+    });
+
     it('updates table content when items prop changes', async () => {
       const screen = render(DXTable, {
         props: {
