@@ -163,6 +163,16 @@ trait HasTableFilters
             $perPage = 10;
         }
 
+        // Calculate total unfiltered count (if filters are applied)
+        $filters = $request->input('filters', []);
+        $hasFilters = !empty(array_filter($filters, fn($v) => $v !== null && $v !== ''));
+        $totalUnfiltered = null;
+
+        if ($hasFilters) {
+            // Get total count without filters by creating a fresh query
+            $totalUnfiltered = $modelClass::count();
+        }
+
         // Paginate results
         $paginated = $query->paginate($perPage, ['*'], 'page', $request->input('page', 1));
 
@@ -173,23 +183,37 @@ trait HasTableFilters
 
         // Check if it's an API request
         if ($request->wantsJson() || $request->is('api/*')) {
+            $paginationData = [
+                'current_page' => $paginated->currentPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+                'from' => $paginated->firstItem(),
+                'to' => $paginated->lastItem(),
+                'last_page' => $paginated->lastPage(),
+            ];
+
+            // Add total_unfiltered only if filters are active
+            if ($totalUnfiltered !== null) {
+                $paginationData['total_unfiltered'] = $totalUnfiltered;
+            }
+
             return response()->json([
                 'data' => $paginated->items(),
-                'pagination' => [
-                    'current_page' => $paginated->currentPage(),
-                    'per_page' => $paginated->perPage(),
-                    'total' => $paginated->total(),
-                    'from' => $paginated->firstItem(),
-                    'to' => $paginated->lastItem(),
-                    'last_page' => $paginated->lastPage(),
-                ],
+                'pagination' => $paginationData,
                 'filterValues' => $filterValues,
             ]);
         }
 
         // Inertia response
+        $paginatedResource = new \OmniTend\LaravelDashboard\Http\Resources\PaginatedResource($paginated);
+
+        // Add total_unfiltered to the pagination data if filters are active
+        if ($totalUnfiltered !== null) {
+            $paginatedResource->total_unfiltered = $totalUnfiltered;
+        }
+
         return \Inertia\Inertia::render($componentName, [
-            $dataKey => new \OmniTend\LaravelDashboard\Http\Resources\PaginatedResource($paginated),
+            $dataKey => $paginatedResource,
             'filterValues' => $filterValues,
         ]);
     }

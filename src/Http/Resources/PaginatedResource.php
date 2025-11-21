@@ -11,6 +11,11 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 class PaginatedResource extends ResourceCollection
 {
     /**
+     * Total unfiltered count (optional, set when filters are active)
+     */
+    public ?int $total_unfiltered = null;
+
+    /**
      * Transform the resource collection into an array.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -18,7 +23,7 @@ class PaginatedResource extends ResourceCollection
      */
     public function toArray($request): array
     {
-        return [
+        $data = [
             'data' => $this->collection,
             'current_page' => $this->currentPage(),
             'per_page' => $this->perPage(),
@@ -27,5 +32,12 @@ class PaginatedResource extends ResourceCollection
             'to' => $this->lastItem(),
             'last_page' => $this->lastPage(),
         ];
+
+        // Add total_unfiltered only if it's set
+        if ($this->total_unfiltered !== null) {
+            $data['total_unfiltered'] = $this->total_unfiltered;
+        }
+
+        return $data;
     }
 }
