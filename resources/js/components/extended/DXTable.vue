@@ -235,18 +235,20 @@
 
                         <!-- Bottom row: Info text -->
                         <div class="small text-muted">
-                            <template v-if="pagination.total > pagination.per_page">
-                                {{ pagination.from }} to {{ pagination.to }} out of {{ pagination.total }} {{ pagination.total === 1 ? singularItemName : pluralItemName }}.
-                            </template>
-                            <template v-else-if="pagination.total === 1">
-                                {{ pagination.total }} {{ singularItemName }}.
-                            </template>
-                            <template v-else>
-                                {{ pagination.total }} {{ pluralItemName }}.
-                            </template>
-                            <template v-if="hasActiveFilters && pagination.total_unfiltered">
-                                <small> Filtered from {{ pagination.total_unfiltered }} {{ pagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
-                            </template>
+                            <div>
+                                <template v-if="pagination.total > pagination.per_page">
+                                    {{ pagination.from }} to {{ pagination.to }} out of {{ pagination.total }} {{ pagination.total === 1 ? singularItemName : pluralItemName }}.
+                                </template>
+                                <template v-else-if="pagination.total === 1">
+                                    {{ pagination.total }} {{ singularItemName }}.
+                                </template>
+                                <template v-else>
+                                    {{ pagination.total }} {{ pluralItemName }}.
+                                </template>
+                            </div>
+                            <div v-if="hasActiveFilters && pagination.total_unfiltered">
+                                <small>Filtered from {{ pagination.total_unfiltered }} {{ pagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
+                            </div>
                         </div>
                     </div>
 
@@ -281,18 +283,20 @@
 
                         <!-- Bottom row: Info text -->
                         <div class="small text-muted">
-                            <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
-                                {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} out of {{ apiPaginationMeta.total }} {{ apiPaginationMeta.total === 1 ? singularItemName : pluralItemName }}.
-                            </template>
-                            <template v-else-if="apiPaginationMeta.total === 1">
-                                {{ apiPaginationMeta.total }} {{ singularItemName }}.
-                            </template>
-                            <template v-else>
-                                {{ apiPaginationMeta.total }} {{ pluralItemName }}.
-                            </template>
-                            <template v-if="hasActiveFilters && apiPaginationMeta.total_unfiltered">
-                                <small> Filtered from {{ apiPaginationMeta.total_unfiltered }} {{ apiPaginationMeta.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
-                            </template>
+                            <div>
+                                <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
+                                    {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} out of {{ apiPaginationMeta.total }} {{ apiPaginationMeta.total === 1 ? singularItemName : pluralItemName }}.
+                                </template>
+                                <template v-else-if="apiPaginationMeta.total === 1">
+                                    {{ apiPaginationMeta.total }} {{ singularItemName }}.
+                                </template>
+                                <template v-else>
+                                    {{ apiPaginationMeta.total }} {{ pluralItemName }}.
+                                </template>
+                            </div>
+                            <div v-if="hasActiveFilters && apiPaginationMeta.total_unfiltered">
+                                <small>Filtered from {{ apiPaginationMeta.total_unfiltered }} {{ apiPaginationMeta.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
+                            </div>
                         </div>
                     </div>
                 </DCard>
