@@ -238,17 +238,15 @@
                             <template v-if="pagination.total > pagination.per_page">
                                 {{ pagination.from }} to {{ pagination.to }} out of {{ pagination.total }} {{ pagination.total === 1 ? singularItemName : pluralItemName }}.
                             </template>
-                            <template v-else>
-                                <template v-if="pagination.total === 1">
-                                    Showing {{ pagination.total }} {{ singularItemName }}.
-                                </template>
-                                <template v-else>
-                                    Showing all {{ pagination.total }} {{ pluralItemName }}.
-                                </template>
+                            <template v-else-if="pagination.total === 1">
+                                {{ pagination.total }} {{ singularItemName }}.
                             </template>
-                            <template v-if="hasActiveFilters">
+                            <template v-else>
+                                {{ pagination.total }} {{ pluralItemName }}.
+                            </template>
+                            <template v-if="hasActiveFilters && pagination.total_unfiltered">
                                 <div>
-                                    <small>Filtered from {{ pagination.total_unfiltered || pagination.total }} {{ (pagination.total_unfiltered || pagination.total) === 1 ? singularItemName : pluralItemName }}.</small>
+                                    <small>Filtered from {{ pagination.total_unfiltered }} {{ pagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
                                 </div>
                             </template>
                         </div>
@@ -288,17 +286,15 @@
                             <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
                                 {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} out of {{ apiPaginationMeta.total }} {{ apiPaginationMeta.total === 1 ? singularItemName : pluralItemName }}.
                             </template>
-                            <template v-else>
-                                <template v-if="apiPaginationMeta.total === 1">
-                                    Showing {{ apiPaginationMeta.total }} {{ singularItemName }}.
-                                </template>
-                                <template v-else>
-                                    Showing all {{ apiPaginationMeta.total }} {{ pluralItemName }}.
-                                </template>
+                            <template v-else-if="apiPaginationMeta.total === 1">
+                                {{ apiPaginationMeta.total }} {{ singularItemName }}.
                             </template>
-                            <template v-if="hasActiveFilters">
+                            <template v-else>
+                                {{ apiPaginationMeta.total }} {{ pluralItemName }}.
+                            </template>
+                            <template v-if="hasActiveFilters && apiPaginationMeta.total_unfiltered">
                                 <div>
-                                    <small>Filtered from {{ apiPaginationMeta.total_unfiltered || apiPaginationMeta.total }} {{ (apiPaginationMeta.total_unfiltered || apiPaginationMeta.total) === 1 ? singularItemName : pluralItemName }}.</small>
+                                    <small>Filtered from {{ apiPaginationMeta.total_unfiltered }} {{ apiPaginationMeta.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
                                 </div>
                             </template>
                         </div>
@@ -1250,22 +1246,13 @@ defineExpose({
     background-color: v-bind('editFields && editFields.length > 0 ? "var(--bs-table-hover-bg)" : "inherit"');
 }
 
-/* Improve pagination button sizing */
+/* Improve pagination button sizing to match form controls */
 :deep(.pagination) {
     margin-bottom: 0;
 }
 
-:deep(.pagination .page-link) {
-    min-width: 2.5rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9375rem;
-}
-
-@media (min-width: 768px) {
-    :deep(.pagination .page-link) {
-        min-width: 3rem;
-        padding: 0.625rem 1rem;
-        font-size: 1rem;
-    }
+:deep(.pagination-sm .page-link) {
+    min-width: 2.25rem;
+    height: auto;
 }
 </style>
