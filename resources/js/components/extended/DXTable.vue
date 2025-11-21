@@ -1255,4 +1255,11 @@ defineExpose({
     min-width: 2.25rem;
     height: auto;
 }
+
+/* Make disabled pagination buttons more subtle */
+:deep(.pagination .page-item.disabled .page-link) {
+    background-color: transparent;
+    border-color: transparent;
+    opacity: 0.3;
+}
 </style>
