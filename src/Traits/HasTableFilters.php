@@ -115,11 +115,11 @@ trait HasTableFilters
     /**
      * Get distinct values for filter dropdowns
      *
-     * @param string $modelClass The model class to query
+     * @param \Illuminate\Database\Eloquent\Builder $query The scoped query to use
      * @param array $requestedFilters Array of field names to get values for
      * @return array<string, array>
      */
-    protected function getFilterValues(string $modelClass, array $requestedFilters): array
+    protected function getFilterValues(Builder $query, array $requestedFilters): array
     {
         $allowedFilters = $this->allowedFilters ?? [];
         $filterValues = [];
@@ -127,7 +127,8 @@ trait HasTableFilters
         foreach ($requestedFilters as $field) {
             // Only return values for allowed filters with 'exact' type (selects)
             if (isset($allowedFilters[$field]) && $allowedFilters[$field] === 'exact') {
-                $filterValues[$field] = $modelClass::distinct()
+                // Use cloned scoped query to respect tenant/auth constraints
+                $filterValues[$field] = (clone $query)->distinct()
                     ->pluck($field)
                     ->filter() // Remove nulls
                     ->sort()
@@ -163,23 +164,26 @@ trait HasTableFilters
             $perPage = 10;
         }
 
+        // Clone query BEFORE applying filters to preserve scopes (tenant, soft-deletes, etc.)
+        $baseQuery = clone $query;
+
         // Calculate total unfiltered count (if filters are applied)
         $filters = $request->input('filters', []);
         $hasFilters = !empty(array_filter($filters, fn($v) => $v !== null && $v !== ''));
         $totalUnfiltered = null;
 
         if ($hasFilters) {
-            // Get total count without filters by creating a fresh query
-            $totalUnfiltered = $modelClass::count();
+            // Use cloned query to respect all scopes (tenant isolation, soft-deletes, etc.)
+            $totalUnfiltered = $baseQuery->count();
         }
 
         // Paginate results
         $paginated = $query->paginate($perPage, ['*'], 'page', $request->input('page', 1));
 
-        // Get filter values for select filters
+        // Get filter values for select filters using scoped base query
         $allowedFilters = $this->allowedFilters ?? [];
         $fieldsNeedingValues = array_keys(array_filter($allowedFilters, fn($type) => $type === 'exact'));
-        $filterValues = $this->getFilterValues($modelClass, $fieldsNeedingValues);
+        $filterValues = $this->getFilterValues($baseQuery, $fieldsNeedingValues);
 
         // Check if it's an API request
         if ($request->wantsJson() || $request->is('api/*')) {

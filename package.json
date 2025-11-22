@@ -45,7 +45,9 @@
     "release": "bash scripts/release.sh"
   },
   "peerDependencies": {
-    "vue": "^3.4.0"
+    "vue": "^3.4.0",
+    "@inertiajs/vue3": "^2.0.0",
+    "axios": "^1.6.0"
   },
   "peerDependenciesMeta": {
     "@inertiajs/vue3": {
@@ -108,8 +110,5 @@
   "bugs": {
     "url": "https://github.com/omnitend/dashboard-for-laravel/issues"
   },
-  "homepage": "https://github.com/omnitend/dashboard-for-laravel#readme",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  }
+  "homepage": "https://github.com/omnitend/dashboard-for-laravel#readme"
 }

@@ -43,19 +43,28 @@ abstract class BaseFormRequest extends FormRequest
     }
 
     /**
-     * Determine if the user is authorized to make this request.
-     *
-     * Override this method in child classes for authorization logic.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * Override this method in child classes to define validation rules.
      */
     abstract public function rules(): array;
+
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * IMPORTANT: This method is intentionally NOT implemented here.
+     * You MUST override this method in your form request classes.
+     *
+     * Laravel's default is to return false for security.
+     * Explicitly return true for public endpoints or implement authorization logic.
+     *
+     * Example:
+     * public function authorize(): bool
+     * {
+     *     return true; // For public endpoints
+     *     // OR
+     *     return $this->user()->can('update', $this->route('product'));
+     * }
+     */
+    // Note: authorize() is NOT defined here - use Laravel's secure default (returns false)
 }

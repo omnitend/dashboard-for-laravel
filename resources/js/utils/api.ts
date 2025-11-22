@@ -30,6 +30,9 @@ class ApiClient {
     }
 
     private getCsrfToken(): string {
+        if (typeof document === 'undefined') {
+            return "";
+        }
         const el = document.querySelector('meta[name="csrf-token"]');
         return el?.getAttribute("content") ?? "";
     }
