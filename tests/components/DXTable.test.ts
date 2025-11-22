@@ -219,6 +219,40 @@ describe('DXTable', () => {
       );
       expect(page1Names.length).toBe(0);
     });
+
+    it('displays correct filtered count when total_unfiltered is provided', async () => {
+      const screen = render(DXTable, {
+        props: {
+          items: customerData.slice(0, 2), // 2 filtered results
+          fields: [
+            ...customerFields,
+            { key: 'status', label: 'Status', sortable: true, filter: 'text' },
+          ],
+          filters: { status: 'active' }, // Active filter
+          pagination: {
+            current_page: 1,
+            per_page: 10,
+            total: 2, // 2 filtered results
+            from: 1,
+            to: 2,
+            total_unfiltered: 5, // But 5 total without filters
+          },
+          showPagination: true,
+        },
+      });
+
+      // Should show filtered count
+      await expect.element(screen.getByText(/2 items/)).toBeVisible();
+
+      // Should show unfiltered count (NOT the same as filtered)
+      await expect.element(screen.getByText(/Filtered from 5 items/)).toBeVisible();
+
+      // Verify the counts are different (this was the bug)
+      const infoText = screen.container.querySelector('.small.text-muted');
+      expect(infoText?.textContent).toContain('2 items');
+      expect(infoText?.textContent).toContain('Filtered from 5 items');
+      expect(infoText?.textContent).not.toContain('Filtered from 2 items');
+    });
   });
 
   describe('Column Headers', () => {
