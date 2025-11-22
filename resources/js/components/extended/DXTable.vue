@@ -773,7 +773,7 @@ watch(() => props.filters, (newFilters, oldFilters) => {
     // Refresh data for the new filters
     if (isProviderMode.value) {
         refresh();
-    } else if (hasInertiaUrl.value && isInertiaMode.value) {
+    } else if (hasInertiaUrl.value && isInertiaMode.value && router) {
         // Inertia mode - trigger navigation with new filters
         const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
         router.get(
@@ -789,6 +789,17 @@ watch(() => props.filters, (newFilters, oldFilters) => {
         );
     }
 }, { deep: true });
+
+// Watch apiUrl changes to reset filter cache (prevents stale dropdown options)
+watch(() => props.apiUrl, (newUrl, oldUrl) => {
+    if (newUrl !== oldUrl && isProviderMode.value) {
+        // Clear cached filter values and pagination when API endpoint changes
+        apiFilterValues.value = {};
+        apiPaginationMeta.value = null;
+        apiError.value = null;
+        // Next provider call will request fresh filter values
+    }
+});
 
 // Computed effective perPage (use external if provided, otherwise internal)
 const effectivePerPage = computed(() => {
@@ -888,7 +899,7 @@ const effectiveProvider = computed(() => props.provider || (props.apiUrl ? inter
 
 const handlePageChange = (page: number) => {
     // If inertiaUrl provided, handle navigation automatically
-    if (hasInertiaUrl.value && isInertiaMode.value) {
+    if (hasInertiaUrl.value && isInertiaMode.value && router) {
         const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
         router.get(
             props.inertiaUrl!,
@@ -940,7 +951,7 @@ const handleSortChange = (sortBy: BTableSortBy[]) => {
     emit('update:sortBy', normalizedSortBy);
 
     // Handle Inertia navigation automatically if URL provided
-    if (hasInertiaUrl.value && isInertiaMode.value) {
+    if (hasInertiaUrl.value && isInertiaMode.value && router) {
         // Build params based on whether sort is active
         const params: any = {
             page: props.pagination?.current_page || 1,
@@ -994,7 +1005,7 @@ const handlePerPageChange = (newPerPage: number | string) => {
     emit('update:perPage', perPageNum);
 
     // Handle navigation automatically
-    if (hasInertiaUrl.value && isInertiaMode.value) {
+    if (hasInertiaUrl.value && isInertiaMode.value && router) {
         const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
         router.get(
             props.inertiaUrl!,
@@ -1042,7 +1053,7 @@ const handleFilterChange = (fieldKey: string, value: string) => {
 
     filterDebounceTimer = setTimeout(() => {
         // Handle Inertia navigation automatically if URL provided
-        if (hasInertiaUrl.value && isInertiaMode.value) {
+        if (hasInertiaUrl.value && isInertiaMode.value && router) {
             const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
             router.get(
                 props.inertiaUrl!,
@@ -1077,7 +1088,7 @@ const refresh = () => {
         (tableRef.value as any).refresh();
     }
     // Inertia mode: reload current page to refresh data
-    else if (isInertiaMode.value && props.inertiaUrl) {
+    else if (isInertiaMode.value && props.inertiaUrl && router) {
         router.reload();
     }
 };
