@@ -26,8 +26,8 @@ class ProductController extends Controller
     protected string $defaultSortOrder = 'desc';
     public function index(Request $request)
     {
+        // Pass base query to tableResponse - it will handle filtering internally
         $query = Product::query();
-        $this->applyTableQuery($query, $request);
 
         return $this->tableResponse($query, $request, Product::class, 'Products/Index', 'products');
     }

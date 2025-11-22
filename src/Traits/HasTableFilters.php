@@ -143,7 +143,10 @@ trait HasTableFilters
     /**
      * Generate table response (auto-detects Inertia vs API)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * IMPORTANT: Pass the BASE QUERY before calling applyTableQuery()
+     * The filtering will be applied internally to ensure proper unfiltered counts.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query Base query BEFORE filters
      * @param \Illuminate\Http\Request $request
      * @param string $modelClass
      * @param string $componentName Inertia component name (e.g., 'Products/Index')
@@ -164,23 +167,26 @@ trait HasTableFilters
             $perPage = 10;
         }
 
-        // Clone query BEFORE applying filters to preserve scopes (tenant, soft-deletes, etc.)
+        // Clone base query BEFORE applying filters (for unfiltered count and filter values)
         $baseQuery = clone $query;
 
-        // Calculate total unfiltered count (if filters are applied)
+        // Check if filters are active
         $filters = $request->input('filters', []);
         $hasFilters = !empty(array_filter($filters, fn($v) => $v !== null && $v !== ''));
         $totalUnfiltered = null;
 
         if ($hasFilters) {
-            // Use cloned query to respect all scopes (tenant isolation, soft-deletes, etc.)
+            // Get unfiltered count from base query (respects tenant/auth scopes)
             $totalUnfiltered = $baseQuery->count();
         }
 
-        // Paginate results
+        // NOW apply filters and sorting to the main query
+        $this->applyTableQuery($query, $request);
+
+        // Paginate filtered results
         $paginated = $query->paginate($perPage, ['*'], 'page', $request->input('page', 1));
 
-        // Get filter values for select filters using scoped base query
+        // Get filter values from base query (before filters applied)
         $allowedFilters = $this->allowedFilters ?? [];
         $fieldsNeedingValues = array_keys(array_filter($allowedFilters, fn($type) => $type === 'exact'));
         $filterValues = $this->getFilterValues($baseQuery, $fieldsNeedingValues);

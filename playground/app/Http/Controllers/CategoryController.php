@@ -22,8 +22,8 @@ class CategoryController extends Controller
 
     public function index(Request $request)
     {
+        // Pass base query to tableResponse - it will handle filtering internally
         $query = Category::query();
-        $this->applyTableQuery($query, $request);
 
         return $this->tableResponse($query, $request, Category::class, 'Categories/Index', 'categories');
     }
