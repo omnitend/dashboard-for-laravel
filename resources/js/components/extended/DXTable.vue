@@ -16,8 +16,8 @@
                         <p class="mt-2">{{ loadingText }}</p>
                     </div>
 
-                    <div v-else-if="error" class="alert alert-danger">
-                        {{ error }}
+                    <div v-else-if="error || apiError" class="alert alert-danger">
+                        {{ error || apiError }}
                     </div>
 
                     <!-- Provider Mode: Use BTable's provider pattern -->
@@ -762,6 +762,34 @@ watch(() => props.pagination?.per_page, (newPerPage) => {
     }
 });
 
+// Watch for external filter changes (when filters prop is controlled by parent)
+watch(() => props.filters, (newFilters, oldFilters) => {
+    // Only trigger refresh if filters prop is being used (not internal state)
+    if (props.filters === undefined) return;
+
+    // Only refresh if filters actually changed
+    if (JSON.stringify(newFilters) === JSON.stringify(oldFilters)) return;
+
+    // Refresh data for the new filters
+    if (isProviderMode.value) {
+        refresh();
+    } else if (hasInertiaUrl.value && isInertiaMode.value) {
+        // Inertia mode - trigger navigation with new filters
+        const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
+        router.get(
+            props.inertiaUrl!,
+            {
+                page: 1, // Reset to first page when filters change
+                sortBy: currentSort.key,
+                sortOrder: currentSort.order,
+                filters: newFilters,
+                perPage: effectivePerPage.value,
+            },
+            { preserveState: true }
+        );
+    }
+}, { deep: true });
+
 // Computed effective perPage (use external if provided, otherwise internal)
 const effectivePerPage = computed(() => {
     // If external perPage prop is provided, use it
@@ -800,11 +828,17 @@ const fieldsNeedingFilterValues = computed(() => {
         .map(field => field.key);
 });
 
+// Error state for API mode
+const apiError = ref<string | null>(null);
+
 // Internal provider function when apiUrl is provided
 const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProviderContext>) => {
     if (!props.apiUrl) return [];
 
     try {
+        // Clear previous error
+        apiError.value = null;
+
         const sort = context.sortBy && context.sortBy.length > 0
             ? context.sortBy[0]
             : { key: 'created_at', order: 'desc' };
@@ -836,8 +870,15 @@ const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProvi
         }
 
         return response.data.data;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to fetch data from API:', error);
+
+        // Surface error to user
+        const errorMessage = error?.response?.data?.message
+            || error?.message
+            || 'Failed to load data. Please try again.';
+        apiError.value = errorMessage;
+
         return [];
     }
 };

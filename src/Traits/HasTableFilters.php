@@ -40,6 +40,10 @@ trait HasTableFilters
     /**
      * Apply filters, sorting to a query
      *
+     * @deprecated Since 0.4.8. Do NOT call this before tableResponse() - it now handles filtering internally.
+     * This method is now called automatically inside tableResponse() to ensure proper unfiltered counts.
+     * Calling it manually will cause filters/sorting to be applied twice.
+     *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Database\Eloquent\Builder
