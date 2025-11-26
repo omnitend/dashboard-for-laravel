@@ -8,9 +8,9 @@
   >
     <!-- Custom brand slot for sidebar -->
     <template #sidebar-brand="{ collapsed }">
-      <a href="/" class="d-flex align-items-center text-decoration-none" :class="{ 'justify-content-center': collapsed }">
+      <a :href="baseUrl" class="d-flex align-items-center text-decoration-none" :class="{ 'justify-content-center': collapsed }">
         <img
-          src="/logo.svg"
+          :src="`${baseUrl}logo.svg`"
           alt="Dashboard for Laravel"
           class="brand-icon"
         />
@@ -59,10 +59,12 @@ interface Props {
   currentUrl: string;
   title: string;
   pageTitle?: string;
+  baseUrl?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   pageTitle: 'Dashboard',
+  baseUrl: '/',
 });
 
 const isProduction = import.meta.env.PROD;

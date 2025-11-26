@@ -55,6 +55,7 @@ const pageTitle = title === 'Home' ? '' : title;
       currentUrl={currentPath}
       title={dashboardTitle}
       pageTitle={pageTitle}
+      baseUrl={import.meta.env.BASE_URL}
     >
       <div data-pagefind-body>
         <slot />
