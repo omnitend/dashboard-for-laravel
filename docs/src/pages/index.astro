@@ -89,8 +89,11 @@ import IconPalette from '~icons/lucide/palette';
 
     <div class="install-section">
       <h3>Usage</h3>
-      <Code code={`import { DXDashboardSidebar, useForm } from '@omnitend/dashboard-for-laravel'
+      <Code code={`// In your app entry file (app.ts or main.ts)
 import '@omnitend/dashboard-for-laravel/theme.css'
+
+// In your components
+import { DXDashboard, DButton, useForm } from '@omnitend/dashboard-for-laravel'
 
 const form = useForm({ name: '', email: '' })
 await form.post('/api/customers')`} lang="typescript" theme="github-dark" />

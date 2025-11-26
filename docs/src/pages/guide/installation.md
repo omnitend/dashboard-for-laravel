@@ -21,9 +21,10 @@ composer require omnitend/dashboard-for-laravel
 
 ## Import Styles
 
-The theme CSS is required for component styling. Import it in your main entry file:
+The theme CSS is required for component styling. Import it once in your app's entry file (e.g., `resources/js/app.ts` for Laravel or `main.ts` for Vite):
 
 ```typescript
+// resources/js/app.ts
 import '@omnitend/dashboard-for-laravel/theme.css'
 ```
 
@@ -85,12 +86,11 @@ class UserController extends Controller
 
 ## Verifying Installation
 
-Create a test component to verify everything works:
+After importing the CSS in your entry file, create a component to verify everything works:
 
 ```vue
 <script setup lang="ts">
 import { DButton } from '@omnitend/dashboard-for-laravel'
-import '@omnitend/dashboard-for-laravel/theme.css'
 </script>
 
 <template>
@@ -100,7 +100,7 @@ import '@omnitend/dashboard-for-laravel/theme.css'
 </template>
 ```
 
-If you see a styled button, you're all set!
+If you see a styled blue button, you're all set.
 
 ## Next Steps
 

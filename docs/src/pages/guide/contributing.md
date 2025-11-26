@@ -64,7 +64,7 @@ Then run `npm install` in the consuming app.
 
 ## Running Tests
 
-The project uses Vitest with browser mode for component testing.
+The project uses Vitest with browser mode for component testing. The test suite includes 110+ tests covering components and composables.
 
 ```bash
 # Run tests in browser (visual mode)

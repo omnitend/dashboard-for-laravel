@@ -29,7 +29,7 @@ Install the package:
 npm install @omnitend/dashboard-for-laravel
 ```
 
-Import the CSS (required):
+Import the CSS in your app's entry file (e.g., `resources/js/app.ts` or `main.ts`):
 
 ```typescript
 import '@omnitend/dashboard-for-laravel/theme.css'
