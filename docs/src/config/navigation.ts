@@ -5,6 +5,9 @@
 
 import type { Navigation } from '@omnitend/dashboard-for-laravel';
 
+// Base path for GitHub Pages deployment (empty string in dev, '/dashboard-for-laravel' in prod)
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 export const navigationConfig: Navigation = [
   {
     label: 'Guide',
@@ -87,7 +90,7 @@ export const navigationConfig: Navigation = [
 ];
 
 /**
- * Helper to mark the active page in navigation
+ * Helper to mark the active page in navigation and prefix URLs with base path
  * Normalizes URLs by removing trailing slashes and converting to lowercase
  */
 export function getNavigationWithActive(currentPath: string): Navigation {
@@ -95,9 +98,13 @@ export function getNavigationWithActive(currentPath: string): Navigation {
 
   return navigationConfig.map(group => ({
     ...group,
-    items: group.items.map(item => ({
-      ...item,
-      active: normalizedCurrentPath === item.url.toLowerCase().replace(/\/$/, ''),
-    })),
+    items: group.items.map(item => {
+      const fullUrl = `${base}${item.url}`;
+      return {
+        ...item,
+        url: fullUrl,
+        active: normalizedCurrentPath === fullUrl.toLowerCase().replace(/\/$/, ''),
+      };
+    }),
   }));
 }
