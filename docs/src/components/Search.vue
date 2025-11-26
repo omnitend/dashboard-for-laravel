@@ -68,6 +68,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 
+interface Props {
+  baseUrl?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  baseUrl: '/',
+});
+
 const query = ref('');
 const results = ref<any[]>([]);
 const loading = ref(false);
@@ -79,18 +87,21 @@ const searchInput = ref<HTMLInputElement | null>(null);
 let pagefind: any = null;
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
+// Ensure baseUrl ends with a slash
+const normalizedBase = props.baseUrl.replace(/\/?$/, '/');
+
 onMounted(async () => {
   // Load Pagefind (only available after build)
   // Check if we're in the browser and if pagefind exists
   if (typeof window !== 'undefined') {
     try {
       // Try to fetch the pagefind script first to see if it exists
-      const response = await fetch('/pagefind/pagefind.js', { method: 'HEAD' });
+      const pagefindUrl = `${normalizedBase}pagefind/pagefind.js`;
+      const response = await fetch(pagefindUrl, { method: 'HEAD' });
       if (response.ok) {
         // Use runtime-constructed path to avoid build-time resolution
         // @ts-ignore - Dynamic import with runtime path
-        const pagefindPath = '/page' + 'find' + '/pagefind.js';
-        const pagefindModule = await import(/* @vite-ignore */ pagefindPath);
+        const pagefindModule = await import(/* @vite-ignore */ pagefindUrl);
         pagefind = pagefindModule;
       }
     } catch (error) {

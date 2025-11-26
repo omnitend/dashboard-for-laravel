@@ -36,7 +36,7 @@
     <!-- Search in navbar -->
     <template #navbar-search>
       <div v-if="isProduction">
-        <Search />
+        <Search :base-url="baseUrl" />
       </div>
       <div v-else class="search-placeholder">
         <small class="text-muted">Search available after build</small>
