@@ -12,7 +12,7 @@ export default defineConfig({
   srcDir: './docs/src',
   publicDir: './docs/public',
   site: 'https://omnitend.github.io',
-  // base: '/dashboard-for-laravel', // Uncomment for GitHub Pages deployment
+  base: '/dashboard-for-laravel',
   outDir: './docs/dist',
   integrations: [
     vue(),
