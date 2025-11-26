@@ -17,16 +17,15 @@ Type-safe wrapper around Bootstrap Vue Next BFormTags component. Lightweight cus
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DFormTags
   v-model="tags"
   placeholder="Add tags..."
   duplicate-tag-text="Duplicate tag!"
 />
 <p class="mt-2">Tags: <strong>{{ tags.join(", ") }}</strong></p>`}
->
-  <DFormTagsExample client:load />
-</ComponentExample>
+  exampleComponent={DFormTagsExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DFormTags" />

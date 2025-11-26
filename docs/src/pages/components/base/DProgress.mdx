@@ -14,15 +14,14 @@ Type-safe wrapper around Bootstrap Vue Next BProgress component. Progress bar fo
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`  <DProgress :value="25" variant="primary" show-progress />
 <div class="mb-3">
   <DProgress :value="50" variant="success" striped />
 <div>
   <DProgress :value="75" variant="warning" animated striped />`}
->
-  <DProgressExample client:load />
-</ComponentExample>
+  exampleComponent={DProgressExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DProgress" />

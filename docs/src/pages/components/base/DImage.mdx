@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BImg component. Responsive image com
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DImage
   src="https://picsum.photos/400/300"
   alt="Example image"
@@ -31,9 +31,8 @@ Type-safe wrapper around Bootstrap Vue Next BImg component. Responsive image com
   alt="Thumbnail"
   thumbnail
 />`}
->
-  <DImageExample client:load />
-</ComponentExample>
+  exampleComponent={DImageExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DImage" />

@@ -17,15 +17,14 @@ Type-safe wrapper around Bootstrap Vue Next BCarousel component. Slideshow compo
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DCarousel id="carousel-example" :interval="3000" controls indicators>
   <BCarouselSlide img-src="https://picsum.photos/800/400?random=1" />
   <BCarouselSlide img-src="https://picsum.photos/800/400?random=2" />
   <BCarouselSlide img-src="https://picsum.photos/800/400?random=3" />
 </DCarousel>`}
->
-  <DCarouselExample client:load />
-</ComponentExample>
+  exampleComponent={DCarouselExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DCarousel" />

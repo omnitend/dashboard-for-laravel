@@ -14,7 +14,7 @@ Type-safe wrapper around Bootstrap Vue Next BTooltip component. Display helpful 
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DTooltip target="tooltip-top" placement="top">
   Tooltip on top
 </DTooltip>
@@ -33,9 +33,8 @@ Type-safe wrapper around Bootstrap Vue Next BTooltip component. Display helpful 
 <DTooltip target="tooltip-left" placement="left">
   Tooltip on left
 </DTooltip>`}
->
-  <DTooltipExample client:load />
-</ComponentExample>
+  exampleComponent={DTooltipExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DTooltip" />

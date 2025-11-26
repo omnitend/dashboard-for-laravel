@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BAvatar component. Display user prof
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`  <DAvatar size="sm" text="SM" variant="primary" />
   <DAvatar text="MD" variant="secondary" />
   <DAvatar size="lg" text="LG" variant="success" />
@@ -27,9 +27,8 @@ Type-safe wrapper around Bootstrap Vue Next BAvatar component. Display user prof
   src="https://picsum.photos/100"
   alt="User Avatar"
 />`}
->
-  <DAvatarExample client:load />
-</ComponentExample>
+  exampleComponent={DAvatarExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DAvatar" />

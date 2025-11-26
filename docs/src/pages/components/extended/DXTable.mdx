@@ -16,7 +16,7 @@ A comprehensive data table component with built-in pagination, loading states, a
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<script setup>
 import { ref } from 'vue';
 import { DXTable } from '@omnitend/dashboard-for-laravel';
@@ -54,9 +54,8 @@ const paginationData = ref({
     title="Customers"
   />
 </template>`}
->
-  <DXTableExample client:load />
-</ComponentExample>
+  exampleComponent={DXTableExample}
+/>
 
 ## Props
 

@@ -2,7 +2,8 @@
   <div class="component-example">
     <!-- Live Preview Area -->
     <div class="example-preview">
-      <slot />
+      <component v-if="exampleComponent" :is="exampleComponent" />
+      <slot v-else />
     </div>
 
     <!-- Code Toggle Button -->
@@ -91,6 +92,7 @@ hljs.registerLanguage('css', css);
 interface Props {
   code: string;
   language?: string;
+  exampleComponent?: object;
 }
 
 const props = withDefaults(defineProps<Props>(), {

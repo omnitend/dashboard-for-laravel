@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BInputGroup component. Easily extend
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DInputGroup prepend="@">
   <DFormInput placeholder="Username" />
 </DInputGroup>
@@ -27,9 +27,8 @@ Type-safe wrapper around Bootstrap Vue Next BInputGroup component. Easily extend
   <DFormInput placeholder="Search..." />
   <template #append>
     <DButton variant="primary">Search</DButton>`}
->
-  <DInputGroupExample client:load />
-</ComponentExample>
+  exampleComponent={DInputGroupExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DInputGroup" />

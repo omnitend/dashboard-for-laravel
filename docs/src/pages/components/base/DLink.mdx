@@ -17,14 +17,13 @@ Type-safe wrapper around Bootstrap Vue Next BLink component. Enhanced link compo
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DLink href="#">Default Link</DLink>
 <DLink href="#" variant="primary">Primary Link</DLink>
 <DLink href="#" variant="success">Success Link</DLink>
 <DLink href="#" disabled>Disabled Link</DLink>`}
->
-  <DLinkExample client:load />
-</ComponentExample>
+  exampleComponent={DLinkExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DLink" />

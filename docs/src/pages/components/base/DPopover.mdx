@@ -14,12 +14,11 @@ Type-safe wrapper around Bootstrap Vue Next BPopover component. Overlay componen
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DPopover target="popover-button" triggers="hover" placement="top">
   <template #title>Popover Title`}
->
-  <DPopoverExample client:load />
-</ComponentExample>
+  exampleComponent={DPopoverExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DPopover" />

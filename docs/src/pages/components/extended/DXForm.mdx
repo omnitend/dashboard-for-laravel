@@ -16,7 +16,7 @@ Form object from defineForm
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<script setup>
 import { DXForm, defineForm } from '@omnitend/dashboard-for-laravel';
 
@@ -59,9 +59,8 @@ const handleSubmit = () => {
     @submit="handleSubmit"
   />
 </template>`}
->
-  <DXFormExample client:load />
-</ComponentExample>
+  exampleComponent={DXFormExample}
+/>
 
 ## Props
 

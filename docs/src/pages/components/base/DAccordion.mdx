@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BAccordion component. Easily toggle 
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DAccordion>
   <BAccordionItem title="Accordion Item #1" visible>
     <strong>This is the first item's content.</strong> It is shown by default.
@@ -26,9 +26,8 @@ Type-safe wrapper around Bootstrap Vue Next BAccordion component. Easily toggle 
   <BAccordionItem title="Accordion Item #3">
     This is the third item's content.
 </DAccordion>`}
->
-  <DAccordionExample client:load />
-</ComponentExample>
+  exampleComponent={DAccordionExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DAccordion" />

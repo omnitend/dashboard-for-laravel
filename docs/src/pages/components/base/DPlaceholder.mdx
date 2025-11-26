@@ -14,13 +14,12 @@ Type-safe wrapper around Bootstrap Vue Next BPlaceholder component. Loading plac
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DPlaceholder animation="wave" width="100%" height="20px" class="mb-2" />
 <DPlaceholder animation="wave" width="75%" height="20px" class="mb-2" />
 <DPlaceholder animation="wave" width="50%" height="20px" />`}
->
-  <DPlaceholderExample client:load />
-</ComponentExample>
+  exampleComponent={DPlaceholderExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DPlaceholder" />

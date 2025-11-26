@@ -16,7 +16,7 @@ Form instance from useForm composable
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<script setup>
 import { useForm } from '@omnitend/dashboard-for-laravel';
 
@@ -56,9 +56,8 @@ const fields = [
     @submit="handleSubmit"
   />
 </template>`}
->
-  <DXBasicFormExample client:load />
-</ComponentExample>
+  exampleComponent={DXBasicFormExample}
+/>
 
 ## Props
 

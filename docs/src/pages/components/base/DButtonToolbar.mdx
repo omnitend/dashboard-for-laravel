@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BButtonToolbar component. Group butt
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DButtonToolbar>
   <DButtonGroup class="me-2">
     <DButton variant="primary">1</DButton>
@@ -29,9 +29,8 @@ Type-safe wrapper around Bootstrap Vue Next BButtonToolbar component. Group butt
   <DButtonGroup>
     <DButton variant="success">6</DButton>
 </DButtonToolbar>`}
->
-  <DButtonToolbarExample client:load />
-</ComponentExample>
+  exampleComponent={DButtonToolbarExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DButtonToolbar" />

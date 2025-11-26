@@ -17,16 +17,15 @@ Type-safe wrapper around Bootstrap Vue Next BListGroup component. Flexible compo
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DListGroup>
   <BListGroupItem>First item</BListGroupItem>
   <BListGroupItem active>Second item (active)</BListGroupItem>
   <BListGroupItem>Third item</BListGroupItem>
   <BListGroupItem disabled>Fourth item (disabled)</BListGroupItem>
 </DListGroup>`}
->
-  <DListGroupExample client:load />
-</ComponentExample>
+  exampleComponent={DListGroupExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DListGroup" />

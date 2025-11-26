@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BFormRadio component. Custom radio b
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`  <DFormRadio v-model="selected" name="radio-options" value="A">
     Option A
   </DFormRadio>
@@ -28,9 +28,8 @@ Type-safe wrapper around Bootstrap Vue Next BFormRadio component. Custom radio b
     Option C
   </DFormRadio>
 <p>Selected: <strong>{{ selected }}</strong></p>`}
->
-  <DFormRadioExample client:load />
-</ComponentExample>
+  exampleComponent={DFormRadioExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DFormRadio" />

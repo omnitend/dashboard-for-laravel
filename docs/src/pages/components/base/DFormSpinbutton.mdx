@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BFormSpinbutton component. Number in
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DFormSpinbutton
   v-model="value"
   :min="0"
@@ -25,9 +25,8 @@ Type-safe wrapper around Bootstrap Vue Next BFormSpinbutton component. Number in
   :step="5"
 />
 <p class="mt-2">Value: <strong>{{ value }}</strong></p>`}
->
-  <DFormSpinbuttonExample client:load />
-</ComponentExample>
+  exampleComponent={DFormSpinbuttonExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DFormSpinbutton" />

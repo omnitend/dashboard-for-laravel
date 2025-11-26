@@ -14,16 +14,15 @@ Type-safe wrapper around Bootstrap Vue Next BOverlay component. Overlay componen
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DOverlay :show="showOverlay" variant="light" opacity="0.85" blur="2px">
   <DCard class="text-center">
     <p>This content can be overlaid</p>
     <DButton @click="showOverlay = !showOverlay" variant="primary">
       Toggle Overlay
 </DOverlay>`}
->
-  <DOverlayExample client:load />
-</ComponentExample>
+  exampleComponent={DOverlayExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DOverlay" />

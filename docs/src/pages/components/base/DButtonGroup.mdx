@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BButtonGroup component. Group a seri
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DButtonGroup>
   <DButton variant="primary">Left</DButton>
   <DButton variant="primary">Middle</DButton>
@@ -30,9 +30,8 @@ Type-safe wrapper around Bootstrap Vue Next BButtonGroup component. Group a seri
   <DButton variant="secondary">Middle</DButton>
   <DButton variant="secondary">Bottom</DButton>
 </DButtonGroup>`}
->
-  <DButtonGroupExample client:load />
-</ComponentExample>
+  exampleComponent={DButtonGroupExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DButtonGroup" />

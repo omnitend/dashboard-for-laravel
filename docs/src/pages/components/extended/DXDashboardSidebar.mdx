@@ -16,7 +16,7 @@ A collapsible sidebar navigation component for Laravel dashboards with support f
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<script setup>
 import { ref } from 'vue';
 import { DXDashboardSidebar } from '@omnitend/dashboard-for-laravel';
@@ -68,9 +68,8 @@ const handleNavClick = (item) => {
     </template>
   </DXDashboardSidebar>
 </template>`}
->
-  <DXDashboardSidebarExample client:load />
-</ComponentExample>
+  exampleComponent={DXDashboardSidebarExample}
+/>
 
 ## Props
 

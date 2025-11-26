@@ -17,7 +17,7 @@ Type-safe wrapper around Bootstrap Vue Next BForm component. Form component with
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<DForm @submit.prevent="handleSubmit">
   <DFormGroup label="Email address" label-for="email-input">
     <DFormInput
@@ -39,9 +39,8 @@ Type-safe wrapper around Bootstrap Vue Next BForm component. Form component with
 
   <DButton type="submit" variant="primary">Submit</DButton>
 </DForm>`}
->
-  <DFormExample client:load />
-</ComponentExample>
+  exampleComponent={DFormExample}
+/>
 
 
 <BootstrapVueNextReference client:load componentName="DForm" />

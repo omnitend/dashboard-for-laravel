@@ -16,7 +16,7 @@ A responsive top navigation bar component for Laravel dashboards with user menu,
 ## Live Examples
 
 <ComponentExample
-  client:only="vue"
+  client:load
   code={`<script setup>
 import { ref } from 'vue';
 import {
@@ -69,9 +69,8 @@ const handleLogout = () => {
     </template>
   </DXDashboardNavbar>
 </template>`}
->
-  <DXDashboardNavbarExample client:load />
-</ComponentExample>
+  exampleComponent={DXDashboardNavbarExample}
+/>
 
 ## Props
 
