@@ -2,7 +2,8 @@
   <div class="component-example">
     <!-- Live Preview Area -->
     <div class="example-preview">
-      <component v-if="exampleComponent" :is="exampleComponent" />
+      <component v-if="loadedComponent" :is="loadedComponent" />
+      <div v-else-if="loading" class="text-muted">Loading example...</div>
       <slot v-else />
     </div>
 
@@ -74,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, shallowRef, onMounted, watch, nextTick } from 'vue';
 import hljs from 'highlight.js/lib/core';
 import vue from 'highlight.js/lib/languages/xml'; // XML covers Vue templates
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -93,6 +94,8 @@ interface Props {
   code: string;
   language?: string;
   exampleComponent?: object;
+  /** Component name for dynamic loading (e.g., 'DButtonExample') */
+  example?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -100,6 +103,27 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const showCode = ref(false);
+const loading = ref(false);
+const loadedComponent = shallowRef<any>(null);
+
+// Dynamically load example component by name
+onMounted(async () => {
+  if (props.example) {
+    loading.value = true;
+    try {
+      // Dynamic import based on component name
+      const module = await import(`../examples/${props.example}.vue`);
+      loadedComponent.value = module.default;
+    } catch (error) {
+      console.error(`Failed to load example: ${props.example}`, error);
+    } finally {
+      loading.value = false;
+    }
+  } else if (props.exampleComponent) {
+    // Fallback to passed component (may not work through Astro)
+    loadedComponent.value = props.exampleComponent;
+  }
+});
 const copied = ref(false);
 const codeElement = ref<HTMLElement | null>(null);
 
