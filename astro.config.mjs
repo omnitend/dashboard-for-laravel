@@ -6,6 +6,8 @@ import pagefind from './docs/pagefind.integration.mjs';
 import Icons from 'unplugin-icons/vite';
 import Components from 'unplugin-vue-components/vite';
 import IconsResolver from 'unplugin-icons/resolver';
+import rehypeSlug from 'rehype-slug';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 // https://astro.build/config
 export default defineConfig({
@@ -14,6 +16,12 @@ export default defineConfig({
   site: 'https://omnitend.github.io',
   base: '/dashboard-for-laravel',
   outDir: './docs/dist',
+  markdown: {
+    rehypePlugins: [
+      rehypeSlug,
+      [rehypeAutolinkHeadings, { behavior: 'wrap' }],
+    ],
+  },
   integrations: [
     vue(),
     mdx(),

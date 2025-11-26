@@ -82,15 +82,15 @@ To customise the theme, create your own SCSS file that overrides Bootstrap varia
 // custom-theme.scss
 
 // Override Bootstrap variables
-$primary: #your-colour;
-$secondary: #your-colour;
+$primary: #your-color;
+$secondary: #your-color;
 
 // Import Bootstrap
 @import 'bootstrap/scss/bootstrap';
 
 // Custom styles
 .custom-class {
-  colour: var(--bs-primary);
+  color: var(--bs-primary);
 }
 ```
 
@@ -108,7 +108,7 @@ $secondary: #64748b;
 
 // Custom component styles
 .custom-class {
-  colour: var(--bs-primary);
+  color: var(--bs-primary);
 }
 ```
 
@@ -200,13 +200,12 @@ Use Bootstrap's responsive utilities:
 </template>
 ```
 
-## Best Practices
+## Tips
 
-1. **Always use CSS variables** - Never hardcode colour values
-2. **Follow Bootstrap conventions** - Use Bootstrap classes when possible
-3. **Scope your styles** - Use `scoped` in Vue components
-4. **Test dark mode** - Ensure components work in both light and dark modes
-5. **Use British spelling** - `colour` not `color` in comments and documentation
+- **Use CSS variables** - Avoid hardcoding colour values for better maintainability
+- **Follow Bootstrap conventions** - Use Bootstrap classes when available
+- **Scope your styles** - Use `scoped` in Vue components
+- **Test dark mode** - Components should work in both light and dark modes
 
 ## Troubleshooting
 

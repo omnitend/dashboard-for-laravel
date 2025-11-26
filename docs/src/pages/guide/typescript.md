@@ -210,11 +210,11 @@ const user: User = {
 </template>
 ```
 
-## Best Practices
+## Usage Patterns
 
-### 1. Define Interfaces
+### Define Interfaces
 
-Create interfaces for your data structures:
+For complex forms, define interfaces for your data structures:
 
 ```typescript
 interface Customer {
@@ -234,9 +234,9 @@ const form = useForm<Customer>({
 })
 ```
 
-### 2. Type Field Definitions
+### Type Field Definitions
 
-Always type your field definitions:
+You can type your field definitions for better IDE support:
 
 ```typescript
 import type { FieldDefinition } from '@omnitend/dashboard-for-laravel'
@@ -246,25 +246,23 @@ const fields: FieldDefinition[] = [
 ]
 ```
 
-### 3. Use Type Imports
+### Type Imports
 
-Import types separately for clarity:
+Using `import type` keeps type imports separate from value imports:
 
 ```typescript
 import { useForm } from '@omnitend/dashboard-for-laravel'
 import type { ValidationErrors } from '@omnitend/dashboard-for-laravel'
 ```
 
-### 4. Enable Strict Mode
+### Strict Mode
 
-In your `tsconfig.json`:
+The library works best with TypeScript strict mode enabled:
 
 ```json
 {
   "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true
+    "strict": true
   }
 }
 ```

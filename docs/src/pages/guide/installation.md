@@ -7,16 +7,8 @@ title: Installation
 
 ## NPM Package
 
-Install via npm:
-
 ```bash
 npm install @omnitend/dashboard-for-laravel
-```
-
-Or with yarn:
-
-```bash
-yarn add @omnitend/dashboard-for-laravel
 ```
 
 ## Composer Package
@@ -29,20 +21,13 @@ composer require omnitend/dashboard-for-laravel
 
 ## Import Styles
 
-Import the theme CSS in your main entry file:
+The theme CSS is required for component styling. Import it in your main entry file:
 
 ```typescript
 import '@omnitend/dashboard-for-laravel/theme.css'
 ```
 
-::: warning Important: Use Built CSS, Not Source SCSS
-Always import `theme.css` (the built CSS), not `theme.scss` (the source).
-
-**Why?**
-- `dist/style.css` contains **both** Bootstrap theme styles **and** Vue component scoped styles
-- Component scoped styles (e.g., `.user-avatar[data-v-xxx]`) are extracted during the Vite build
-- Importing `theme.scss` directly gives you only Bootstrap, missing all component styles
-:::
+This includes Bootstrap styles and all Vue component styles.
 
 ## Import Components
 
@@ -64,19 +49,6 @@ The library includes full TypeScript declarations. Types are automatically avail
 
 ```typescript
 import type { FieldDefinition, UseFormReturn } from '@omnitend/dashboard-for-laravel'
-```
-
-## Vite Configuration
-
-If you're using this library in a consuming app with Vite, you may need to add it to `optimizeDeps`:
-
-```typescript
-// vite.config.ts
-export default defineConfig({
-  optimizeDeps: {
-    include: ['@omnitend/dashboard-for-laravel']
-  }
-})
 ```
 
 ## Laravel Integration
@@ -111,39 +83,6 @@ class UserController extends Controller
 }
 ```
 
-## Development Setup
-
-If you're developing this library alongside consuming apps:
-
-### Using npm link
-
-```bash
-# In dashboard-for-laravel/
-npm run build  # or npm run dev for watch mode
-npm link
-
-# In your consuming app
-npm link @omnitend/dashboard-for-laravel
-```
-
-### Using File Reference
-
-In the consuming app's `package.json`:
-
-```json
-{
-  "dependencies": {
-    "@omnitend/dashboard-for-laravel": "file:../dashboard-for-laravel"
-  }
-}
-```
-
-Then run:
-
-```bash
-npm install
-```
-
 ## Verifying Installation
 
 Create a test component to verify everything works:
@@ -168,3 +107,4 @@ If you see a styled button, you're all set!
 - [Getting Started Guide](/guide/getting-started) - Learn core concepts
 - [Theming Guide](/guide/theming) - Customise the theme
 - [Component Reference](/components/) - Browse available components
+- [Contributing Guide](/guide/contributing) - Development setup and contributing

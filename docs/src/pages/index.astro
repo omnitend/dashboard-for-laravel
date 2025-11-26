@@ -11,10 +11,11 @@ import IconPalette from '~icons/lucide/palette';
 
 <DashboardLayout title="Home">
   <div class="hero">
+    <div class="alpha-notice">Alpha (v0.x) - APIs may change between minor versions</div>
     <h1>Dashboard for Laravel</h1>
-    <p class="tagline">Type-safe Vue 3 components for Laravel dashboards</p>
+    <p class="tagline">Vue 3 components for Laravel dashboards</p>
     <p class="description">
-      Production-ready component library built on Vue 3, Inertia.js, and Bootstrap Vue Next
+      61 components built on Vue 3, Inertia.js, and Bootstrap Vue Next
     </p>
 
     <div class="actions">
@@ -101,6 +102,16 @@ await form.post('/api/customers')`} lang="typescript" theme="github-dark" />
   .hero {
     text-align: center;
     padding: 4rem 0;
+  }
+
+  .alpha-notice {
+    display: inline-block;
+    background-color: var(--bs-warning-bg-subtle);
+    color: var(--bs-warning-text-emphasis);
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
   }
 
   .hero h1 {

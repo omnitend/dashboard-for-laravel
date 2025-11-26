@@ -5,7 +5,7 @@ title: Forms
 
 # Form System
 
-The library includes a powerful type-safe form system with validation, auto-generated forms, and composables.
+The library includes a type-safe form system with validation, auto-generated forms, and composables.
 
 ## useForm Composable
 
@@ -308,24 +308,14 @@ The form composable will automatically:
 - Update `form.errors`
 - Call the appropriate callback
 
-## Best Practices
-
-1. **Type your form data** - Use TypeScript interfaces for form structure
-2. **Handle errors gracefully** - Always provide error feedback to users
-3. **Disable during submission** - Use `form.processing` to disable submit button
-4. **Reset after success** - Call `form.reset()` after successful submission
-5. **Use callbacks** - Separate success and error logic
-
 ## Example: Complete Form
 
 ```vue
 <script setup lang="ts">
 import { useForm, DCard, DXBasicForm } from '@omnitend/dashboard-for-laravel'
 import { useRouter } from 'vue-router'
-import { useToast } from '@omnitend/dashboard-for-laravel'
 
 const router = useRouter()
-const toast = useToast()
 
 const form = useForm({
   name: '',
@@ -356,12 +346,11 @@ const fields = [
 
 const handleSubmit = async () => {
   await form.post('/api/users', {
-    onSuccess: (data) => {
-      toast.success('User created successfully')
+    onSuccess: () => {
       router.push('/users')
     },
-    onError: () => {
-      toast.error('Please fix the validation errors')
+    onError: (errors) => {
+      console.log('Validation errors:', errors)
     }
   })
 }

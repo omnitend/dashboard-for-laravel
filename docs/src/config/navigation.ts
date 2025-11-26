@@ -17,6 +17,8 @@ export const navigationConfig: Navigation = [
       { label: 'Theming', url: '/guide/theming' },
       { label: 'Forms', url: '/guide/forms' },
       { label: 'TypeScript', url: '/guide/typescript' },
+      { label: 'AI Integration', url: '/guide/ai-integration' },
+      { label: 'Contributing', url: '/guide/contributing' },
     ],
   },
   {
