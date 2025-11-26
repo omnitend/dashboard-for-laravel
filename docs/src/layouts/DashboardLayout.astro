@@ -4,11 +4,18 @@ import DashboardLayoutWrapper from '../components/DashboardLayoutWrapper.vue';
 import '../../../dist/style.css';
 
 interface Props {
-  title: string;
+  title?: string;
   description?: string;
+  frontmatter?: {
+    title?: string;
+    description?: string;
+  };
 }
 
-const { title, description = 'Vue 3 dashboard components for Laravel with Bootstrap Vue Next' } = Astro.props;
+// Support both direct props (from .astro pages) and frontmatter (from .md/.mdx pages)
+const { frontmatter } = Astro.props;
+const title = Astro.props.title || frontmatter?.title || 'Documentation';
+const description = Astro.props.description || frontmatter?.description || 'Vue 3 dashboard components for Laravel with Bootstrap Vue Next';
 
 // Get current URL path
 const currentPath = Astro.url.pathname;
