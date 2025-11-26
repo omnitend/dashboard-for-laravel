@@ -1,0 +1,27 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DTab
+description: Type-safe wrapper around Bootstrap Vue Next's BTab component
+category: Base Component
+tags: wrapper, tabs
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DTabExample from '../../../examples/DTabExample.vue';
+import DTabExampleRaw from '../../../examples/DTabExample.vue?raw';
+
+# DTab
+
+Type-safe wrapper around Bootstrap Vue Next BTab component. Used as a child of DTabs to create individual tab panels with titles and content.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DTabExampleRaw}
+  example="DTabExample"
+/>
+
+
+<BootstrapVueNextReference client:load componentName="DTab" />

@@ -1,0 +1,27 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DNavbarNav
+description: Type-safe wrapper around Bootstrap Vue Next's BNavbarNav component
+category: Base Component
+tags: wrapper, navigation
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DNavbarNavExample from '../../../examples/DNavbarNavExample.vue';
+import DNavbarNavExampleRaw from '../../../examples/DNavbarNavExample.vue?raw';
+
+# DNavbarNav
+
+Type-safe wrapper around Bootstrap Vue Next BNavbarNav component. Contains navigation items (DNavItem) within a navbar. Use with `ms-auto` class to right-align items.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DNavbarNavExampleRaw}
+  example="DNavbarNavExample"
+/>
+
+
+<BootstrapVueNextReference client:load componentName="DNavbarNav" />

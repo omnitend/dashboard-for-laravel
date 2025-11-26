@@ -1,0 +1,27 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DListGroupItem
+description: Type-safe wrapper around Bootstrap Vue Next's BListGroupItem component
+category: Base Component
+tags: wrapper, list
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DListGroupItemExample from '../../../examples/DListGroupItemExample.vue';
+import DListGroupItemExampleRaw from '../../../examples/DListGroupItemExample.vue?raw';
+
+# DListGroupItem
+
+Type-safe wrapper around Bootstrap Vue Next BListGroupItem component. Used as a child of DListGroup to create individual list items with optional variants, active states, and click actions.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DListGroupItemExampleRaw}
+  example="DListGroupItemExample"
+/>
+
+
+<BootstrapVueNextReference client:load componentName="DListGroupItem" />

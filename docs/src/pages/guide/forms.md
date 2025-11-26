@@ -38,11 +38,11 @@ const handleSubmit = async () => {
 <template>
   <form @submit.prevent="handleSubmit">
     <DFormGroup label="Name" :error="form.errors.name">
-      <DFormInput v-model="form.name" />
+      <DFormInput v-model="form.data.name" />
     </DFormGroup>
 
     <DFormGroup label="Email" :error="form.errors.email">
-      <DFormInput v-model="form.email" type="email" />
+      <DFormInput v-model="form.data.email" type="email" />
     </DFormGroup>
 
     <DButton type="submit" :disabled="form.processing">
@@ -58,8 +58,8 @@ The `useForm` composable returns a form object with the following properties:
 
 ```typescript
 interface UseFormReturn<T> {
-  // Form data (reactive)
-  [key: string]: any
+  // Form data (reactive) - access via form.data.fieldName
+  data: T
 
   // State
   processing: boolean                // Is form submitting?
@@ -120,7 +120,7 @@ const form = useForm({
 <template>
   <!-- Show error for specific field -->
   <DFormGroup label="Email" :error="form.errors.email">
-    <DFormInput v-model="form.email" />
+    <DFormInput v-model="form.data.email" />
   </DFormGroup>
 
   <!-- Clear specific error -->
@@ -134,6 +134,12 @@ const form = useForm({
   </DButton>
 </template>
 ```
+
+### Tips
+
+- Bind to `form.data.*` (or `form.field('name')`) so validation state stays in sync.
+- Use `options.transform` to reshape payloads before sending.
+- `reset()` restores the initial snapshot; pass a list of keys to reset specific fields only.
 
 ## DXBasicForm Component
 
@@ -208,21 +214,29 @@ Supported field types:
 - `password` - Password input
 - `tel` - Telephone input
 - `number` - Number input
-- `date` - Date input
+- `url` - URL input
+- `date` - Date picker
+- `datetime-local` - Date and time picker
+- `time` - Time picker
 - `textarea` - Multi-line text
-- `select` - Dropdown select
+- `select` - Dropdown select (requires `options`)
 - `checkbox` - Checkbox
+- `radio` - Radio button group (requires `options`)
 
 ### Field Definition
 
 ```typescript
 interface FieldDefinition {
-  key: string                                          // Form field key
-  label?: string                                       // Field label
+  key: string                                          // Form field key (must match form data key)
   type: FieldType                                      // Input type
+  label?: string                                       // Field label
   placeholder?: string                                 // Placeholder text
   required?: boolean                                   // Is field required?
-  options?: Array<{ value: string; text: string }>     // For select fields
+  options?: Array<{ value: any; text: string; disabled?: boolean }>  // For select/radio fields
+  rows?: number                                        // Number of rows for textarea (default: 3)
+  help?: string                                        // Help text displayed below field
+  class?: string                                       // CSS class for the form group
+  inputProps?: Record<string, any>                     // Additional props to pass to input
 }
 ```
 
@@ -247,11 +261,11 @@ const handleSubmit = async () => {
 <template>
   <DXForm :form="form" @submit="handleSubmit">
     <DFormGroup label="Name">
-      <DFormInput v-model="form.name" />
+      <DFormInput v-model="form.data.name" />
     </DFormGroup>
 
     <DFormGroup label="Email">
-      <DFormInput v-model="form.email" type="email" />
+      <DFormInput v-model="form.data.email" type="email" />
     </DFormGroup>
 
     <DButton type="submit">
@@ -298,7 +312,7 @@ class UserController extends Controller
     {
         $user = User::create($request->validated());
 
-        return $this->successResponse($user, 'User created successfully');
+        return $this->success($user, 'User created successfully');
     }
 }
 ```

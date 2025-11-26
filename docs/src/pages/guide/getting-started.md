@@ -5,21 +5,19 @@ title: Getting Started
 
 # Getting Started
 
-> **Alpha Notice:** This library is in active development (v0.x). APIs may change between minor versions.
+> **Alpha Notice:** v0.x — expect changes between minor versions.
 
-Dashboard for Laravel is a Vue 3 component library for building admin dashboards with Laravel, Inertia.js, and Bootstrap.
-
-Built and maintained by [Omni Tend](https://omnitend.com), used internally in production applications.
+Dashboard for Laravel is a Vue 3 component library for building admin dashboards with Laravel, Inertia.js, and Bootstrap. Built and maintained by [Omni Tend](https://omnitend.com).
 
 ## What's Included
 
 - **61 Vue 3 components** (55 base + 6 extended)
-- **D* Wrapper Components** - Type-safe wrappers around [Bootstrap Vue Next](https://bootstrap-vue-next.github.io/bootstrap-vue-next/)
-- **DX* Extended Components** - Dashboard layouts, forms, and tables
-- **Form System** - Type-safe form handling with validation
-- **Composables** - `useForm` and other utilities
-- **Theme** - Bootstrap 5 SCSS theme
-- **PHP Utilities** - Laravel helpers for API responses and form requests
+- **D* Wrapper Components** — Type-safe wrappers around [Bootstrap Vue Next](https://bootstrap-vue-next.github.io/bootstrap-vue-next/)
+- **DX* Extended Components** — Dashboard layouts, forms, and tables
+- **Form System** — Type-safe form handling with validation
+- **Composables** — `useForm` and other utilities
+- **Theme** — Bootstrap 5 SCSS theme
+- **PHP Utilities** — Laravel helpers for API responses and form requests
 
 ## Quick Start
 
@@ -29,7 +27,7 @@ Install the package:
 npm install @omnitend/dashboard-for-laravel
 ```
 
-Import the CSS in your app's entry file (e.g., `resources/js/app.ts` or `main.ts`):
+Import the CSS in your app entry (e.g., `resources/js/app.ts` or `main.ts`):
 
 ```typescript
 import '@omnitend/dashboard-for-laravel/theme.css'

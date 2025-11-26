@@ -1,0 +1,27 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DCarouselSlide
+description: Type-safe wrapper around Bootstrap Vue Next's BCarouselSlide component
+category: Base Component
+tags: wrapper, carousel
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DCarouselSlideExample from '../../../examples/DCarouselSlideExample.vue';
+import DCarouselSlideExampleRaw from '../../../examples/DCarouselSlideExample.vue?raw';
+
+# DCarouselSlide
+
+Type-safe wrapper around Bootstrap Vue Next BCarouselSlide component. Used as a child of DCarousel to create individual slides.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DCarouselSlideExampleRaw}
+  example="DCarouselSlideExample"
+/>
+
+
+<BootstrapVueNextReference client:load componentName="DCarouselSlide" />

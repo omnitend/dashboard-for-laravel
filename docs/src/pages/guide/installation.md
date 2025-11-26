@@ -13,7 +13,7 @@ npm install @omnitend/dashboard-for-laravel
 
 ## Composer Package
 
-Install the PHP utilities via Composer:
+Install the PHP helpers:
 
 ```bash
 composer require omnitend/dashboard-for-laravel
@@ -21,14 +21,14 @@ composer require omnitend/dashboard-for-laravel
 
 ## Import Styles
 
-The theme CSS is required for component styling. Import it once in your app's entry file (e.g., `resources/js/app.ts` for Laravel or `main.ts` for Vite):
+Import the built CSS once in your app entry (e.g., `resources/js/app.ts` or `main.ts`):
 
 ```typescript
 // resources/js/app.ts
 import '@omnitend/dashboard-for-laravel/theme.css'
 ```
 
-This includes Bootstrap styles and all Vue component styles.
+This ships Bootstrap styles plus component styles in one bundle.
 
 ## Import Components
 
@@ -79,7 +79,7 @@ class UserController extends Controller
     {
         $user = User::create($request->validated());
 
-        return $this->successResponse($user, 'User created successfully');
+        return $this->success($user, 'User created successfully');
     }
 }
 ```

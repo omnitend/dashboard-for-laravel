@@ -1,0 +1,27 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DNavbarToggle
+description: Type-safe wrapper around Bootstrap Vue Next's BNavbarToggle component
+category: Base Component
+tags: wrapper, navigation
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DNavbarToggleExample from '../../../examples/DNavbarToggleExample.vue';
+import DNavbarToggleExampleRaw from '../../../examples/DNavbarToggleExample.vue?raw';
+
+# DNavbarToggle
+
+Type-safe wrapper around Bootstrap Vue Next BNavbarToggle component. Creates a hamburger toggle button for collapsing navbar content on smaller screens. Use with DCollapse to create responsive navigation.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DNavbarToggleExampleRaw}
+  example="DNavbarToggleExample"
+/>
+
+
+<BootstrapVueNextReference client:load componentName="DNavbarToggle" />

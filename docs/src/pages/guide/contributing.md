@@ -5,7 +5,7 @@ title: Contributing
 
 # Contributing
 
-This library is open source and welcomes contributions. This guide covers development setup, testing, and how to submit changes.
+This library is open source and welcomes contributions. Start here for setup, testing, and how to submit changes.
 
 ## Development Setup
 
@@ -13,7 +13,7 @@ This library is open source and welcomes contributions. This guide covers develo
 
 - Node.js 18+
 - npm 9+
-- PHP 8.1+ and Composer (for PHP utilities)
+- PHP 8.2+ and Composer (for PHP utilities)
 
 ### Clone and Install
 
@@ -35,32 +35,16 @@ npm run dev
 
 ### Using with a Local Project
 
-If you're developing this library alongside a consuming app, you can link them together.
-
-**Option 1: npm link**
+If you're developing this library alongside a consuming app, link them so you test the built package:
 
 ```bash
 # In dashboard-for-laravel/
 npm run build  # or npm run dev for watch mode
 npm link
 
-# In your consuming app
+# In docs/ or your consuming app
 npm link @omnitend/dashboard-for-laravel
 ```
-
-**Option 2: File reference**
-
-In the consuming app's `package.json`:
-
-```json
-{
-  "dependencies": {
-    "@omnitend/dashboard-for-laravel": "file:../dashboard-for-laravel"
-  }
-}
-```
-
-Then run `npm install` in the consuming app.
 
 ## Running Tests
 

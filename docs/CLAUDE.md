@@ -7,9 +7,9 @@ This documentation site is built with Astro, Vue 3, and MDX. It provides live, i
 ## Current State
 
 ### Coverage
-- **46 Base Components** (D* prefix) - 100% documented
-- **6 Extended Components** (DX* prefix) - 100% documented
-- **Total: 52 components** with live examples and automatic code syncing
+- **55 Base Components** (D* prefix) documented with live examples
+- **6 Extended Components** (DX* prefix) documented with live examples
+- Helper/child components are surfaced within their parent pages (e.g., DTab within DTabs)
 
 ### Key Features
 1. **Automatic Code Extraction** - Uses Vite's `?raw` import to extract source code from example files
@@ -36,7 +36,7 @@ docs/
 │   ├── examples/
 │   │   ├── DButtonExample.vue            # Example for DButton
 │   │   ├── DCardExample.vue              # Example for DCard
-│   │   └── ... (46 base + 6 extended)
+│   │   └── ... (55 base + 6 extended)
 │   ├── layouts/
 │   │   └── DashboardLayout.astro         # Base layout for all pages
 │   └── pages/
@@ -44,7 +44,7 @@ docs/
 │           ├── base/
 │           │   ├── DButton.mdx           # Documentation for DButton
 │           │   ├── DCard.mdx             # Documentation for DCard
-│           │   └── ... (46 components)
+│           │   └── ... (55 components)
 │           └── extended/
 │               ├── DXBasicForm.mdx       # Documentation for DXBasicForm
 │               └── ... (6 components)
@@ -70,9 +70,11 @@ The documentation uses Vite's `?raw` import feature to automatically extract sou
 </template>
 
 <script setup lang="ts">
-import DButton from '../../../resources/js/components/base/DButton.vue';
+import { DButton } from '@omnitend/dashboard-for-laravel';
 </script>
 ```
+
+**Note:** Examples import from the built package (`@omnitend/dashboard-for-laravel`) via npm link. Run `npm link` in the root, then `npm link @omnitend/dashboard-for-laravel` in `docs/` so examples match real usage.
 
 **Documentation Page** (`docs/src/pages/components/base/DButton.mdx`):
 ```mdx
@@ -121,10 +123,9 @@ It provides API stability and forwards all props, events, and slots.
 The `ComponentExample.vue` component provides the live preview and code display functionality.
 
 **Features:**
-- Live preview area showing the rendered component
-- Collapsible code block with syntax highlighting
-- Copy-to-clipboard functionality
-- Prism.js syntax highlighting for Vue/JavaScript/Markup
+- Live preview plus collapsible code
+- Copy-to-clipboard
+- Highlight.js syntax highlighting for Vue/JavaScript/TypeScript/CSS
 
 **Usage:**
 ```vue
@@ -181,7 +182,7 @@ Create `docs/src/examples/D{ComponentName}Example.vue`:
 </template>
 
 <script setup lang="ts">
-import D{ComponentName} from '../../../resources/js/components/base/D{ComponentName}.vue';
+import { D{ComponentName} } from '@omnitend/dashboard-for-laravel';
 </script>
 
 <style scoped>

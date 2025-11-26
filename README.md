@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/@omnitend%2Fdashboard-for-laravel.svg)](https://www.npmjs.com/package/@omnitend/dashboard-for-laravel)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-108%20passing-brightgreen)](https://github.com/omnitend/dashboard-for-laravel)
+[![Tests](https://img.shields.io/badge/tests-110%20passing-brightgreen)](https://github.com/omnitend/dashboard-for-laravel)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
 
 A full-stack package for building Laravel dashboards with Vue 3, Inertia.js, and Bootstrap Vue Next.
@@ -390,7 +390,7 @@ npm run docs:all
 - PHP ^8.2
 - Laravel ^11.0|^12.0
 - Vue ^3.4.0
-- Bootstrap Vue Next ^0.28.0
+- Bootstrap Vue Next ^0.40.8
 
 ## License
 
