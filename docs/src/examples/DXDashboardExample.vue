@@ -5,7 +5,7 @@
 
     <div class="demo-frame">
       <iframe
-        src="/examples/dxdashboard-demo.html"
+        :src="iframeSrc"
         class="dashboard-iframe"
         title="DXDashboard Interactive Example"
       ></iframe>
@@ -19,7 +19,20 @@
 
 <script setup lang="ts">
 import { DAlert } from '@omnitend/dashboard-for-laravel';
+import { computed } from 'vue';
 
+// Get base URL from the current location (works in both dev and prod)
+const iframeSrc = computed(() => {
+  // In browser, derive base from current URL
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname;
+    // Extract base path (e.g., /dashboard-for-laravel from /dashboard-for-laravel/components/...)
+    const match = path.match(/^(\/[^/]+)/);
+    const base = match ? match[1] : '';
+    return `${base}/examples/dxdashboard-demo.html`;
+  }
+  return '/examples/dxdashboard-demo.html';
+});
 </script>
 
 <style scoped>
