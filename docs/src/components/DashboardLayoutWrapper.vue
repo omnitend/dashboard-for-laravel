@@ -8,9 +8,9 @@
   >
     <!-- Custom brand slot for sidebar -->
     <template #sidebar-brand="{ collapsed }">
-      <a :href="baseUrl" class="d-flex align-items-center text-decoration-none" :class="{ 'justify-content-center': collapsed }">
+      <a :href="normalizedBaseUrl" class="d-flex align-items-center text-decoration-none" :class="{ 'justify-content-center': collapsed }">
         <img
-          :src="`${baseUrl}logo.svg`"
+          :src="`${normalizedBaseUrl}logo.svg`"
           alt="Dashboard for Laravel"
           class="brand-icon"
         />
@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { DXDashboard } from '@omnitend/dashboard-for-laravel';
 import type { Navigation } from '@omnitend/dashboard-for-laravel';
 import Search from './Search.vue';
@@ -66,6 +66,9 @@ const props = withDefaults(defineProps<Props>(), {
   pageTitle: 'Dashboard',
   baseUrl: '/',
 });
+
+// Ensure baseUrl ends with a slash for asset paths
+const normalizedBaseUrl = computed(() => props.baseUrl.replace(/\/?$/, '/'));
 
 const isProduction = import.meta.env.PROD;
 </script>
