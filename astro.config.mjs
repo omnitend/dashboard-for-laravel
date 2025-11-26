@@ -37,6 +37,8 @@ export default defineConfig({
       alias: {
         '@': '/resources/js',
         '@components': '/resources/js/components',
+        // Map package imports to local dist for docs build (needed in CI where npm link isn't available)
+        '@omnitend/dashboard-for-laravel': '/dist/dashboard-for-laravel.js',
       },
     },
     optimizeDeps: {
