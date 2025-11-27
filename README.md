@@ -9,15 +9,15 @@ A full-stack package for building Laravel dashboards with Vue 3, Inertia.js, and
 
 ## Documentation
 
-📚 **[Browse Components](https://github.com/omnitend/dashboard-for-laravel/tree/main/docs/src/pages/components)** | 📦 **[NPM Package](https://www.npmjs.com/package/@omnitend/dashboard-for-laravel)**
+📚 **[Browse Components](https://omnitend.github.io/dashboard-for-laravel/components)** | 📦 **[NPM Package](https://www.npmjs.com/package/@omnitend/dashboard-for-laravel)**
 
-- [Getting Started Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/getting-started.md)
-- [Installation Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/installation.md)
-- [Component API Reference](https://github.com/omnitend/dashboard-for-laravel/tree/main/docs/src/pages/components)
-- [Form System Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/forms.md)
-- [Theming Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/theming.md)
-- [TypeScript Guide](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/guide/typescript.md)
-- [Examples & Patterns](https://github.com/omnitend/dashboard-for-laravel/blob/main/docs/src/pages/examples/common-patterns.md)
+- [Getting Started Guide](https://omnitend.github.io/dashboard-for-laravel/guide/getting-started)
+- [Installation Guide](https://omnitend.github.io/dashboard-for-laravel/guide/installation)
+- [Component API Reference](https://omnitend.github.io/dashboard-for-laravel/components)
+- [Form System Guide](https://omnitend.github.io/dashboard-for-laravel/guide/forms)
+- [Theming Guide](https://omnitend.github.io/dashboard-for-laravel/guide/theming)
+- [TypeScript Guide](https://omnitend.github.io/dashboard-for-laravel/guide/typescript)
+- [Examples & Patterns](https://omnitend.github.io/dashboard-for-laravel/examples/common-patterns)
 
 ## Features
 
