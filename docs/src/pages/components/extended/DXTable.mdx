@@ -11,9 +11,29 @@ import SlotsTable from '../../../components/SlotsTable.vue';
 
 # DXTable
 
-A comprehensive data table component with built-in pagination, loading states, and error handling for Laravel dashboards.
+A comprehensive data table component with built-in pagination, sorting, filtering, and CRUD operations for Laravel dashboards.
 
-## Live Examples
+## Data Fetching Modes
+
+DXTable supports two modes for loading data. **API mode is recommended** for most applications.
+
+| Mode | Prop | Best For |
+|------|------|----------|
+| **API Mode** (Recommended) | `api-url="/api/products"` | Most applications. Clean separation, reusable endpoints, better caching. |
+| Inertia Mode | `inertia-url="/" + :items` | Apps already using Inertia.js with server-side page props. |
+
+### Quick Comparison
+
+| Feature | API Mode | Inertia Mode |
+|---------|----------|--------------|
+| **Setup** | 1 prop: `api-url` | 3 props: `items`, `pagination`, `inertia-url` |
+| **Data Source** | Auto-fetched via axios | Passed as page props |
+| **Sorting/Pagination** | Automatic AJAX | Full page reload via Inertia |
+| **URL Changes** | No (AJAX only) | Yes (browser URL updates) |
+| **Loading State** | `v-model:busy` | `:loading` prop |
+| **Backend** | JSON API endpoint | Inertia render + PaginatedResource |
+
+## Live Example
 
 <ComponentExample
   client:load
@@ -21,7 +41,9 @@ A comprehensive data table component with built-in pagination, loading states, a
 import { ref } from 'vue';
 import { DXTable } from '@omnitend/dashboard-for-laravel';
 
-const customerFields = [
+// API Mode: Just provide api-url and fields
+// The component handles fetching, pagination, and sorting automatically
+const fields = [
   { key: 'id', label: 'ID', sortable: true },
   { key: 'name', label: 'Name', sortable: true },
   { key: 'email', label: 'Email' },
@@ -29,29 +51,16 @@ const customerFields = [
   { key: 'status', label: 'Status' },
 ];
 
-const customerItems = ref([
-  { id: 1, name: 'John Smith', email: 'john@example.com', company: 'Acme Ltd', status: 'Active' },
-  { id: 2, name: 'Jane Doe', email: 'jane@example.com', company: 'Tech Corp', status: 'Active' },
-  { id: 3, name: 'Bob Johnson', email: 'bob@example.com', company: 'Global Industries', status: 'Inactive' },
-  { id: 4, name: 'Alice Williams', email: 'alice@example.com', company: 'Digital Solutions', status: 'Active' },
-  { id: 5, name: 'Charlie Brown', email: 'charlie@example.com', company: 'Cloud Systems', status: 'Pending' },
-]);
-
-const paginationData = ref({
-  currentPage: 1,
-  perPage: 10,
-  total: 5,
-  from: 1,
-  to: 5,
-});
+const busy = ref(false);
 </script>
 
 <template>
+  <!-- API Mode (Recommended) -->
   <DXTable
-    :items="customerItems"
-    :fields="customerFields"
-    :pagination="paginationData"
     title="Customers"
+    api-url="/api/customers"
+    :fields="fields"
+    v-model:busy="busy"
   />
 </template>`}
   example="DXTableExample"
@@ -118,239 +127,17 @@ const paginationData = ref({
   { name: 'header', description: 'Custom header content' },
 ]} />
 
-## Server-Side Pagination
+## API Mode (Recommended)
 
-DXTable works seamlessly with Laravel's pagination and the package's `PaginatedResource` helper.
+API mode is the recommended approach for most applications. Just provide an `api-url` and DXTable handles everything: fetching data, pagination, sorting, and loading states.
 
-### Laravel Backend Setup
+### Why API Mode?
 
-Use the `PaginatedResource` to format your paginated data:
-
-```php
-<?php
-
-namespace App\Http\Controllers;
-
-use App\Models\Product;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use OmniTend\LaravelDashboard\Http\Resources\PaginatedResource;
-
-class ProductController extends Controller
-{
-    public function index(Request $request)
-    {
-        $perPage = $request->input('perPage', 10);
-        $products = Product::orderBy('created_at', 'desc')->paginate($perPage);
-
-        return Inertia::render('Products/Index', [
-            'products' => new PaginatedResource($products),
-        ]);
-    }
-}
-```
-
-### Vue Frontend Implementation
-
-```vue
-<script setup lang="ts">
-import { DXTable } from '@omnitend/dashboard-for-laravel';
-import type { PaginationData } from '@omnitend/dashboard-for-laravel';
-
-interface Product {
-  id: number;
-  sku: string;
-  name: string;
-  price: string;
-  stock: number;
-}
-
-interface Props {
-  products: PaginationData & { data: Product[] };
-}
-
-defineProps<Props>();
-
-const fields = [
-  { key: 'sku', label: 'SKU', sortable: true },
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'price', label: 'Price', sortable: true },
-  { key: 'stock', label: 'Stock', sortable: true },
-];
-</script>
-
-<template>
-  <DXTable
-    title="Products"
-    :items="products.data"
-    :fields="fields"
-    :pagination="products"
-    inertia-url="/"
-  />
-</template>
-```
-
-Or create a reusable type helper:
-
-```typescript
-// types/index.ts
-export interface PaginatedData<T> {
-  data: T[];
-  current_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
-  last_page: number;
-}
-
-// Your page component
-import type { PaginatedData } from '@/types';
-
-interface Props {
-  products: PaginatedData<Product>;
-}
-```
-
-**That's it!** Just pass `inertia-url` and DXTable handles everything:
-- Sorting (click column headers)
-- Pagination (click page numbers)
-- Filtering (inline inputs beneath headers)
-- State preservation
-- Server requests with correct parameters
-
-No handlers, no refs, no boilerplate!
-
-### Adding Filters
-
-Add inline filters by specifying `filter` in field definitions:
-
-```typescript
-const fields = [
-  { key: 'sku', label: 'SKU', sortable: true },
-  { key: 'name', label: 'Name', sortable: true, filter: 'text' },
-  { key: 'category', label: 'Category', sortable: true, filter: 'select', filterOptions: [
-    { value: 'Electronics', text: 'Electronics' },
-    { value: 'Clothing', text: 'Clothing' },
-    { value: 'Books', text: 'Books' },
-  ]},
-  { key: 'price', label: 'Price', sortable: true, filter: 'number' },
-  { key: 'stock', label: 'Stock', sortable: true, filter: 'number' },
-];
-```
-
-**Filter Types:**
-- `'text'` - Text input with 300ms debounce for LIKE searches
-- `'select'` - Dropdown with options (automatically adds "All" option)
-- `'number'` - Number input for exact matches
-- `'date'` - Date input for date filtering
-- `false` or omit - No filter for this column
-
-Filters appear inline beneath the table headers and trigger server requests automatically.
-
-### Field Hints
-
-Add helpful hint text below column headers to guide users:
-
-```typescript
-const fields = [
-  { key: 'sku', label: 'SKU', sortable: true, hint: 'Product code' },
-  { key: 'name', label: 'Name', sortable: true, filter: 'text', hint: 'Search by name' },
-  { key: 'price', label: 'Price', sortable: true, hint: 'USD', formatter: (value) => `$${value}` },
-  { key: 'stock', label: 'Stock', sortable: true, hint: 'Current inventory' },
-];
-```
-
-**Features:**
-- Hint text appears below the column label in a smaller, muted font
-- Works with sortable columns (hint appears above sort indicators)
-- Works with filters (hint appears in column header, above filter input)
-- Useful for units (USD, kg), instructions (Search by name), or context (Current inventory)
-- Optional - only shows when `hint` property is provided
-
-**Example Output:**
-```
-Product Name    Price
-Search by name  USD
-↑↓              ↑↓
-[filter input]  [filter input]
-```
-
-### Backend Filter Handling
-
-Update your controller to accept and apply filters:
-
-```php
-public function index(Request $request)
-{
-    // ... sorting code ...
-
-    // Build query with filters
-    $query = Product::query();
-
-    // Apply filters
-    $filters = $request->input('filters', []);
-
-    // Text filters (LIKE search)
-    if (!empty($filters['name'])) {
-        $query->where('name', 'LIKE', '%' . $filters['name'] . '%');
-    }
-
-    // Exact match filters
-    if (!empty($filters['category'])) {
-        $query->where('category', $filters['category']);
-    }
-
-    if (!empty($filters['price'])) {
-        $query->where('price', '=', $filters['price']);
-    }
-
-    $products = $query->orderBy($sortBy, $sortOrder)->paginate($perPage);
-
-    return Inertia::render('Products/Index', [
-        'products' => new PaginatedResource($products),
-    ]);
-}
-```
-
-**Filter Behavior:**
-- Text filters automatically debounce (300ms) to reduce server load
-- Filtering resets to page 1
-- Empty filters are removed from request
-- Filters preserve sort state
-- Works identically in both Inertia and API modes
-
-### Key Points
-
-- **Batteries Included**: Just pass `inertia-url` - DXTable handles all sorting and pagination automatically
-- **PaginatedResource**: Returns data in the exact format DXTable expects (snake_case Laravel convention)
-- **No Boilerplate**: No need to write handlers, manage sortBy refs, or handle events
-- **Single-Column Sort**: Automatically normalizes multi-column sorts to single-column for Laravel
-- **Server-Side Only**: Disables client-side sorting (`:no-local-sorting="true"`) automatically
-- **State Preservation**: Uses `preserveState: true` for smooth navigation
-- **Security**: Always whitelist allowed sort columns on the backend
-- **Snake Case Properties**: Uses `current_page`, `per_page`, `total`, `from`, `to`, `last_page` to match Laravel conventions
-
-### Advanced Usage (Custom Handlers)
-
-If you need custom behavior, you can still handle events manually by omitting `inertia-url`:
-
-```vue
-<DXTable
-  :items="products.data"
-  :fields="fields"
-  :pagination="products"
-  @page-change="customPageHandler"
-  @sort-change="customSortHandler"
-/>
-```
-
-## API Mode (Provider Pattern)
-
-DXTable also supports the traditional AJAX/API pattern using Bootstrap-Vue-Next's provider functionality. This is perfect for:
-- Migrating from Bootstrap-Vue (Vue 2) to modern stack
-- Existing Laravel apps with API endpoints
-- SPAs that don't use Inertia.js
+- **Simpler setup** - One prop instead of three
+- **Better separation** - Your API is independent of your UI framework
+- **Reusable endpoints** - Same API works for mobile apps, other frontends, etc.
+- **Better caching** - JSON responses cache more efficiently than full page responses
+- **No framework lock-in** - Works whether you use Inertia, traditional Blade, or a pure SPA
 
 ### Laravel Backend (API Endpoint)
 
@@ -462,20 +249,6 @@ const customProvider = async (context) => {
 </template>
 ```
 
-### Key Differences: Inertia vs API Mode
-
-| Feature | Inertia Mode | API Mode |
-|---------|--------------|----------|
-| **Prop** | `inertia-url="/"` | `api-url="/api/products"` |
-| **Data Source** | `:items` + `:pagination` | Auto-fetched via axios |
-| **Pagination** | Server-side with Inertia | BTable via `:per-page` |
-| **Sorting** | Server-side with Inertia | Auto-handled by provider |
-| **Loading State** | `:loading` prop | `v-model:busy` |
-| **URL Updates** | Yes (full page navigation) | No (AJAX only) |
-| **Backend** | Inertia render + PaginatedResource | JSON endpoint |
-| **Best For** | Modern Laravel + Inertia | Traditional SPAs, Bootstrap-Vue migrations |
-| **Setup** | 1 line | 1 line |
-
 ### Provider Function Details
 
 The provider function receives a context object:
@@ -494,6 +267,112 @@ interface BTableProviderContext {
 - BTable handles pagination UI automatically
 - No need to show "Showing X to Y" text (provider mode)
 - Sorting and pagination trigger automatic provider calls
+
+### Adding Filters
+
+Add inline filters by specifying `filter` in field definitions:
+
+```typescript
+const fields = [
+  { key: 'sku', label: 'SKU', sortable: true },
+  { key: 'name', label: 'Name', sortable: true, filter: 'text' },
+  { key: 'category', label: 'Category', sortable: true, filter: 'select', filterOptions: [
+    { value: 'Electronics', text: 'Electronics' },
+    { value: 'Clothing', text: 'Clothing' },
+    { value: 'Books', text: 'Books' },
+  ]},
+  { key: 'price', label: 'Price', sortable: true, filter: 'number' },
+  { key: 'stock', label: 'Stock', sortable: true, filter: 'number' },
+];
+```
+
+**Filter Types:**
+- `'text'` - Text input with 300ms debounce for LIKE searches
+- `'select'` - Dropdown with options (automatically adds "All" option)
+- `'number'` - Number input for exact matches
+- `'date'` - Date input for date filtering
+- `false` or omit - No filter for this column
+
+Filters appear inline beneath the table headers and trigger server requests automatically.
+
+### Field Hints
+
+Add helpful hint text below column headers to guide users:
+
+```typescript
+const fields = [
+  { key: 'sku', label: 'SKU', sortable: true, hint: 'Product code' },
+  { key: 'name', label: 'Name', sortable: true, filter: 'text', hint: 'Search by name' },
+  { key: 'price', label: 'Price', sortable: true, hint: 'USD', formatter: (value) => `$${value}` },
+  { key: 'stock', label: 'Stock', sortable: true, hint: 'Current inventory' },
+];
+```
+
+**Features:**
+- Hint text appears below the column label in a smaller, muted font
+- Works with sortable columns (hint appears above sort indicators)
+- Works with filters (hint appears in column header, above filter input)
+- Useful for units (USD, kg), instructions (Search by name), or context (Current inventory)
+- Optional - only shows when `hint` property is provided
+
+### Backend Filter Handling
+
+Update your controller to accept and apply filters:
+
+```php
+public function apiIndex(Request $request)
+{
+    $page = $request->input('page', 1);
+    $perPage = $request->input('perPage', 10);
+    $sortBy = $request->input('sortBy', 'created_at');
+    $sortOrder = $request->input('sortOrder', 'desc');
+
+    // Build query with filters
+    $query = Product::query();
+    $filters = $request->input('filters', []);
+
+    // Text filters (LIKE search)
+    if (!empty($filters['name'])) {
+        $query->where('name', 'LIKE', '%' . $filters['name'] . '%');
+    }
+
+    // Exact match filters
+    if (!empty($filters['category'])) {
+        $query->where('category', $filters['category']);
+    }
+
+    if (!empty($filters['price'])) {
+        $query->where('price', '=', $filters['price']);
+    }
+
+    // Whitelist sort columns
+    $allowedSortColumns = ['sku', 'name', 'price', 'stock', 'created_at'];
+    if (!in_array($sortBy, $allowedSortColumns)) {
+        $sortBy = 'created_at';
+    }
+
+    $products = $query->orderBy($sortBy, $sortOrder)
+        ->paginate($perPage, ['*'], 'page', $page);
+
+    return response()->json([
+        'data' => $products->items(),
+        'pagination' => [
+            'current_page' => $products->currentPage(),
+            'per_page' => $products->perPage(),
+            'total' => $products->total(),
+            'from' => $products->firstItem(),
+            'to' => $products->lastItem(),
+            'last_page' => $products->lastPage(),
+        ],
+    ]);
+}
+```
+
+**Filter Behavior:**
+- Text filters automatically debounce (300ms) to reduce server load
+- Filtering resets to page 1
+- Empty filters are removed from request
+- Filters preserve sort state
 
 ### Manual Refresh
 
@@ -518,6 +397,111 @@ const refreshData = () => {
     :fields="fields"
   />
 </template>
+```
+
+## Inertia Mode (Alternative)
+
+If your application already uses Inertia.js and you prefer server-side page props, you can use Inertia mode instead of API mode.
+
+### When to Use Inertia Mode
+
+- Your app is built entirely with Inertia.js
+- You want the browser URL to update with sort/filter/page parameters
+- You're already using `PaginatedResource` for other Inertia pages
+
+### Laravel Backend (Inertia)
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use OmniTend\LaravelDashboard\Http\Resources\PaginatedResource;
+
+class ProductController extends Controller
+{
+    public function index(Request $request)
+    {
+        $perPage = $request->input('perPage', 10);
+        $sortBy = $request->input('sortBy', 'created_at');
+        $sortOrder = $request->input('sortOrder', 'desc');
+
+        // Whitelist allowed sort columns
+        $allowedSortColumns = ['sku', 'name', 'price', 'stock', 'created_at'];
+        if (!in_array($sortBy, $allowedSortColumns)) {
+            $sortBy = 'created_at';
+        }
+
+        $products = Product::orderBy($sortBy, $sortOrder)->paginate($perPage);
+
+        return Inertia::render('Products/Index', [
+            'products' => new PaginatedResource($products),
+        ]);
+    }
+}
+```
+
+### Vue Frontend (Inertia)
+
+```vue
+<script setup lang="ts">
+import { DXTable } from '@omnitend/dashboard-for-laravel';
+import type { PaginationData } from '@omnitend/dashboard-for-laravel';
+
+interface Product {
+  id: number;
+  sku: string;
+  name: string;
+  price: string;
+  stock: number;
+}
+
+interface Props {
+  products: PaginationData & { data: Product[] };
+}
+
+defineProps<Props>();
+
+const fields = [
+  { key: 'sku', label: 'SKU', sortable: true },
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'price', label: 'Price', sortable: true },
+  { key: 'stock', label: 'Stock', sortable: true },
+];
+</script>
+
+<template>
+  <DXTable
+    title="Products"
+    :items="products.data"
+    :fields="fields"
+    :pagination="products"
+    inertia-url="/"
+  />
+</template>
+```
+
+**Key differences from API mode:**
+- Pass data via `:items` and `:pagination` props (from Inertia page props)
+- Use `inertia-url` instead of `api-url`
+- URL updates when sorting/filtering/paginating
+- Uses `:loading` prop instead of `v-model:busy`
+
+### Custom Event Handlers (No Auto-Navigation)
+
+If you need custom behavior, omit `inertia-url` and handle events manually:
+
+```vue
+<DXTable
+  :items="products.data"
+  :fields="fields"
+  :pagination="products"
+  @page-change="customPageHandler"
+  @sort-change="customSortHandler"
+/>
 ```
 
 ## TableField Interface
