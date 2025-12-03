@@ -114,9 +114,98 @@
                         </template>
                     </DTable>
 
+                    <!-- Client-Side Mode: Local filtering, sorting, pagination -->
+                    <DTable
+                        v-else-if="isClientSideMode"
+                        :items="clientSidePaginatedItems"
+                        :fields="fields"
+                        :sort-by="effectiveSortBy"
+                        :multisort="false"
+                        :no-local-sorting="true"
+                        :no-sortable-icon="true"
+                        :striped="striped"
+                        :hover="hover"
+                        :responsive="responsive"
+                        @update:sort-by="handleSortChange"
+                        @row-clicked="handleRowClick"
+                    >
+                        <!-- Inline Filter Row -->
+                        <template v-if="hasFilters" #thead-top>
+                            <tr class="filter-row">
+                                <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
+                                    <!-- Text Filter -->
+                                    <DFormInput
+                                        v-if="field.filter === 'text'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Select Filter -->
+                                    <DFormSelect
+                                        v-else-if="field.filter === 'select'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :options="[{ value: '', text: 'All' }, ...getFieldFilterOptions(field)]"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Number Filter -->
+                                    <DFormInput
+                                        v-else-if="field.filter === 'number'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
+                                        type="number"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- Date Filter -->
+                                    <DFormInput
+                                        v-else-if="field.filter === 'date'"
+                                        :model-value="effectiveFilters[field.key] || ''"
+                                        type="date"
+                                        size="sm"
+                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                    />
+
+                                    <!-- No filter for this column -->
+                                    <div v-else></div>
+                                </th>
+                            </tr>
+                        </template>
+
+                        <!-- Custom headers for all fields -->
+                        <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">{{ label || field.key }}</div>
+                                    <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
+                                </div>
+                                <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 1.1; display: flex; flex-direction: column; align-items: center;">
+                                    <span :style="{ opacity: getFieldSortState(field.key) === 'asc' ? 1 : 0.3 }">▲</span>
+                                    <span :style="{ opacity: getFieldSortState(field.key) === 'desc' ? 1 : 0.3 }">▼</span>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Pass through all cell slots -->
+                        <template
+                            v-for="(_, name) in $slots"
+                            #[name]="slotProps"
+                        >
+                            <slot
+                                v-if="typeof name === 'string' && name.startsWith('cell')"
+                                :name="name"
+                                v-bind="slotProps"
+                            />
+                        </template>
+                    </DTable>
+
                     <!-- Inertia Mode: Use items prop -->
                     <DTable
-                        v-else
+                        v-else-if="isInertiaMode"
                         :items="items"
                         :fields="fields"
                         :sort-by="effectiveSortBy"
@@ -203,6 +292,54 @@
                             />
                         </template>
                     </DTable>
+
+                    <!-- Pagination and Controls (Client-Side mode) -->
+                    <div v-if="isClientSideMode" class="mt-3">
+                        <!-- Top row: Pagination and Per-page selector -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <!-- Pagination controls (only when multiple pages) -->
+                            <DPagination
+                                v-if="showPagination && clientSidePagination.total > clientSidePagination.per_page"
+                                :model-value="clientSidePagination.current_page"
+                                :total-rows="clientSidePagination.total"
+                                :per-page="clientSidePagination.per_page"
+                                size="sm"
+                                @update:model-value="handleClientSidePageChange"
+                            />
+                            <div v-else></div>
+
+                            <!-- Per-page selector -->
+                            <div v-if="clientSidePagination.total >= Math.min(...perPageOptions)" class="d-flex align-items-center gap-2">
+                                <label for="perPageSelectClientSide" class="mb-0 small text-muted">Per page</label>
+                                <DFormSelect
+                                    id="perPageSelectClientSide"
+                                    :model-value="effectivePerPage"
+                                    :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
+                                    size="sm"
+                                    style="width: 85px;"
+                                    @update:model-value="handlePerPageChange"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Bottom row: Info text -->
+                        <div class="small text-muted">
+                            <div>
+                                <template v-if="clientSidePagination.total > clientSidePagination.per_page">
+                                    {{ clientSidePagination.from }} to {{ clientSidePagination.to }} out of {{ clientSidePagination.total }} {{ clientSidePagination.total === 1 ? singularItemName : pluralItemName }}.
+                                </template>
+                                <template v-else-if="clientSidePagination.total === 1">
+                                    {{ clientSidePagination.total }} {{ singularItemName }}.
+                                </template>
+                                <template v-else>
+                                    {{ clientSidePagination.total }} {{ pluralItemName }}.
+                                </template>
+                            </div>
+                            <div v-if="hasActiveFilters && clientSidePagination.total_unfiltered">
+                                <small>Filtered from {{ clientSidePagination.total_unfiltered }} {{ clientSidePagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Pagination and Controls (Inertia mode) -->
                     <div v-if="isInertiaMode && pagination" class="mt-3">
@@ -620,6 +757,9 @@ export interface Props<TItem = any> {
 
     /** API endpoint pattern for deletions (e.g., "/api/products/:id") */
     deleteUrl?: string;
+
+    /** Enable client-side filtering, sorting, and pagination on items array */
+    clientSide?: boolean;
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
@@ -666,9 +806,15 @@ const emit = defineEmits<{
 }>();
 
 // Mode detection
-const isProviderMode = computed(() => !!props.provider || !!props.apiUrl);
-const isInertiaMode = computed(() => !props.provider && !props.apiUrl && !!props.items);
+const isProviderMode = computed(() => !props.clientSide && (!!props.provider || !!props.apiUrl));
+const isInertiaMode = computed(() => !props.clientSide && !props.provider && !props.apiUrl && !!props.items);
+const isClientSideMode = computed(() => props.clientSide === true && !!props.items);
 const hasInertiaUrl = computed(() => !!props.inertiaUrl);
+
+// Warn about invalid prop combinations in client-side mode
+if (props.clientSide && (props.apiUrl || props.inertiaUrl)) {
+    console.warn('[DXTable] clientSide mode ignores apiUrl and inertiaUrl props. Data is processed locally from items.');
+}
 
 // Computed for effective busy state (provider mode uses 'busy', inertia uses 'loading')
 const effectiveBusy = computed(() => isProviderMode.value ? props.busy : props.loading);
@@ -696,6 +842,94 @@ const hasActiveFilters = computed(() => {
 
 // API mode pagination metadata (extracted from responses)
 const apiPaginationMeta = ref<PaginationData | null>(null);
+
+// ============================================
+// Client-Side Mode: Filtering, Sorting, Pagination
+// ============================================
+
+// Client-side current page
+const clientSideCurrentPage = ref(1);
+
+// Client-side filtered items
+const clientSideFilteredItems = computed<T[]>(() => {
+    if (!isClientSideMode.value || !props.items) return [];
+
+    const filters = effectiveFilters.value;
+    const filterKeys = Object.keys(filters).filter(key => filters[key] && filters[key].trim() !== '');
+
+    if (filterKeys.length === 0) {
+        return props.items;
+    }
+
+    return props.items.filter(item => {
+        return filterKeys.every(key => {
+            const filterValue = filters[key].trim().toLowerCase();
+            const field = props.fields.find(f => f.key === key);
+            const itemValue = (item as any)[key];
+
+            if (itemValue === null || itemValue === undefined) {
+                return false;
+            }
+
+            const filterType = field?.filter;
+
+            switch (filterType) {
+                case 'text':
+                    // Case-insensitive contains search
+                    return String(itemValue).toLowerCase().includes(filterValue);
+
+                case 'select':
+                    // Exact match
+                    return String(itemValue) === filters[key];
+
+                case 'number':
+                    // Exact numeric match
+                    return Number(itemValue) === Number(filters[key]);
+
+                case 'date':
+                    // Exact date match
+                    return String(itemValue) === filters[key];
+
+                default:
+                    // Default: case-insensitive contains
+                    return String(itemValue).toLowerCase().includes(filterValue);
+            }
+        });
+    });
+});
+
+// Client-side sorted items
+const clientSideSortedItems = computed<T[]>(() => {
+    if (!isClientSideMode.value) return [];
+
+    const items = [...clientSideFilteredItems.value];
+    const sortBy = effectiveSortBy.value;
+
+    if (!sortBy || sortBy.length === 0 || !sortBy[0].key) {
+        return items;
+    }
+
+    const { key, order } = sortBy[0];
+    const direction = order === 'desc' ? -1 : 1;
+
+    return items.sort((a, b) => {
+        const aVal = (a as any)[key];
+        const bVal = (b as any)[key];
+
+        // Handle null/undefined
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return direction;
+        if (bVal == null) return -direction;
+
+        // Numeric comparison
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return (aVal - bVal) * direction;
+        }
+
+        // String comparison (case-insensitive)
+        return String(aVal).localeCompare(String(bVal), undefined, { sensitivity: 'base' }) * direction;
+    });
+});
 
 // API mode filter values (extracted from responses)
 const apiFilterValues = ref<Record<string, string[]>>({});
@@ -818,6 +1052,66 @@ const effectivePerPage = computed(() => {
     // and causes the select to flicker when user changes it
     return internalPerPage.value;
 });
+
+// ============================================
+// Client-Side Mode: Pagination (requires effectivePerPage)
+// ============================================
+
+// Client-side paginated items (final output)
+const clientSidePaginatedItems = computed<T[]>(() => {
+    if (!isClientSideMode.value) return [];
+
+    const perPage = effectivePerPage.value;
+    const start = (clientSideCurrentPage.value - 1) * perPage;
+    const end = start + perPage;
+
+    return clientSideSortedItems.value.slice(start, end);
+});
+
+// Client-side pagination metadata
+const clientSidePagination = computed<PaginationData>(() => {
+    const total = clientSideFilteredItems.value.length;
+    const totalUnfiltered = props.items?.length || 0;
+    const perPage = effectivePerPage.value;
+    const currentPage = clientSideCurrentPage.value;
+    const lastPage = Math.max(1, Math.ceil(total / perPage));
+
+    // Ensure current page is valid
+    const validPage = Math.min(Math.max(1, currentPage), lastPage);
+
+    const from = total > 0 ? (validPage - 1) * perPage + 1 : 0;
+    const to = Math.min(validPage * perPage, total);
+
+    return {
+        current_page: validPage,
+        per_page: perPage,
+        total,
+        total_unfiltered: totalUnfiltered !== total ? totalUnfiltered : undefined,
+        from,
+        to,
+        last_page: lastPage,
+    };
+});
+
+// Reset to page 1 when filters change in client-side mode
+watch(effectiveFilters, () => {
+    if (isClientSideMode.value) {
+        clientSideCurrentPage.value = 1;
+    }
+}, { deep: true });
+
+// Reset to page 1 when perPage changes in client-side mode
+watch(effectivePerPage, () => {
+    if (isClientSideMode.value) {
+        clientSideCurrentPage.value = 1;
+    }
+});
+
+// Handle client-side page change
+const handleClientSidePageChange = (page: number) => {
+    clientSideCurrentPage.value = page;
+    emit('pageChange', page);
+};
 
 // Computed: determine if per-page selector should be shown
 // Hide it when total items is less than the smallest page size option
@@ -1045,6 +1339,13 @@ const handleFilterChange = (fieldKey: string, value: string) => {
 
     // Emit v-model update
     emit('update:filters', newFilters);
+
+    // Client-side mode: filtering happens reactively via computed properties
+    // No server requests needed, just emit the event
+    if (isClientSideMode.value) {
+        emit('filterChange', newFilters);
+        return;
+    }
 
     // Debounce server requests for text inputs
     if (filterDebounceTimer) {

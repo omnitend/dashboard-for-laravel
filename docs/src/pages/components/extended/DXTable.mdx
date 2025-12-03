@@ -16,12 +16,13 @@ A comprehensive data table component with built-in pagination, sorting, filterin
 
 ## Data Fetching Modes
 
-DXTable supports two modes for loading data. **API mode is recommended** for most applications.
+DXTable supports three modes for loading data. **API mode is recommended** for server-side operations. **Client-side mode** is great for smaller datasets that can be filtered/sorted locally.
 
 <DTable
   client:load
   items={[
-    { mode: 'API Mode (Recommended)', prop: 'api-url="/api/products"', bestFor: 'Most applications. Clean separation, reusable endpoints, better caching.' },
+    { mode: 'API Mode (Recommended)', prop: 'api-url="/api/products"', bestFor: 'Server-side pagination. Clean separation, reusable endpoints.' },
+    { mode: 'Client-Side Mode', prop: 'client-side + :items', bestFor: 'Smaller datasets (<1000 rows). Instant filtering without server requests.' },
     { mode: 'Inertia Mode', prop: 'inertia-url="/" + :items', bestFor: 'Apps already using Inertia.js with server-side page props.' },
   ]}
   fields={[
@@ -38,16 +39,16 @@ DXTable supports two modes for loading data. **API mode is recommended** for mos
 <DTable
   client:load
   items={[
-    { feature: 'Setup', apiMode: '1 prop: api-url', inertiaMode: '3 props: items, pagination, inertia-url' },
-    { feature: 'Data Source', apiMode: 'Auto-fetched via axios', inertiaMode: 'Passed as page props' },
-    { feature: 'Sorting/Pagination', apiMode: 'Automatic AJAX', inertiaMode: 'Full page reload via Inertia' },
-    { feature: 'URL Changes', apiMode: 'No (AJAX only)', inertiaMode: 'Yes (browser URL updates)' },
-    { feature: 'Loading State', apiMode: 'v-model:busy', inertiaMode: ':loading prop' },
-    { feature: 'Backend', apiMode: 'JSON API endpoint', inertiaMode: 'Inertia render + PaginatedResource' },
+    { feature: 'Setup', apiMode: '1 prop: api-url', clientSideMode: '2 props: items, client-side', inertiaMode: '3 props: items, pagination, inertia-url' },
+    { feature: 'Data Source', apiMode: 'Auto-fetched via axios', clientSideMode: 'Passed as items prop', inertiaMode: 'Passed as page props' },
+    { feature: 'Sorting/Filtering', apiMode: 'Server-side (AJAX)', clientSideMode: 'Client-side (instant)', inertiaMode: 'Server-side (page reload)' },
+    { feature: 'Pagination', apiMode: 'Server-side', clientSideMode: 'Client-side', inertiaMode: 'Server-side' },
+    { feature: 'Best For', apiMode: 'Large datasets', clientSideMode: 'Small datasets (<1000)', inertiaMode: 'Inertia apps' },
   ]}
   fields={[
     { key: 'feature', label: 'Feature' },
     { key: 'apiMode', label: 'API Mode' },
+    { key: 'clientSideMode', label: 'Client-Side' },
     { key: 'inertiaMode', label: 'Inertia Mode' },
   ]}
   striped={false}
@@ -62,26 +63,33 @@ DXTable supports two modes for loading data. **API mode is recommended** for mos
 import { ref } from 'vue';
 import { DXTable } from '@omnitend/dashboard-for-laravel';
 
-// API Mode: Just provide api-url and fields
-// The component handles fetching, pagination, and sorting automatically
+// Client-Side Mode: Pass items and enable client-side filtering/sorting
 const fields = [
   { key: 'id', label: 'ID', sortable: true },
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'email', label: 'Email' },
-  { key: 'company', label: 'Company', sortable: true },
-  { key: 'status', label: 'Status' },
+  { key: 'name', label: 'Name', sortable: true, filter: 'text' },
+  { key: 'email', label: 'Email', filter: 'text' },
+  { key: 'company', label: 'Company', sortable: true, filter: 'text' },
+  { key: 'status', label: 'Status', filter: 'select', filterOptions: [
+    { value: 'Active', text: 'Active' },
+    { value: 'Inactive', text: 'Inactive' },
+    { value: 'Pending', text: 'Pending' },
+  ]},
 ];
 
-const busy = ref(false);
+const items = ref([
+  { id: 1, name: 'John Smith', email: 'john@example.com', company: 'Acme Ltd', status: 'Active' },
+  { id: 2, name: 'Jane Doe', email: 'jane@example.com', company: 'Tech Corp', status: 'Active' },
+  // ... more items
+]);
 </script>
 
 <template>
-  <!-- API Mode (Recommended) -->
   <DXTable
     title="Customers"
-    api-url="/api/customers"
+    item-name="customer"
+    :items="items"
     :fields="fields"
-    v-model:busy="busy"
+    :client-side="true"
   />
 </template>`}
   example="DXTableExample"
@@ -92,7 +100,8 @@ const busy = ref(false);
 <PropsTable client:load props={[
   { name: 'title', type: 'string', required: 'No', default: '-', description: 'Table title' },
   { name: 'itemName', type: 'string', required: 'No', default: 'item', description: 'Singular item name (auto-pluralized for display)' },
-  { name: 'items', type: 'TItem[]', required: 'No', default: '-', description: 'Table data items (Inertia mode)' },
+  { name: 'items', type: 'TItem[]', required: 'No', default: '-', description: 'Table data items (for Inertia or client-side mode)' },
+  { name: 'clientSide', type: 'boolean', required: 'No', default: 'false', description: 'Enable client-side filtering, sorting, and pagination' },
   { name: 'provider', type: 'BTableProvider<TItem>', required: 'No', default: '-', description: 'Provider function for API mode' },
   { name: 'apiUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint URL for auto-provider mode' },
   { name: 'fields', type: 'TableField[]', required: 'Yes', default: '-', description: 'Table field definitions (see TableField interface)' },
@@ -419,6 +428,69 @@ const refreshData = () => {
   />
 </template>
 ```
+
+## Client-Side Mode
+
+Client-side mode is perfect for smaller datasets where you want instant filtering and sorting without server requests. Data is loaded once (either statically or from an API), then all filtering, sorting, and pagination happens in the browser.
+
+### When to Use Client-Side Mode
+
+- Dataset is small (< 1000 rows)
+- You want instant filtering without network latency
+- Data doesn't change frequently
+- You're building a simple admin interface or demo
+
+### Basic Usage
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { DXTable } from '@omnitend/dashboard-for-laravel';
+
+const fields = [
+  { key: 'id', label: 'ID', sortable: true },
+  { key: 'name', label: 'Name', sortable: true, filter: 'text' },
+  { key: 'email', label: 'Email', filter: 'text' },
+  { key: 'status', label: 'Status', filter: 'select', filterOptions: [
+    { value: 'Active', text: 'Active' },
+    { value: 'Inactive', text: 'Inactive' },
+  ]},
+];
+
+const items = ref([
+  { id: 1, name: 'John Smith', email: 'john@example.com', status: 'Active' },
+  { id: 2, name: 'Jane Doe', email: 'jane@example.com', status: 'Active' },
+  { id: 3, name: 'Bob Johnson', email: 'bob@example.com', status: 'Inactive' },
+  // ... more items
+]);
+</script>
+
+<template>
+  <DXTable
+    title="Users"
+    item-name="user"
+    :items="items"
+    :fields="fields"
+    :client-side="true"
+  />
+</template>
+```
+
+### Filter Types
+
+The same filter types work in client-side mode:
+
+- `'text'` - Case-insensitive contains search
+- `'select'` - Exact match dropdown
+- `'number'` - Exact numeric match
+- `'date'` - Exact date match
+
+### Performance Considerations
+
+- Client-side mode loads all data into memory
+- For datasets > 1000 rows, consider API mode with server-side filtering
+- Filtering and sorting are instant (no network requests)
+- Pagination happens locally on the filtered/sorted data
 
 ## Inertia Mode (Alternative)
 
