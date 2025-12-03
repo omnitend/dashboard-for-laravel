@@ -20,24 +20,24 @@ DXTable supports two modes for loading data. **API mode is recommended** for mos
 
 <DTable
   client:load
-  :items={[
+  items={[
     { mode: 'API Mode (Recommended)', prop: 'api-url="/api/products"', bestFor: 'Most applications. Clean separation, reusable endpoints, better caching.' },
     { mode: 'Inertia Mode', prop: 'inertia-url="/" + :items', bestFor: 'Apps already using Inertia.js with server-side page props.' },
   ]}
-  :fields={[
+  fields={[
     { key: 'mode', label: 'Mode' },
     { key: 'prop', label: 'Prop' },
     { key: 'bestFor', label: 'Best For' },
   ]}
-  :striped={false}
-  :hover={false}
+  striped={false}
+  hover={false}
 />
 
 ### Quick Comparison
 
 <DTable
   client:load
-  :items={[
+  items={[
     { feature: 'Setup', apiMode: '1 prop: api-url', inertiaMode: '3 props: items, pagination, inertia-url' },
     { feature: 'Data Source', apiMode: 'Auto-fetched via axios', inertiaMode: 'Passed as page props' },
     { feature: 'Sorting/Pagination', apiMode: 'Automatic AJAX', inertiaMode: 'Full page reload via Inertia' },
@@ -45,13 +45,13 @@ DXTable supports two modes for loading data. **API mode is recommended** for mos
     { feature: 'Loading State', apiMode: 'v-model:busy', inertiaMode: ':loading prop' },
     { feature: 'Backend', apiMode: 'JSON API endpoint', inertiaMode: 'Inertia render + PaginatedResource' },
   ]}
-  :fields={[
+  fields={[
     { key: 'feature', label: 'Feature' },
     { key: 'apiMode', label: 'API Mode' },
     { key: 'inertiaMode', label: 'Inertia Mode' },
   ]}
-  :striped={false}
-  :hover={false}
+  striped={false}
+  hover={false}
 />
 
 ## Live Example
