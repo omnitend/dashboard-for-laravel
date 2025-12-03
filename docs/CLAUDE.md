@@ -4,6 +4,34 @@
 
 This documentation site is built with Astro, Vue 3, and MDX. It provides live, interactive examples for all components in the `@omnitend/dashboard-for-laravel` package with automatic code extraction and syntax highlighting.
 
+## IMPORTANT: MDX Uses JSX Syntax, Not Vue Syntax
+
+When using Vue components in MDX files, you must use **JSX syntax**, not Vue template syntax:
+
+```mdx
+<!-- ✅ CORRECT: JSX syntax -->
+<DTable
+  client:load
+  items={[{ id: 1, name: 'Test' }]}
+  fields={[{ key: 'id', label: 'ID' }]}
+  striped={false}
+/>
+
+<!-- ❌ WRONG: Vue :prop binding syntax - will break the build -->
+<DTable
+  client:load
+  :items={[{ id: 1, name: 'Test' }]}
+  :fields={[{ key: 'id', label: 'ID' }]}
+  :striped={false}
+/>
+```
+
+**Key differences:**
+- No `:` prefix for dynamic props (use `items={...}` not `:items={...}`)
+- No `v-model`, `v-if`, `v-for` directives
+- Boolean props: use `striped={false}` not `:striped="false"`
+- Event handlers: use `onClick={handler}` not `@click="handler"`
+
 ## Current State
 
 ### Coverage
