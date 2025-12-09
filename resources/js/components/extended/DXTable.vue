@@ -520,13 +520,21 @@
                                         v-model="editForm.data[fieldKey]"
                                         :required="getField(fieldKey).required"
                                         :rows="getField(fieldKey).rows || 3"
+                                        :state="editForm.getState(fieldKey)"
+                                        @input="editForm.clearError(fieldKey)"
                                     />
                                     <DFormInput
                                         v-else
                                         v-model="editForm.data[fieldKey]"
                                         :type="getField(fieldKey).type || 'text'"
                                         :required="getField(fieldKey).required"
+                                        :state="editForm.getState(fieldKey)"
+                                        @input="editForm.clearError(fieldKey)"
                                     />
+                                    <!-- Validation error -->
+                                    <DFormInvalidFeedback v-if="editForm.hasError(fieldKey)">
+                                        {{ editForm.getError(fieldKey) }}
+                                    </DFormInvalidFeedback>
                                 </DFormGroup>
                             </template>
 
@@ -598,6 +606,7 @@ import DTab from "../base/DTab.vue";
 import DFormGroup from "../base/DFormGroup.vue";
 import DFormTextarea from "../base/DFormTextarea.vue";
 import DFormCheckbox from "../base/DFormCheckbox.vue";
+import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
 import DXBasicForm from "./DXBasicForm.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
@@ -1517,10 +1526,19 @@ const handleEditSave = async () => {
                     refresh();
                 },
                 onError: (errors: any) => {
-                    // Show error toast
+                    // Extract first error message for toast
+                    let errorMessage = 'Failed to update. Please check the form for errors.';
+                    if (errors && typeof errors === 'object') {
+                        const firstError = Object.values(errors).flat()[0];
+                        if (typeof firstError === 'string') {
+                            errorMessage = firstError;
+                        }
+                    }
+
+                    // Show error toast with specific message
                     createToast?.({
                         title: 'Error',
-                        body: 'Failed to update. Please check the form for errors.',
+                        body: errorMessage,
                         variant: 'danger',
                         modelValue: 5000, // Auto-dismiss after 5 seconds
                     });

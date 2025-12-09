@@ -1,6 +1,6 @@
 {
   "name": "@omnitend/dashboard-for-laravel",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "Vue 3 dashboard components for Laravel with Bootstrap Vue Next",
   "type": "module",
   "main": "./dist/dashboard-for-laravel.umd.cjs",
