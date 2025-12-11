@@ -19,6 +19,9 @@ export default defineConfig({
       compiler: 'vue3',
     }),
   ],
+  resolve: {
+    dedupe: ['vue'],
+  },
   css: {
     devSourcemap: true,
     postcss: {
