@@ -503,7 +503,7 @@
                                 <!-- Other field types with label -->
                                 <DFormGroup
                                     v-else
-                                    :label="getField(fieldKey).label || fieldKey"
+                                    :label="getFieldLabel(fieldKey)"
                                     class="mb-3"
                                 >
                                     <!-- Custom value slot -->
@@ -521,20 +521,36 @@
                                         :required="getField(fieldKey).required"
                                         :rows="getField(fieldKey).rows || 3"
                                         :state="editForm.getState(fieldKey)"
+                                        :disabled="isFieldDisabled(fieldKey)"
                                         @input="editForm.clearError(fieldKey)"
+                                    />
+                                    <DFormSelect
+                                        v-else-if="getField(fieldKey).type === 'select'"
+                                        v-model="editForm.data[fieldKey]"
+                                        :required="getField(fieldKey).required"
+                                        :options="getField(fieldKey).options"
+                                        :state="editForm.getState(fieldKey)"
+                                        :disabled="isFieldDisabled(fieldKey)"
+                                        @change="editForm.clearError(fieldKey)"
                                     />
                                     <DFormInput
                                         v-else
                                         v-model="editForm.data[fieldKey]"
                                         :type="getField(fieldKey).type || 'text'"
                                         :required="getField(fieldKey).required"
+                                        :step="getField(fieldKey).step"
                                         :state="editForm.getState(fieldKey)"
+                                        :disabled="isFieldDisabled(fieldKey)"
                                         @input="editForm.clearError(fieldKey)"
                                     />
                                     <!-- Validation error -->
                                     <DFormInvalidFeedback v-if="editForm.hasError(fieldKey)">
                                         {{ editForm.getError(fieldKey) }}
                                     </DFormInvalidFeedback>
+                                    <!-- Hint text -->
+                                    <DFormText v-if="getFieldHint(fieldKey)" class="text-muted">
+                                        {{ getFieldHint(fieldKey) }}
+                                    </DFormText>
                                 </DFormGroup>
                             </template>
 
@@ -549,7 +565,7 @@
             <DXBasicForm
                 v-else-if="editForm"
                 :form="editForm"
-                :fields="editFields"
+                :fields="resolvedEditFields"
                 :show-submit="false"
                 @submit="handleEditSave"
             />
@@ -607,6 +623,7 @@ import DFormGroup from "../base/DFormGroup.vue";
 import DFormTextarea from "../base/DFormTextarea.vue";
 import DFormCheckbox from "../base/DFormCheckbox.vue";
 import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
+import DFormText from "../base/DFormText.vue";
 import DXBasicForm from "./DXBasicForm.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
@@ -1435,6 +1452,51 @@ const visibleTabs = computed(() => {
 const getField = (key: string) => {
     return props.editFields?.find(f => f.key === key) || { key };
 };
+
+// Helper: Get field label (supports function for dynamic labels)
+const getFieldLabel = (key: string): string => {
+    const field = getField(key);
+    if (typeof field.label === 'function') {
+        return field.label(selectedItem.value);
+    }
+    return field.label || key;
+};
+
+// Helper: Get field hint (supports function for dynamic hints)
+const getFieldHint = (key: string): string | undefined => {
+    const field = getField(key);
+    if (typeof field.hint === 'function') {
+        return field.hint(selectedItem.value);
+    }
+    return field.hint;
+};
+
+// Helper: Check if field is disabled (supports disabledWhen function)
+const isFieldDisabled = (key: string): boolean => {
+    const field = getField(key);
+    if (typeof field.disabledWhen === 'function') {
+        return field.disabledWhen(selectedItem.value);
+    }
+    return field.disabled || false;
+};
+
+// Computed: Resolve edit fields with dynamic labels/hints for DXBasicForm
+const resolvedEditFields = computed(() => {
+    if (!props.editFields) return [];
+
+    return props.editFields.map(field => ({
+        ...field,
+        label: typeof field.label === 'function'
+            ? field.label(selectedItem.value)
+            : field.label,
+        hint: typeof field.hint === 'function'
+            ? field.hint(selectedItem.value)
+            : field.hint,
+        disabled: typeof field.disabledWhen === 'function'
+            ? field.disabledWhen(selectedItem.value)
+            : field.disabled,
+    }));
+});
 
 // Computed: Singular and plural item names
 const singularItemName = computed(() => props.itemName);
