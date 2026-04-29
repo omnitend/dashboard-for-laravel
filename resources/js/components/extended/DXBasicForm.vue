@@ -11,7 +11,7 @@
         </DAlert>
 
         <!-- Render each field -->
-        <template v-for="field in fields" :key="field.key">
+        <template v-for="field in visibleFields" :key="field.key">
             <!-- Custom slot for this field -->
             <slot :name="`field-${field.key}`" :field="field" :form="form">
                 <!-- Default field rendering -->
@@ -111,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { BForm, BFormRadioGroup } from "bootstrap-vue-next";
 import DAlert from "../base/DAlert.vue";
 import DFormGroup from "../base/DFormGroup.vue";
@@ -141,10 +142,21 @@ interface Props {
     showSubmit?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     submitText: "Submit",
     submitLoadingText: "Submitting...",
     showSubmit: true,
+});
+
+/**
+ * Fields whose `show()` predicate evaluates to true (or omits the
+ * predicate entirely). Computed so the form re-renders when reactive
+ * sources used inside `show` change.
+ */
+const visibleFields = computed(() => {
+    return props.fields.filter((field) =>
+        field.show ? field.show() : true,
+    );
 });
 
 const emit = defineEmits<{

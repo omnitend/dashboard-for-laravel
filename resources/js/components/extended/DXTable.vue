@@ -3,10 +3,18 @@
         <DRow class="justify-content-center">
             <DCol :md="columnSize">
                 <DCard>
-                    <template v-if="title || $slots.header" #header>
+                    <template v-if="title || createUrl || $slots.header" #header>
                         <slot name="header">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h4 class="mb-0">{{ title }}</h4>
+                                <DButton
+                                    v-if="createUrl"
+                                    variant="primary"
+                                    size="sm"
+                                    @click="handleCreateNew"
+                                >
+                                    New {{ singularItemName }}
+                                </DButton>
                             </div>
                         </slot>
                     </template>
@@ -574,7 +582,7 @@
                 <div class="d-flex justify-content-between w-100">
                     <div>
                         <DButton
-                            v-if="deleteUrl"
+                            v-if="deleteUrl && !isCreateMode"
                             variant="danger"
                             :disabled="editForm?.processing"
                             @click="handleDelete"
@@ -591,7 +599,12 @@
                             :disabled="editForm?.processing"
                             @click="handleEditSave"
                         >
-                            {{ editForm?.processing ? 'Saving...' : 'Save Changes' }}
+                            <template v-if="isCreateMode">
+                                {{ editForm?.processing ? 'Creating...' : 'Create' }}
+                            </template>
+                            <template v-else>
+                                {{ editForm?.processing ? 'Saving...' : 'Save Changes' }}
+                            </template>
                         </DButton>
                     </div>
                 </div>
@@ -784,6 +797,9 @@ export interface Props<TItem = any> {
     /** API endpoint pattern for deletions (e.g., "/api/products/:id") */
     deleteUrl?: string;
 
+    /** API endpoint for creating new items (e.g., "/api/products") — enables "New" button */
+    createUrl?: string;
+
     /** Enable client-side filtering, sorting, and pagination on items array */
     clientSide?: boolean;
 }
@@ -821,6 +837,8 @@ const emit = defineEmits<{
     filterChange: [filters: Record<string, string>];
     perPageChange: [perPage: number];
     rowClicked: [item: T, index: number, event: MouseEvent];
+    rowCreated: [item: any, response: any];
+    createError: [error: any];
     rowUpdated: [item: T, response: any];
     editError: [item: T, error: any];
     rowDeleted: [item: T, response: any];
@@ -1425,6 +1443,7 @@ const showEditModal = ref(false);
 const selectedItem = ref<T | null>(null);
 const editForm = ref<any>(null);
 const activeTabIndex = ref(0);
+const isCreateMode = ref(false);
 
 // Toast (may not be available in test environment)
 let createToast: ((obj: any) => any) | undefined;
@@ -1504,6 +1523,9 @@ const pluralItemName = computed(() => pluralize(props.itemName));
 
 // Computed: Modal title (supports function)
 const computedModalTitle = computed(() => {
+    if (isCreateMode.value) {
+        return `New ${singularItemName.value}`;
+    }
     if (!selectedItem.value) {
         return `Edit ${singularItemName.value}`;
     }
@@ -1529,6 +1551,7 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
     // If editFields provided, open edit modal
     if (props.editFields && props.editFields.length > 0) {
         // Set selected item FIRST before any rendering
+        isCreateMode.value = false;
         selectedItem.value = item;
 
         // Reset to first tab
@@ -1560,9 +1583,97 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
     }
 };
 
+// Handle "New" button click
+const handleCreateNew = () => {
+    if (!props.editFields || props.editFields.length === 0) return;
+
+    isCreateMode.value = true;
+    selectedItem.value = null;
+    activeTabIndex.value = 0;
+
+    const initForm = (useForm: any) => {
+        const formData: Record<string, any> = {};
+        props.editFields!.forEach(field => {
+            formData[field.key] = field.default ?? '';
+        });
+        editForm.value = useForm(formData);
+        showEditModal.value = true;
+    };
+
+    if (!editForm.value) {
+        import('../../composables/useForm').then(({ useForm }) => {
+            initForm(useForm);
+        });
+    } else {
+        // Reset existing form to defaults
+        props.editFields!.forEach(field => {
+            editForm.value.data[field.key] = field.default ?? '';
+        });
+        editForm.value.clearErrors();
+        showEditModal.value = true;
+    }
+};
+
 // Handle save from edit modal
 const handleEditSave = async () => {
-    if (!editForm.value || !selectedItem.value) return;
+    if (!editForm.value) return;
+
+    // Create mode: POST to createUrl
+    if (isCreateMode.value && props.createUrl) {
+        try {
+            await editForm.value.post(props.createUrl, {
+                onSuccess: (data: any) => {
+                    createToast?.({
+                        title: 'Success',
+                        body: `${singularItemName.value} created successfully`,
+                        variant: 'success',
+                        modelValue: 3000,
+                    });
+
+                    emit('rowCreated', data?.data ?? data, data);
+                    showEditModal.value = false;
+                    selectedItem.value = null;
+                    isCreateMode.value = false;
+
+                    refresh();
+                },
+                onError: (errors: any) => {
+                    let errorMessage = 'Failed to create. Please check the form for errors.';
+                    if (errors && typeof errors === 'object') {
+                        const firstError = Object.values(errors).flat()[0];
+                        if (typeof firstError === 'string') {
+                            errorMessage = firstError;
+                        }
+                    }
+
+                    createToast?.({
+                        title: 'Error',
+                        body: errorMessage,
+                        variant: 'danger',
+                        modelValue: 5000,
+                    });
+
+                    if (props.editTabs && props.editTabs.length > 0) {
+                        const errorKeys = Object.keys(errors);
+                        const tabIndex = visibleTabs.value.findIndex(tab =>
+                            tab.fieldKeys.some(key => errorKeys.includes(key))
+                        );
+                        if (tabIndex !== -1) {
+                            activeTabIndex.value = tabIndex;
+                        }
+                    }
+
+                    emit('createError', errors);
+                }
+            });
+        } catch (error) {
+            emit('createError', error);
+        }
+        return;
+    }
+
+    // Edit mode: PUT to editUrl
+    if (!selectedItem.value) return;
 
     try {
         // If editUrl provided, handle API call internally
@@ -1634,6 +1745,7 @@ const handleEditSave = async () => {
 const handleEditCancel = () => {
     showEditModal.value = false;
     selectedItem.value = null;
+    isCreateMode.value = false;
     activeTabIndex.value = 0; // Reset tab for next time
     if (editForm.value) {
         editForm.value.clearErrors();

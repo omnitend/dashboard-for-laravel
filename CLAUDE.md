@@ -867,3 +867,4 @@ Run `npm run docs:generate:ai` to regenerate these files.
 - [Vite Documentation](https://vite.dev/)
 - [TypeScript Documentation](https://www.typescriptlang.org/)
 - [MCP Documentation](https://modelcontextprotocol.io/)
+- Do not add "Generated with Claude Code" to commit messages (too noisy)

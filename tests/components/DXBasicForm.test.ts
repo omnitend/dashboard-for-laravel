@@ -113,6 +113,74 @@ describe('DXBasicForm', () => {
     });
   });
 
+  describe('Conditional fields (show predicate)', () => {
+    it('hides fields whose show() returns false', async () => {
+      const form = useForm({ name: '', email: '', message: '', secret: '' });
+
+      const fields = [
+        ...contactFormFields,
+        {
+          key: 'secret',
+          type: 'text' as const,
+          label: 'Secret Field',
+          show: () => false,
+        },
+      ];
+
+      const screen = render(DXBasicForm, {
+        props: { fields, form },
+      });
+
+      const secretLabel = screen.container.querySelector('label[for="secret"]');
+      expect(secretLabel).toBeNull();
+
+      // The other three fields are still rendered.
+      expect(screen.container.querySelector('label[for="name"]')).toBeTruthy();
+      expect(screen.container.querySelector('label[for="email"]')).toBeTruthy();
+      expect(screen.container.querySelector('label[for="message"]')).toBeTruthy();
+    });
+
+    it('reactively re-evaluates show() when form data changes', async () => {
+      const form = useForm({ type: 'a', conditional: '' });
+
+      const fields = [
+        { key: 'type', type: 'text' as const, label: 'Type' },
+        {
+          key: 'conditional',
+          type: 'text' as const,
+          label: 'Only when B',
+          show: () => form.data.type === 'b',
+        },
+      ];
+
+      const screen = render(DXBasicForm, {
+        props: { fields, form },
+      });
+
+      // Initially hidden because type === 'a'.
+      expect(screen.container.querySelector('label[for="conditional"]')).toBeNull();
+
+      // Flip the predicate's input and re-check after Vue flushes.
+      form.data.type = 'b';
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(screen.container.querySelector('label[for="conditional"]')).toBeTruthy();
+    });
+
+    it('treats fields without a show predicate as always visible', async () => {
+      const form = useForm(initialContactFormData);
+
+      const screen = render(DXBasicForm, {
+        props: { fields: contactFormFields, form },
+      });
+
+      // None of the existing contact form fields declare `show`, so all should render.
+      expect(screen.container.querySelector('label[for="name"]')).toBeTruthy();
+      expect(screen.container.querySelector('label[for="email"]')).toBeTruthy();
+      expect(screen.container.querySelector('label[for="message"]')).toBeTruthy();
+    });
+  });
+
   describe('Placeholders', () => {
     it('displays placeholder text for fields', async () => {
       const form = useForm(initialContactFormData);

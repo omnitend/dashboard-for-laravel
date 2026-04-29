@@ -58,4 +58,11 @@ export interface FieldDefinition {
 
     /** Additional props to pass to the input component */
     inputProps?: Record<string, any>;
+
+    /**
+     * Conditionally show or hide this field. When omitted, the field
+     * is always visible. The function is re-evaluated reactively, so
+     * it can depend on form state or other reactive sources.
+     */
+    show?: () => boolean;
 }

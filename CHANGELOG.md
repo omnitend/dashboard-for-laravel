@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.14] - 2026-04-29
+
+### Added
+- `DXBasicForm` now honours an optional `show?: () => boolean` predicate
+  on each `FieldDefinition`. Fields whose predicate returns `false` are
+  hidden from the rendered form. Useful for conditional fields that
+  depend on other form values (e.g. a "Custom Domain" input only
+  visible when the install type is Web Shop).
+- `DXTable` gains a "create" mode. Pass a `createUrl` prop to render a
+  "New {itemName}" button in the card header that opens the existing
+  edit modal pre-filled from each field's `default`, then POSTs to
+  `createUrl` on save. Emits new `rowCreated` and `createError` events;
+  the delete button is hidden while creating.
+
 ## [0.4.7] - 2025-11-21
 
 ### Documentation
