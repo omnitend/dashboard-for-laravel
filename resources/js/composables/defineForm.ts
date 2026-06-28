@@ -32,7 +32,14 @@ function getDefaultValueForType(type: FieldType): any {
         case "checkbox":
             return false;
         case "number":
+        case "currency":
+        case "percentage":
             return 0;
+        case "repeater":
+            return [];
+        case "image":
+        case "file":
+            return null;
         case "select":
         case "radio":
             return "";

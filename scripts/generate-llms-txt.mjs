@@ -130,6 +130,9 @@ function getExtendedDescription(name) {
   const descriptions = {
     'DXBasicForm': 'Auto-generated forms from field definitions',
     'DXForm': 'Advanced form wrapper with defineForm integration',
+    'DXTabbedForm': 'Standalone tabbed form with conditional fields, slots, async options, repeaters, and auto error-tab switching',
+    'DXField': 'Single-field renderer for any field type with value/span/info/hint slots',
+    'DXRepeater': 'Repeatable nested sub-form (field array) primitive',
     'DXTable': 'Data table with pagination, filtering, and sorting',
     'DXDashboard': 'Complete dashboard layout with sidebar and navbar',
     'DXDashboardSidebar': 'Collapsible sidebar with navigation',

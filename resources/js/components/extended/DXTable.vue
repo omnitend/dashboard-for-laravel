@@ -455,128 +455,70 @@
             :title="computedModalTitle"
             :size="editModalSize"
         >
-            <!-- Tabbed view (if editTabs provided) -->
-            <template v-if="editTabs && editTabs.length > 0 && editForm">
-                <DTabs v-model="activeTabIndex">
-                    <DTab
-                        v-for="(tab, index) in visibleTabs"
-                        :key="tab.key"
-                        :title="tab.label || tab.key"
-                        :lazy="tab.lazy"
-                        :active="index === 0"
-                    >
-                        <!-- Custom tab content slot -->
-                        <slot
-                            v-if="$slots[`tab-content(${tab.key})`]"
-                            :name="`tab-content(${tab.key})`"
-                            :item="selectedItem"
-                            :tab="tab"
-                        />
-
-                        <!-- Default: render fields for this tab -->
-                        <div v-else class="p-3">
-                            <!-- Before slot -->
-                            <slot :name="`tab-before(${tab.key})`" :item="selectedItem" :tab="tab" />
-
-                            <!-- Form fields for this tab -->
-                            <template v-for="fieldKey in tab.fieldKeys" :key="fieldKey">
-                                <div v-if="getField(fieldKey).span" class="mb-3">
-                                    <!-- Full-width span field -->
-                                    <slot
-                                        :name="`edit-span(${fieldKey})`"
-                                        :item="selectedItem"
-                                        :value="editForm.data[fieldKey]"
-                                        :update="(v: any) => editForm.data[fieldKey] = v"
-                                        :close="handleEditCancel"
-                                    />
-                                </div>
-                                <!-- Checkbox (no label wrapper needed) -->
-                                <div v-else-if="getField(fieldKey).type === 'checkbox'" class="mb-3">
-                                    <!-- Custom value slot -->
-                                    <slot
-                                        v-if="$slots[`edit-value(${fieldKey})`]"
-                                        :name="`edit-value(${fieldKey})`"
-                                        :item="selectedItem"
-                                        :value="editForm.data[fieldKey]"
-                                        :update="(v: any) => editForm.data[fieldKey] = v"
-                                        :field="getField(fieldKey)"
-                                    />
-                                    <DFormCheckbox
-                                        v-else
-                                        v-model="editForm.data[fieldKey]"
-                                    >
-                                        {{ getField(fieldKey).label || fieldKey }}
-                                    </DFormCheckbox>
-                                </div>
-                                <!-- Other field types with label -->
-                                <DFormGroup
-                                    v-else
-                                    :label="getFieldLabel(fieldKey)"
-                                    class="mb-3"
-                                >
-                                    <!-- Custom value slot -->
-                                    <slot
-                                        v-if="$slots[`edit-value(${fieldKey})`]"
-                                        :name="`edit-value(${fieldKey})`"
-                                        :item="selectedItem"
-                                        :value="editForm.data[fieldKey]"
-                                        :update="(v: any) => editForm.data[fieldKey] = v"
-                                        :field="getField(fieldKey)"
-                                    />
-                                    <DFormTextarea
-                                        v-else-if="getField(fieldKey).type === 'textarea'"
-                                        v-model="editForm.data[fieldKey]"
-                                        :required="getField(fieldKey).required"
-                                        :rows="getField(fieldKey).rows || 3"
-                                        :state="editForm.getState(fieldKey)"
-                                        :disabled="isFieldDisabled(fieldKey)"
-                                        @input="editForm.clearError(fieldKey)"
-                                    />
-                                    <DFormSelect
-                                        v-else-if="getField(fieldKey).type === 'select'"
-                                        v-model="editForm.data[fieldKey]"
-                                        :required="getField(fieldKey).required"
-                                        :options="getField(fieldKey).options"
-                                        :state="editForm.getState(fieldKey)"
-                                        :disabled="isFieldDisabled(fieldKey)"
-                                        @change="editForm.clearError(fieldKey)"
-                                    />
-                                    <DFormInput
-                                        v-else
-                                        v-model="editForm.data[fieldKey]"
-                                        :type="getField(fieldKey).type || 'text'"
-                                        :required="getField(fieldKey).required"
-                                        :step="getField(fieldKey).step"
-                                        :state="editForm.getState(fieldKey)"
-                                        :disabled="isFieldDisabled(fieldKey)"
-                                        @input="editForm.clearError(fieldKey)"
-                                    />
-                                    <!-- Validation error -->
-                                    <DFormInvalidFeedback v-if="editForm.hasError(fieldKey)">
-                                        {{ editForm.getError(fieldKey) }}
-                                    </DFormInvalidFeedback>
-                                    <!-- Hint text -->
-                                    <DFormText v-if="getFieldHint(fieldKey)" class="text-muted">
-                                        {{ getFieldHint(fieldKey) }}
-                                    </DFormText>
-                                </DFormGroup>
-                            </template>
-
-                            <!-- After slot -->
-                            <slot :name="`tab-after(${tab.key})`" :item="selectedItem" :tab="tab" />
-                        </div>
-                    </DTab>
-                </DTabs>
-            </template>
-
-            <!-- Fallback: no tabs, render flat form (current behavior) -->
-            <DXBasicForm
-                v-else-if="editForm"
+            <!-- Edit/create form (tabbed when editTabs provided, flat otherwise) -->
+            <DXTabbedForm
+                v-if="editForm"
+                v-model:active-tab="activeTabIndex"
                 :form="editForm"
-                :fields="resolvedEditFields"
+                :fields="editFields"
+                :tabs="editTabs"
+                :context="selectedItem ?? undefined"
                 :show-submit="false"
                 @submit="handleEditSave"
-            />
+            >
+                <!-- Forward DXTable's edit-value(key) → DXTabbedForm value(key) -->
+                <template
+                    v-for="key in editValueSlotKeys"
+                    :key="`ev-${key}`"
+                    #[`value(${key})`]="sp"
+                >
+                    <slot
+                        :name="`edit-value(${key})`"
+                        :item="selectedItem"
+                        :value="sp.value"
+                        :update="sp.update"
+                        :field="sp.field"
+                    />
+                </template>
+
+                <!-- Forward edit-span(key) → span(key) -->
+                <template
+                    v-for="key in editSpanSlotKeys"
+                    :key="`es-${key}`"
+                    #[`span(${key})`]="sp"
+                >
+                    <slot
+                        :name="`edit-span(${key})`"
+                        :item="selectedItem"
+                        :value="sp.value"
+                        :update="sp.update"
+                        :close="handleEditCancel"
+                    />
+                </template>
+
+                <!-- Forward tab-content / tab-before / tab-after slots -->
+                <template
+                    v-for="key in tabContentSlotKeys"
+                    :key="`tc-${key}`"
+                    #[`tab-content(${key})`]="sp"
+                >
+                    <slot :name="`tab-content(${key})`" :item="selectedItem" :tab="sp.tab" />
+                </template>
+                <template
+                    v-for="key in tabBeforeSlotKeys"
+                    :key="`tb-${key}`"
+                    #[`tab-before(${key})`]="sp"
+                >
+                    <slot :name="`tab-before(${key})`" :item="selectedItem" :tab="sp.tab" />
+                </template>
+                <template
+                    v-for="key in tabAfterSlotKeys"
+                    :key="`taf-${key}`"
+                    #[`tab-after(${key})`]="sp"
+                >
+                    <slot :name="`tab-after(${key})`" :item="selectedItem" :tab="sp.tab" />
+                </template>
+            </DXTabbedForm>
 
             <template #footer>
                 <div class="d-flex justify-content-between w-100">
@@ -614,7 +556,7 @@
 </template>
 
 <script setup lang="ts" generic="T = any">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, useSlots } from "vue";
 import { router } from "@inertiajs/vue3";
 import axios from "axios";
 import pluralize from "pluralize";
@@ -630,14 +572,7 @@ import DFormInput from "../base/DFormInput.vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import DModal from "../base/DModal.vue";
 import DButton from "../base/DButton.vue";
-import DTabs from "../base/DTabs.vue";
-import DTab from "../base/DTab.vue";
-import DFormGroup from "../base/DFormGroup.vue";
-import DFormTextarea from "../base/DFormTextarea.vue";
-import DFormCheckbox from "../base/DFormCheckbox.vue";
-import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
-import DFormText from "../base/DFormText.vue";
-import DXBasicForm from "./DXBasicForm.vue";
+import DXTabbedForm from "./DXTabbedForm.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
 export interface FilterOption {
@@ -1455,67 +1390,35 @@ try {
     createToast = undefined;
 }
 
-// Computed: Visible tabs (respects when condition)
-const visibleTabs = computed(() => {
-    if (!props.editTabs || props.editTabs.length === 0) return [];
+// The edit/create form rendering is delegated to DXTabbedForm, which
+// owns field/tab visibility, dynamic labels/hints, conditional fields,
+// and auto-switching to the first tab with a validation error.
 
-    return props.editTabs.filter(tab => {
-        if (tab.when === undefined) return true;
-        return typeof tab.when === 'function'
-            ? tab.when(selectedItem.value)
-            : tab.when;
-    });
-});
-
-// Helper: Get field by key
-const getField = (key: string) => {
-    return props.editFields?.find(f => f.key === key) || { key };
-};
-
-// Helper: Get field label (supports function for dynamic labels)
-const getFieldLabel = (key: string): string => {
-    const field = getField(key);
-    if (typeof field.label === 'function') {
-        return field.label(selectedItem.value);
-    }
-    return field.label || key;
-};
-
-// Helper: Get field hint (supports function for dynamic hints)
-const getFieldHint = (key: string): string | undefined => {
-    const field = getField(key);
-    if (typeof field.hint === 'function') {
-        return field.hint(selectedItem.value);
-    }
-    return field.hint;
-};
-
-// Helper: Check if field is disabled (supports disabledWhen function)
-const isFieldDisabled = (key: string): boolean => {
-    const field = getField(key);
-    if (typeof field.disabledWhen === 'function') {
-        return field.disabledWhen(selectedItem.value);
-    }
-    return field.disabled || false;
-};
-
-// Computed: Resolve edit fields with dynamic labels/hints for DXBasicForm
-const resolvedEditFields = computed(() => {
-    if (!props.editFields) return [];
-
-    return props.editFields.map(field => ({
-        ...field,
-        label: typeof field.label === 'function'
-            ? field.label(selectedItem.value)
-            : field.label,
-        hint: typeof field.hint === 'function'
-            ? field.hint(selectedItem.value)
-            : field.hint,
-        disabled: typeof field.disabledWhen === 'function'
-            ? field.disabledWhen(selectedItem.value)
-            : field.disabled,
-    }));
-});
+// Forward only the keyed edit slots the consumer actually provided, so
+// DXTabbedForm doesn't mistake an always-present (but empty) wrapper for
+// a real custom-value override.
+const tableSlots = useSlots();
+const editFieldKeys = computed<string[]>(() =>
+    (props.editFields ?? []).map((field: any) => field.key),
+);
+const tabKeys = computed<string[]>(() =>
+    (props.editTabs ?? []).map((tab) => tab.key),
+);
+const editValueSlotKeys = computed(() =>
+    editFieldKeys.value.filter((key) => !!tableSlots[`edit-value(${key})`]),
+);
+const editSpanSlotKeys = computed(() =>
+    editFieldKeys.value.filter((key) => !!tableSlots[`edit-span(${key})`]),
+);
+const tabContentSlotKeys = computed(() =>
+    tabKeys.value.filter((key) => !!tableSlots[`tab-content(${key})`]),
+);
+const tabBeforeSlotKeys = computed(() =>
+    tabKeys.value.filter((key) => !!tableSlots[`tab-before(${key})`]),
+);
+const tabAfterSlotKeys = computed(() =>
+    tabKeys.value.filter((key) => !!tableSlots[`tab-after(${key})`]),
+);
 
 // Computed: Singular and plural item names
 const singularItemName = computed(() => props.itemName);
@@ -1653,16 +1556,8 @@ const handleEditSave = async () => {
                         modelValue: 5000,
                     });
 
-                    if (props.editTabs && props.editTabs.length > 0) {
-                        const errorKeys = Object.keys(errors);
-                        const tabIndex = visibleTabs.value.findIndex(tab =>
-                            tab.fieldKeys.some(key => errorKeys.includes(key))
-                        );
-                        if (tabIndex !== -1) {
-                            activeTabIndex.value = tabIndex;
-                        }
-                    }
-
+                    // DXTabbedForm switches to the first errored tab via its
+                    // own watcher on editForm.errors.
                     emit('createError', errors);
                 }
             });
@@ -1716,17 +1611,8 @@ const handleEditSave = async () => {
                         modelValue: 5000, // Auto-dismiss after 5 seconds
                     });
 
-                    // Switch to tab containing error field
-                    if (props.editTabs && props.editTabs.length > 0) {
-                        const errorKeys = Object.keys(errors);
-                        const tabIndex = visibleTabs.value.findIndex(tab =>
-                            tab.fieldKeys.some(key => errorKeys.includes(key))
-                        );
-                        if (tabIndex !== -1) {
-                            activeTabIndex.value = tabIndex;
-                        }
-                    }
-
+                    // DXTabbedForm switches to the first errored tab via its
+                    // own watcher on editForm.errors.
                     emit('editError', selectedItem.value as T, errors);
                 }
             });

@@ -1,0 +1,295 @@
+<template>
+    <BForm @submit.prevent="handleSubmit">
+        <!-- Form-level error message -->
+        <DAlert
+            v-if="resolvedForm.shouldShowMessage"
+            :model-value="resolvedForm.shouldShowMessage"
+            variant="danger"
+            class="mb-3"
+        >
+            {{ resolvedForm.message }}
+        </DAlert>
+
+        <!-- Tabbed layout. BTabs exposes the active *index* via v-model:index
+             (plain v-model is the active tab id), which is what we track. -->
+        <DTabs v-if="hasTabs" v-model:index="activeTab">
+            <DTab
+                v-for="(tab, index) in visibleTabs"
+                :key="tab.key"
+                :title="tab.label || tab.key"
+                :lazy="tab.lazy"
+                :active="index === 0"
+            >
+                <!-- Replace the entire tab body -->
+                <slot
+                    v-if="$slots[`tab-content(${tab.key})`]"
+                    :name="`tab-content(${tab.key})`"
+                    :tab="tab"
+                    :model="model"
+                />
+
+                <div v-else class="pt-3">
+                    <slot :name="`tab-before(${tab.key})`" :tab="tab" :model="model" />
+
+                    <DXField
+                        v-for="field in visibleFieldsFor(tab)"
+                        :key="field.key"
+                        :field="field"
+                        :form="resolvedForm"
+                        :model="model"
+                    >
+                        <template
+                            v-for="(slotName, target) in fieldSlotMap(field.key)"
+                            :key="target"
+                            #[target]="slotProps"
+                        >
+                            <slot :name="slotName" v-bind="slotProps" />
+                        </template>
+                    </DXField>
+
+                    <slot :name="`tab-after(${tab.key})`" :tab="tab" :model="model" />
+                </div>
+            </DTab>
+        </DTabs>
+
+        <!-- Flat layout (no tabs) -->
+        <template v-else>
+            <DXField
+                v-for="field in visibleFlatFields"
+                :key="field.key"
+                :field="field"
+                :form="resolvedForm"
+                :model="model"
+            >
+                <template
+                    v-for="(slotName, target) in fieldSlotMap(field.key)"
+                    :key="target"
+                    #[target]="slotProps"
+                >
+                    <slot :name="slotName" v-bind="slotProps" />
+                </template>
+            </DXField>
+        </template>
+
+        <!-- Submit button -->
+        <DButton
+            v-if="showSubmit"
+            type="submit"
+            variant="primary"
+            :disabled="resolvedForm.processing"
+            class="w-100 mt-3"
+        >
+            <span v-if="resolvedForm.processing">{{ submitLoadingText }}</span>
+            <span v-else>{{ submitText }}</span>
+        </DButton>
+
+        <slot name="footer" :form="resolvedForm" />
+    </BForm>
+</template>
+
+<script setup lang="ts">
+import { computed, watch } from "vue";
+import { BForm } from "bootstrap-vue-next";
+import DAlert from "../base/DAlert.vue";
+import DButton from "../base/DButton.vue";
+import DTabs from "../base/DTabs.vue";
+import DTab from "../base/DTab.vue";
+import DXField from "./DXField.vue";
+import type { UseFormReturn } from "../../composables/useForm";
+import type { DefineFormReturn } from "../../composables/defineForm";
+import type { FieldDefinition, FormTab, MaybeFn } from "../../types";
+
+interface Props {
+    /**
+     * Form instance — either a raw `useForm` return or a `defineForm`
+     * return (`{ form, fields }`). With the latter, `fields` may be
+     * omitted and is taken from the form object.
+     */
+    form: UseFormReturn<any> | DefineFormReturn<any>;
+
+    /** Field definitions (optional when `form` is a defineForm return). */
+    fields?: FieldDefinition[];
+
+    /** Tab definitions. When omitted, a flat single-column form renders. */
+    tabs?: FormTab[];
+
+    /**
+     * Extra context merged under the live form data when evaluating
+     * predicates (label/hint/when/disabled). E.g. a table passes the
+     * original row so predicates can read non-edited columns.
+     */
+    context?: Record<string, any>;
+
+    /** Submit button text */
+    submitText?: string;
+
+    /** Submit button loading text */
+    submitLoadingText?: string;
+
+    /** Show the submit button */
+    showSubmit?: boolean;
+
+    /** Auto-switch to the first tab containing a validation error. */
+    autoErrorTab?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    submitText: "Submit",
+    submitLoadingText: "Submitting...",
+    showSubmit: true,
+    autoErrorTab: true,
+});
+
+const emit = defineEmits<{
+    submit: [];
+}>();
+
+const slots = defineSlots<Record<string, (props: any) => any>>();
+
+/** v-model for the active tab index. */
+const activeTab = defineModel<number>("activeTab", { default: 0 });
+
+// ————————————————— resolve form / fields (accept useForm or defineForm)
+
+function isDefineForm(
+    value: Props["form"],
+): value is DefineFormReturn<any> {
+    return (
+        !!value &&
+        typeof value === "object" &&
+        "form" in value &&
+        "fields" in value &&
+        !("data" in value)
+    );
+}
+
+const resolvedForm = computed<UseFormReturn<any>>(() =>
+    isDefineForm(props.form) ? props.form.form : props.form,
+);
+
+const resolvedFields = computed<FieldDefinition[]>(() => {
+    if (props.fields) return props.fields;
+    if (isDefineForm(props.form)) return props.form.fields;
+    return [];
+});
+
+const fieldByKey = computed<Record<string, FieldDefinition>>(() => {
+    const map: Record<string, FieldDefinition> = {};
+    for (const field of resolvedFields.value) map[field.key] = field;
+    return map;
+});
+
+// ————————————————— model for predicates (live form data + context)
+
+const model = computed(() => ({
+    ...(props.context ?? {}),
+    ...resolvedForm.value.data,
+}));
+
+function resolvePredicate(
+    when: MaybeFn<boolean> | undefined,
+    fallback: boolean,
+): boolean {
+    if (when === undefined) return fallback;
+    return typeof when === "function" ? when(model.value) : when;
+}
+
+function isFieldVisible(field: FieldDefinition): boolean {
+    const whenOk = resolvePredicate(field.when, true);
+    const showOk = field.show ? field.show() : true;
+    return whenOk && showOk;
+}
+
+// ————————————————— tabs
+
+const hasTabs = computed(
+    () => !!props.tabs && props.tabs.length > 0,
+);
+
+function visibleFieldsFor(tab: FormTab): FieldDefinition[] {
+    return tab.fieldKeys
+        .map((key) => fieldByKey.value[key])
+        .filter((field): field is FieldDefinition => !!field)
+        .filter(isFieldVisible);
+}
+
+/** A tab with a custom body/before/after slot has content even with no fields. */
+function hasTabSlot(key: string): boolean {
+    return !!(
+        slots[`tab-content(${key})`] ||
+        slots[`tab-before(${key})`] ||
+        slots[`tab-after(${key})`]
+    );
+}
+
+const visibleTabs = computed<FormTab[]>(() => {
+    if (!props.tabs) return [];
+    return props.tabs.filter((tab) => {
+        if (!resolvePredicate(tab.when, true)) return false;
+        // Hide tabs with no visible fields, unless the consumer supplies a
+        // custom tab-content/before/after slot for that tab.
+        return visibleFieldsFor(tab).length > 0 || hasTabSlot(tab.key);
+    });
+});
+
+const visibleFlatFields = computed<FieldDefinition[]>(() =>
+    resolvedFields.value.filter(isFieldVisible),
+);
+
+// ————————————————— per-field slot forwarding
+
+/** Map a DXField slot name to the parent's keyed slot, when present. */
+function fieldSlotMap(key: string): Record<string, string> {
+    const map: Record<string, string> = {};
+    const candidates: Array<[string, string]> = [
+        ["value", `value(${key})`],
+        ["span", `span(${key})`],
+        ["info", `info(${key})`],
+        ["hint", `hint(${key})`],
+        ["repeater-row", `repeater-row(${key})`],
+    ];
+    for (const [target, source] of candidates) {
+        if (slots[source]) map[target] = source;
+    }
+    return map;
+}
+
+// ————————————————— auto-switch to the first error tab
+
+/** Keys that currently carry at least one validation error. */
+const erroredKeys = computed<string[]>(() =>
+    Object.keys(resolvedForm.value.errors).filter(
+        (key) => (resolvedForm.value.errors[key]?.length ?? 0) > 0,
+    ),
+);
+
+function goToErrorTab(): void {
+    if (!hasTabs.value || erroredKeys.value.length === 0) return;
+    const tabIndex = visibleTabs.value.findIndex((tab) =>
+        tab.fieldKeys.some((key) =>
+            erroredKeys.value.some(
+                // Match exact keys and nested (repeater) error keys.
+                (errorKey) => errorKey === key || errorKey.startsWith(`${key}.`),
+            ),
+        ),
+    );
+    if (tabIndex !== -1) activeTab.value = tabIndex;
+}
+
+// Watch a primitive derived from the error keys so the effect reliably
+// re-runs when errors are set (deep-watching the stable reactive object
+// reference does not fire on key additions).
+watch(
+    () => erroredKeys.value.join("|"),
+    (joined) => {
+        if (props.autoErrorTab && joined) goToErrorTab();
+    },
+    { immediate: true },
+);
+
+function handleSubmit(): void {
+    emit("submit");
+}
+
+defineExpose({ goToErrorTab });
+</script>

@@ -8,6 +8,9 @@ export * from 'bootstrap-vue-next';
 export { default as DXDashboard } from "./components/extended/DXDashboard.vue";
 export { default as DXBasicForm } from "./components/extended/DXBasicForm.vue";
 export { default as DXForm } from "./components/extended/DXForm.vue";
+export { default as DXTabbedForm } from "./components/extended/DXTabbedForm.vue";
+export { default as DXField } from "./components/extended/DXField.vue";
+export { default as DXRepeater } from "./components/extended/DXRepeater.vue";
 export { default as DXTable } from "./components/extended/DXTable.vue";
 export { default as DXDashboardSidebar } from "./components/extended/DXDashboardSidebar.vue";
 export { default as DXDashboardNavbar } from "./components/extended/DXDashboardNavbar.vue";
@@ -37,6 +40,7 @@ export { default as DFormGroup } from "./components/base/DFormGroup.vue";
 export { default as DFormInput } from "./components/base/DFormInput.vue";
 export { default as DFormInvalidFeedback } from "./components/base/DFormInvalidFeedback.vue";
 export { default as DFormRadio } from "./components/base/DFormRadio.vue";
+export { default as DFormRadioGroup } from "./components/base/DFormRadioGroup.vue";
 export { default as DFormSelect } from "./components/base/DFormSelect.vue";
 export { default as DFormSpinbutton } from "./components/base/DFormSpinbutton.vue";
 export { default as DFormTags } from "./components/base/DFormTags.vue";
@@ -82,6 +86,9 @@ export type {
     FieldType,
     FieldOption,
     FieldDefinition,
+    FormTab,
+    MaybeFn,
+    OptionsLoader,
 } from "./types";
 
 export type {
