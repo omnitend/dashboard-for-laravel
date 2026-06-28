@@ -46,7 +46,6 @@
                 :form="form"
                 :field="field"
                 :key-path="keyPath"
-                :error-key="errorKey"
                 :model="model"
             >
                 <!-- Forward repeater row slot for custom row layouts -->

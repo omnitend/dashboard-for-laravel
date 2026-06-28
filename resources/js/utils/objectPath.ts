@@ -9,6 +9,9 @@
 
 type AnyRecord = Record<string, any>;
 
+/** Segments that could pollute Object.prototype if written through. */
+const BLOCKED_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
+
 /** Split a dot path into segments, ignoring empty segments. */
 function splitPath(path: string): string[] {
     return path.split(".").filter((segment) => segment.length > 0);
@@ -33,6 +36,8 @@ export function getByPath(target: AnyRecord, path: string): any {
 export function setByPath(target: AnyRecord, path: string, value: any): void {
     const segments = splitPath(path);
     if (segments.length === 0) return;
+    // Never write through prototype-polluting segments.
+    if (segments.some((segment) => BLOCKED_SEGMENTS.has(segment))) return;
 
     let current: any = target;
     for (let index = 0; index < segments.length - 1; index += 1) {

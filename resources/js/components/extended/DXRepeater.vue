@@ -70,15 +70,16 @@ interface Props {
     /** Dot path into form.data for the array (defaults to field.key) */
     keyPath?: string;
 
-    /** Base error key (defaults to keyPath/field.key) */
-    errorKey?: string;
-
     /** Model passed to predicates from the parent context */
     model?: any;
 }
 
 const props = defineProps<Props>();
 
+// The array key is a dot PATH: rows nest into it (`lines.0.price`), and that
+// path is also the validation-error key Laravel returns. So a repeater (or
+// nested sub-field) key is a path segment, not a literal — avoid literal dots
+// in repeater/sub-field keys. (Leaf DXField keys, by contrast, are literal.)
 const arrayPath = computed(() => props.keyPath ?? props.field.key);
 const subFields = computed<FieldDefinition[]>(() => props.field.fields ?? []);
 const minItems = computed(() => props.field.minItems ?? 0);
