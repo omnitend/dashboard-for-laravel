@@ -1,0 +1,56 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXField
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXFieldExample from '../../../examples/DXFieldExample.vue';
+import DXFieldExampleRaw from '../../../examples/DXFieldExample.vue?raw';
+
+# DXField
+
+The single-field renderer that powers `DXForm` and
+`DXTable`'s edit modal. It renders one `FieldDefinition` of any type — wired to
+a `useForm` instance for value binding, validation state, and error display —
+and exposes `#value`, `#span`, `#info`, and `#hint` slots for per-field
+customisation.
+
+You will usually reach for `DXForm`, but `DXField` is
+available directly for one-off fields or custom layouts. It binds via a dot
+path (`keyPath`), so it also works for nested values such as repeater rows
+(`lines.0.price`).
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXFieldExampleRaw}
+>
+  <DXFieldExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The field definition to render (see DXForm for the full schema).' },
+  { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance owning the field\'s data and errors.' },
+  { name: 'model', type: 'any', required: 'No', default: 'form.data', description: 'Model passed to predicates (label/hint/when/disabled/readonly).' },
+  { name: 'keyPath', type: 'string', required: 'No', default: 'field.key', description: 'Dot path into form.data for the value (e.g. lines.0.price for nested binding).' },
+  { name: 'errorKey', type: 'string', required: 'No', default: 'keyPath', description: 'Error key for validation lookups.' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'value', props: 'field, model, value, update', description: 'Replace the built-in input control with custom markup. Call update(v) to write the value.' },
+  { name: 'span', props: 'field, model, value, update', description: 'Full-width custom block (used when the field is marked span: true).' },
+  { name: 'info', props: 'field, model', description: 'Rich info block rendered below the field.' },
+  { name: 'hint', props: 'field, model', description: 'Override the hint text rendered below the field.' },
+]} />
+
+## Extended Component
+
+This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
+providing additional functionality specific to Laravel dashboards.

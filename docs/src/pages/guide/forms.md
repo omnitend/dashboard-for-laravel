@@ -141,13 +141,16 @@ const form = useForm({
 - Use `options.transform` to reshape payloads before sending.
 - `reset()` restores the initial snapshot; pass a list of keys to reset specific fields only.
 
-## DXBasicForm Component
+## DXForm Component
 
-Auto-generate forms from field definitions:
+Generate a form from field definitions. Add a `tabs` prop for multi-tab
+editors; everything else (field types, conditional fields, per-field slots,
+async options, nested repeaters) works the same flat or tabbed. See the
+[DXForm component reference](/components/extended/DXForm) for the full API.
 
 ```vue
 <script setup lang="ts">
-import { useForm, DXBasicForm } from '@omnitend/dashboard-for-laravel'
+import { useForm, DXForm } from '@omnitend/dashboard-for-laravel'
 import type { FieldDefinition } from '@omnitend/dashboard-for-laravel'
 
 const form = useForm({
@@ -196,7 +199,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <DXBasicForm
+  <DXForm
     :fields="fields"
     :form="form"
     submit-text="Create Account"
@@ -209,71 +212,215 @@ const handleSubmit = async () => {
 
 Supported field types:
 
-- `text` - Text input
-- `email` - Email input
-- `password` - Password input
-- `tel` - Telephone input
-- `number` - Number input
-- `url` - URL input
-- `date` - Date picker
-- `datetime-local` - Date and time picker
-- `time` - Time picker
+- `text`, `email`, `password`, `tel`, `number`, `url` - Text-based inputs
+- `date`, `datetime-local`, `datetime`, `time` - Date/time pickers
 - `textarea` - Multi-line text
-- `select` - Dropdown select (requires `options`)
+- `select` - Dropdown select (sync `options` or async `optionsLoader`)
 - `checkbox` - Checkbox
 - `radio` - Radio button group (requires `options`)
+- `currency`, `percentage` - Numeric input with a `£`/`%` affix
+- `image`, `file` - File input (`image` shows a preview)
+- `component` - Renders your own `field.component` (escape hatch)
+- `repeater` - Nested, repeatable sub-form (see [DXRepeater](/components/extended/DXRepeater))
 
 ### Field Definition
 
 ```typescript
 interface FieldDefinition {
-  key: string                                          // Form field key (must match form data key)
-  type: FieldType                                      // Input type
-  label?: string                                       // Field label
-  placeholder?: string                                 // Placeholder text
-  required?: boolean                                   // Is field required?
-  options?: Array<{ value: any; text: string; disabled?: boolean }>  // For select/radio fields
-  rows?: number                                        // Number of rows for textarea (default: 3)
-  help?: string                                        // Help text displayed below field
-  class?: string                                       // CSS class for the form group
-  inputProps?: Record<string, any>                     // Additional props to pass to input
+  key: string                       // Form data key (or a dot path for nested values)
+  type: FieldType                   // Input type (see Field Types above)
+  label?: string | ((model) => string)   // Static, or derived from the live model
+  placeholder?: string
+  required?: boolean
+  help?: string                     // Always-visible help text below the field
+  hint?: string | ((model) => string)    // Hint text (may be model-derived)
+  class?: string                    // CSS class for the form group
+  inputProps?: Record<string, any>  // Extra props forwarded to the input
+
+  // Options (select / radio)
+  options?: FieldOption[]                              // Static options
+  optionsLoader?: (model) => Promise<FieldOption[]>    // Async options
+  reloadOptionsOnChange?: boolean   // Re-run optionsLoader when the model changes
+
+  // Visibility & state — a boolean, or a function of the live form model
+  when?: boolean | ((model) => boolean)       // Show/hide (cross-field reactive)
+  readonly?: boolean | ((model) => boolean)
+  disabled?: boolean | ((model) => boolean)
+
+  // Numeric (number / currency / percentage)
+  step?: number | string
+  min?: number | string
+  max?: number | string
+  currencySymbol?: string           // Default: "£"
+
+  // File (image / file)
+  accept?: string                   // e.g. "image/*"
+
+  // Custom control (component)
+  component?: Component             // Rendered with v-model + { field, model } props
+
+  // Repeater (nested sub-form)
+  fields?: FieldDefinition[]        // Sub-field definitions for each row
+  addLabel?: string                 // "Add row" button label (default: "Add")
+  minItems?: number
+  maxItems?: number
+
+  default?: any                     // Initial value (used by defineForm and repeater rows)
+  rows?: number                     // Textarea rows (default: 3)
+  span?: boolean                    // Full-width; render via the #span(<key>) slot
 }
 ```
 
-## DXForm Component
+The `model` passed to every predicate (`when`, `readonly`, `disabled`,
+function-valued `label`/`hint`) is the **live form data**, so fields react to
+each other as the user types.
 
-Advanced form component with more control:
+### Conditional fields
+
+Use `when` to show a field only when other fields have certain values:
+
+```typescript
+const fields: FieldDefinition[] = [
+  { key: 'on_sale', type: 'checkbox', label: 'On sale' },
+  {
+    key: 'sale_price',
+    type: 'currency',
+    label: 'Sale price',
+    // Re-evaluated reactively against the live form data.
+    when: (model) => model.on_sale === true,
+  },
+]
+```
+
+When `tabs` are used, a tab whose fields are all hidden disappears
+automatically (unless it has a custom `#tab-content` slot).
+
+### Dynamic labels, hints, and state
+
+`label`, `hint`, `readonly`, and `disabled` all accept a function of the model:
+
+```typescript
+{
+  key: 'discount',
+  type: 'percentage',
+  label: (model) => (model.tier === 'vip' ? 'VIP discount' : 'Discount'),
+  hint: (model) => `Applied to £${model.subtotal ?? 0}`,
+  disabled: (model) => model.tier === 'free',
+  readonly: (model) => model.locked === true,
+}
+```
+
+### Async select options
+
+Populate a select from the server with `optionsLoader`. It runs on mount, and
+again on any model change when `reloadOptionsOnChange` is set (stale responses
+are ignored; a loader error falls back to static `options`):
+
+```typescript
+{
+  key: 'city',
+  type: 'select',
+  label: 'City',
+  optionsLoader: async (model) => {
+    const res = await fetch(`/api/cities?country=${model.country}`)
+    return res.json() // [{ value, text }]
+  },
+  reloadOptionsOnChange: true, // refetch when `country` changes
+}
+```
+
+### Per-field slots
+
+Override a single field without giving up the rest of the form. Slots are keyed
+by field key:
 
 ```vue
-<script setup lang="ts">
-import { useForm, DXForm, DFormInput, DButton } from '@omnitend/dashboard-for-laravel'
-
-const form = useForm({
-  name: '',
-  email: ''
-})
-
-const handleSubmit = async () => {
-  await form.post('/api/users')
-}
-</script>
-
 <template>
-  <DXForm :form="form" @submit="handleSubmit">
-    <DFormGroup label="Name">
-      <DFormInput v-model="form.data.name" />
-    </DFormGroup>
+  <DXForm :form="form" :fields="fields">
+    <!-- Replace the input control -->
+    <template #value(rating)="{ value, update }">
+      <StarRating :model-value="value" @update:model-value="update" />
+    </template>
 
-    <DFormGroup label="Email">
-      <DFormInput v-model="form.data.email" type="email" />
-    </DFormGroup>
+    <!-- Add or override the hint text below a field -->
+    <template #hint(sku)>
+      Format: <code>ABC-123</code>
+    </template>
 
-    <DButton type="submit">
-      Submit
-    </DButton>
+    <!-- Full-width custom block (for a field marked `span: true`) -->
+    <template #span(gallery)="{ value, update }">
+      <GalleryEditor :images="value" @change="update" />
+    </template>
   </DXForm>
 </template>
 ```
+
+Slot props: `#value(<key>)` and `#span(<key>)` receive
+`{ field, model, value, update }` (call `update(newValue)` to write back);
+`#info(<key>)` and `#hint(<key>)` receive `{ field, model }`.
+
+### Repeaters (nested sub-forms)
+
+A `repeater` field renders a repeatable group of sub-fields backed by an array
+on the form:
+
+```vue
+<script setup lang="ts">
+const form = useForm({
+  reference: 'ORD-1001',
+  lines: [{ description: '', quantity: 1, unit_price: 0 }],
+})
+
+const fields: FieldDefinition[] = [
+  { key: 'reference', type: 'text', label: 'Order reference' },
+  {
+    key: 'lines',
+    type: 'repeater',
+    label: 'Line items',
+    addLabel: 'Add line',
+    minItems: 1,
+    maxItems: 20,
+    fields: [
+      { key: 'description', type: 'text', label: 'Description' },
+      { key: 'quantity', type: 'number', label: 'Qty', default: 1 },
+      { key: 'unit_price', type: 'currency', label: 'Unit price' },
+    ],
+  },
+]
+</script>
+
+<template>
+  <DXForm :form="form" :fields="fields" @submit="handleSubmit" />
+</template>
+```
+
+Each row binds to `form.data.lines[i]`. Server validation errors keyed in
+Laravel's dotted style (`lines.0.unit_price`) map straight to the right row.
+For a custom row layout, use the `#repeater-row(<key>)` slot or render
+[DXRepeater](/components/extended/DXRepeater) directly.
+
+### Tabs
+
+Pass a `tabs` array to group fields into a multi-tab editor. Tabs can be
+conditional (`when`) and lazily mounted (`lazy`), and the form auto-switches to
+the first tab containing a validation error after a failed submit:
+
+```vue
+<template>
+  <DXForm
+    :form="form"
+    :fields="fields"
+    :tabs="[
+      { key: 'general', label: 'General', fieldKeys: ['name', 'email'] },
+      { key: 'address', label: 'Address', fieldKeys: ['country'], lazy: true },
+    ]"
+    @submit="handleSubmit"
+  />
+</template>
+```
+
+Each tab is `{ key, label?, fieldKeys, when?, lazy? }`. The full prop and slot
+reference lives on the [DXForm component page](/components/extended/DXForm).
 
 ## Laravel Integration
 
@@ -326,7 +473,7 @@ The form composable will automatically:
 
 ```vue
 <script setup lang="ts">
-import { useForm, DCard, DXBasicForm } from '@omnitend/dashboard-for-laravel'
+import { useForm, DCard, DXForm } from '@omnitend/dashboard-for-laravel'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -376,7 +523,7 @@ const handleSubmit = async () => {
       <h3>Create User</h3>
     </template>
 
-    <DXBasicForm
+    <DXForm
       :fields="fields"
       :form="form"
       submit-text="Create User"
@@ -388,6 +535,7 @@ const handleSubmit = async () => {
 
 ## Next Steps
 
-- [Component Reference](/components/DXForm) - DXForm component API
-- [Component Reference](/components/DXBasicForm) - DXBasicForm component API
+- [DXForm](/components/extended/DXForm) - Form component API (props, events, slots)
+- [DXField](/components/extended/DXField) - Single-field renderer
+- [DXRepeater](/components/extended/DXRepeater) - Repeatable nested sub-forms
 - [Examples](/examples/common-patterns) - More form examples

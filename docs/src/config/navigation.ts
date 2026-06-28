@@ -31,10 +31,11 @@ export const navigationConfig: Navigation = [
     label: 'Extended Components',
     items: [
       { label: 'DXDashboard', url: '/components/extended/DXDashboard' },
-      { label: 'DXBasicForm', url: '/components/extended/DXBasicForm' },
       { label: 'DXDashboardNavbar', url: '/components/extended/DXDashboardNavbar' },
       { label: 'DXDashboardSidebar', url: '/components/extended/DXDashboardSidebar' },
       { label: 'DXForm', url: '/components/extended/DXForm' },
+      { label: 'DXField', url: '/components/extended/DXField' },
+      { label: 'DXRepeater', url: '/components/extended/DXRepeater' },
       { label: 'DXTable', url: '/components/extended/DXTable' },
     ],
   },

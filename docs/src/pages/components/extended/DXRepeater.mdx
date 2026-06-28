@@ -1,0 +1,77 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXRepeater
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXRepeaterExample from '../../../examples/DXRepeaterExample.vue';
+import DXRepeaterExampleRaw from '../../../examples/DXRepeaterExample.vue?raw';
+
+# DXRepeater
+
+A repeatable sub-form (field array) primitive for nested, dynamic collections —
+order lines, variants, key/value rows, and the like. Each row binds to an array
+on `form.data` (e.g. `form.data.lines[i]`) and renders its sub-fields through
+`DXField`, using Laravel-style nested error keys (`lines.0.unit_price`).
+
+You normally declare a repeater as a field with `type: 'repeater'` inside a
+`DXForm`, which renders `DXRepeater` for you. It is also
+exported directly for custom layouts.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXRepeaterExampleRaw}
+>
+  <DXRepeaterExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance owning the repeater array.' },
+  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems.' },
+  { name: 'keyPath', type: 'string', required: 'No', default: 'field.key', description: 'Dot path into form.data for the array.' },
+  { name: 'errorKey', type: 'string', required: 'No', default: 'keyPath', description: 'Base error key for nested validation.' },
+  { name: 'model', type: 'any', required: 'No', default: '-', description: 'Model passed to predicates from the parent context.' },
+]} />
+
+## Defining a repeater field
+
+Declare it as a field within a form's `fields` array:
+
+```ts
+const fields = [
+  {
+    key: 'lines',
+    type: 'repeater',
+    label: 'Line items',
+    addLabel: 'Add line',
+    minItems: 1,
+    maxItems: 10,
+    fields: [
+      { key: 'description', type: 'text', label: 'Description' },
+      { key: 'quantity', type: 'number', label: 'Qty', default: 1 },
+      { key: 'unit_price', type: 'currency', label: 'Unit price' },
+    ],
+  },
+];
+```
+
+New rows are seeded from each sub-field's `default` (or a sensible per-type
+default). Rows keep stable identity across reordering/removal, so editing a row
+and removing another never shuffles your inputs.
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'row', props: 'row, index, fields, remove, path', description: 'Custom layout for a single row. Render your own controls and call remove() to delete the row.' },
+]} />
+
+## Extended Component
+
+This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
+providing additional functionality specific to Laravel dashboards.

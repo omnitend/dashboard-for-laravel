@@ -4,82 +4,100 @@ title: DXForm
 ---
 
 import ComponentExample from '../../../components/ComponentExample.vue';
-import DXFormExample from '../../../examples/DXFormExample.vue';
 import PropsTable from '../../../components/PropsTable.vue';
 import EventsTable from '../../../components/EventsTable.vue';
 import SlotsTable from '../../../components/SlotsTable.vue';
+import DXFormExample from '../../../examples/DXFormExample.vue';
+import DXFormExampleRaw from '../../../examples/DXFormExample.vue?raw';
 
 # DXForm
 
-Form object from defineForm
+The canonical form renderer. Drive it with field definitions; add `tabs` when
+you need a multi-tab editor. Flat and tabbed forms share one engine
+([DXField](/components/extended/DXField)), so every field type, conditional
+field, per-field slot override, async option, and nested
+[repeater](/components/extended/DXRepeater) works the same in both.
+
+It works with the fetch-based `useForm` composable (no Inertia required) and
+accepts either a `useForm` return or a `defineForm` return (with the latter,
+`fields` may be omitted).
 
 ## Live Examples
 
 <ComponentExample
   client:load
-  code={`<script setup>
-import { DXForm, defineForm } from '@omnitend/dashboard-for-laravel';
-
-const contactForm = defineForm([
-  {
-    key: 'name',
-    label: 'Name',
-    type: 'text',
-    required: true,
-    placeholder: 'Enter your name',
-    default: '',
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    type: 'email',
-    required: true,
-    placeholder: 'your@email.com',
-    default: '',
-  },
-  {
-    key: 'message',
-    label: 'Message',
-    type: 'textarea',
-    required: true,
-    placeholder: 'Your message here...',
-    default: '',
-  },
-] as const);
-
-const handleSubmit = () => {
-  alert(\`Form submitted! Name: \${contactForm.form.data.name}\`);
-};
-</script>
-
-<template>
-  <DXForm
-    :form="contactForm"
-    submit-text="Send Message"
-    @submit="handleSubmit"
-  />
-</template>`}
-  example="DXFormExample"
-/>
+  code={DXFormExampleRaw}
+>
+  <DXFormExample client:load />
+</ComponentExample>
 
 ## Props
 
 <PropsTable client:load props={[
-  { name: 'form', type: 'DefineFormReturn<any>', required: 'Yes', default: '-', description: 'Form object from defineForm' },
-  { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text' },
-  { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text' },
-  { name: 'showSubmit', type: 'boolean', required: 'No', default: 'true', description: 'Show submit button' },
+  { name: 'form', type: 'UseFormReturn<any> | DefineFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance from useForm, or the { form, fields } object from defineForm.' },
+  { name: 'fields', type: 'FieldDefinition[]', required: 'No', default: '-', description: 'Field definitions. Optional when form is a defineForm return (taken from it).' },
+  { name: 'tabs', type: 'FormTab[]', required: 'No', default: '-', description: 'Tab definitions. When omitted, a flat single-column form renders.' },
+  { name: 'context', type: 'Record<string, any>', required: 'No', default: '-', description: 'Extra context merged under the live form data when evaluating predicates (label/hint/when/disabled).' },
+  { name: 'activeTab', type: 'number (v-model)', required: 'No', default: '0', description: 'Active tab index. Two-way bindable via v-model:active-tab.' },
+  { name: 'autoErrorTab', type: 'boolean', required: 'No', default: 'true', description: 'Auto-switch to the first tab containing a validation error.' },
+  { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text.' },
+  { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text.' },
+  { name: 'showSubmit', type: 'boolean', required: 'No', default: 'true', description: 'Show the submit button.' },
 ]} />
 
 ## Events
 
 <EventsTable client:load events={[
-  { name: 'submit', params: 'none', description: 'Emitted when the form is submitted' },
+  { name: 'submit', params: 'none', description: 'Emitted when the form is submitted (run your form.post/put in the handler).' },
 ]} />
 
 ## Slots
 
-<SlotsTable client:load dynamicForwarding={true} slots={[]} />
+Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
+
+<SlotsTable client:load slots={[
+  { name: 'value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s input control with custom markup.' },
+  { name: 'span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for a field marked span: true.' },
+  { name: 'info(<key>)', props: 'field, model', description: 'Rich info block rendered below the field.' },
+  { name: 'hint(<key>)', props: 'field, model', description: 'Override the hint text rendered below the field.' },
+  { name: 'repeater-row(<key>)', props: 'row, index, fields, remove, path', description: 'Custom row layout for a repeater field.' },
+  { name: 'tab-content(<key>)', props: 'tab, model', description: 'Replace the entire body of a tab.' },
+  { name: 'tab-before(<key>)', props: 'tab, model', description: 'Content rendered before a tab\'s fields.' },
+  { name: 'tab-after(<key>)', props: 'tab, model', description: 'Content rendered after a tab\'s fields.' },
+  { name: 'footer', props: 'form', description: 'Content rendered after the form body.' },
+]} />
+
+## Field definitions
+
+Each field is a `FieldDefinition`. Supported `type` values:
+
+| Type | Renders |
+| --- | --- |
+| `text`, `email`, `password`, `number`, `url`, `tel`, `date`, `datetime-local`, `datetime`, `time` | Native input |
+| `textarea` | Multi-line input |
+| `select` | Dropdown (sync `options` or async `optionsLoader`) |
+| `radio` | Radio group |
+| `checkbox` | Single checkbox |
+| `currency`, `percentage` | Numeric input with a `£`/`%` affix |
+| `image`, `file` | File input (`image` shows a preview) |
+| `component` | Renders your `field.component` (escape hatch) |
+| `repeater` | Nested, repeatable sub-form (see [DXRepeater](/components/extended/DXRepeater)) |
+
+Common options beyond `key`/`type`/`label`:
+
+<PropsTable client:load props={[
+  { name: 'label / hint', type: 'string | (model) => string', required: 'No', default: '-', description: 'Static or model-derived label and hint text.' },
+  { name: 'when', type: 'boolean | (model) => boolean', required: 'No', default: 'true', description: 'Conditional visibility, evaluated reactively against the live model.' },
+  { name: 'readonly', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Render the field read-only.' },
+  { name: 'disabled / disabledWhen', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Disable the field, statically or from the model.' },
+  { name: 'options / optionsLoader', type: 'FieldOption[] | (model) => Promise<FieldOption[]>', required: 'No', default: '-', description: 'Select/radio options, synchronous or async. Set reloadOptionsOnChange to refetch on model change.' },
+  { name: 'span', type: 'boolean', required: 'No', default: 'false', description: 'Render full-width, delegating content to the #span(<key>) slot.' },
+  { name: 'currencySymbol / accept / step / min / max', type: 'string | number', required: 'No', default: '-', description: 'Type-specific options (currency symbol, file accept, numeric bounds).' },
+]} />
+
+A `FormTab` is `{ key, label?, fieldKeys, when?, lazy? }`. Tabs whose `when`
+is false — or that have no visible fields and no custom tab slot — are hidden
+automatically.
 
 ## Extended Component
 

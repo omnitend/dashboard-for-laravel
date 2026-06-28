@@ -147,7 +147,7 @@ import {
   useForm,
   useToast,
   DCard,
-  DXBasicForm
+  DXForm
 } from '@omnitend/dashboard-for-laravel'
 import type { FieldDefinition } from '@omnitend/dashboard-for-laravel'
 
@@ -236,7 +236,7 @@ const handleSubmit = async () => {
       <h3>Create Customer</h3>
     </template>
 
-    <DXBasicForm
+    <DXForm
       :fields="fields"
       :form="form"
       submit-text="Create Customer"
