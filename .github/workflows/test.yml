@@ -29,6 +29,11 @@ jobs:
     - name: Run TypeScript checks
       run: npm run typecheck
 
+    # Tests run in Vitest browser mode (Playwright/Chromium), so the browser
+    # binary must be installed in CI before the suite runs.
+    - name: Install Playwright browser
+      run: npx playwright install --with-deps chromium
+
     - name: Run tests
       run: npm run test:headless
 
