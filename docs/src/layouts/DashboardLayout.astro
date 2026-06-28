@@ -127,13 +127,19 @@ const pageTitle = title === 'Home' ? '' : title;
     margin-bottom: 1rem;
   }
 
-  .dashboard-content ul,
-  .dashboard-content ol {
+  /* Scope prose list styling to markdown lists only. Bootstrap component
+     lists (.nav, .pagination, .list-group, .dropdown-menu, .breadcrumb…)
+     always carry a class; markdown-generated <ul>/<ol> do not. Without this
+     guard the prose padding/margins bleed into e.g. .nav-tabs, insetting the
+     first tab and lifting the active tab off its bottom border. */
+  .dashboard-content ul:not([class]),
+  .dashboard-content ol:not([class]) {
     margin-bottom: 1rem;
     padding-left: 1.5rem;
   }
 
-  .dashboard-content li {
+  .dashboard-content ul:not([class]) > li,
+  .dashboard-content ol:not([class]) > li {
     line-height: 1.75;
     margin-bottom: 0.5rem;
   }
