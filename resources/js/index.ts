@@ -9,6 +9,12 @@ export { default as DXDashboard } from "./components/extended/DXDashboard.vue";
 export { default as DXForm } from "./components/extended/DXForm.vue";
 export { default as DXField } from "./components/extended/DXField.vue";
 export { default as DXRepeater } from "./components/extended/DXRepeater.vue";
+/**
+ * @deprecated Use `DXForm`. `DXBasicForm` is a thin wrapper around `DXForm`
+ * (a flat form is just `DXForm` without a `tabs` prop) that logs a one-time
+ * deprecation warning. It will be removed in a future major version.
+ */
+export { default as DXBasicForm } from "./components/extended/DXBasicForm.vue";
 export { default as DXTable } from "./components/extended/DXTable.vue";
 export { default as DXDashboardSidebar } from "./components/extended/DXDashboardSidebar.vue";
 export { default as DXDashboardNavbar } from "./components/extended/DXDashboardNavbar.vue";

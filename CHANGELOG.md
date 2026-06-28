@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-06-22
+
+### Added
+- `DXForm` is now the canonical form renderer. Drive it with field
+  definitions and add an optional `tabs` prop for multi-tab editors;
+  flat and tabbed forms share one engine. Supports conditional fields
+  and tabs (`when(model)`), per-field slot overrides
+  (`#value(<key>)` / `#span(<key>)` / `#info(<key>)` / `#hint(<key>)`),
+  async select options (`optionsLoader`), nested repeaters, and
+  automatic switching to the first tab containing a validation error.
+  Accepts either a `useForm` or a `defineForm` instance.
+- `DXField` — single-field renderer for every field type, with dot-path
+  binding so it also drives nested repeater values.
+- `DXRepeater` — repeatable nested sub-form (field array) primitive.
+- `DFormRadioGroup` — base wrapper for Bootstrap Vue Next's
+  `BFormRadioGroup`.
+- New `FieldDefinition` field types: `datetime`, `currency`,
+  `percentage`, `image`, `file`, `component`, and `repeater`. New
+  options: `when`, `readonly`, function-valued `label`/`hint`, `span`,
+  `optionsLoader` / `reloadOptionsOnChange`, and repeater sub-fields.
+  Adds the `FormTab` type.
+
+### Changed
+- `DXTable`'s edit/create modal now renders `DXForm` internally (single
+  source of truth). Its public props, slots, and events are unchanged.
+- Fixed a latent `DXTable` bug: tab switching now binds the active tab
+  index correctly (`v-model:index`), so the edit modal reliably switches
+  to the tab containing a validation error.
+
+### Deprecated
+- `DXBasicForm` is deprecated in favour of `DXForm`. It is now a thin
+  alias (a flat form is `DXForm` without a `tabs` prop) and remains a
+  drop-in for existing usage. It will be removed in a future major.
+
+### Fixed
+- `DXForm`/`DXField` bind top-level field values by literal key, so a
+  field key containing a dot (e.g. `user.email`) is not mistaken for a
+  nested path.
+- `setByPath` blocks prototype-polluting path segments (`__proto__`,
+  `prototype`, `constructor`).
+
+### Breaking (low-impact)
+- The per-field custom-rendering slot changed from `#field(<key>)` to
+  `#value(<key>)` (replaces the input control). `#span(<key>)`,
+  `#info(<key>)`, and `#hint(<key>)` are also available. Forms that only
+  pass `fields`/`form` (no per-field slots) are unaffected.
+
 ## [0.4.14] - 2026-04-29
 
 ### Added
