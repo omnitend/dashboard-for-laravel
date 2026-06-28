@@ -29,6 +29,11 @@ jobs:
     - name: Run TypeScript checks
       run: npm run typecheck
 
+    # Build first: the test setup imports the built dist/style.css, so the
+    # package must be built before the suite runs.
+    - name: Build package
+      run: npm run build
+
     # Tests run in Vitest browser mode (Playwright/Chromium), so the browser
     # binary must be installed in CI before the suite runs.
     - name: Install Playwright browser
@@ -36,9 +41,6 @@ jobs:
 
     - name: Run tests
       run: npm run test:headless
-
-    - name: Build package
-      run: npm run build
 
   php-tests:
     runs-on: ubuntu-latest
