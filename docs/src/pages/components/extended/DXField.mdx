@@ -11,13 +11,13 @@ import DXFieldExampleRaw from '../../../examples/DXFieldExample.vue?raw';
 
 # DXField
 
-The single-field renderer that powers `DXTabbedForm`, `DXBasicForm`, and
+The single-field renderer that powers `DXForm` and
 `DXTable`'s edit modal. It renders one `FieldDefinition` of any type — wired to
 a `useForm` instance for value binding, validation state, and error display —
 and exposes `#value`, `#span`, `#info`, and `#hint` slots for per-field
 customisation.
 
-You will usually reach for `DXTabbedForm` or `DXBasicForm`, but `DXField` is
+You will usually reach for `DXForm`, but `DXField` is
 available directly for one-off fields or custom layouts. It binds via a dot
 path (`keyPath`), so it also works for nested values such as repeater rows
 (`lines.0.price`).
@@ -34,7 +34,7 @@ path (`keyPath`), so it also works for nested values such as repeater rows
 ## Props
 
 <PropsTable client:load props={[
-  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The field definition to render (see DXTabbedForm for the full schema).' },
+  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The field definition to render (see DXForm for the full schema).' },
   { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance owning the field\'s data and errors.' },
   { name: 'model', type: 'any', required: 'No', default: 'form.data', description: 'Model passed to predicates (label/hint/when/disabled/readonly).' },
   { name: 'keyPath', type: 'string', required: 'No', default: 'field.key', description: 'Dot path into form.data for the value (e.g. lines.0.price for nested binding).' },

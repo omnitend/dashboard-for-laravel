@@ -2,7 +2,7 @@
   <div class="field-example">
     <h5>Single Field Renderer</h5>
     <p class="text-muted">
-      DXField renders one field of any type. DXTabbedForm and DXTable use it
+      DXField renders one field of any type. DXForm and DXTable use it
       internally, but you can drop it in directly — here with per-field
       <code>#hint</code> and <code>#value</code> slot overrides.
     </p>

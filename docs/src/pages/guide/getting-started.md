@@ -82,7 +82,7 @@ Extended components provide dashboard-specific functionality:
 
 - **DXDashboard** - Complete dashboard layout with sidebar and navbar
 - **DXTable** - Data table with pagination, sorting, and modals
-- **DXForm** / **DXBasicForm** - Form builders from field definitions
+- **DXForm** - Form builder from field definitions (with optional tabs)
 
 ## Form System
 

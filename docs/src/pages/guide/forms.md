@@ -141,13 +141,16 @@ const form = useForm({
 - Use `options.transform` to reshape payloads before sending.
 - `reset()` restores the initial snapshot; pass a list of keys to reset specific fields only.
 
-## DXBasicForm Component
+## DXForm Component
 
-Auto-generate forms from field definitions:
+Generate a form from field definitions. Add a `tabs` prop for multi-tab
+editors; everything else (field types, conditional fields, per-field slots,
+async options, nested repeaters) works the same flat or tabbed. See the
+[DXForm component reference](/components/extended/DXForm) for the full API.
 
 ```vue
 <script setup lang="ts">
-import { useForm, DXBasicForm } from '@omnitend/dashboard-for-laravel'
+import { useForm, DXForm } from '@omnitend/dashboard-for-laravel'
 import type { FieldDefinition } from '@omnitend/dashboard-for-laravel'
 
 const form = useForm({
@@ -196,7 +199,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <DXBasicForm
+  <DXForm
     :fields="fields"
     :form="form"
     submit-text="Create Account"
@@ -209,19 +212,16 @@ const handleSubmit = async () => {
 
 Supported field types:
 
-- `text` - Text input
-- `email` - Email input
-- `password` - Password input
-- `tel` - Telephone input
-- `number` - Number input
-- `url` - URL input
-- `date` - Date picker
-- `datetime-local` - Date and time picker
-- `time` - Time picker
+- `text`, `email`, `password`, `tel`, `number`, `url` - Text-based inputs
+- `date`, `datetime-local`, `datetime`, `time` - Date/time pickers
 - `textarea` - Multi-line text
-- `select` - Dropdown select (requires `options`)
+- `select` - Dropdown select (sync `options` or async `optionsLoader`)
 - `checkbox` - Checkbox
 - `radio` - Radio button group (requires `options`)
+- `currency`, `percentage` - Numeric input with a `£`/`%` affix
+- `image`, `file` - File input (`image` shows a preview)
+- `component` - Renders your own `field.component` (escape hatch)
+- `repeater` - Nested, repeatable sub-form (see [DXRepeater](/components/extended/DXRepeater))
 
 ### Field Definition
 
@@ -240,40 +240,29 @@ interface FieldDefinition {
 }
 ```
 
-## DXForm Component
+### Tabs
 
-Advanced form component with more control:
+Pass a `tabs` array to group fields into a multi-tab editor. Tabs can be
+conditional (`when`) and lazily mounted (`lazy`), and the form auto-switches to
+the first tab containing a validation error:
 
 ```vue
-<script setup lang="ts">
-import { useForm, DXForm, DFormInput, DButton } from '@omnitend/dashboard-for-laravel'
-
-const form = useForm({
-  name: '',
-  email: ''
-})
-
-const handleSubmit = async () => {
-  await form.post('/api/users')
-}
-</script>
-
 <template>
-  <DXForm :form="form" @submit="handleSubmit">
-    <DFormGroup label="Name">
-      <DFormInput v-model="form.data.name" />
-    </DFormGroup>
-
-    <DFormGroup label="Email">
-      <DFormInput v-model="form.data.email" type="email" />
-    </DFormGroup>
-
-    <DButton type="submit">
-      Submit
-    </DButton>
-  </DXForm>
+  <DXForm
+    :form="form"
+    :fields="fields"
+    :tabs="[
+      { key: 'general', label: 'General', fieldKeys: ['name', 'email'] },
+      { key: 'address', label: 'Address', fieldKeys: ['country'] },
+    ]"
+    @submit="handleSubmit"
+  />
 </template>
 ```
+
+For per-field customisation, use the keyed slots (`#value(<key>)`,
+`#hint(<key>)`, `#span(<key>)`) documented on the
+[DXForm component reference](/components/extended/DXForm).
 
 ## Laravel Integration
 
@@ -326,7 +315,7 @@ The form composable will automatically:
 
 ```vue
 <script setup lang="ts">
-import { useForm, DCard, DXBasicForm } from '@omnitend/dashboard-for-laravel'
+import { useForm, DCard, DXForm } from '@omnitend/dashboard-for-laravel'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -376,7 +365,7 @@ const handleSubmit = async () => {
       <h3>Create User</h3>
     </template>
 
-    <DXBasicForm
+    <DXForm
       :fields="fields"
       :form="form"
       submit-text="Create User"
@@ -388,6 +377,6 @@ const handleSubmit = async () => {
 
 ## Next Steps
 
-- [Component Reference](/components/DXForm) - DXForm component API
-- [Component Reference](/components/DXBasicForm) - DXBasicForm component API
+- [Component Reference](/components/extended/DXForm) - DXForm component API
+- [Component Reference](/components/extended/DXForm) - DXForm component API
 - [Examples](/examples/common-patterns) - More form examples

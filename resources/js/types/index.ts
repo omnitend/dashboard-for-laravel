@@ -1,8 +1,7 @@
 import type { Component } from "vue";
 
 /**
- * Field types supported by the form renderers (DXBasicForm, DXForm,
- * DXTabbedForm).
+ * Field types supported by DXForm (and DXField, its per-field renderer).
  *
  * Text-like types render an `<input>`; the remainder render purpose-built
  * controls:
@@ -61,8 +60,7 @@ export type OptionsLoader = (model: any) => Promise<FieldOption[]>;
 /**
  * Field definition shared by every form renderer.
  *
- * The flat renderers (DXBasicForm/DXForm) use a subset; DXTabbedForm and
- * DXTable's edit modal additionally honour `hint`, `span`, `when`,
+ * DXForm and DXTable's edit modal honour `hint`, `span`, `when`,
  * `readonly`, `disabledWhen`, function-valued `label`/`hint`, async
  * options, the `component` escape hatch and nested `repeater` fields.
  */

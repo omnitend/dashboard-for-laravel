@@ -10,12 +10,6 @@ const components = [
     url: '/components/extended/dxdashboard',
   },
   {
-    name: 'DXBasicForm',
-    description: 'Form component that renders from field definitions with built-in validation',
-    type: 'Extended',
-    url: '/components/extended/dxbasicform',
-  },
-  {
     name: 'DXDashboardNavbar',
     description: 'Top navigation bar with hamburger menu, page title, and user dropdown',
     type: 'Extended',
@@ -29,9 +23,21 @@ const components = [
   },
   {
     name: 'DXForm',
-    description: 'Advanced form component with validation, error handling, and submit states',
+    description: 'Form renderer from field definitions, with optional tabs, conditional fields, per-field slots, async options, and nested repeaters',
     type: 'Extended',
     url: '/components/extended/dxform',
+  },
+  {
+    name: 'DXField',
+    description: 'Single-field renderer for any field type, with value/span/info/hint slots',
+    type: 'Extended',
+    url: '/components/extended/dxfield',
+  },
+  {
+    name: 'DXRepeater',
+    description: 'Repeatable nested sub-form (field array) for dynamic collections',
+    type: 'Extended',
+    url: '/components/extended/dxrepeater',
   },
   {
     name: 'DXTable',

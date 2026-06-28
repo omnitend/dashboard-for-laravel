@@ -456,7 +456,7 @@
             :size="editModalSize"
         >
             <!-- Edit/create form (tabbed when editTabs provided, flat otherwise) -->
-            <DXTabbedForm
+            <DXForm
                 v-if="editForm"
                 v-model:active-tab="activeTabIndex"
                 :form="editForm"
@@ -466,7 +466,7 @@
                 :show-submit="false"
                 @submit="handleEditSave"
             >
-                <!-- Forward DXTable's edit-value(key) → DXTabbedForm value(key) -->
+                <!-- Forward DXTable's edit-value(key) → DXForm value(key) -->
                 <template
                     v-for="key in editValueSlotKeys"
                     :key="`ev-${key}`"
@@ -518,7 +518,7 @@
                 >
                     <slot :name="`tab-after(${key})`" :item="selectedItem" :tab="sp.tab" />
                 </template>
-            </DXTabbedForm>
+            </DXForm>
 
             <template #footer>
                 <div class="d-flex justify-content-between w-100">
@@ -572,7 +572,7 @@ import DFormInput from "../base/DFormInput.vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import DModal from "../base/DModal.vue";
 import DButton from "../base/DButton.vue";
-import DXTabbedForm from "./DXTabbedForm.vue";
+import DXForm from "./DXForm.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
 export interface FilterOption {
@@ -1390,12 +1390,12 @@ try {
     createToast = undefined;
 }
 
-// The edit/create form rendering is delegated to DXTabbedForm, which
+// The edit/create form rendering is delegated to DXForm, which
 // owns field/tab visibility, dynamic labels/hints, conditional fields,
 // and auto-switching to the first tab with a validation error.
 
 // Forward only the keyed edit slots the consumer actually provided, so
-// DXTabbedForm doesn't mistake an always-present (but empty) wrapper for
+// DXForm doesn't mistake an always-present (but empty) wrapper for
 // a real custom-value override.
 const tableSlots = useSlots();
 const editFieldKeys = computed<string[]>(() =>
@@ -1556,7 +1556,7 @@ const handleEditSave = async () => {
                         modelValue: 5000,
                     });
 
-                    // DXTabbedForm switches to the first errored tab via its
+                    // DXForm switches to the first errored tab via its
                     // own watcher on editForm.errors.
                     emit('createError', errors);
                 }
@@ -1611,7 +1611,7 @@ const handleEditSave = async () => {
                         modelValue: 5000, // Auto-dismiss after 5 seconds
                     });
 
-                    // DXTabbedForm switches to the first errored tab via its
+                    // DXForm switches to the first errored tab via its
                     // own watcher on editForm.errors.
                     emit('editError', selectedItem.value as T, errors);
                 }

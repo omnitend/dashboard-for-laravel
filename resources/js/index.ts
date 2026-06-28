@@ -6,9 +6,7 @@ export * from 'bootstrap-vue-next';
 
 // Extended components (custom functionality beyond Bootstrap Vue Next)
 export { default as DXDashboard } from "./components/extended/DXDashboard.vue";
-export { default as DXBasicForm } from "./components/extended/DXBasicForm.vue";
 export { default as DXForm } from "./components/extended/DXForm.vue";
-export { default as DXTabbedForm } from "./components/extended/DXTabbedForm.vue";
 export { default as DXField } from "./components/extended/DXField.vue";
 export { default as DXRepeater } from "./components/extended/DXRepeater.vue";
 export { default as DXTable } from "./components/extended/DXTable.vue";

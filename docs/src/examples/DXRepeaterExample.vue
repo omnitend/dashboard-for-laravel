@@ -6,7 +6,7 @@
       to <code>form.data.lines[i]</code> with Laravel-style nested error keys.
     </p>
 
-    <DXTabbedForm :form="form" :fields="fields" :show-submit="false" />
+    <DXForm :form="form" :fields="fields" :show-submit="false" />
 
     <pre class="state">{{ JSON.stringify(form.data, null, 2) }}</pre>
   </div>
@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import {
-  DXTabbedForm,
+  DXForm,
   useForm,
   type FieldDefinition,
 } from '@omnitend/dashboard-for-laravel';
