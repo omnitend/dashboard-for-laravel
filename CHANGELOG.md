@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     removed `BToastOrchestrator`).
   - `DButton` no longer defaults `size` to the removed `'md'` value.
 - **Minimum Vue peer dependency raised to `^3.5.13`** (required by bvn 0.45).
+- **Dropped Laravel 11 support** — `composer.json` now requires
+  `laravel/framework ^12.0|^13.0` (dev: `orchestra/testbench ^10|^11`). The
+  only resolvable Laravel 11 releases are blocked by Composer's
+  security-advisory policy, so it can no longer be installed/tested.
 
 ### Fixed
 - `DCarousel` / `DCarouselSlide` are now thin re-exports of the underlying
