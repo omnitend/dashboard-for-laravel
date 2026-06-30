@@ -27,7 +27,7 @@ Tests provide both visual and programmatic verification:
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { render, screen } from 'vitest-browser-vue';
-import { userEvent } from '@vitest/browser/context';
+import { userEvent } from 'vitest/browser';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
 
 describe('DXTable', () => {
@@ -73,7 +73,7 @@ tests/
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from 'vitest-browser-vue';
-import { userEvent } from '@vitest/browser/context';
+import { userEvent } from 'vitest/browser';
 ```
 
 ### 2. Render Component

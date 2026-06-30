@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from 'vitest-browser-vue';
-import { userEvent } from '@vitest/browser/context';
+import { userEvent } from 'vitest/browser';
 import { h } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
