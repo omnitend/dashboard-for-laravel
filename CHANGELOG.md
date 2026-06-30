@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`DFormOtp`** — wrapper around bvn's `BFormOtp`. A one-time-code / PIN
+  input rendered as a row of single-character boxes (`v-model` is a
+  `string[]`, one entry per box).
+- **`DAutocomplete`** — wrapper around bvn's `BAutocomplete`. A text input
+  with a filtered dropdown of suggestions (typeahead / combobox); supports
+  `multiple` and a custom `filterFunction`.
+- **`DAspect`** — wrapper around bvn's `BAspect`. Keeps its default-slot
+  content at a fixed aspect ratio (e.g. `aspect="16:9"`).
+
+  All three surface components that became available in the bootstrap-vue-next
+  0.45 upgrade. Each ships with a docs page, live example, and render test.
+
 ## [0.6.0] - 2026-06-30
 
 ### Changed
