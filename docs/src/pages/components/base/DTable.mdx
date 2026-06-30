@@ -20,5 +20,42 @@ DTable - A type-safe wrapper around Bootstrap Vue Next's BTable component. Featu
   example="DTableExample"
 />
 
+## Sorting, filtering & accessibility props
+
+`DTable` forwards every attribute straight through to the underlying
+`BTable`, so the complete bootstrap-vue-next table API is available without
+each prop being re-declared here. A few worth knowing about, including ones
+added in the bootstrap-vue-next 0.45 line:
+
+| Prop | Type | Purpose |
+| --- | --- | --- |
+| `sort-null-last` | `boolean` | Sort `null` / `undefined` values to the end regardless of sort direction (local sorting). |
+| `sort-by-formatted` | `boolean` | Sort on each cell's **formatted** value rather than the raw field value. |
+| `filter-by-formatted` | `boolean` | Filter on the **formatted** value rather than the raw one. |
+| `no-footer-sorting` | `boolean` | Keep the footer non-interactive when the header is sortable. |
+| `label-sort-asc` / `label-sort-desc` / `label-sort-clear` | `string` | Screen-reader labels announced on the sortable column headers. |
+
+These act on `BTable`'s own local sorting / filtering. Bind them with the
+usual kebab-case attribute, e.g. `<DTable :sort-null-last="true" />`.
+
+```vue
+<DTable
+  :items="rows"
+  :fields="fields"
+  :sort-null-last="true"
+  :filter-by-formatted="true"
+  label-sort-asc="Sort ascending"
+  label-sort-desc="Sort descending"
+/>
+```
+
+`BTable` also emits a `context-changed` event whenever the sort, filter, or
+page context changes — `@context-changed` passes through `DTable` to your
+handler.
+
+> **Using `DXTable`?** `DXTable` manages sorting and filtering itself
+> (server-side in provider mode, with its own custom column headers and a
+> filter row), so it does **not** rely on `BTable`'s local sorting. The props
+> above apply when you use the base `DTable` directly.
 
 <BootstrapVueNextReference client:load componentName="DTable" />

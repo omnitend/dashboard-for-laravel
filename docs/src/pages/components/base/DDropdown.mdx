@@ -23,5 +23,21 @@ DDropdown - A type-safe wrapper around Bootstrap Vue Next's BDropdown component.
   example="DDropdownExample"
 />
 
+## Customising the toggle button
+
+`DDropdown` forwards every attribute to the underlying `BDropdown`. As of
+bootstrap-vue-next 0.45 you can pass `toggle-attrs` to set arbitrary
+attributes on the toggle `<button>` — handy for accessibility hooks or test
+IDs:
+
+```vue
+<DDropdown
+  text="Actions"
+  :toggle-attrs="{ 'aria-label': 'Row actions', 'data-test': 'row-menu' }"
+>
+  <DDropdownItem>Edit</DDropdownItem>
+  <DDropdownItem>Delete</DDropdownItem>
+</DDropdown>
+```
 
 <BootstrapVueNextReference client:load componentName="DDropdown" />
