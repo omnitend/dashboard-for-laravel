@@ -245,6 +245,16 @@ All Bootstrap Vue Next components should be wrapped in D* components, including 
 - Allow customisation without modifying Bootstrap Vue Next
 - Enable proper slot forwarding
 
+**Exceptions & API divergences:** A few components can't be wrapped — e.g.
+`DCarousel`/`DCarouselSlide` are raw re-exports of the bvn components because
+`BCarousel` registers slides by scanning slot vnodes for the slide component
+type, which a wrapper in between breaks. Where a wrapper *intentionally
+diverges* from the underlying bvn API (e.g. shielding a changed signature so
+consumers don't have to migrate on a bvn bump), record it in
+[`DIVERGENCES.md`](./DIVERGENCES.md) and keep that ledger up to date whenever
+you add or remove a shield. The plan is to converge on bvn's API in a future
+major with a codemod-based migration path.
+
 **Example - DDropdown.vue:**
 ```vue
 <template>

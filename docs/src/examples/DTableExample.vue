@@ -75,7 +75,7 @@
       <DTable
         :items="customers"
         :fields="sortableFields"
-        sort-by="name"
+        :sort-by="[{ key: 'name', order: 'asc' }]"
         striped
         hover
       />

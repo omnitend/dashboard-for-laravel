@@ -33,15 +33,14 @@ interface Props {
   variant?: ButtonVariant | LinkVariant | null;
 
   /**
-   * The size of the button
-   * @default 'md'
+   * The size of the button. Omit for the default (medium) size —
+   * bootstrap-vue-next 0.45 removed the no-op `'md'` value from `Size`.
    */
   size?: Size;
 }
 
 withDefaults(defineProps<Props>(), {
   variant: 'primary',
-  size: 'md',
 });
 </script>
 

@@ -46,9 +46,13 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        php-version: [8.2, 8.3]
-        laravel-version: [11.x, 12.x]
+        # Test the current PHP and current-minus-one. Composer resolves the
+        # highest Laravel allowed by composer.json for each (Laravel 13 on
+        # both). Laravel 11 is no longer supported — its only resolvable
+        # releases are blocked by Composer's security-advisory policy.
+        php-version: ['8.4', '8.5']
 
     steps:
     - uses: actions/checkout@v4

@@ -30,8 +30,12 @@ export { default as DButton } from "./components/base/DButton.vue";
 export { default as DButtonGroup } from "./components/base/DButtonGroup.vue";
 export { default as DButtonToolbar } from "./components/base/DButtonToolbar.vue";
 export { default as DCard } from "./components/base/DCard.vue";
-export { default as DCarousel } from "./components/base/DCarousel.vue";
-export { default as DCarouselSlide } from "./components/base/DCarouselSlide.vue";
+// Re-export the real BCarousel/BCarouselSlide (not wrappers): BCarousel
+// collects its slides by scanning slot vnodes for the BCarouselSlide
+// component type, so wrapper components in between break slide registration
+// in bvn 0.45. (Most components are safely wrapped; carousel is the exception.)
+export { BCarousel as DCarousel } from "bootstrap-vue-next";
+export { BCarouselSlide as DCarouselSlide } from "bootstrap-vue-next";
 export { default as DCol } from "./components/base/DCol.vue";
 export { default as DCollapse } from "./components/base/DCollapse.vue";
 export { default as DContainer } from "./components/base/DContainer.vue";
