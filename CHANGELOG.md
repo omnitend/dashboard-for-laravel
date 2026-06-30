@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- **`@modelcontextprotocol/sdk`** bumped `^1.22.0` → `^1.29.0` (ships via the
+  docs MCP server bin) — patches a ReDoS advisory.
+- **`axios`** optional-peer floor raised `^1.6.0` → `^1.15.3` so consumers
+  pull a range with the `mergeConfig` prototype-pollution / proxy fixes.
+- Dev toolchain: `vitest` / `@vitest/browser` / `@vitest/browser-playwright`
+  bumped `^4.0.3` → `^4.1.8` (clears 3 critical advisories) and `npm audit fix`
+  applied for remaining in-range transitive patches.
+- Remaining audit entries are the `astro` 5→7 major chain (astro + bundled
+  esbuild + `@astrojs/mdx` / `@astrojs/vue`). These are dev-server-only
+  advisories; the docs publish as a static GitHub Pages build with no SSR, so
+  they don't reach a deployed surface. The two-major astro migration is left
+  for separate, deliberate work.
+
+### Fixed
+- `package.json` `repository.url` normalised to `git+https://…` so `npm
+  publish` no longer auto-corrects it on every release.
+
 ## [0.7.0] - 2026-06-30
 
 ### Added
