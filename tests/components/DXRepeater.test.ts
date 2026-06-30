@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-vue';
-import { userEvent } from '@vitest/browser/context';
+import { userEvent } from 'vitest/browser';
 import DXRepeater from '../../resources/js/components/extended/DXRepeater.vue';
 import { useForm } from '../../resources/js/composables/useForm';
 import type { FieldDefinition } from '../../resources/js/types';
