@@ -23,6 +23,8 @@ export { default as DXDashboardNavbar } from "./components/extended/DXDashboardN
 export { default as DAccordion } from "./components/base/DAccordion.vue";
 export { default as DAccordionItem } from "./components/base/DAccordionItem.vue";
 export { default as DAlert } from "./components/base/DAlert.vue";
+export { default as DAspect } from "./components/base/DAspect.vue";
+export { default as DAutocomplete } from "./components/base/DAutocomplete.vue";
 export { default as DAvatar } from "./components/base/DAvatar.vue";
 export { default as DBadge } from "./components/base/DBadge.vue";
 export { default as DBreadcrumb } from "./components/base/DBreadcrumb.vue";
@@ -47,6 +49,7 @@ export { default as DFormCheckbox } from "./components/base/DFormCheckbox.vue";
 export { default as DFormGroup } from "./components/base/DFormGroup.vue";
 export { default as DFormInput } from "./components/base/DFormInput.vue";
 export { default as DFormInvalidFeedback } from "./components/base/DFormInvalidFeedback.vue";
+export { default as DFormOtp } from "./components/base/DFormOtp.vue";
 export { default as DFormRadio } from "./components/base/DFormRadio.vue";
 export { default as DFormRadioGroup } from "./components/base/DFormRadioGroup.vue";
 export { default as DFormSelect } from "./components/base/DFormSelect.vue";

@@ -1,0 +1,32 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormOtp
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import DFormOtpExample from '../../../examples/DFormOtpExample.vue';
+import DFormOtpExampleRaw from '../../../examples/DFormOtpExample.vue?raw';
+
+# DFormOtp
+
+DFormOtp - A type-safe wrapper around Bootstrap Vue Next's BFormOtp component. A one-time-code / PIN input rendered as a row of single-character boxes. `v-model` is a `string[]` with one entry per box; use `length` to set the number of boxes and `separator` to render a divider between them.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DFormOtpExampleRaw}
+>
+  <DFormOtpExample client:load />
+</ComponentExample>
+
+## Slots
+
+This component forwards all slots dynamically from the underlying Bootstrap Vue Next component.
+
+## Bootstrap Vue Next Wrapper
+
+This is a lightweight type-safe wrapper around the corresponding Bootstrap Vue Next component.
+It provides API stability and forwards all props, events, and slots.
+
+**For complete API documentation** (props, events, methods), refer to the [Bootstrap Vue Next documentation](https://bootstrap-vue-next.github.io/bootstrap-vue-next/).
