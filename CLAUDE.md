@@ -12,14 +12,14 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
-2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (55 base components)
-3. **DX* Extended Components** - Complex dashboard layouts and forms (6 components)
+2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (57 base components)
+3. **DX* Extended Components** - Complex dashboard layouts and forms (8 components)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 61 components** (55 base + 6 extended)
+**Total: 65 components** (57 base + 8 extended)
 
 ## Project Structure
 
@@ -842,6 +842,27 @@ When releasing a new version:
 
 **Issue**: Hardcoded colours in components
 **Solution**: Always use `var(--bs-*)` CSS variables, never hardcoded hex values
+
+### Bumping the vitest browser-mode family (vitest / @vitest/browser / @vitest/browser-playwright)
+
+**Issue**: These three share a *tight, exact-version* peer cycle
+(`@vitest/browser-playwright` peer-requires `@vitest/browser` **and** `vitest`
+at the same exact version, and vice-versa). `npm install vitest@<new>` alone —
+even listing all three with a caret — fails with `ERESOLVE` because npm clings
+to the already-installed older version of one family member. Compounded by the
+global `~/.npmrc` `min-release-age` (`before=<date>`), which can *hide the
+newest patch of just one* of the three from the resolver, so npm can't assemble
+a consistent set and the conflict looks inexplicable.
+
+**Solution**:
+1. Pick a patched version whose release of **all three** predates the
+   `min-release-age` cutoff (check `npm config get before`; a version published
+   after it is invisible to the resolver). Newer ≠ installable.
+2. `npm uninstall vitest @vitest/browser @vitest/browser-playwright` first, then
+   `npm install -D vitest@<v> @vitest/browser@<v> @vitest/browser-playwright@<v>`
+   at the **same** version. The uninstall breaks the cyclic pin; the fresh
+   install resolves cleanly. (`vitest-browser-vue` has a loose `^4.0.0-0` peer
+   and rides along.)
 
 ## MCP Server - AI-Agent-Friendly Documentation
 
