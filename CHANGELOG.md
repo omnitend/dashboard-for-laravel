@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-06-30
+
+### Changed
+- **Upgraded bootstrap-vue-next from 0.40.8 to 0.45.6** (still bundled).
+  This crosses several pre-1.0 breaking releases; the affected wrappers
+  were updated so this library's own API is unchanged:
+  - Field `formatter` functions keep the historic `(value, key, item)`
+    signature — `DTable` shields the single-object signature bvn 0.43
+    introduced.
+  - `DTable`'s `row-clicked` still emits `(item, index, event)`.
+  - `DToaster` now renders bvn's unified `BOrchestrator` (bvn 0.44
+    removed `BToastOrchestrator`).
+  - `DButton` no longer defaults `size` to the removed `'md'` value.
+- **Minimum Vue peer dependency raised to `^3.5.13`** (required by bvn 0.45).
+
+### Fixed
+- `DCarousel` / `DCarouselSlide` are now thin re-exports of the underlying
+  bootstrap-vue-next components. bvn 0.45 collects carousel slides by
+  scanning slot vnodes for the slide component type, which a wrapper
+  component in between broke.
+
+### Notes
+- `DTable`'s `sort-by` is an array (`BTableSortBy[]`); the bare string form
+  is no longer accepted by bvn. (`DXTable` already used the array form.)
+- Standalone radios must live inside a `DFormRadioGroup` — radios bind to a
+  group context in bvn 0.45.
+
 ## [0.5.0] - 2026-06-22
 
 ### Added

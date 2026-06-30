@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { BToastOrchestrator } from "bootstrap-vue-next";
+// bootstrap-vue-next 0.44 removed BToastOrchestrator; the toast/modal/popover
+// renderer is now the unified BOrchestrator (also included inside BApp).
+import { BOrchestrator } from "bootstrap-vue-next";
 
 defineOptions({
   inheritAttrs: false,
@@ -7,10 +9,10 @@ defineOptions({
 </script>
 
 <template>
-  <BToastOrchestrator v-bind="$attrs">
+  <BOrchestrator v-bind="$attrs">
     <!-- Dynamically pass through all named slots with their props -->
     <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps" />
     </template>
-  </BToastOrchestrator>
+  </BOrchestrator>
 </template>
