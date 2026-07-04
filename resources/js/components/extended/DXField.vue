@@ -144,7 +144,7 @@
                 <span class="input-group-text">{{ field.currencySymbol || "£" }}</span>
             </template>
             <DFormInput
-                v-model="fieldValue"
+                v-model="numericInputValue"
                 type="number"
                 :required="field.required"
                 :placeholder="field.placeholder"
@@ -271,6 +271,41 @@ const fieldValue = computed({
             ? getByPath(props.form.data, valuePath.value)
             : (props.form.data as Record<string, any>)[props.field.key],
     set: (value: any) => setValue(value),
+});
+
+// For `percentage` fields with `asFraction`, the model holds a 0–1 fraction but
+// the input shows/edits a 0–100 percentage. Scale on read/write, rounding away
+// binary-float artefacts (0.2 * 100 = 20.000000000000004). Currency and plain
+// percentage fields pass straight through.
+const isFractionPercentage = computed(
+    () => props.field.type === "percentage" && props.field.asFraction === true,
+);
+
+const numericInputValue = computed({
+    get: () => {
+        const value = fieldValue.value;
+        if (!isFractionPercentage.value) return value;
+        if (value === null || value === undefined || value === "") return value;
+        const num = Number(value);
+        if (!Number.isFinite(num)) return value;
+        return Math.round(num * 100 * 1e6) / 1e6;
+    },
+    set: (value: any) => {
+        if (!isFractionPercentage.value) {
+            setValue(value);
+            return;
+        }
+        if (value === null || value === undefined || value === "") {
+            setValue(value);
+            return;
+        }
+        const num = Number(value);
+        if (!Number.isFinite(num)) {
+            setValue(value);
+            return;
+        }
+        setValue(Math.round((num / 100) * 1e9) / 1e9);
+    },
 });
 
 const NUMERIC_TYPES: ReadonlySet<FieldType> = new Set([

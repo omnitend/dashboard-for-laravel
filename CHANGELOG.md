@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`asFraction` option for `percentage` fields.** When set, the field treats the
+  underlying model value as a 0–1 fraction while showing/editing it as a 0–100
+  percentage: the model keeps the fraction (e.g. `0.2`), the input shows `20`.
+  Scaling rounds away binary-float artefacts (`0.2 * 100 = 20.000000000000004`).
+  Off by default (the value is taken as a whole percentage). Use for values stored
+  as ratios — VAT rates, discounts, etc.
+
 ## [0.8.0] - 2026-07-04
 
 ### Added

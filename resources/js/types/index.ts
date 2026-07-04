@@ -105,6 +105,15 @@ export interface FieldDefinition {
     /** Symbol shown for `currency` fields (default: the locale's, "£"). */
     currencySymbol?: string;
 
+    /**
+     * For `percentage` fields: treat the underlying model value as a 0–1
+     * fraction while showing/editing it as a 0–100 percentage. The model keeps
+     * the fraction (e.g. `0.2`), the input shows `20`. Off by default (the value
+     * is taken as a whole percentage). Use for fields stored as ratios (VAT
+     * rates, discounts, …).
+     */
+    asFraction?: boolean;
+
     /** `accept` attribute for `image`/`file` inputs (e.g. "image/*"). */
     accept?: string;
 
