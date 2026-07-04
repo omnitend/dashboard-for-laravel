@@ -32,7 +32,15 @@
           </div>
         </DCol>
 
-        <DCol cols="auto">
+        <DCol cols="auto" class="d-flex align-items-center gap-3">
+          <!-- Page-level primary actions, right-aligned next to the user menu -->
+          <div
+            v-if="$slots.actions"
+            class="dashboard-navbar__actions d-flex align-items-center gap-2"
+          >
+            <slot name="actions" :page-title="pageTitle" />
+          </div>
+
           <slot name="user-menu" :user="user">
             <DDropdown
               v-if="user"

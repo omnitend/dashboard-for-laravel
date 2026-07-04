@@ -170,5 +170,23 @@ describe('DXDashboard', () => {
       const customIcon = screen.container.querySelector('.custom-hamburger');
       expect(customIcon).toBeTruthy();
     });
+
+    it('forwards page-level actions via the navbar-actions slot', async () => {
+      const screen = render(DXDashboard, {
+        props: {
+          navigation: sampleNavigation,
+          currentUrl: '/dashboard',
+          title: 'My App',
+          pageTitle: 'Customers',
+        },
+        slots: {
+          'navbar-actions': '<button class="new-item-btn">New customer</button>',
+        },
+      });
+
+      const actionButton = screen.container.querySelector('.new-item-btn');
+      expect(actionButton).toBeTruthy();
+      expect(actionButton?.textContent).toBe('New customer');
+    });
   });
 });

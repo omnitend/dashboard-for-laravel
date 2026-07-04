@@ -113,5 +113,43 @@ describe('DXDashboardNavbar', () => {
       const customSearch = screen.container.querySelector('.custom-search');
       expect(customSearch).toBeTruthy();
     });
+
+    it('renders page-level primary actions via the actions slot', async () => {
+      const screen = render(DXDashboardNavbar, {
+        props: {
+          pageTitle: 'Customers',
+        },
+        slots: {
+          actions: '<button class="new-item-btn">New customer</button>',
+        },
+      });
+
+      const actionButton = screen.container.querySelector('.new-item-btn');
+      expect(actionButton).toBeTruthy();
+      expect(actionButton?.textContent).toBe('New customer');
+      // Wrapper only appears when the slot is provided.
+      expect(screen.container.querySelector('.dashboard-navbar__actions')).toBeTruthy();
+    });
+
+    it('omits the actions wrapper when no actions slot is provided', async () => {
+      const screen = render(DXDashboardNavbar, {
+        props: { pageTitle: 'Customers', user: { name: 'Jo', email: 'jo@x.com' } },
+      });
+
+      expect(screen.container.querySelector('.dashboard-navbar__actions')).toBeNull();
+    });
+
+    it('exposes pageTitle to the actions slot', async () => {
+      const screen = render(DXDashboardNavbar, {
+        props: {
+          pageTitle: 'Customers',
+        },
+        slots: {
+          actions: `<template #actions="{ pageTitle }"><span class="ctx">{{ pageTitle }}</span></template>`,
+        },
+      });
+
+      expect(screen.container.querySelector('.ctx')?.textContent).toBe('Customers');
+    });
   });
 });

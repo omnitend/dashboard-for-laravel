@@ -90,6 +90,7 @@ const handleLogout = () => {
 <SlotsTable client:load slots={[
   { name: 'menu-icon', description: 'Custom hamburger menu icon (default: three horizontal lines SVG)' },
   { name: 'search', description: 'Search input or component for the centre of the navbar' },
+  { name: 'actions', props: 'pageTitle', description: 'Page-level primary actions (e.g. a Create button), right-aligned next to the user menu. Receives pageTitle as slot prop' },
   { name: 'user-menu', description: 'Complete custom user menu (replaces default dropdown). Receives user as slot prop' },
   { name: 'user-icon', description: 'Custom user avatar/icon. Receives initial (first letter of name) as slot prop' },
   { name: 'user-menu-items', description: 'Custom dropdown menu items for the user dropdown. Receives user as slot prop' },
