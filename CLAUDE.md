@@ -843,6 +843,29 @@ When releasing a new version:
 **Issue**: Hardcoded colours in components
 **Solution**: Always use `var(--bs-*)` CSS variables, never hardcoded hex values
 
+### Overriding Bootstrap Vue Next component styling (theme.scss)
+
+Two non-obvious gotchas when restyling BVN components in `theme.scss` (proven
+during the v0.8.0 toast restyle and sidebar accordion):
+
+- **Toast variants use Bootstrap's `.text-bg-*` helper, which is `!important`.**
+  BVN maps `useToast().create({ variant })` to `.text-bg-{variant}`, and
+  Bootstrap's `.text-bg-*` helpers set `background-color`/`color` with
+  `!important` by design. So overriding a toast's variant background REQUIRES
+  `!important` (a more-specific selector alone loses). This is the standard way
+  to override a Bootstrap utility/helper, not a hack. The clean long-term route
+  (no `!important`) is to wrap `useToast().create()` so `variant` becomes a
+  custom class + theme via `--bs-toast-*` vars — tracked as an issue.
+- **BVN wraps each toast in a `<span>`, defeating Bootstrap's toast spacing.**
+  Bootstrap's built-in `.toast:not(:last-child)` gap doesn't apply because the
+  toasts are no longer direct children of `.toast-container`. Put the gap on the
+  `.toast` itself (`margin-bottom`), not on the fragile span wrapper.
+- **CSS grid `0fr→1fr` collapse + Bootstrap `.nav` reflow.** `.nav` is
+  `flex-wrap: wrap`; while a grid row collapses toward height 0, a wrapping
+  flex-column can't stack its items in the tiny height and wraps them into
+  side-by-side columns — a visible reflow flash. Add `flex-wrap: nowrap` to the
+  collapsing list. (See `DXDashboardSidebar.vue`.)
+
 ### Bumping the vitest browser-mode family (vitest / @vitest/browser / @vitest/browser-playwright)
 
 **Issue**: These three share a *tight, exact-version* peer cycle
