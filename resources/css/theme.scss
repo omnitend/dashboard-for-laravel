@@ -199,6 +199,66 @@ $dashboard-navbar-height: 64px;
 }
 
 // ----------------------------------------------------------------------------
+// Toasts
+// ----------------------------------------------------------------------------
+// Bootstrap Vue Next renders toasts with Bootstrap's `.text-bg-{variant}`
+// utility, which fills the whole toast with a saturated colour and white text —
+// loud "candy" blocks that are wrong for a dashboard. Restyle them as a calm,
+// neutral surface with a subtle semantic tint + a coloured left accent rail and
+// progress bar. Colour still signals the toast type, but the bold palette stays
+// where it belongs (actions, badges, selected states).
+
+.toast {
+  overflow: hidden; // clip the bottom progress bar to the rounded corners
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  background-color: $white;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  // BVN wraps each toast in a <span>, which defeats Bootstrap's built-in
+  // `.toast:not(:last-child)` spacing (toasts are no longer direct children of
+  // the container). Add the gap on the toast itself so it doesn't rely on that.
+  margin-bottom: 0.75rem;
+
+  .toast-header {
+    background-color: transparent;
+    border-bottom: 0; // remove the two-tone header/body split
+    padding-bottom: 0.25rem;
+    color: $dark; // dark, high-contrast title
+    font-weight: 600;
+  }
+
+  .toast-body {
+    padding-top: 0.25rem;
+    color: $secondary; // muted message text
+  }
+
+  // Hide the auto-dismiss countdown bar — the ticking animation reads as
+  // stressful/urgent, which is wrong for a passive notification. Auto-dismiss
+  // still works; only its visual indicator is removed.
+  .progress {
+    display: none;
+  }
+
+  // Semantic variants: subtle tinted surface. Overrides the saturated
+  // `.text-bg-*` fill (compound selector wins on specificity); the dark title /
+  // muted body from the base rules above stay.
+  @each $name, $color in (
+    "success": $success,
+    "danger": $danger,
+    "warning": $warning,
+    "info": $info
+  ) {
+    &.text-bg-#{$name} {
+      // !important overrides Bootstrap's `.text-bg-*` helper, which sets a
+      // saturated background-color !important that BVN applies per variant.
+      background-color: mix($color, $white, 8%) !important;
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
 // Custom Utilities
 // ----------------------------------------------------------------------------
 
