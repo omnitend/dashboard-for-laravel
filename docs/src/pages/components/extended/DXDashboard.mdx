@@ -28,6 +28,8 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
   { name: 'currentUrl', type: 'string', default: 'required', description: 'Current URL path for active state detection' },
   { name: 'title', type: 'string', default: '\'Dashboard\'', description: 'Dashboard title shown in sidebar brand' },
   { name: 'pageTitle', type: 'string', default: '\'\'', description: 'Page title shown in navbar' },
+  { name: 'fluid', type: 'boolean', default: 'false', description: 'Render page content full-width and left-aligned instead of the default centred reading-width (col-xl-10) column. For wide tables / admin pages' },
+  { name: 'contentClass', type: 'string', default: '-', description: 'Extra class(es) applied to the content container/column' },
   { name: 'user', type: '{ name: string; email: string } | null', default: 'null', description: 'User object for navbar dropdown' },
   { name: 'logoutUrl', type: 'string', default: '\'/logout\'', description: 'Logout URL for navbar dropdown' },
   { name: 'storageKey', type: 'string', default: '\'dashboard-sidebar-hidden\'', description: 'LocalStorage key for sidebar state persistence' },

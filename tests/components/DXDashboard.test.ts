@@ -171,6 +171,38 @@ describe('DXDashboard', () => {
       expect(customIcon).toBeTruthy();
     });
 
+    it('centres content in a reading-width column by default', async () => {
+      const screen = render(DXDashboard, {
+        props: { navigation: sampleNavigation, currentUrl: '/dashboard' },
+        slots: { default: '<div class="page-body">content</div>' },
+      });
+
+      const main = screen.container.querySelector('.dashboard-main');
+      expect(main?.querySelector('.justify-content-center')).toBeTruthy();
+      // The body sits inside a centred column.
+      const col = main?.querySelector('.justify-content-center [class*="col"]');
+      expect(col?.querySelector('.page-body')).toBeTruthy();
+    });
+
+    it('renders full-width left-aligned content when fluid, with contentClass', async () => {
+      const screen = render(DXDashboard, {
+        props: {
+          navigation: sampleNavigation,
+          currentUrl: '/dashboard',
+          fluid: true,
+          contentClass: 'my-wide',
+        },
+        slots: { default: '<div class="page-body">content</div>' },
+      });
+
+      const main = screen.container.querySelector('.dashboard-main');
+      // No centring row/column in fluid mode.
+      expect(main?.querySelector('.justify-content-center')).toBeNull();
+      const wrap = main?.querySelector('.my-wide');
+      expect(wrap).toBeTruthy();
+      expect(wrap?.querySelector('.page-body')).toBeTruthy();
+    });
+
     it('forwards page-level actions via the navbar-actions slot', async () => {
       const screen = render(DXDashboard, {
         props: {
