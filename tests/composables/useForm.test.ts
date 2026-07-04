@@ -87,4 +87,20 @@ describe('useForm multipart submission', () => {
 
     expect(postSpy.mock.calls[0][1] instanceof FormData).toBe(false);
   });
+
+  it('spoofs _method for a transform that returns FormData directly (PUT)', async () => {
+    const postSpy = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: {}, response: {} as Response });
+
+    const form = useForm({ name: 'Ada' });
+    const fd = new FormData();
+    fd.append('name', 'Ada');
+    await form.put('/api/users/1', { transform: () => fd });
+
+    // A raw multipart PUT wouldn't be parsed by PHP; must become POST + _method.
+    expect(postSpy).toHaveBeenCalled();
+    const body = postSpy.mock.calls[0][1] as FormData;
+    expect(body.get('_method')).toBe('PUT');
+  });
 });

@@ -1,0 +1,54 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: Charts
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import DXChartExample from '../../../examples/DXChartExample.vue';
+import DXChartExampleRaw from '../../../examples/DXChartExample.vue?raw';
+
+# Charts
+
+Thin, themed wrappers around [Chart.js](https://www.chartjs.org/) via
+`vue-chartjs`: `DXBarChart`, `DXLineChart`, and `DXDoughnutChart`. They apply the
+Bootstrap palette (read from the live theme) and dashboard-friendly defaults
+(no x-axis gridlines, formatted value ticks and tooltips, responsive, legend
+hidden for a single series). Pass `labels` + `datasets`; `options` deep-merges
+over the defaults so you can override anything Chart.js supports.
+
+## Optional peer dependencies
+
+Charts require `chart.js` and `vue-chartjs`, which are **optional** peer
+dependencies — install them only if you use the chart components:
+
+```bash
+npm install chart.js vue-chartjs
+```
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXChartExampleRaw}
+>
+  <DXChartExample client:only="vue" />
+</ComponentExample>
+
+## Props
+
+`DXBarChart` and `DXLineChart`:
+
+<PropsTable client:load props={[
+  { name: 'labels', type: 'string[]', required: 'Yes', default: '-', description: 'X-axis category labels' },
+  { name: 'datasets', type: 'ChartDataset[]', required: 'Yes', default: '-', description: 'Chart.js datasets; colours are themed when a dataset omits them' },
+  { name: 'options', type: 'object', required: 'No', default: '-', description: 'Chart.js options, deep-merged over the themed defaults' },
+  { name: 'valueFormat', type: "'number' | 'currency' | 'percent'", required: 'No', default: '-', description: 'Format value-axis ticks and tooltips' },
+  { name: 'currencySymbol', type: 'string', required: 'No', default: "'£'", description: 'Currency symbol for valueFormat: "currency"' },
+  { name: 'locale', type: 'string', required: 'No', default: '-', description: 'Locale for number formatting' },
+  { name: 'showLegend', type: 'boolean', required: 'No', default: 'multi-series', description: 'Show the legend (defaults to true when there is more than one dataset)' },
+]} />
+
+`DXDoughnutChart` is the same, minus the value axis, plus a `data` convenience
+prop (`number[]`, one value per label) as an alternative to `datasets`, and
+`showLegend` defaults to `true`.
