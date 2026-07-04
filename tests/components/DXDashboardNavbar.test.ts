@@ -114,6 +114,29 @@ describe('DXDashboardNavbar', () => {
       expect(customSearch).toBeTruthy();
     });
 
+    it('wraps the search slot in the responsive search region', async () => {
+      const screen = render(DXDashboardNavbar, {
+        props: { pageTitle: 'Dashboard' },
+        slots: {
+          search: '<input class="custom-search" />',
+        },
+      });
+
+      // The search sits in its own flex region so it can drop to a full-width
+      // row below the `md` breakpoint (CSS-driven).
+      const region = screen.container.querySelector('.dashboard-navbar__search');
+      expect(region).toBeTruthy();
+      expect(region?.querySelector('.custom-search')).toBeTruthy();
+    });
+
+    it('omits the search region when no search slot is provided', async () => {
+      const screen = render(DXDashboardNavbar, {
+        props: { pageTitle: 'Dashboard' },
+      });
+
+      expect(screen.container.querySelector('.dashboard-navbar__search')).toBeNull();
+    });
+
     it('renders page-level primary actions via the actions slot', async () => {
       const screen = render(DXDashboardNavbar, {
         props: {

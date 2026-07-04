@@ -6,9 +6,11 @@
 -->
 <template>
   <header class="dashboard-navbar bg-white border-bottom">
-    <DContainer fluid class="h-100">
-      <DRow class="h-100 align-items-center">
-        <DCol class="d-flex align-items-center gap-3">
+    <DContainer fluid>
+      <!-- Flex bar that wraps: below `md` the search drops to its own
+           full-width row beneath the toggle/title/user-menu row. -->
+      <div class="dashboard-navbar__bar d-flex flex-wrap align-items-center gap-3">
+        <div class="dashboard-navbar__start d-flex align-items-center gap-3">
           <DButton
             variant="link"
             class="text-dark p-0"
@@ -33,14 +35,17 @@
           </DButton>
 
           <h4 v-if="pageTitle" class="mb-0 fw-semibold d-none d-md-block">{{ pageTitle }}</h4>
+        </div>
 
-          <div class="flex-grow-1 d-flex justify-content-center">
-            <!-- @slot Search input or component, centred in the navbar. -->
-            <slot name="search" />
-          </div>
-        </DCol>
+        <div
+          v-if="$slots.search"
+          class="dashboard-navbar__search d-flex justify-content-center"
+        >
+          <!-- @slot Search input or component. Centred in the bar on wider screens; drops to its own full-width row below the `md` breakpoint. -->
+          <slot name="search" />
+        </div>
 
-        <DCol cols="auto" class="d-flex align-items-center gap-3">
+        <div class="dashboard-navbar__end d-flex align-items-center gap-3">
           <!-- Page-level primary actions, right-aligned next to the user menu -->
           <div
             v-if="$slots.actions"
@@ -84,16 +89,14 @@
               <slot name="user-menu-items" :user="user" />
             </DDropdown>
           </slot>
-        </DCol>
-      </DRow>
+        </div>
+      </div>
     </DContainer>
   </header>
 </template>
 
 <script setup lang="ts">
 import DContainer from "../base/DContainer.vue";
-import DRow from "../base/DRow.vue";
-import DCol from "../base/DCol.vue";
 import DButton from "../base/DButton.vue";
 import DDropdown from "../base/DDropdown.vue";
 
@@ -130,6 +133,40 @@ const getUserInitial = (user: { name: string } | null) => {
   position: sticky;
   top: 0;
   z-index: 1000;
+}
+
+.dashboard-navbar__bar {
+  min-height: 3.5rem;
+  padding: 0.5rem 0;
+}
+
+/* Push the user-menu / actions cluster to the right. */
+.dashboard-navbar__end {
+  margin-left: auto;
+}
+
+/*
+ * Mobile-first: the search sits on its own full-width row below the toggle /
+ * title / user-menu row (order after both, flex-basis 100% forces the wrap).
+ * From `md` up it moves inline between the title and the user menu and grows to
+ * fill the middle, centring its content.
+ */
+.dashboard-navbar__search {
+  order: 3;
+  flex: 0 0 100%;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .dashboard-navbar__search {
+    order: 1;
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .dashboard-navbar__end {
+    order: 2;
+  }
 }
 
 .user-avatar {

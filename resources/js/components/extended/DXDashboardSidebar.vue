@@ -13,7 +13,8 @@
     class="dashboard-sidebar text-white"
     :class="{
       'sidebar-collapsed': collapsed,
-      'sidebar-hidden': hidden
+      'sidebar-hidden': hidden,
+      'sidebar-collapsible-groups': collapsibleGroups && !collapsed
     }"
   >
     <div class="sidebar-header p-3">
@@ -34,7 +35,7 @@
       </div>
     </div>
 
-    <nav class="sidebar-nav p-3">
+    <nav ref="navRef" class="sidebar-nav p-3">
       <template v-for="(group, groupIndex) in navigation" :key="groupIndex">
         <div
           v-if="group.visible !== false"
@@ -48,7 +49,7 @@
             class="nav-group-toggle text-uppercase small fw-semibold mb-2 px-2"
             :aria-expanded="isGroupExpanded(groupIndex, group)"
             :aria-controls="groupItemsId(groupIndex)"
-            @click="toggleGroup(groupIndex)"
+            @click="toggleGroup(groupKey(group, groupIndex))"
           >
             <span class="nav-group-toggle-label">{{ group.label }}</span>
             <svg
@@ -136,6 +137,14 @@
         </div>
       </template>
     </nav>
+
+    <div v-if="$slots.footer" class="sidebar-footer p-3">
+      <!--
+        @slot Utility/secondary links pinned to the bottom of the sidebar (help, changelog, sign-out, …), below the nav groups.
+        @binding {boolean} collapsed Whether the sidebar rail is collapsed to icons only.
+      -->
+      <slot name="footer" :collapsed="collapsed" />
+    </div>
   </aside>
 </template>
 
@@ -180,9 +189,18 @@ defineEmits<{
 }>();
 
 const sidebarRef = ref<HTMLElement | null>(null);
+const navRef = ref<HTMLElement | null>(null);
 
 const uid = useId();
 const groupItemsId = (index: number): string => `${uid}-nav-group-${index}`;
+
+// Stable identity for a group's open/closed state. Keyed by `key` (explicit),
+// else `label` (toggle groups always have one), else the index. Using a stable
+// key means reordering `navigation` or flipping a group's `visible` at runtime
+// keeps a manually-opened group's open state attached to the right group,
+// instead of leaking to whatever now sits at that index.
+const groupKey = (group: NavigationGroup, index: number): string =>
+  group.key ?? group.label ?? `__group_${index}`;
 
 const brandInitial = computed(() => {
   return props.title.charAt(0).toUpperCase();
@@ -245,18 +263,28 @@ const isGroupToggle = (group: NavigationGroup): boolean =>
 const isGroupExpanded = (index: number, group: NavigationGroup): boolean => {
   if (props.collapsed) return true;
   if (!isGroupToggle(group)) return true;
-  return openGroups.value.has(index);
+  return openGroups.value.has(groupKey(group, index));
 };
 
-const openGroups = ref<Set<number>>(new Set());
+// Open groups tracked by stable key (see `groupKey`), not raw array index.
+const openGroups = ref<Set<string>>(new Set());
 
-const computeInitialOpenGroups = (): Set<number> => {
-  const next = new Set<number>();
+// Key of the group containing the active route, or null if none.
+const activeGroupKey = computed<string | null>(() => {
+  const index = activeGroupIndex.value;
+  if (index < 0) return null;
+  return groupKey(props.navigation[index], index);
+});
+
+const computeInitialOpenGroups = (): Set<string> => {
+  const next = new Set<string>();
   if (props.autoCollapseInactiveGroups) {
-    if (activeGroupIndex.value >= 0) next.add(activeGroupIndex.value);
+    if (activeGroupKey.value !== null) next.add(activeGroupKey.value);
   } else {
     props.navigation.forEach((group, index) => {
-      if (group.visible !== false && group.collapsible !== false) next.add(index);
+      if (group.visible !== false && group.collapsible !== false) {
+        next.add(groupKey(group, index));
+      }
     });
   }
   return next;
@@ -266,15 +294,15 @@ const computeInitialOpenGroups = (): Set<number> => {
 // no post-mount height measurement, so no open/close flicker on load.
 openGroups.value = computeInitialOpenGroups();
 
-const toggleGroup = (index: number): void => {
-  const wasOpen = openGroups.value.has(index);
+const toggleGroup = (key: string): void => {
+  const wasOpen = openGroups.value.has(key);
   if (props.autoCollapseInactiveGroups) {
-    openGroups.value = wasOpen ? new Set() : new Set([index]);
+    openGroups.value = wasOpen ? new Set() : new Set([key]);
     return;
   }
   const next = new Set(openGroups.value);
-  if (wasOpen) next.delete(index);
-  else next.add(index);
+  if (wasOpen) next.delete(key);
+  else next.add(key);
   openGroups.value = next;
 };
 
@@ -282,34 +310,34 @@ const toggleGroup = (index: number): void => {
 // it (closing others); otherwise it just adds it to the open set. No-op when
 // there is no active group (e.g. a detail page not present in the nav).
 const openActiveGroup = (): void => {
-  if (!props.collapsibleGroups || activeGroupIndex.value < 0) return;
+  if (!props.collapsibleGroups || activeGroupKey.value === null) return;
   if (props.autoCollapseInactiveGroups) {
-    openGroups.value = new Set([activeGroupIndex.value]);
+    openGroups.value = new Set([activeGroupKey.value]);
   } else {
     const next = new Set(openGroups.value);
-    next.add(activeGroupIndex.value);
+    next.add(activeGroupKey.value);
     openGroups.value = next;
   }
 };
 
 const scrollToActiveItem = async (smooth = false) => {
   await nextTick();
-  if (!sidebarRef.value) return;
+  const container = navRef.value;
+  if (!container) return;
 
-  const activeLink = sidebarRef.value.querySelector('.nav-link.active') as HTMLElement;
-  if (activeLink) {
-    const sidebar = sidebarRef.value;
-    const linkRect = activeLink.getBoundingClientRect();
-    const sidebarRect = sidebar.getBoundingClientRect();
+  const activeLink = container.querySelector('.nav-link.active') as HTMLElement | null;
+  if (!activeLink) return;
 
-    // Calculate the position to scroll to (center the active item)
-    const scrollTop = activeLink.offsetTop - (sidebarRect.height / 2) + (linkRect.height / 2);
+  // Centre the active item. `offsetTop` is relative to the nav (its offset
+  // parent — `.sidebar-nav` is positioned), so it measures correctly whether or
+  // not a footer is pinned below.
+  const scrollTop =
+    activeLink.offsetTop - container.clientHeight / 2 + activeLink.offsetHeight / 2;
 
-    sidebar.scrollTo({
-      top: scrollTop,
-      behavior: smooth ? 'smooth' : 'instant',
-    });
-  }
+  container.scrollTo({
+    top: scrollTop,
+    behavior: smooth ? 'smooth' : 'instant',
+  });
 };
 
 // Scroll to active item on initial mount (instant, no animation)
@@ -318,9 +346,14 @@ onMounted(() => {
 });
 
 // Client-side route change: open the newly active group, then scroll to it.
+// Scrolling into a group that was collapsed kicks off its 0.2s expand, so the
+// first scroll centres against a still-growing group; re-centre once it settles.
 watch(() => props.currentUrl, () => {
   openActiveGroup();
   scrollToActiveItem(true);
+  if (typeof window !== 'undefined') {
+    window.setTimeout(() => scrollToActiveItem(true), 250);
+  }
 });
 
 // The active group can change without a currentUrl change — e.g. navigation
@@ -339,15 +372,23 @@ watch(activeGroupIndex, () => {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  /* Column layout: fixed header, scrolling nav, pinned footer. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-footer {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .brand-container {
@@ -373,12 +414,30 @@ watch(activeGroupIndex, () => {
 }
 
 .sidebar-nav {
+  /* The nav is the scroll region (header + footer stay put). `position:
+     relative` makes it the offset parent for scroll-to-active measurements.
+     `min-height: 0` lets this flex item shrink below its content height so
+     `overflow-y: auto` actually scrolls (without it, a flex item's default
+     `min-height: auto` keeps it at content height and it overflows the rail). */
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
 .nav-group-label {
   font-size: 0.75rem;
   letter-spacing: 0.5px;
+}
+
+/* When collapsible groups are on, give the static (non-collapsible) group
+   labels the same height as the toggle headers so a sidebar mixing both keeps
+   an even vertical rhythm. */
+.sidebar-collapsible-groups .nav-group-label {
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
 }
 
 /* Collapsible group toggle header */
@@ -446,12 +505,21 @@ watch(activeGroupIndex, () => {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows 0.2s ease, opacity 0.2s ease;
+  /* `inert` (set in the template) removes closed links from tab order in modern
+     browsers; `visibility: hidden` is the fallback that also removes them where
+     `inert` is unsupported. Delay the visibility flip until after the fade so
+     the close animation still plays. */
+  visibility: hidden;
+  transition: grid-template-rows 0.2s ease, opacity 0.2s ease,
+    visibility 0s linear 0.2s;
 }
 
 .nav-group-open > .nav-group-items--collapsible {
   grid-template-rows: 1fr;
   opacity: 1;
+  visibility: visible;
+  transition: grid-template-rows 0.2s ease, opacity 0.2s ease,
+    visibility 0s linear 0s;
 }
 
 .nav-group-items--collapsible > .nav {
@@ -497,21 +565,21 @@ watch(activeGroupIndex, () => {
   padding: 0.625rem;
 }
 
-/* Custom scrollbar */
-.dashboard-sidebar::-webkit-scrollbar {
+/* Custom scrollbar (the nav is the scroll region) */
+.sidebar-nav::-webkit-scrollbar {
   width: 6px;
 }
 
-.dashboard-sidebar::-webkit-scrollbar-track {
+.sidebar-nav::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.1);
 }
 
-.dashboard-sidebar::-webkit-scrollbar-thumb {
+.sidebar-nav::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
 
-.dashboard-sidebar::-webkit-scrollbar-thumb:hover {
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 

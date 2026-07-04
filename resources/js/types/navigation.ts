@@ -10,6 +10,13 @@ export interface NavigationItem {
 
 export interface NavigationGroup {
   label?: string;
+  /**
+   * Stable identifier for the group's collapsible open/closed state. Defaults
+   * to `label` (then the array index). Set this when a menu can be reordered at
+   * runtime, or two groups share a label, so a manually-opened group keeps its
+   * state attached to the right group.
+   */
+  key?: string;
   items: NavigationItem[];
   /**
    * Per-group override for the sidebar's `collapsibleGroups` behaviour.

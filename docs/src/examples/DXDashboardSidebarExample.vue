@@ -42,6 +42,18 @@
             </span>
           </a>
         </template>
+
+        <!-- Utility links pinned to the bottom of the sidebar -->
+        <template #footer="{ collapsed }">
+          <a href="/help" class="footer-link" :title="collapsed ? 'Help' : undefined">
+            <span class="nav-icon">❔</span>
+            <span v-if="!collapsed">Help</span>
+          </a>
+          <a href="/changelog" class="footer-link" :title="collapsed ? 'What\'s new' : undefined">
+            <span class="nav-icon">✨</span>
+            <span v-if="!collapsed">What's new</span>
+          </a>
+        </template>
       </DXDashboardSidebar>
 
       <div class="demo-content">
@@ -155,5 +167,20 @@ const handleNavClick = (item: any) => {
 .nav-icon {
   font-size: 1.25rem;
   line-height: 1;
+}
+
+.footer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  color: var(--bs-white);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 </style>
