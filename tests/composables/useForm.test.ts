@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { reactive } from 'vue';
 import { useForm } from '../../resources/js/composables/useForm';
+import { api } from '../../resources/js/utils/api';
 
 describe('useForm initial-data cloning', () => {
   it('seeds from a reactive Proxy array/object default without a DataCloneError', () => {
@@ -37,5 +38,53 @@ describe('useForm initial-data cloning', () => {
     form.reset();
     expect(form.data.lines.length).toBe(1);
     expect(form.data.lines[0].label).toBe('seed');
+  });
+});
+
+describe('useForm multipart submission', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sends FormData when a field holds a File', async () => {
+    const postSpy = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: {}, response: {} as Response });
+    const file = new File(['x'], 'avatar.png', { type: 'image/png' });
+
+    const form = useForm({ name: 'Ada', avatar: file, active: true });
+    await form.post('/api/users');
+
+    const body = postSpy.mock.calls[0][1];
+    expect(body instanceof FormData).toBe(true);
+    expect((body as FormData).get('name')).toBe('Ada');
+    expect((body as FormData).get('avatar')).toBeInstanceOf(File);
+    // Booleans serialise as Laravel-friendly "1"/"0".
+    expect((body as FormData).get('active')).toBe('1');
+  });
+
+  it('spoofs _method=PUT for a multipart update (PHP only parses multipart on POST)', async () => {
+    const postSpy = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: {}, response: {} as Response });
+    const form = useForm({ avatar: new File(['x'], 'a.png') });
+
+    await form.put('/api/users/1');
+
+    // put → POST + _method=PUT
+    expect(postSpy).toHaveBeenCalled();
+    const body = postSpy.mock.calls[0][1] as FormData;
+    expect(body.get('_method')).toBe('PUT');
+  });
+
+  it('sends plain JSON (not FormData) when there are no files', async () => {
+    const postSpy = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: {}, response: {} as Response });
+
+    const form = useForm({ name: 'Ada' });
+    await form.post('/api/users');
+
+    expect(postSpy.mock.calls[0][1] instanceof FormData).toBe(false);
   });
 });

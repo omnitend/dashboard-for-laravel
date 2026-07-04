@@ -220,7 +220,11 @@ Supported field types:
 - `switch` - Toggle with contextual on/off text and an on-state style (`textWhenTrue` / `textWhenFalse`)
 - `radio` - Radio button group (requires `options`)
 - `currency`, `percentage` - Numeric input with a `£`/`%` affix
-- `image`, `file` - File input (`image` shows a preview)
+- `image`, `file` - File input (`image` previews the selection, or an existing
+  URL-string value). When a form field holds a selected `File`, `useForm`
+  submits the whole form as `multipart/form-data` automatically — a `put`/`patch`
+  is sent as `POST` with a `_method` field (PHP only parses multipart bodies on
+  POST, so Laravel reads `_method` to route it). No extra config needed.
 - `component` - Renders your own `field.component` (escape hatch)
 - `repeater` - Nested, repeatable sub-form (see [DXRepeater](/components/extended/DXRepeater))
 

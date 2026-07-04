@@ -36,6 +36,7 @@ export const navigationConfig: Navigation = [
       { label: 'DXForm', url: '/components/extended/DXForm' },
       { label: 'DXField', url: '/components/extended/DXField' },
       { label: 'DXRepeater', url: '/components/extended/DXRepeater' },
+      { label: 'DXStatCard', url: '/components/extended/DXStatCard' },
       { label: 'DXTable', url: '/components/extended/DXTable' },
     ],
   },

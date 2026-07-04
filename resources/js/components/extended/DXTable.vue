@@ -484,6 +484,15 @@
             :title="computedModalTitle"
             :size="editModalSize"
         >
+            <!-- Loading the full record for edit (showUrl fetch) -->
+            <div
+                v-if="editLoading"
+                class="dx-edit-loading d-flex align-items-center gap-2 text-muted mb-3"
+            >
+                <DSpinner small />
+                <span>Loading…</span>
+            </div>
+
             <!-- Edit/create form (tabbed when editTabs provided, flat otherwise) -->
             <DXForm
                 v-if="editForm"
@@ -790,6 +799,16 @@ export interface Props<TItem = any> {
 
     /** API endpoint pattern for updates (e.g., "/api/products/:id") */
     editUrl?: string;
+
+    /**
+     * API endpoint pattern to fetch the FULL record for the edit modal
+     * (e.g., "/api/products/:id"). When set, opening a row seeds the form from
+     * this fetch (shown with a loading state) instead of the thin list row —
+     * use when the list payload omits fields the edit form needs (notes, nested
+     * relations, repeater rows, …). The response is unwrapped from `data.data`
+     * (Laravel API Resource) or used as-is.
+     */
+    showUrl?: string;
 
     /** API endpoint pattern for deletions (e.g., "/api/products/:id") */
     deleteUrl?: string;
@@ -1474,6 +1493,13 @@ const isCreateMode = ref(false);
 // request the form makes, so it can't tell Save from Delete on its own.
 const pendingAction = ref<'save' | 'delete' | null>(null);
 
+// True while the edit modal is fetching the full record via `showUrl`.
+const editLoading = ref(false);
+
+// Monotonic token so a slow fetch for a previously-opened row can't overwrite
+// the form after the user has since opened a different row.
+let editFetchToken = 0;
+
 // Toast (may not be available in test environment)
 let createToast: ((obj: any) => any) | undefined;
 try {
@@ -1566,6 +1592,9 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
 
                 // Open modal
                 showEditModal.value = true;
+
+                // Optionally replace the row-seeded data with the full record.
+                if (props.showUrl) void fetchFullRecordForEdit(item);
             });
         } else {
             // Update existing form
@@ -1576,7 +1605,51 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
 
             // Open modal
             showEditModal.value = true;
+
+            // Optionally replace the row-seeded data with the full record.
+            if (props.showUrl) void fetchFullRecordForEdit(item);
         }
+    }
+};
+
+// Fetch the full record for the edit modal and re-seed the form from it. The
+// form is already showing row data; this fills in fields the list row omitted.
+const fetchFullRecordForEdit = async (item: T) => {
+    const itemId = (item as any).id;
+    if (itemId === undefined || itemId === null) return;
+
+    const token = ++editFetchToken;
+    editLoading.value = true;
+    try {
+        const url = props.showUrl!.replace(':id', String(itemId));
+        const response = await axios.get(url);
+        // Superseded by a newer row-open — discard.
+        if (token !== editFetchToken) return;
+
+        const record = response.data?.data ?? response.data;
+        if (record && editForm.value) {
+            props.editFields!.forEach(field => {
+                if (Object.prototype.hasOwnProperty.call(record, field.key)) {
+                    editForm.value.data[field.key] = record[field.key];
+                }
+            });
+            // Widen selectedItem so predicates / the delete guard see full data.
+            selectedItem.value = { ...(selectedItem.value as any), ...record };
+        }
+    } catch (error: any) {
+        if (token !== editFetchToken) return;
+        const message =
+            error?.response?.data?.message ??
+            error?.message ??
+            'Failed to load the full record.';
+        createToast?.({
+            title: 'Error',
+            body: message,
+            variant: 'danger',
+            modelValue: 5000,
+        });
+    } finally {
+        if (token === editFetchToken) editLoading.value = false;
     }
 };
 
@@ -1736,6 +1809,9 @@ const handleEditCancel = () => {
     selectedItem.value = null;
     isCreateMode.value = false;
     activeTabIndex.value = 0; // Reset tab for next time
+    // Abandon any in-flight showUrl fetch so it can't seed a closed modal.
+    editFetchToken++;
+    editLoading.value = false;
     if (editForm.value) {
         editForm.value.clearErrors();
     }
