@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-07-04
+
+### Added
+- **Function-valued tab labels.** `FormTab.label` (used by `DXForm` tabs and
+  `DXTable`'s `editTabs`) may now be a function of the model — the live form data
+  merged with any `context` (e.g. the row `DXTable` is editing) — so a tab title
+  can reflect the record, such as a related-records count
+  `label: (model) => \`Products (${model.products_count ?? 0})\``. Static string
+  labels are unchanged; the label resolves reactively.
+
 ## [0.9.0] - 2026-07-04
 
 ### Added
