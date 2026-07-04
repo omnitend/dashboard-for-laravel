@@ -508,6 +508,19 @@ describe('DXTable', () => {
       expect(table?.classList.contains('table-striped')).toBe(true);
     });
 
+    it('does not stripe rows by default', async () => {
+      const screen = render(DXTable, {
+        props: {
+          items: customerData,
+          fields: customerFields,
+          pagination: paginationData,
+        },
+      });
+
+      const table = screen.container.querySelector('table');
+      expect(table?.classList.contains('table-striped')).toBe(false);
+    });
+
     it('applies hover styling when hover prop is true', async () => {
       const screen = render(DXTable, {
         props: {

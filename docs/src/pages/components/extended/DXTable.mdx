@@ -119,7 +119,7 @@ const items = ref([
   { name: 'perPageOptions', type: 'number[]', required: 'No', default: '[10, 25, 50, 100]', description: 'Per-page options for selector' },
   { name: 'currentPage', type: 'number', required: 'No', default: '1', description: 'Current page (for provider mode)' },
   { name: 'perPage', type: 'number', required: 'No', default: '10', description: 'Items per page (v-model support)' },
-  { name: 'striped', type: 'boolean', required: 'No', default: 'true', description: 'Striped rows' },
+  { name: 'striped', type: 'boolean', required: 'No', default: 'false', description: 'Striped (banded) rows. Off by default; opt in for dense tables' },
   { name: 'hover', type: 'boolean', required: 'No', default: 'true', description: 'Hover effect on rows' },
   { name: 'responsive', type: 'boolean', required: 'No', default: 'true', description: 'Responsive table' },
   { name: 'fluid', type: 'boolean', required: 'No', default: 'false', description: 'Fluid container' },
