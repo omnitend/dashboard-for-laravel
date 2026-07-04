@@ -1,6 +1,7 @@
 import {
     reactive,
     computed,
+    toRaw,
     type ComputedRef,
     type WritableComputedRef,
 } from "vue";
@@ -71,10 +72,23 @@ export interface UseFormReturn<TData extends Record<string, any>>
 
 // ————————————————— helpers
 
-const deepClone = <T>(v: T): T =>
-    typeof structuredClone === "function"
-        ? structuredClone(v)
-        : JSON.parse(JSON.stringify(v));
+// Deep-clone the seed data for the form's working copy. `structuredClone`
+// refuses to clone a Vue reactive Proxy (a `default: []` / `default: {}` inside
+// a reactive `editFields` ref is a Proxy) and throws DataCloneError. `toRaw`
+// unwraps the top-level proxy; a try/catch falls back to a JSON clone for any
+// residual proxy (nested reactive values) or otherwise-uncloneable input. Form
+// data is JSON-bound at the API boundary, so the JSON fallback is lossless here.
+const deepClone = <T>(value: T): T => {
+    const raw = toRaw(value);
+    if (typeof structuredClone === "function") {
+        try {
+            return structuredClone(raw);
+        } catch {
+            // Fall through to the JSON clone below.
+        }
+    }
+    return JSON.parse(JSON.stringify(raw));
+};
 
 function errorsFromLaravel(error: any): {
     errors: ValidationErrors;
