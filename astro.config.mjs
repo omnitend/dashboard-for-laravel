@@ -48,9 +48,17 @@ export default defineConfig({
         // Map package imports to local dist for docs build (needed in CI where npm link isn't available)
         '@omnitend/dashboard-for-laravel': '/dist/dashboard-for-laravel.js',
       },
+      // The dist bundle externalizes chart.js/vue-chartjs; without deduping,
+      // Astro/Vite can load two chart.js instances (one for the wrappers'
+      // Chart.register, one vue-chartjs constructs charts with) so registered
+      // plugins (Legend, Tooltip) are missing on the active instance. Force one.
+      dedupe: ['vue', 'chart.js', 'vue-chartjs'],
     },
     optimizeDeps: {
       exclude: ['@omnitend/dashboard-for-laravel'],
+    },
+    ssr: {
+      noExternal: ['chart.js', 'vue-chartjs'],
     },
   },
 });

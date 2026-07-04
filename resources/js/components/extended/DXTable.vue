@@ -593,7 +593,7 @@
                         <DButton
                             v-if="deleteUrl && !isCreateMode"
                             variant="danger"
-                            :disabled="editForm?.processing"
+                            :disabled="editForm?.processing || editLoading"
                             @click="handleDelete"
                         >
                             {{ pendingAction === 'delete' ? 'Deleting...' : 'Delete' }}
@@ -605,7 +605,7 @@
                         </DButton>
                         <DButton
                             variant="primary"
-                            :disabled="editForm?.processing"
+                            :disabled="editForm?.processing || editLoading"
                             @click="handleEditSave"
                         >
                             <template v-if="isCreateMode">
@@ -1500,6 +1500,12 @@ const editLoading = ref(false);
 // the form after the user has since opened a different row.
 let editFetchToken = 0;
 
+// Monotonic token for opening the modal itself. The first edit dynamically
+// imports useForm; if the user clicks row A then row B before that import
+// resolves, A's callback must not seed/open/fetch over B. Each open captures
+// the current token and bails if it's since been superseded.
+let modalOpenToken = 0;
+
 // Toast (may not be available in test environment)
 let createToast: ((obj: any) => any) | undefined;
 try {
@@ -1580,10 +1586,15 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
         // Reset to first tab
         activeTabIndex.value = 0;
 
+        // Capture this open so a slow first-time useForm import can't seed the
+        // form after the user has since opened a different row (or create).
+        const openToken = ++modalOpenToken;
+
         // Initialize form with item data
         if (!editForm.value) {
             // Dynamically import useForm to avoid circular dependency
             import('../../composables/useForm').then(({ useForm }) => {
+                if (openToken !== modalOpenToken) return; // superseded
                 const formData: Record<string, any> = {};
                 props.editFields!.forEach(field => {
                     formData[field.key] = (item as any)[field.key] ?? field.default ?? '';
@@ -1661,6 +1672,12 @@ const handleCreateNew = () => {
     selectedItem.value = null;
     activeTabIndex.value = 0;
 
+    // Supersede any in-flight row-open (and its pending fetch) so a slow
+    // useForm import from an earlier edit can't seed over this create.
+    const openToken = ++modalOpenToken;
+    editFetchToken++;
+    editLoading.value = false;
+
     const initForm = (useForm: any) => {
         const formData: Record<string, any> = {};
         props.editFields!.forEach(field => {
@@ -1672,6 +1689,7 @@ const handleCreateNew = () => {
 
     if (!editForm.value) {
         import('../../composables/useForm').then(({ useForm }) => {
+            if (openToken !== modalOpenToken) return; // superseded
             initForm(useForm);
         });
     } else {
@@ -1820,6 +1838,9 @@ const handleEditCancel = () => {
 // Handle delete from edit modal
 const handleDelete = async () => {
     if (!editForm.value || !selectedItem.value || !props.deleteUrl) return;
+    // Don't evaluate the guard until the full record has loaded (showUrl) — it
+    // may depend on fields the thin list row doesn't carry.
+    if (editLoading.value) return;
 
     // Delete guard: a non-null message means this item can't be deleted — show
     // it immediately and skip the confirm and the request entirely.

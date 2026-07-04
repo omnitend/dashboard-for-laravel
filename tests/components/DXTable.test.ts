@@ -74,6 +74,35 @@ describe('DXTable', () => {
       ).find((i) => (i as HTMLInputElement).value === 'Full record notes');
       expect(notesInput).toBeTruthy();
     });
+
+    it('disables Delete while the full record is still loading', async () => {
+      // A never-resolving fetch keeps editLoading true so we can observe the
+      // disabled state (guard could otherwise read the thin row's data).
+      vi.spyOn(axios, 'get').mockReturnValue(new Promise(() => {}) as any);
+
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              items: [{ id: 3, name: 'Slow Co' }],
+              fields: [{ key: 'name', label: 'Name' }],
+              editFields: [{ key: 'name', type: 'text', label: 'Name' }],
+              showUrl: '/api/customers/:id',
+              deleteUrl: '/api/customers/:id',
+            }),
+          ),
+      });
+      await flush();
+
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
+
+      const deleteBtn = Array.from(document.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Delete',
+      ) as HTMLButtonElement | undefined;
+      expect(deleteBtn).toBeTruthy();
+      expect(deleteBtn!.disabled).toBe(true);
+    });
   });
 
   describe('Delete guard', () => {

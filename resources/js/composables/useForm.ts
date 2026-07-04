@@ -263,22 +263,26 @@ export function useForm<TData extends Record<string, any>>(
 
         // When the payload carries a File/Blob (an image/file field), send it as
         // multipart/form-data. PHP only parses multipart bodies on POST, so a
-        // put/patch is spoofed as POST + `_method` (Laravel reads that).
+        // put/patch is spoofed as POST + `_method` (Laravel reads that). This
+        // also covers a `transform` that returns a FormData directly.
         let sendMethod = method;
         let sendPayload: any = payloadRaw;
-        if (
-            method !== "get" &&
-            payloadRaw !== null &&
-            typeof payloadRaw === "object" &&
-            !(typeof FormData !== "undefined" && payloadRaw instanceof FormData) &&
-            containsFile(payloadRaw)
-        ) {
-            const formData = objectToFormData(payloadRaw as Record<string, unknown>);
-            if (method === "put" || method === "patch") {
-                formData.append("_method", method.toUpperCase());
-                sendMethod = "post";
+        if (method !== "get" && payloadRaw !== null && typeof payloadRaw === "object") {
+            const alreadyFormData =
+                typeof FormData !== "undefined" && payloadRaw instanceof FormData;
+            let formData: FormData | null = null;
+            if (alreadyFormData) {
+                formData = payloadRaw as FormData;
+            } else if (containsFile(payloadRaw)) {
+                formData = objectToFormData(payloadRaw as Record<string, unknown>);
             }
-            sendPayload = formData;
+            if (formData) {
+                if (method === "put" || method === "patch") {
+                    formData.append("_method", method.toUpperCase());
+                    sendMethod = "post";
+                }
+                sendPayload = formData;
+            }
         }
 
         try {

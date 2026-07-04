@@ -113,9 +113,14 @@ async function generateManifest() {
 
   const baseDir = join(rootDir, 'resources/js/components/base');
   const extendedDir = join(rootDir, 'resources/js/components/extended');
+  const chartsDir = join(rootDir, 'resources/js/components/charts');
 
   const baseComponents = await parseComponentsInDirectory(baseDir, 'base');
-  const extendedComponents = await parseComponentsInDirectory(extendedDir, 'extended');
+  // Chart wrappers (DX*Chart) are grouped with the extended components.
+  const extendedComponents = [
+    ...(await parseComponentsInDirectory(extendedDir, 'extended')),
+    ...(await parseComponentsInDirectory(chartsDir, 'extended')),
+  ];
 
   const manifest = {
     generated: new Date().toISOString(),
