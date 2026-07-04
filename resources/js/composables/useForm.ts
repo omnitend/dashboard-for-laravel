@@ -90,6 +90,52 @@ const deepClone = <T>(value: T): T => {
     return JSON.parse(JSON.stringify(raw));
 };
 
+const isFileLike = (value: unknown): boolean =>
+    (typeof File !== "undefined" && value instanceof File) ||
+    (typeof Blob !== "undefined" && value instanceof Blob);
+
+/** Whether a payload contains a File/Blob anywhere (→ needs multipart). */
+function containsFile(value: unknown): boolean {
+    if (isFileLike(value)) return true;
+    if (Array.isArray(value)) return value.some(containsFile);
+    if (value !== null && typeof value === "object") {
+        return Object.values(value as Record<string, unknown>).some(containsFile);
+    }
+    return false;
+}
+
+/** Append a value to FormData using Laravel-style bracket keys. */
+function appendToFormData(fd: FormData, key: string, value: unknown): void {
+    if (value === null || value === undefined) {
+        fd.append(key, "");
+    } else if (isFileLike(value)) {
+        fd.append(key, value as Blob);
+    } else if (Array.isArray(value)) {
+        value.forEach((entry, index) =>
+            appendToFormData(fd, `${key}[${index}]`, entry),
+        );
+    } else if (value instanceof Date) {
+        fd.append(key, value.toISOString());
+    } else if (typeof value === "object") {
+        for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+            appendToFormData(fd, `${key}[${k}]`, v);
+        }
+    } else if (typeof value === "boolean") {
+        // Laravel's boolean validation accepts "1"/"0".
+        fd.append(key, value ? "1" : "0");
+    } else {
+        fd.append(key, String(value));
+    }
+}
+
+function objectToFormData(payload: Record<string, unknown>): FormData {
+    const fd = new FormData();
+    for (const [key, value] of Object.entries(payload)) {
+        appendToFormData(fd, key, value);
+    }
+    return fd;
+}
+
 function errorsFromLaravel(error: any): {
     errors: ValidationErrors;
     message: string;
@@ -215,15 +261,35 @@ export function useForm<TData extends Record<string, any>>(
 
         options.onBefore?.(state.data as TData);
 
+        // When the payload carries a File/Blob (an image/file field), send it as
+        // multipart/form-data. PHP only parses multipart bodies on POST, so a
+        // put/patch is spoofed as POST + `_method` (Laravel reads that).
+        let sendMethod = method;
+        let sendPayload: any = payloadRaw;
+        if (
+            method !== "get" &&
+            payloadRaw !== null &&
+            typeof payloadRaw === "object" &&
+            !(typeof FormData !== "undefined" && payloadRaw instanceof FormData) &&
+            containsFile(payloadRaw)
+        ) {
+            const formData = objectToFormData(payloadRaw as Record<string, unknown>);
+            if (method === "put" || method === "patch") {
+                formData.append("_method", method.toUpperCase());
+                sendMethod = "post";
+            }
+            sendPayload = formData;
+        }
+
         try {
             const { data } =
-                method === "get"
+                sendMethod === "get"
                     ? await api.get<TResponse>(
                         url,
-                        payloadRaw as Record<string, unknown>,
+                        sendPayload as Record<string, unknown>,
                         { signal: options?.signal },
                     )
-                    : await api[method]<TResponse>(url, payloadRaw, {
+                    : await api[sendMethod]<TResponse>(url, sendPayload, {
                         signal: options?.signal,
                     });
 

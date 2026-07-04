@@ -1,11 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { h, ref } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
+import axios from 'axios';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
 import { customerData, customerFields, paginationData, largePaginationData } from '../fixtures/tableData';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('DXTable', () => {
   describe('Imperative API (defineExpose)', () => {
@@ -27,6 +29,50 @@ describe('DXTable', () => {
 
       expect(typeof tableRef.value.openCreate).toBe('function');
       expect(typeof tableRef.value.refresh).toBe('function');
+    });
+  });
+
+  describe('Fetch full record on edit (showUrl)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('seeds the edit form from the fetched record, not just the list row', async () => {
+      // Thin list row: no `notes`. The show endpoint returns the full record.
+      const listRow = { id: 7, name: 'Acme' };
+      const getSpy = vi.spyOn(axios, 'get').mockResolvedValue({
+        data: { data: { id: 7, name: 'Acme', notes: 'Full record notes' } },
+      });
+
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              items: [listRow],
+              fields: [{ key: 'name', label: 'Name' }],
+              editFields: [
+                { key: 'name', type: 'text', label: 'Name' },
+                { key: 'notes', type: 'text', label: 'Notes' },
+              ],
+              showUrl: '/api/customers/:id',
+              editUrl: '/api/customers/:id',
+            }),
+          ),
+      });
+      await flush();
+
+      // Open the row's edit modal.
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
+
+      // The show endpoint was called with the row id substituted.
+      expect(getSpy).toHaveBeenCalledWith('/api/customers/7');
+
+      // The Notes input (omitted by the list row) is populated from the fetch.
+      const notesInput = Array.from(
+        document.querySelectorAll('input'),
+      ).find((i) => (i as HTMLInputElement).value === 'Full record notes');
+      expect(notesInput).toBeTruthy();
     });
   });
 

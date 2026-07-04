@@ -1,0 +1,50 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXStatCard
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXStatCardExample from '../../../examples/DXStatCardExample.vue';
+import DXStatCardExampleRaw from '../../../examples/DXStatCardExample.vue?raw';
+
+# DXStatCard
+
+A KPI / stat tile: a big formatted value with a title, optional subtitle, an
+optional up/down delta badge (auto-coloured and arrowed) versus a comparison
+period, and an optional trend/sparkline slot. Themed with Bootstrap variables.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXStatCardExampleRaw}
+>
+  <DXStatCardExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'title', type: 'string', required: 'Yes', default: '-', description: 'Metric label, e.g. "Revenue"' },
+  { name: 'value', type: 'string | number', required: 'Yes', default: '-', description: 'The metric value. Numbers are formatted per `format`; strings pass through' },
+  { name: 'subtitle', type: 'string', required: 'No', default: '-', description: 'Secondary line under the title, e.g. "This week"' },
+  { name: 'format', type: "'number' | 'currency' | 'percent'", required: 'No', default: "'number'", description: 'How to format a numeric value' },
+  { name: 'currencySymbol', type: 'string', required: 'No', default: "'£'", description: 'Currency symbol for format: "currency"' },
+  { name: 'precision', type: 'number', required: 'No', default: '2 for currency, else 0', description: 'Decimal places' },
+  { name: 'locale', type: 'string', required: 'No', default: '-', description: 'Locale for number grouping/formatting' },
+  { name: 'delta', type: 'number', required: 'No', default: '-', description: 'Change vs a comparison period; its sign drives the arrow/colour' },
+  { name: 'deltaFormat', type: "'number' | 'currency' | 'percent'", required: 'No', default: "'percent'", description: 'How to format the delta' },
+  { name: 'deltaDirection', type: "'up' | 'down' | 'neutral'", required: 'No', default: 'derived from delta', description: 'Force the delta direction' },
+  { name: 'deltaLabel', type: 'string', required: 'No', default: '-', description: 'Caption beside the delta, e.g. "vs last week"' },
+  { name: 'invertDelta', type: 'boolean', required: 'No', default: 'false', description: 'Invert the delta colour for metrics where down is good (costs, bounce rate)' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'value', props: '{ formatted: string, value: string | number }', description: 'Override the rendered value' },
+  { name: 'icon', props: '-', description: 'Icon/visual in the top-right of the card' },
+  { name: 'trend', props: '-', description: 'Trend visual (e.g. a sparkline) in the card footer' },
+]} />

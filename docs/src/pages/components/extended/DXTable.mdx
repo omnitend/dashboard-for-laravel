@@ -131,6 +131,7 @@ const items = ref([
   { name: 'editModalSize', type: 'sm | md | lg | xl', required: 'No', default: 'lg', description: 'Edit modal size' },
   { name: 'editUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for updates (e.g., "/api/products/:id")' },
   { name: 'deleteUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for deletions (e.g., "/api/products/:id")' },
+  { name: 'showUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern to fetch the FULL record for the edit modal (e.g., "/api/products/:id"). Seeds the form from this fetch (with a loading state) instead of the thin list row. Unwraps data.data or uses the response as-is' },
   { name: 'deleteGuard', type: '(item) => string | null', required: 'No', default: '-', description: 'Run when Delete is clicked, before the confirm and request. Return a message to block the delete and show it immediately (skips confirm + request); return null to proceed normally' },
 ]} />
 
