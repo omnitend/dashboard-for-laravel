@@ -92,6 +92,44 @@ describe('DXForm', () => {
       expect(navLabels(screen.container)).toEqual(['General']);
     });
 
+    it('renders a function-valued tab label from the model', async () => {
+      const tabs: FormTab[] = [
+        productTabs[0],
+        {
+          ...productTabs[1],
+          label: (model: any) => `Details (${model.sku || 'none'})`,
+        },
+      ];
+      const form = makeForm();
+      form.data.sku = 'ABC-1';
+      const screen = render(DXForm, {
+        props: { form, fields: productFields, tabs, showSubmit: false },
+      });
+      await flush();
+
+      expect(navLabels(screen.container)).toEqual(['General', 'Details (ABC-1)']);
+    });
+
+    it('reacts a dynamic tab label to model changes', async () => {
+      const tabs: FormTab[] = [
+        productTabs[0],
+        {
+          ...productTabs[1],
+          label: (model: any) => `Details (${model.sku || 'none'})`,
+        },
+      ];
+      const form = makeForm();
+      const screen = render(DXForm, {
+        props: { form, fields: productFields, tabs, showSubmit: false },
+      });
+      await flush();
+      expect(navLabels(screen.container)).toContain('Details (none)');
+
+      form.data.sku = 'XYZ-9';
+      await flush();
+      expect(navLabels(screen.container)).toContain('Details (XYZ-9)');
+    });
+
     it('hides a tab that has no visible fields', async () => {
       // Every field in the Details tab is hidden → the tab disappears.
       const fields: FieldDefinition[] = productFields.map((field) =>

@@ -29,7 +29,7 @@
             <DTab
                 v-for="(tab, index) in visibleTabs"
                 :key="tab.key"
-                :title="tab.label || tab.key"
+                :title="resolveTabLabel(tab)"
                 :lazy="tab.lazy"
                 :active="index === 0"
             >
@@ -205,6 +205,13 @@ function resolvePredicate(
 ): boolean {
     if (when === undefined) return fallback;
     return typeof when === "function" ? when(model.value) : when;
+}
+
+/** Resolve a tab's (possibly function-valued) label against the live model. */
+function resolveTabLabel(tab: FormTab): string {
+    const label =
+        typeof tab.label === "function" ? tab.label(model.value) : tab.label;
+    return label || tab.key;
 }
 
 function isFieldVisible(field: FieldDefinition): boolean {
