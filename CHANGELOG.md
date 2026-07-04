@@ -7,13 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-04
+
 ### Added
+- **`switch` field type.** A labelled toggle with contextual on/off text
+  (`textWhenTrue` / `textWhenFalse`) and an on-state (filled green) style,
+  rendering Bootstrap Vue Next's switch. The bound value is normalised to a
+  boolean, so the toggle position, the on-state style, and the contextual text
+  always agree even when the model arrives as a non-boolean — a boolean column
+  serialised as `1`, or a `"0"` / `"false"` string, all read correctly. Seeded
+  as boolean `false` by `defineForm` and repeater rows.
+- **Declarative `info` popover on field labels.** A `MaybeFn<string>` `info` on a
+  field renders a small info affordance on the label that reveals help text in a
+  popover on hover/focus, complementing `hint` (always-visible muted text below
+  the field). Backed by the new `DXFieldLabel` component; the `#info` slot
+  remains the escape hatch for rich content.
 - **`asFraction` option for `percentage` fields.** When set, the field treats the
   underlying model value as a 0–1 fraction while showing/editing it as a 0–100
   percentage: the model keeps the fraction (e.g. `0.2`), the input shows `20`.
   Scaling rounds away binary-float artefacts (`0.2 * 100 = 20.000000000000004`).
   Off by default (the value is taken as a whole percentage). Use for values stored
   as ratios — VAT rates, discounts, etc.
+
+### Fixed
+- **DXTable delete button stuck "Deleting…" after Save.** The Save and Delete
+  buttons in the edit modal both keyed off the shared `editForm.processing`
+  flag, so saving drove the Delete button's loading label. Each button's label
+  is now scoped to the action actually in flight.
+- **`#hint` slot ignored on switch/checkbox/repeater fields** when no `hint`
+  value was set. These now render a `#hint` slot like the standard field.
 
 ## [0.8.0] - 2026-07-04
 
