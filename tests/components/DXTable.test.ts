@@ -1,9 +1,101 @@
 import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-vue';
+import { h, ref } from 'vue';
+import { BApp } from 'bootstrap-vue-next';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
 import { customerData, customerFields, paginationData, largePaginationData } from '../fixtures/tableData';
 
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 describe('DXTable', () => {
+  describe('Imperative API (defineExpose)', () => {
+    it('exposes openCreate() and refresh()', async () => {
+      const tableRef = ref<any>(null);
+      render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              ref: tableRef,
+              items: customerData,
+              fields: customerFields,
+              editFields: [{ key: 'name', type: 'text', label: 'Name' }],
+              createUrl: '/api/customers',
+            }),
+          ),
+      });
+      await flush();
+
+      expect(typeof tableRef.value.openCreate).toBe('function');
+      expect(typeof tableRef.value.refresh).toBe('function');
+    });
+  });
+
+  describe('Delete guard', () => {
+    it('renders with a deleteGuard prop without error', async () => {
+      // The guard runs inside the edit modal's delete flow (exercised live);
+      // here we assert the prop is accepted and the table still renders.
+      const screen = render(DXTable, {
+        props: {
+          items: customerData,
+          fields: customerFields,
+          editFields: [{ key: 'name', type: 'text', label: 'Name' }],
+          deleteUrl: '/api/customers/:id',
+          deleteGuard: (item: any) =>
+            item.locked ? 'This customer is locked.' : null,
+        },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('table')).toBeTruthy();
+    });
+
+    it('shows an immediate message and skips the confirm when the guard blocks a row', async () => {
+      let confirmCalled = false;
+      const originalConfirm = window.confirm;
+      window.confirm = () => {
+        confirmCalled = true;
+        return true;
+      };
+
+      try {
+        const lockedRow = { id: 1, name: 'Locked Co', locked: true };
+        const tableRef = ref<any>(null);
+        const screen = render({
+          render: () =>
+            h(BApp, {}, () =>
+              h(DXTable, {
+                ref: tableRef,
+                items: [lockedRow],
+                fields: [{ key: 'name', label: 'Name' }],
+                editFields: [{ key: 'name', type: 'text', label: 'Name' }],
+                deleteUrl: '/api/customers/:id',
+                deleteGuard: (item: any) =>
+                  item.locked ? 'This customer is locked.' : null,
+              }),
+            ),
+        });
+        await flush();
+
+        // Open the edit modal for the locked row, then click Delete.
+        (screen.container.querySelector('tbody tr') as HTMLElement).click();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        const deleteBtn = Array.from(
+          document.querySelectorAll('button'),
+        ).find((b) => b.textContent?.trim() === 'Delete') as HTMLElement | undefined;
+        expect(deleteBtn).toBeTruthy();
+        deleteBtn!.click();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        // The guard short-circuits before the confirm dialog.
+        expect(confirmCalled).toBe(false);
+        expect(document.body.textContent).toContain('This customer is locked.');
+      } finally {
+        window.confirm = originalConfirm;
+      }
+    });
+  });
+
   describe('Basic Rendering', () => {
     it('renders table with data', async () => {
       const screen = render(DXTable, {

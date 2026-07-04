@@ -794,6 +794,16 @@ export interface Props<TItem = any> {
     /** API endpoint pattern for deletions (e.g., "/api/products/:id") */
     deleteUrl?: string;
 
+    /**
+     * Guard run when Delete is clicked, before the confirm dialog and request.
+     * Return a message for a non-deletable item to show it immediately (as a
+     * toast) and skip both the confirm and the delete request; return
+     * `null`/`undefined` to proceed with the normal confirm + delete. Lets you
+     * short-circuit a doomed delete (e.g. a record with dependents that the
+     * server would reject) with an immediate, specific reason.
+     */
+    deleteGuard?: (item: TItem) => string | null | undefined;
+
     /** API endpoint for creating new items (e.g., "/api/products") — enables "New" button */
     createUrl?: string;
 
@@ -1733,6 +1743,19 @@ const handleEditCancel = () => {
 const handleDelete = async () => {
     if (!editForm.value || !selectedItem.value || !props.deleteUrl) return;
 
+    // Delete guard: a non-null message means this item can't be deleted — show
+    // it immediately and skip the confirm and the request entirely.
+    const guardMessage = props.deleteGuard?.(selectedItem.value as T);
+    if (guardMessage) {
+        createToast?.({
+            title: 'Cannot delete',
+            body: guardMessage,
+            variant: 'danger',
+            modelValue: 5000,
+        });
+        return;
+    }
+
     // Confirm deletion
     const itemName = (selectedItem.value as any).name || (selectedItem.value as any).title || singularItemName.value;
     const confirmed = window.confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`);
@@ -1786,6 +1809,12 @@ const handleDelete = async () => {
 
 defineExpose({
     refresh,
+    /**
+     * Open the built-in create modal (same as clicking the default "New {item}"
+     * button). Lets the create action live outside the table card — e.g. in a
+     * page header or the dashboard navbar. No-op unless `editFields` are set.
+     */
+    openCreate: handleCreateNew,
 });
 </script>
 

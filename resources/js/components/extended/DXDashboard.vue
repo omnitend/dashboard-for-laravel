@@ -52,10 +52,15 @@
 
       <!-- Page Content -->
       <main class="dashboard-main p-4">
-        <DContainer fluid>
+        <!-- Fluid: full-width, left-aligned content (for wide tables / admin
+             pages). Default: a centred reading-width column. -->
+        <DContainer v-if="fluid" fluid :class="contentClass">
+          <!-- @slot Default slot for the main page content. Full-width when `fluid`, otherwise a centred reading-width column. -->
+          <slot />
+        </DContainer>
+        <DContainer v-else fluid>
           <DRow class="justify-content-center">
-            <DCol cols="12" xl="10">
-              <!-- @slot Default slot for the main page content, rendered in the centred content column. -->
+            <DCol cols="12" xl="10" :class="contentClass">
               <slot />
             </DCol>
           </DRow>
@@ -88,6 +93,16 @@ interface Props {
 
   /** Page title shown in navbar */
   pageTitle?: string;
+
+  /**
+   * Render the page content full-width and left-aligned instead of the default
+   * centred, reading-width (`col-xl-10`) column. Use for data-heavy admin pages
+   * (wide tables).
+   */
+  fluid?: boolean;
+
+  /** Extra class(es) applied to the content container/column. */
+  contentClass?: string;
 
   /** User object for navbar dropdown */
   user?: { name: string; email: string } | null;

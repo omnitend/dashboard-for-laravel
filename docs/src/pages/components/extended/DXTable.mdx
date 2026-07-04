@@ -131,6 +131,7 @@ const items = ref([
   { name: 'editModalSize', type: 'sm | md | lg | xl', required: 'No', default: 'lg', description: 'Edit modal size' },
   { name: 'editUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for updates (e.g., "/api/products/:id")' },
   { name: 'deleteUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for deletions (e.g., "/api/products/:id")' },
+  { name: 'deleteGuard', type: '(item) => string | null', required: 'No', default: '-', description: 'Run when Delete is clicked, before the confirm and request. Return a message to block the delete and show it immediately (skips confirm + request); return null to proceed normally' },
 ]} />
 
 ## Events
@@ -404,27 +405,32 @@ public function apiIndex(Request $request)
 - Empty filters are removed from request
 - Filters preserve sort state
 
-### Manual Refresh
+### Exposed methods
 
-Access the `refresh()` method for manual data reloading:
+Via a template `ref`, the table exposes:
+
+- **`refresh()`** — reload the table data.
+- **`openCreate()`** — open the built-in create modal (same as the default
+  "New {item}" button). Lets the create action live outside the table card — a
+  page header, the dashboard navbar actions slot, etc. No-op unless `editFields`
+  are set.
 
 ```vue
 <script setup>
 import { ref } from 'vue';
 
 const tableRef = ref(null);
-
-const refreshData = () => {
-  tableRef.value?.refresh();
-};
 </script>
 
 <template>
-  <DButton @click="refreshData">Refresh</DButton>
+  <DButton @click="tableRef?.openCreate()">New product</DButton>
+  <DButton @click="tableRef?.refresh()">Refresh</DButton>
   <DXTable
     ref="tableRef"
     :provider="fetchProducts"
     :fields="fields"
+    :edit-fields="editFields"
+    create-url="/api/products"
   />
 </template>
 ```
