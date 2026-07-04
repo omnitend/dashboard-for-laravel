@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-07-04
+
+### Added
+- **Collapsible sidebar menu groups** on `DXDashboardSidebar` (and forwarded
+  through `DXDashboard`). New props `collapsibleGroups` (default `false`) and
+  `autoCollapseInactiveGroups` (default `true`) turn group headers into a
+  single-open accordion — built for menus with many sections.
+  - The active-route group opens on load and follows client-side navigation.
+    Active matching is now ancestor-aware (longest path prefix) and ignores
+    query string / hash, so a detail route like `/orders/123` still highlights
+    and opens its `/orders` group. Root `/` matches only exactly.
+  - Per-group `collapsible: false` keeps a group permanently expanded.
+  - Collapse uses a CSS grid height transition with an opacity fade; the active
+    group paints open on first render (no load flicker). Honours
+    `prefers-reduced-motion`.
+  - Collapsed groups are `inert`, removing their links (including custom `#link`
+    slot content) from focus order and the accessibility tree. The `#link` slot
+    gains an `isExpanded` prop.
+
+### Changed
+- **Quieter toast notifications.** Replaced Bootstrap Vue Next's saturated
+  colour-block toasts with a calm, subtly-tinted surface (dark title, muted
+  body), spacing between stacked toasts, and no auto-dismiss countdown bar.
+  Theme-only (`theme.scss`); `useToast().create({ title, body, variant })` is
+  unchanged.
+
 ## [0.7.1] - 2026-06-30
 
 ### Security
