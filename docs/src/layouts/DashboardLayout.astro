@@ -88,9 +88,10 @@ const pageTitle = title === 'Home' ? '' : title;
     display: none !important;
   }
 
-  /* Show sidebar when HTML has sidebar-visible class */
+  /* Show sidebar when HTML has sidebar-visible class. `flex` (not `block`)
+     matches the component's own column layout so its pinned footer works. */
   html.sidebar-visible .dashboard-sidebar {
-    display: block !important;
+    display: flex !important;
   }
 
   /* Disable default ClientRouter fade animation - make transitions instant */

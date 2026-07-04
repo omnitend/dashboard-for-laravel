@@ -340,6 +340,87 @@ describe('DXDashboardSidebar', () => {
       expect(pinned?.querySelector('.nav-group-toggle')).toBeNull();
       expect(pinned?.classList.contains('nav-group-open')).toBe(true);
     });
+
+    it('keeps a manually-opened group open by stable key when navigation is reordered', async () => {
+      const groupA = { label: 'Alpha', items: [{ label: 'A item', url: '/a' }] };
+      const groupB = { label: 'Beta', items: [{ label: 'B item', url: '/b' }] };
+      const groupC = { label: 'Gamma', items: [{ label: 'C item', url: '/c' }] };
+
+      const screen = render(DXDashboardSidebar, {
+        props: {
+          // No active route, single-open accordion, everything starts closed.
+          navigation: [groupA, groupB, groupC],
+          currentUrl: '/nowhere',
+          collapsibleGroups: true,
+        },
+      });
+
+      // Open Gamma manually (it is at index 2).
+      (findGroupByLabel(screen.container, 'Gamma')?.querySelector(
+        '.nav-group-toggle',
+      ) as HTMLElement).click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(
+        findGroupByLabel(screen.container, 'Gamma')?.classList.contains('nav-group-open'),
+      ).toBe(true);
+
+      // Reorder so Gamma moves to index 0. With index-keyed state the open state
+      // would leak to whatever now sits at index 2 (Beta); keyed by label it
+      // stays on Gamma.
+      await screen.rerender({ navigation: [groupC, groupA, groupB] });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(
+        findGroupByLabel(screen.container, 'Gamma')?.classList.contains('nav-group-open'),
+      ).toBe(true);
+      expect(
+        findGroupByLabel(screen.container, 'Beta')?.classList.contains('nav-group-open'),
+      ).toBe(false);
+    });
+  });
+
+  describe('Footer Slot', () => {
+    it('renders footer slot content pinned below the nav', async () => {
+      const screen = render(DXDashboardSidebar, {
+        props: {
+          navigation: sampleNavigation,
+          currentUrl: '/dashboard',
+        },
+        slots: {
+          footer: '<a class="footer-link" href="/help">Help</a>',
+        },
+      });
+
+      const footer = screen.container.querySelector('.sidebar-footer');
+      expect(footer).toBeTruthy();
+      expect(footer?.querySelector('.footer-link')?.textContent).toBe('Help');
+    });
+
+    it('omits the footer region when no footer slot is provided', async () => {
+      const screen = render(DXDashboardSidebar, {
+        props: {
+          navigation: sampleNavigation,
+          currentUrl: '/dashboard',
+        },
+      });
+
+      expect(screen.container.querySelector('.sidebar-footer')).toBeNull();
+    });
+
+    it('exposes the collapsed state to the footer slot', async () => {
+      const screen = render(DXDashboardSidebar, {
+        props: {
+          navigation: sampleNavigation,
+          currentUrl: '/dashboard',
+          collapsed: true,
+        },
+        slots: {
+          footer: `<template #footer="{ collapsed }"><span class="fc">{{ collapsed ? 'mini' : 'full' }}</span></template>`,
+        },
+      });
+
+      expect(screen.container.querySelector('.fc')?.textContent).toBe('mini');
+    });
   });
 
   describe('Custom Brand Slot', () => {

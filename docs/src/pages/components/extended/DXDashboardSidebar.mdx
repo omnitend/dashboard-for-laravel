@@ -93,6 +93,7 @@ const handleNavClick = (item) => {
 <SlotsTable client:load slots={[
   { name: 'brand', description: 'Custom brand/logo content in the sidebar header. Receives collapsed (boolean) and title (string) as slot props' },
   { name: 'link', description: 'Custom navigation link rendering. Receives item (NavigationItem), isActive (boolean), collapsed (boolean), and isExpanded (boolean — whether the containing group is open) as slot props' },
+  { name: 'footer', description: 'Utility/secondary links pinned to the bottom of the sidebar, below the nav groups. Receives collapsed (boolean) as a slot prop' },
 ]} />
 
 ## Extended Component
