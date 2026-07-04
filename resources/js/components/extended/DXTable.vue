@@ -621,8 +621,12 @@ export interface EditTab {
     /** Unique key for this tab */
     key: string;
 
-    /** Display label (optional, auto-derived from key if omitted) */
-    label?: string;
+    /**
+     * Display label (optional, auto-derived from key if omitted). May be a
+     * function of the model (the edited row merged with the live form data),
+     * e.g. `label: (item) => \`Products (${item.products_count ?? 0})\``.
+     */
+    label?: string | ((item: any) => string);
 
     /** Field keys to display in this tab (from editFields) */
     fieldKeys: string[];

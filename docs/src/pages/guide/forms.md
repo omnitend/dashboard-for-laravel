@@ -425,8 +425,18 @@ the first tab containing a validation error after a failed submit:
 </template>
 ```
 
-Each tab is `{ key, label?, fieldKeys, when?, lazy? }`. The full prop and slot
-reference lives on the [DXForm component page](/components/extended/DXForm).
+Each tab is `{ key, label?, fieldKeys, when?, lazy? }`. Like field labels,
+`label` may be a function of the model (the live form data merged with any
+`context`), so a tab title can reflect the record — handy for a related-records
+count:
+
+```ts
+{ key: 'products', label: (model) => `Products (${model.products_count ?? 0})`,
+  fieldKeys: [] }
+```
+
+The full prop and slot reference lives on the
+[DXForm component page](/components/extended/DXForm).
 
 ## Laravel Integration
 

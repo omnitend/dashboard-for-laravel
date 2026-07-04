@@ -223,8 +223,13 @@ export interface FormTab {
     /** Unique key for this tab */
     key: string;
 
-    /** Display label (optional, defaults to the key) */
-    label?: string;
+    /**
+     * Display label (optional, defaults to the key). May be a function of the
+     * form model — the live form data merged with any `context` (e.g. the row
+     * DXTable is editing) — so a tab title can reflect the record, such as
+     * `label: (model) => \`Products (${model.products_count ?? 0})\``.
+     */
+    label?: MaybeFn<string>;
 
     /** Field keys (from the form's fields) to render in this tab */
     fieldKeys: string[];
