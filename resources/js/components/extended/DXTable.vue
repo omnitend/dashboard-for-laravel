@@ -766,7 +766,8 @@ export interface Props<TItem = any> {
     /** Items per page (for provider mode, v-model support) */
     perPage?: number;
 
-    /** Striped rows */
+    /** Striped (banded) rows. Off by default — banding adds little on short
+     *  tables and can read as noise; opt in with `:striped="true"`. */
     striped?: boolean;
 
     /** Hover effect on rows */
@@ -848,7 +849,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     perPageOptions: () => [10, 25, 50, 100],
     currentPage: 1,
     // perPage: 10,  // Don't set default - let internalPerPage handle it
-    striped: true,
+    striped: false,
     hover: true,
     responsive: true,
     fluid: false,
