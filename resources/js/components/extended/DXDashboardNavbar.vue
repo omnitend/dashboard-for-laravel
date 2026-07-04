@@ -1,3 +1,9 @@
+<!--
+  @component
+  Top navigation bar for the dashboard shell: menu toggle, page title, centred
+  search, page-level actions, and the user menu. Usually rendered by
+  `DXDashboard`, which forwards these slots with a `navbar-` prefix.
+-->
 <template>
   <header class="dashboard-navbar bg-white border-bottom">
     <DContainer fluid class="h-100">
@@ -9,6 +15,7 @@
             @click="$emit('toggleSidebar')"
             aria-label="Toggle sidebar"
           >
+            <!-- @slot Custom hamburger/menu icon. Defaults to a three-line SVG. -->
             <slot name="menu-icon">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -28,6 +35,7 @@
           <h4 v-if="pageTitle" class="mb-0 fw-semibold d-none d-md-block">{{ pageTitle }}</h4>
 
           <div class="flex-grow-1 d-flex justify-content-center">
+            <!-- @slot Search input or component, centred in the navbar. -->
             <slot name="search" />
           </div>
         </DCol>
@@ -38,9 +46,17 @@
             v-if="$slots.actions"
             class="dashboard-navbar__actions d-flex align-items-center gap-2"
           >
-            <slot name="actions" :page-title="pageTitle" />
+            <!--
+              @slot Page-level primary actions (e.g. a Create button), right-aligned next to the user menu.
+              @binding {string} pageTitle The current page title, for context.
+            -->
+            <slot name="actions" :pageTitle="pageTitle" />
           </div>
 
+          <!--
+            @slot Replaces the entire user menu (the default avatar dropdown).
+            @binding {object} user The signed-in user.
+          -->
           <slot name="user-menu" :user="user">
             <DDropdown
               v-if="user"
@@ -50,6 +66,10 @@
               no-caret
             >
               <template #button-content>
+                <!--
+                  @slot Custom user avatar/icon in the dropdown trigger.
+                  @binding {string} initial The first letter of the user's name.
+                -->
                 <slot name="user-icon" :initial="getUserInitial(user)">
                   <div class="user-avatar">
                     {{ getUserInitial(user) }}
@@ -57,6 +77,10 @@
                 </slot>
               </template>
 
+              <!--
+                @slot Items for the default user dropdown menu.
+                @binding {object} user The signed-in user.
+              -->
               <slot name="user-menu-items" :user="user" />
             </DDropdown>
           </slot>
@@ -75,11 +99,13 @@ import DDropdown from "../base/DDropdown.vue";
 
 withDefaults(
   defineProps<{
+    /** The signed-in user shown in the avatar dropdown. `null` hides the menu. */
     user?: {
       name: string;
       email: string;
       [key: string]: any;
     } | null;
+    /** Page title shown at the left of the navbar (hidden below the `md` breakpoint). */
     pageTitle?: string;
   }>(),
   {
@@ -89,6 +115,7 @@ withDefaults(
 );
 
 defineEmits<{
+  /** Emitted when the hamburger menu button is clicked. */
   toggleSidebar: [];
 }>();
 

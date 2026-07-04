@@ -1,3 +1,12 @@
+<!--
+  @component
+  Collapsible dashboard sidebar: renders a brand header plus grouped navigation
+  from a `navigation` array, highlighting the item matching the current route.
+  Groups can be plain labelled sections or accordion toggles that expand/collapse
+  their items, and the active-route group opens automatically. The rail itself can
+  collapse to an icons-only strip or hide entirely. Provides `brand` and `link`
+  slots for custom rendering.
+-->
 <template>
   <aside
     ref="sidebarRef"
@@ -9,6 +18,11 @@
   >
     <div class="sidebar-header p-3">
       <div class="d-flex align-items-center justify-content-between">
+        <!--
+          @slot Brand/logo area in the sidebar header. Defaults to the title's initial plus the full title (hidden when collapsed).
+          @binding {boolean} collapsed Whether the sidebar rail is collapsed to icons only.
+          @binding {string} title The sidebar title text.
+        -->
         <slot name="brand" :collapsed="collapsed" :title="title">
           <div class="brand-container" :class="{ 'collapsed': collapsed }">
             <div class="brand-initial">{{ brandInitial }}</div>
@@ -78,12 +92,19 @@
           >
             <ul class="nav flex-column gap-1">
               <li v-for="(item, itemIndex) in group.items" :key="itemIndex" class="nav-item">
+                <!--
+                  @slot Renders a single navigation item link. Defaults to an anchor with optional icon, label, and badge.
+                  @binding {object} item The navigation item (label, url, icon, badge, badgeColor).
+                  @binding {boolean} isActive Whether this item matches the current route.
+                  @binding {boolean} collapsed Whether the sidebar rail is collapsed to icons only.
+                  @binding {boolean} isExpanded Whether the item's group is currently expanded.
+                -->
                 <slot
                   name="link"
                   :item="item"
-                  :is-active="isActive(item.url)"
+                  :isActive="isActive(item.url)"
                   :collapsed="collapsed"
-                  :is-expanded="isGroupExpanded(groupIndex, group)"
+                  :isExpanded="isGroupExpanded(groupIndex, group)"
                 >
                   <a
                     :href="item.url"
@@ -123,10 +144,15 @@ import { computed, ref, onMounted, watch, nextTick, useId } from 'vue';
 import type { Navigation, NavigationGroup } from '../../types/navigation';
 
 const props = withDefaults(defineProps<{
+  /** Grouped navigation to render: an array of groups, each with a label and items. */
   navigation: Navigation;
+  /** The current route URL, used to highlight the matching nav item and open its group. */
   currentUrl: string;
+  /** Collapse the rail to an icons-only strip, hiding labels and the brand title. */
   collapsed?: boolean;
+  /** Hide the sidebar entirely (`display: none`). */
   hidden?: boolean;
+  /** Sidebar title; its first letter is also used as the brand initial. */
   title?: string;
   /**
    * Turn group headers into accordion toggles that collapse/expand their items.
@@ -149,6 +175,7 @@ const props = withDefaults(defineProps<{
 });
 
 defineEmits<{
+  /** Emitted to request toggling the sidebar's collapsed/expanded state. */
   toggle: [];
 }>();
 

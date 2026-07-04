@@ -15,16 +15,41 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 
+/**
+ * Fallback component description: vue-docgen-api doesn't surface the
+ * file-leading comment for our `<script setup>` SFCs, so read it ourselves.
+ * Supports a leading `/** ... *​/` JS block or a leading `<!-- ... -->` HTML
+ * comment (before the first SFC block), stripping `@component`/`@displayName`
+ * marker lines and comment decoration.
+ */
+function extractLeadingDescription(source) {
+  const jsBlock = source.match(/^\s*\/\*\*([\s\S]*?)\*\//);
+  const htmlBlock = source.match(/^\s*<!--([\s\S]*?)-->/);
+  const raw = jsBlock?.[1] ?? htmlBlock?.[1];
+  if (!raw) return '';
+
+  return raw
+    .split('\n')
+    .map((line) => line.replace(/^\s*\*\s?/, '').trim())
+    .filter((line) => line && !/^@(component|displayName)\b/.test(line))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Parse a single component
 async function parseComponent(filePath, name, category) {
   try {
     const componentInfo = await parse(filePath);
+    const description =
+      componentInfo.description?.trim() ||
+      extractLeadingDescription(readFileSync(filePath, 'utf8'));
 
     return {
       name,
       category,
       filePath: filePath.replace(rootDir + '/', ''),
-      description: componentInfo.description || '',
+      description,
       props: (componentInfo.props || []).map(prop => ({
         name: prop.name,
         type: prop.type?.name || 'any',

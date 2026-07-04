@@ -1,9 +1,17 @@
+<!--
+  @component
+  Full-featured dashboard data table. Wraps `DTable` and adds three data modes
+  (Inertia items, client-side, and API/provider), inline per-column filters,
+  single-column sorting, pagination with a per-page selector, and an optional
+  edit/create/delete modal driven by `DXForm`.
+-->
 <template>
     <DContainer :fluid="fluid" :class="containerClass">
         <DRow class="justify-content-center">
             <DCol :md="columnSize">
                 <DCard>
                     <template v-if="title || createUrl || $slots.header" #header>
+                        <!-- @slot Card header content; overrides the default title heading and the "New {item}" button. -->
                         <slot name="header">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h4 class="mb-0">{{ title }}</h4>
@@ -114,6 +122,13 @@
                             v-for="(_, name) in $slots"
                             #[name]="slotProps"
                         >
+                            <!--
+                              @slot Custom rendering for a column's cell. Name it `cell(<fieldKey>)` to target a field; receives the underlying table cell scope.
+                              @binding {object} item The row data object for this cell.
+                              @binding {any} value The cell value for the field.
+                              @binding {number} index The zero-based row index.
+                              @binding {object} field The field definition for the column.
+                            -->
                             <slot
                                 v-if="typeof name === 'string' && name.startsWith('cell')"
                                 :name="name"
@@ -203,6 +218,13 @@
                             v-for="(_, name) in $slots"
                             #[name]="slotProps"
                         >
+                            <!--
+                              @slot Custom rendering for a column's cell. Name it `cell(<fieldKey>)` to target a field; receives the underlying table cell scope.
+                              @binding {object} item The row data object for this cell.
+                              @binding {any} value The cell value for the field.
+                              @binding {number} index The zero-based row index.
+                              @binding {object} field The field definition for the column.
+                            -->
                             <slot
                                 v-if="typeof name === 'string' && name.startsWith('cell')"
                                 :name="name"
@@ -293,6 +315,13 @@
                             v-for="(_, name) in $slots"
                             #[name]="slotProps"
                         >
+                            <!--
+                              @slot Custom rendering for a column's cell. Name it `cell(<fieldKey>)` to target a field; receives the underlying table cell scope.
+                              @binding {object} item The row data object for this cell.
+                              @binding {any} value The cell value for the field.
+                              @binding {number} index The zero-based row index.
+                              @binding {object} field The field definition for the column.
+                            -->
                             <slot
                                 v-if="typeof name === 'string' && name.startsWith('cell')"
                                 :name="name"
@@ -472,6 +501,13 @@
                     :key="`ev-${key}`"
                     #[`value(${key})`]="sp"
                 >
+                    <!--
+                      @slot Custom input for field `<key>` in the edit/create modal, forwarded to DXForm. Name it `edit-value(<fieldKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {any} value The current field value.
+                      @binding {Function} update Call with a new value to update the field.
+                      @binding {object} field The field definition.
+                    -->
                     <slot
                         :name="`edit-value(${key})`"
                         :item="selectedItem"
@@ -487,6 +523,13 @@
                     :key="`es-${key}`"
                     #[`span(${key})`]="sp"
                 >
+                    <!--
+                      @slot Full-width custom content for field `<key>` in the edit/create modal, forwarded to DXForm's span slot. Name it `edit-span(<fieldKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {any} value The current field value.
+                      @binding {Function} update Call with a new value to update the field.
+                      @binding {Function} close Call to close the edit modal.
+                    -->
                     <slot
                         :name="`edit-span(${key})`"
                         :item="selectedItem"
@@ -502,6 +545,11 @@
                     :key="`tc-${key}`"
                     #[`tab-content(${key})`]="sp"
                 >
+                    <!--
+                      @slot Replaces the auto-rendered fields of edit-modal tab `<key>` with custom content. Name it `tab-content(<tabKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {object} tab The tab definition.
+                    -->
                     <slot :name="`tab-content(${key})`" :item="selectedItem" :tab="sp.tab" />
                 </template>
                 <template
@@ -509,6 +557,11 @@
                     :key="`tb-${key}`"
                     #[`tab-before(${key})`]="sp"
                 >
+                    <!--
+                      @slot Custom content rendered before the fields of edit-modal tab `<key>`. Name it `tab-before(<tabKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {object} tab The tab definition.
+                    -->
                     <slot :name="`tab-before(${key})`" :item="selectedItem" :tab="sp.tab" />
                 </template>
                 <template
@@ -516,6 +569,11 @@
                     :key="`taf-${key}`"
                     #[`tab-after(${key})`]="sp"
                 >
+                    <!--
+                      @slot Custom content rendered after the fields of edit-modal tab `<key>`. Name it `tab-after(<tabKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {object} tab The tab definition.
+                    -->
                     <slot :name="`tab-after(${key})`" :item="selectedItem" :tab="sp.tab" />
                 </template>
             </DXForm>
@@ -771,20 +829,35 @@ const props = withDefaults(defineProps<Props<T>>(), {
 });
 
 const emit = defineEmits<{
+    /** Emitted when the user navigates to a different page (all modes). Payload is the new 1-based page number. */
     pageChange: [page: number];
+    /** Emitted (Inertia mode) when the sort column or direction changes, with the active field key and order. */
     sortChange: [sort: { key: string; order: 'asc' | 'desc' }];
+    /** Emitted when the inline column filter values change (debounced for server modes, immediate for client-side). Payload is the full filter map. */
     filterChange: [filters: Record<string, string>];
+    /** Emitted when the per-page selector value changes. Payload is the new page size. */
     perPageChange: [perPage: number];
+    /** Emitted when a table row is clicked, with the row item, its index, and the click event. */
     rowClicked: [item: T, index: number, event: MouseEvent];
+    /** Emitted after a new item is successfully created via `createUrl`, with the created item and the raw response. */
     rowCreated: [item: any, response: any];
+    /** Emitted when a create request fails, with the validation errors or error object. */
     createError: [error: any];
+    /** Emitted after a row is successfully updated (or, with no `editUrl`, when the modal is saved), with the item and the response/form data. */
     rowUpdated: [item: T, response: any];
+    /** Emitted when an update request fails, with the edited item and the error. */
     editError: [item: T, error: any];
+    /** Emitted after a row is successfully deleted via `deleteUrl`, with the deleted item and the response. */
     rowDeleted: [item: T, response: any];
+    /** Emitted when a delete request fails, with the item and the error. */
     deleteError: [item: T, error: any];
+    /** `v-model:sortBy` update, emitted with the normalized single-column sort array when sorting changes. */
     'update:sortBy': [sortBy: BTableSortBy[]];
+    /** `v-model:filters` update, emitted with the new filter map when a column filter changes. */
     'update:filters': [filters: Record<string, string>];
+    /** `v-model:perPage` update, emitted with the new page size when the per-page selector changes. */
     'update:perPage': [perPage: number];
+    /** `v-model:busy` update, forwarded from the underlying table's provider loading state (provider mode). */
     'update:busy': [busy: boolean];
 }>();
 
