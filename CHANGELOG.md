@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-07-04
+
+### Changed
+- **`DXTable` no longer stripes rows by default.** Banded rows add little on
+  short tables and can read as noise; `striped` now defaults to `false`. Opt
+  back in with `:striped="true"` for dense tables.
+
 ## [0.13.0] - 2026-07-04
 
 ### Added
