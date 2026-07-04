@@ -346,7 +346,7 @@
                             <div v-else></div>
 
                             <!-- Per-page selector -->
-                            <div v-if="clientSidePagination.total >= Math.min(...perPageOptions)" class="d-flex align-items-center gap-2">
+                            <div v-if="shouldShowPerPageSelector" class="d-flex align-items-center gap-2">
                                 <label for="perPageSelectClientSide" class="mb-0 small text-muted">Per page</label>
                                 <DFormSelect
                                     id="perPageSelectClientSide"
@@ -1185,9 +1185,11 @@ const shouldShowPerPageSelector = computed(() => {
     if (!props.showPerPageSelector) return false;
 
     const smallestOption = Math.min(...props.perPageOptions);
-    const total = isInertiaMode.value
-        ? props.pagination?.total || 0
-        : apiPaginationMeta.value?.total || 0;
+    const total = isClientSideMode.value
+        ? clientSidePagination.value?.total || 0
+        : isInertiaMode.value
+            ? props.pagination?.total || 0
+            : apiPaginationMeta.value?.total || 0;
 
     return total >= smallestOption;
 });

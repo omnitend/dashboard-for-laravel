@@ -269,6 +269,49 @@ describe('DXTable', () => {
       expect(perPageSelect?.value).toBe('10');
     });
 
+    it('suppresses the per-page selector in client-side mode when showPerPageSelector is false', async () => {
+      // Repro of #36: a fixed top-N client-side table should not render the
+      // per-page control. Use >= the smallest page-size option so the only
+      // reason to hide it is the prop.
+      const manyItems = Array.from({ length: 12 }, (_, i) => ({
+        id: i + 1,
+        name: `Item ${i + 1}`,
+        email: `item${i + 1}@example.com`,
+      }));
+
+      const screen = render(DXTable, {
+        props: {
+          items: manyItems,
+          fields: customerFields,
+          clientSide: true,
+          showPagination: false,
+          showPerPageSelector: false,
+        },
+      });
+
+      expect(screen.container.querySelector('#perPageSelectClientSide')).toBeNull();
+      expect(screen.container.textContent).not.toContain('Per page');
+    });
+
+    it('shows the client-side per-page selector when showPerPageSelector is true', async () => {
+      const manyItems = Array.from({ length: 12 }, (_, i) => ({
+        id: i + 1,
+        name: `Item ${i + 1}`,
+        email: `item${i + 1}@example.com`,
+      }));
+
+      const screen = render(DXTable, {
+        props: {
+          items: manyItems,
+          fields: customerFields,
+          clientSide: true,
+          showPerPageSelector: true,
+        },
+      });
+
+      expect(screen.container.querySelector('#perPageSelectClientSide')).toBeTruthy();
+    });
+
     it('updates table content when items prop changes', async () => {
       const screen = render(DXTable, {
         props: {
