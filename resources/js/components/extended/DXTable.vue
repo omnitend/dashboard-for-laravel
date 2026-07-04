@@ -529,7 +529,7 @@
                             :disabled="editForm?.processing"
                             @click="handleDelete"
                         >
-                            {{ editForm?.processing ? 'Deleting...' : 'Delete' }}
+                            {{ pendingAction === 'delete' ? 'Deleting...' : 'Delete' }}
                         </DButton>
                     </div>
                     <div class="d-flex gap-2">
@@ -542,10 +542,10 @@
                             @click="handleEditSave"
                         >
                             <template v-if="isCreateMode">
-                                {{ editForm?.processing ? 'Creating...' : 'Create' }}
+                                {{ pendingAction === 'save' ? 'Creating...' : 'Create' }}
                             </template>
                             <template v-else>
-                                {{ editForm?.processing ? 'Saving...' : 'Save Changes' }}
+                                {{ pendingAction === 'save' ? 'Saving...' : 'Save Changes' }}
                             </template>
                         </DButton>
                     </div>
@@ -1380,6 +1380,11 @@ const editForm = ref<any>(null);
 const activeTabIndex = ref(0);
 const isCreateMode = ref(false);
 
+// Which modal action is in flight, so the Save and Delete buttons show their
+// own loading label independently. `editForm.processing` is shared by every
+// request the form makes, so it can't tell Save from Delete on its own.
+const pendingAction = ref<'save' | 'delete' | null>(null);
+
 // Toast (may not be available in test environment)
 let createToast: ((obj: any) => any) | undefined;
 try {
@@ -1521,6 +1526,15 @@ const handleCreateNew = () => {
 const handleEditSave = async () => {
     if (!editForm.value) return;
 
+    pendingAction.value = 'save';
+    try {
+        await performSave();
+    } finally {
+        pendingAction.value = null;
+    }
+};
+
+const performSave = async () => {
     // Create mode: POST to createUrl
     if (isCreateMode.value && props.createUrl) {
         try {
@@ -1648,6 +1662,7 @@ const handleDelete = async () => {
 
     if (!confirmed) return;
 
+    pendingAction.value = 'delete';
     try {
         const itemId = (selectedItem.value as any).id;
         const url = props.deleteUrl.replace(':id', itemId);
@@ -1687,6 +1702,8 @@ const handleDelete = async () => {
         });
     } catch (error) {
         emit('deleteError', selectedItem.value as T, error);
+    } finally {
+        pendingAction.value = null;
     }
 };
 

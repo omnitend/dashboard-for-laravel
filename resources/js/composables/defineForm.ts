@@ -30,6 +30,7 @@ export interface DefineFormReturn<TData extends Record<string, any>> {
 function getDefaultValueForType(type: FieldType): any {
     switch (type) {
         case "checkbox":
+        case "switch":
             return false;
         case "number":
         case "currency":

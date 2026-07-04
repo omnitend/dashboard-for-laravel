@@ -7,8 +7,11 @@
       <code>#hint</code> and <code>#value</code> slot overrides.
     </p>
 
-    <!-- A plain currency field -->
+    <!-- A currency field with a declarative info popover on the label -->
     <DXField :field="priceField" :form="form" />
+
+    <!-- A switch with contextual on/off text and an on-state style -->
+    <DXField :field="defaultField" :form="form" />
 
     <!-- Select with a custom hint slot -->
     <DXField :field="planField" :form="form">
@@ -44,13 +47,23 @@ import {
   type FieldDefinition,
 } from '@omnitend/dashboard-for-laravel';
 
-const form = useForm({ price: 12.5, plan: 'pro', rating: 3 });
+const form = useForm({ price: 12.5, is_default: true, plan: 'pro', rating: 3 });
 
 const priceField: FieldDefinition = {
   key: 'price',
   type: 'currency',
   label: 'Price',
   currencySymbol: '£',
+  hint: 'The list price before tax.',
+  info: 'Shown to customers on the storefront. Taxes are added at checkout.',
+};
+
+const defaultField: FieldDefinition = {
+  key: 'is_default',
+  type: 'switch',
+  label: 'Default VAT rate',
+  textWhenTrue: 'This is the default VAT rate',
+  textWhenFalse: 'This is not the default VAT rate',
 };
 
 const planField: FieldDefinition = {

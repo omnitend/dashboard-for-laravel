@@ -26,14 +26,47 @@
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
-            {{ resolvedLabel }}
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
         </DFormCheckbox>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
             {{ form.getError(errorKey) }}
         </DFormInvalidFeedback>
         <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="resolvedHint" class="text-muted">
+        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
+        </DFormText>
+        <DFormText v-if="field.help">{{ field.help }}</DFormText>
+    </div>
+
+    <!-- Switch: toggle with contextual on/off text and an on-state style -->
+    <div
+        v-else-if="field.type === 'switch'"
+        :class="[field.class || 'mb-3', 'dx-switch', { 'dx-switch--on': switchIsOn }]"
+    >
+        <slot
+            v-if="$slots.value"
+            name="value"
+            :field="field"
+            :model="model"
+            :value="fieldValue"
+            :update="setValue"
+        />
+        <DFormCheckbox
+            v-else
+            v-model="switchModel"
+            switch
+            :disabled="isDisabled || isReadonly"
+            v-bind="field.inputProps"
+        >
+            <DXFieldLabel :label="switchText" :info="resolvedInfo" />
+        </DFormCheckbox>
+
+        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
+            {{ form.getError(errorKey) }}
+        </DFormInvalidFeedback>
+        <slot name="info" :field="field" :model="model" />
+        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
             <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
         </DFormText>
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
@@ -41,7 +74,10 @@
 
     <!-- Repeater: nested, repeatable sub-form -->
     <div v-else-if="field.type === 'repeater'" :class="field.class || 'mb-3'">
-        <DFormGroup :label="resolvedLabel">
+        <DFormGroup>
+            <template #label>
+                <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            </template>
             <DXRepeater
                 :form="form"
                 :field="field"
@@ -55,14 +91,19 @@
             </DXRepeater>
         </DFormGroup>
         <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="resolvedHint" class="text-muted">
+        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
             <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
         </DFormText>
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
     </div>
 
     <!-- Standard labelled field -->
-    <DFormGroup v-else :label="resolvedLabel" :class="field.class || 'mb-3'">
+    <DFormGroup v-else :class="field.class || 'mb-3'">
+        <!-- Label with optional info popover -->
+        <template #label>
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+        </template>
+
         <!-- Custom value slot overrides the built-in control -->
         <slot
             v-if="$slots.value"
@@ -213,6 +254,7 @@ import DFormCheckbox from "../base/DFormCheckbox.vue";
 import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
 import DFormText from "../base/DFormText.vue";
 import DInputGroup from "../base/DInputGroup.vue";
+import DXFieldLabel from "./DXFieldLabel.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { FieldDefinition, FieldOption, FieldType } from "../../types";
 import { getByPath, setByPath } from "../../utils/objectPath";
@@ -342,6 +384,46 @@ const resolvedLabel = computed(
 
 const resolvedHint = computed(() => resolveMaybe(props.field.hint));
 
+const resolvedInfo = computed(() => resolveMaybe(props.field.info));
+
+// ————————————————— switch (toggle) field
+
+// Whether a `switch` field is currently on. Coerces the model value to a
+// boolean, but treats the common "falsey" string encodings a backend might send
+// for a boolean ("0", "false", "") as off — plain `Boolean("0")` is `true`,
+// which would wrongly render such a value on.
+const switchIsOn = computed(() => {
+    const value = fieldValue.value;
+    if (typeof value === "string") {
+        const normalised = value.trim().toLowerCase();
+        return normalised !== "" && normalised !== "0" && normalised !== "false";
+    }
+    return Boolean(value);
+});
+
+// Bind the toggle to a normalised boolean. The underlying bvn checkbox only
+// treats a literal `true` as checked, so a truthy non-boolean model (e.g.
+// Laravel serialising a boolean column as `1`, or a `"1"` string) would render
+// the toggle in the *off* position while `switchIsOn` styled it *on* — the
+// control contradicting itself. Reading a real boolean keeps the checkbox
+// position, the on-state style, and the contextual text in agreement; writing
+// stores a clean boolean.
+const switchModel = computed({
+    get: () => switchIsOn.value,
+    set: (value: boolean) => setValue(value),
+});
+
+/**
+ * Contextual label for a `switch` field: `textWhenTrue`/`textWhenFalse`
+ * for the current state, falling back to the field's label.
+ */
+const switchText = computed(() => {
+    const contextual = switchIsOn.value
+        ? resolveMaybe(props.field.textWhenTrue)
+        : resolveMaybe(props.field.textWhenFalse);
+    return contextual ?? resolvedLabel.value;
+});
+
 const isDisabled = computed(() => {
     if (props.field.disabledWhen) {
         return props.field.disabledWhen(effectiveModel.value);
@@ -433,5 +515,27 @@ onBeforeUnmount(() => {
     object-fit: cover;
     border: 1px solid var(--bs-border-color);
     border-radius: var(--bs-border-radius);
+}
+
+/* Switch field: contextual styling that responds to the on/off state.
+   Off is muted; on turns the control and label a filled success green. */
+.dx-switch :deep(.form-check-label) {
+    color: var(--bs-secondary-color);
+    transition: color 0.15s ease-in-out;
+}
+
+.dx-switch--on :deep(.form-check-label) {
+    color: var(--bs-success);
+    font-weight: 500;
+}
+
+.dx-switch--on :deep(.form-check-input:checked) {
+    background-color: var(--bs-success);
+    border-color: var(--bs-success);
+}
+
+.dx-switch--on :deep(.form-check-input:focus) {
+    border-color: var(--bs-success);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-success-rgb), 0.25);
 }
 </style>

@@ -11,6 +11,8 @@ import type { Component } from "vue";
  * - `image` / `file` — file input (`image` additionally shows a preview).
  * - `component` — escape hatch that renders `field.component`.
  * - `repeater` — nested, repeatable sub-form driven by `field.fields`.
+ * - `switch` — a toggle checkbox with contextual on/off text and an
+ *   on-state (filled) style; see `textWhenTrue` / `textWhenFalse`.
  */
 export type FieldType =
     | "text"
@@ -28,6 +30,7 @@ export type FieldType =
     | "textarea"
     | "select"
     | "checkbox"
+    | "switch"
     | "radio"
     | "image"
     | "file"
@@ -125,6 +128,26 @@ export interface FieldDefinition {
      * function of the model for dynamic hints.
      */
     hint?: MaybeFn<string>;
+
+    /**
+     * Longer help text revealed in a popover from a small info affordance
+     * on the field's label (on hover/focus). Complements `hint` (which is
+     * always-visible muted text below the control). May be a function of
+     * the model. For rich content, use the `#info` slot instead.
+     */
+    info?: MaybeFn<string>;
+
+    /**
+     * For `switch` fields: contextual label shown when the toggle is on.
+     * Falls back to `label` when omitted. May be a function of the model.
+     */
+    textWhenTrue?: MaybeFn<string>;
+
+    /**
+     * For `switch` fields: contextual label shown when the toggle is off.
+     * Falls back to `label` when omitted. May be a function of the model.
+     */
+    textWhenFalse?: MaybeFn<string>;
 
     /** CSS class for the form group */
     class?: string;
