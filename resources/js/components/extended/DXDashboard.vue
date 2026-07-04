@@ -7,6 +7,8 @@
       :title="title"
       :collapsed="collapsed"
       :hidden="hidden"
+      :collapsible-groups="collapsibleGroups"
+      :auto-collapse-inactive-groups="autoCollapseInactiveGroups"
       @toggle="toggleSidebar"
     >
       <!-- Dynamically forward all sidebar-* slots by stripping the prefix -->
@@ -82,6 +84,19 @@ interface Props {
   /** Logout URL for navbar dropdown */
   logoutUrl?: string;
 
+  /**
+   * Turn sidebar group headers into accordion toggles that collapse/expand
+   * their items. When off (default), every group is permanently expanded.
+   */
+  collapsibleGroups?: boolean;
+
+  /**
+   * Only relevant when `collapsibleGroups` is on. `true` (default): only the
+   * active-route group starts open and opening one closes the others
+   * (single-open accordion). `false`: all groups start open, toggled independently.
+   */
+  autoCollapseInactiveGroups?: boolean;
+
   /** LocalStorage key for sidebar state persistence */
   storageKey?: string;
 
@@ -98,6 +113,8 @@ const props = withDefaults(defineProps<Props>(), {
   pageTitle: '',
   user: null,
   logoutUrl: '/logout',
+  collapsibleGroups: false,
+  autoCollapseInactiveGroups: true,
   storageKey: 'dashboard-sidebar-hidden',
   dashboardId: '',
 });

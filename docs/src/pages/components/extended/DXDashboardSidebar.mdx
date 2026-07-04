@@ -76,8 +76,10 @@ const handleNavClick = (item) => {
 <PropsTable client:load props={[
   { name: 'navigation', type: 'Navigation', required: 'Yes', default: '-', description: 'Navigation structure with groups and items. See Navigation type definition below' },
   { name: 'currentUrl', type: 'string', required: 'Yes', default: '-', description: 'Current URL for determining active navigation items' },
-  { name: 'collapsed', type: 'boolean', required: 'No', default: 'false', description: 'Whether the sidebar is collapsed' },
+  { name: 'collapsed', type: 'boolean', required: 'No', default: 'false', description: 'Whether the sidebar rail is collapsed to icons only' },
   { name: 'title', type: 'string', required: 'No', default: 'Dashboard', description: 'Sidebar title shown in the header' },
+  { name: 'collapsibleGroups', type: 'boolean', required: 'No', default: 'false', description: 'Turn group headers into accordion toggles that collapse/expand their items' },
+  { name: 'autoCollapseInactiveGroups', type: 'boolean', required: 'No', default: 'true', description: 'When collapsibleGroups is on: true opens only the active-route group and closes others when one opens (single-open accordion); false opens all groups and toggles them independently' },
 ]} />
 
 ## Events
@@ -90,7 +92,7 @@ const handleNavClick = (item) => {
 
 <SlotsTable client:load slots={[
   { name: 'brand', description: 'Custom brand/logo content in the sidebar header. Receives collapsed (boolean) and title (string) as slot props' },
-  { name: 'link', description: 'Custom navigation link rendering. Receives item (NavigationItem), isActive (boolean), and collapsed (boolean) as slot props' },
+  { name: 'link', description: 'Custom navigation link rendering. Receives item (NavigationItem), isActive (boolean), collapsed (boolean), and isExpanded (boolean — whether the containing group is open) as slot props' },
 ]} />
 
 ## Extended Component
@@ -116,8 +118,8 @@ interface NavigationItem {
 interface NavigationGroup {
   label?: string;             // Group label (optional)
   items: NavigationItem[];
-  collapsible?: boolean;
-  collapsed?: boolean;
+  collapsible?: boolean;      // Set false to keep this group always expanded when collapsibleGroups is on
+  collapsed?: boolean;        // Reserved for a future explicit initial-open hint
   visible?: boolean;
 }
 
@@ -126,7 +128,8 @@ type Navigation = NavigationGroup[];
 
 ## Features
 
-- **Collapsible Design**: Toggle between expanded and collapsed states
+- **Collapsible Design**: Toggle between expanded and collapsed (icon-only) rail states
+- **Collapsible Groups**: Optional accordion menu groups (`collapsibleGroups`) — ideal for large menus. With `autoCollapseInactiveGroups` (default), only the active-route group opens on load and opening one closes the others. Uses a CSS grid height transition (no layout flicker on load)
 - **Navigation Groups**: Organise navigation items into logical groups with labels
 - **Active State**: Automatically highlights active navigation items based on current URL
 - **Icon Support**: Display icons next to navigation items (works with component icons or emojis)

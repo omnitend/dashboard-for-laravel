@@ -169,7 +169,8 @@ $dashboard-navbar-height: 64px;
     border-bottom-color: $navbar-dark-toggler-border-color;
   }
 
-  .nav-group-label {
+  .nav-group-label,
+  .nav-group-toggle {
     color: $navbar-dark-color;
   }
 

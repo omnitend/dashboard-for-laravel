@@ -7,6 +7,7 @@
         :navigation="navigation"
         :current-url="currentUrl"
         :collapsed="collapsed"
+        collapsible-groups
         title="My Dashboard"
         @toggle="collapsed = !collapsed"
       >
