@@ -19,6 +19,13 @@
           </div>
         </template>
 
+        <!-- Page-level primary action, right-aligned near the user menu -->
+        <template #actions="{ pageTitle }">
+          <DButton variant="primary" size="sm" @click="handleCreate">
+            New item
+          </DButton>
+        </template>
+
         <template #user-menu-items="{ user }">
           <DDropdownItem href="/profile">
             <span>Profile</span>
@@ -45,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { DXDashboardNavbar, DDropdownItem, DDropdownDivider } from '@omnitend/dashboard-for-laravel';
+import { DXDashboardNavbar, DButton, DDropdownItem, DDropdownDivider } from '@omnitend/dashboard-for-laravel';
 
 import { ref } from 'vue';
 
@@ -63,6 +70,10 @@ const handleToggle = () => {
 
 const handleLogout = () => {
   lastAction.value = 'Logout clicked';
+};
+
+const handleCreate = () => {
+  lastAction.value = 'New item clicked';
 };
 </script>
 
