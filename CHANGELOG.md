@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-07-04
+
+### Added
+- **`DXStatCard`** — a KPI / stat tile: a big formatted value (`number` /
+  `currency` / `percent`), title + subtitle, an auto-coloured up/down delta badge
+  versus a comparison (`invertDelta` for down-is-good metrics), and `value` /
+  `icon` / `trend` slots. Themed with Bootstrap variables.
+- **`DXTable` `showUrl`** — opt-in fetch of the full record for the edit modal.
+  When set, opening a row seeds the form from a `/…/:id` fetch (with a loading
+  state) instead of the thin list row — for lists whose payload is slimmer than
+  the edit form (notes, nested relations, repeater rows).
+- **Automatic multipart file upload.** `useForm` now submits
+  `multipart/form-data` when any field holds a `File`/`Blob` (nested
+  objects/arrays flattened Laravel-style; booleans as `"1"`/`"0"`), spoofing
+  `put`/`patch` as `POST` + `_method`. So `image`/`file` fields round-trip
+  through `DXTable` create/edit with no extra config.
+
 ## [0.11.1] - 2026-07-04
 
 ### Fixed
