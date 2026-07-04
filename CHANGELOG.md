@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-07-04
+
+### Fixed
+- **`useForm` crashed on object/array field defaults from a reactive source.**
+  Seeding data was deep-cloned with `structuredClone`, which throws
+  `DataCloneError` on a Vue reactive Proxy — so a `repeater` (or any) field with
+  `default: []` / `default: {}` inside a reactive `editFields` ref blanked the
+  create/edit modal. The clone now runs `toRaw` first and falls back to a JSON
+  clone, so object/array defaults work without the `Object.freeze` workaround.
+- **`DXTable` per-page selector ignored `showPerPageSelector` in client-side
+  mode.** A fixed top-N table (`clientSide` + pagination off) still rendered the
+  "Per page" control. The client-side gate now honours the prop like the other
+  modes.
+
 ## [0.11.0] - 2026-07-04
 
 ### Added
