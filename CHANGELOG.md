@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-07-04
+
+### Added
+- **`actions` slot on `DXDashboardNavbar`** (forwarded from `DXDashboard` as
+  `navbar-actions`) for page-level primary actions — e.g. a Create / New … button
+  — rendered right-aligned next to the user menu, keeping them in the shell chrome
+  rather than the page body. The slot receives `pageTitle` for context and only
+  renders its wrapper when provided.
+
 ## [0.9.1] - 2026-07-04
 
 ### Added
