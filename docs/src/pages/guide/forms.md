@@ -217,6 +217,7 @@ Supported field types:
 - `textarea` - Multi-line text
 - `select` - Dropdown select (sync `options` or async `optionsLoader`)
 - `checkbox` - Checkbox
+- `switch` - Toggle with contextual on/off text and an on-state style (`textWhenTrue` / `textWhenFalse`)
 - `radio` - Radio button group (requires `options`)
 - `currency`, `percentage` - Numeric input with a `£`/`%` affix
 - `image`, `file` - File input (`image` shows a preview)
@@ -234,6 +235,7 @@ interface FieldDefinition {
   required?: boolean
   help?: string                     // Always-visible help text below the field
   hint?: string | ((model) => string)    // Hint text (may be model-derived)
+  info?: string | ((model) => string)    // Popover help from an info icon on the label
   class?: string                    // CSS class for the form group
   inputProps?: Record<string, any>  // Extra props forwarded to the input
 
@@ -255,6 +257,10 @@ interface FieldDefinition {
 
   // File (image / file)
   accept?: string                   // e.g. "image/*"
+
+  // Switch (toggle)
+  textWhenTrue?: string | ((model) => string)    // Label shown when on (falls back to label)
+  textWhenFalse?: string | ((model) => string)   // Label shown when off (falls back to label)
 
   // Custom control (component)
   component?: Component             // Rendered with v-model + { field, model } props

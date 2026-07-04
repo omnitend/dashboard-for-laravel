@@ -8,6 +8,7 @@ export * from 'bootstrap-vue-next';
 export { default as DXDashboard } from "./components/extended/DXDashboard.vue";
 export { default as DXForm } from "./components/extended/DXForm.vue";
 export { default as DXField } from "./components/extended/DXField.vue";
+export { default as DXFieldLabel } from "./components/extended/DXFieldLabel.vue";
 export { default as DXRepeater } from "./components/extended/DXRepeater.vue";
 /**
  * @deprecated Use `DXForm`. `DXBasicForm` is a thin wrapper around `DXForm`

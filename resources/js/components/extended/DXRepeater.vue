@@ -124,6 +124,7 @@ const rowKey = (index: number): string | number => {
 function defaultForType(type: FieldType): any {
     switch (type) {
         case "checkbox":
+        case "switch":
             return false;
         case "number":
         case "currency":

@@ -15,6 +15,12 @@ composer.lock
 .astro/
 docs/.astro/
 
+# Auto-generated (unplugin-vue-components global declarations)
+components.d.ts
+
+# Testing
+.vitest-attachments/
+
 # Auto-generated AI documentation files
 docs/public/llms.txt
 docs/public/api-reference.json
