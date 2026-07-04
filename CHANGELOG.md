@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-07-04
+
+### Added
+- **Chart components: `DXBarChart`, `DXLineChart`, `DXDoughnutChart`.** Thin,
+  themed wrappers around Chart.js via `vue-chartjs` (both **optional** peer deps,
+  externalized from the build). Pass `labels` + `datasets`; the Bootstrap palette
+  is read from the live theme and dashboard defaults applied (no x gridlines,
+  formatted value ticks/tooltips, legend auto-shown for multi-series). `options`
+  deep-merges over the defaults.
+
+### Fixed
+- **`DXTable` `showUrl` edit flow** — Save/Delete are disabled (and the delete
+  guard bails) while the full-record fetch is in flight, so the guard never runs
+  against the thin list row; and the modal-open async `useForm` import is guarded
+  so a slow first-open can't seed the form after a different row/create is opened.
+- **`useForm` multipart** — also spoofs `_method` when a `transform` returns a
+  `FormData` directly (a raw multipart PUT/PATCH isn't parsed by PHP).
+
 ## [0.12.0] - 2026-07-04
 
 ### Added
