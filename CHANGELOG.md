@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`DXTable` no longer breaks a page that also statically imports `useForm`**
+  (#42). `DXTable` used to lazy-load `useForm` via a dynamic `import()` to dodge
+  a circular dependency that no longer exists (`useForm` → `api`, a leaf). That
+  dynamic import made Rollup place `useForm` behind a dynamic-import chunk, so a
+  consumer page doing `import { useForm } from '@omnitend/dashboard-for-laravel'`
+  alongside a `DXTable` got a dangling, undefined `useForm` at runtime. `DXTable`
+  now imports `useForm` statically; the edit/create modal seeds its form
+  synchronously (also removing the interim modal-open token workaround). The
+  previously-skipped `DXTable` edit-tabs tests are re-enabled.
+
 ## [0.13.1] - 2026-07-04
 
 ### Changed

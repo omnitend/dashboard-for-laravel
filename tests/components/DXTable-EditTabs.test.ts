@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from 'vitest-browser-vue';
-import { userEvent } from 'vitest/browser';
+import { render } from 'vitest-browser-vue';
 import { h } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Wrapper to provide BApp context for useToast
 const renderWithBApp = (component: any, options: any) => {
@@ -43,10 +45,11 @@ const editTabs = [
   },
 ];
 
-// Note: These tests currently have issues with async useForm import in test environment
-// The functionality works correctly in actual usage (verified in playground)
-// TODO: Refactor to pre-initialize form or mock useForm import
-describe.skip('DXTable Edit Tabs', () => {
+// `useForm` is statically imported by DXTable (see #42), so opening the edit
+// modal seeds the form synchronously — these tests no longer race an async
+// dynamic import. The modal teleports to `document.body`, so its content is
+// queried on `document`, not the render container.
+describe('DXTable Edit Tabs', () => {
   describe('Tab Rendering', () => {
     it('renders edit modal with tabs when editTabs provided', async () => {
       const screen = renderWithBApp(DXTable, {
@@ -58,16 +61,14 @@ describe.skip('DXTable Edit Tabs', () => {
           editUrl: '/api/categories/:id',
         },
       });
+      await flush();
 
       // Click first row to open edit modal
-      const rows = screen.container.querySelectorAll('tbody tr');
-      (rows[0] as HTMLElement).click();
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
 
-      // Wait for async useForm import and modal to render
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Check tabs are rendered
-      const tabs = screen.container.querySelectorAll('.nav-link');
+      // Check tabs are rendered (modal is teleported to body)
+      const tabs = document.querySelectorAll('.nav-link');
       expect(tabs.length).toBeGreaterThanOrEqual(2);
 
       // Check tab labels
@@ -88,15 +89,14 @@ describe.skip('DXTable Edit Tabs', () => {
           editUrl: '/api/categories/:id',
         },
       });
+      await flush();
 
       // Click first row
-      const rows = screen.container.querySelectorAll('tbody tr');
-      (rows[0] as HTMLElement).click();
-
-      await new Promise(resolve => setTimeout(resolve, 500));
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
 
       // Should not have tabs (backwards compatibility)
-      const tabs = screen.container.querySelectorAll('.nav-link');
+      const tabs = document.querySelectorAll('.nav-link');
       expect(tabs.length).toBe(0);
     });
 
@@ -110,15 +110,14 @@ describe.skip('DXTable Edit Tabs', () => {
           editModalTitle: (item: any) => `Edit: ${item.name}`,
         },
       });
+      await flush();
 
       // Click first row (Electronics)
-      const rows = screen.container.querySelectorAll('tbody tr');
-      (rows[0] as HTMLElement).click();
-
-      await new Promise(resolve => setTimeout(resolve, 100));
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
 
       // Check modal title is dynamic
-      const modalTitle = screen.container.querySelector('.modal-title');
+      const modalTitle = document.querySelector('.modal-title');
       expect(modalTitle?.textContent).toBe('Edit: Electronics');
     });
   });
@@ -133,15 +132,14 @@ describe.skip('DXTable Edit Tabs', () => {
           editTabs: editTabs,
         },
       });
+      await flush();
 
       // Click first row
-      const rows = screen.container.querySelectorAll('tbody tr');
-      (rows[0] as HTMLElement).click();
-
-      await new Promise(resolve => setTimeout(resolve, 500));
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
 
       // First tab should have name, slug, description fields
-      const nameInput = screen.container.querySelector('input[type="text"]');
+      const nameInput = document.querySelector('input[type="text"]');
       expect(nameInput).toBeTruthy();
     });
   });
@@ -156,25 +154,24 @@ describe.skip('DXTable Edit Tabs', () => {
           editTabs: editTabs,
         },
         slots: {
-          'edit-span(products)': '<div class="custom-products-content">Products go here</div>',
+          'edit-span(products)': () => h('div', { class: 'custom-products-content' }, 'Products go here'),
         },
       });
+      await flush();
 
       // Click first row
-      const rows = screen.container.querySelectorAll('tbody tr');
-      (rows[0] as HTMLElement).click();
-
-      await new Promise(resolve => setTimeout(resolve, 500));
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
 
       // Switch to Products tab (second tab)
-      const tabs = screen.container.querySelectorAll('.nav-link');
+      const tabs = document.querySelectorAll('.nav-link');
       if (tabs[1]) {
         (tabs[1] as HTMLElement).click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await wait(50);
       }
 
       // Check custom content is rendered
-      const customContent = screen.container.querySelector('.custom-products-content');
+      const customContent = document.querySelector('.custom-products-content');
       expect(customContent).toBeTruthy();
       expect(customContent?.textContent).toContain('Products go here');
     });
