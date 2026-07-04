@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-04
+
+### Added
+- **`DXDashboard` `fluid` / `contentClass` props.** `fluid` renders page content
+  full-width and left-aligned instead of the default centred reading-width
+  (`col-xl-10`) column — for data-heavy admin pages with wide tables.
+  `contentClass` adds class(es) to the content container.
+- **`DXTable` `openCreate()` method** (via `defineExpose`, alongside `refresh()`)
+  so the create action can live outside the table card — a page header, the
+  dashboard navbar actions slot, etc. — while still using the built-in create
+  modal. No-op unless `editFields` are set.
+- **`DXTable` `deleteGuard` prop.** A predicate run when Delete is clicked,
+  before the confirm and request. Return a message for a non-deletable item to
+  show it immediately (toast) and skip both the confirm and the doomed request;
+  return `null`/`undefined` to proceed normally. The button stays visible
+  (show-and-explain) rather than being hidden/disabled.
+
 ## [0.10.0] - 2026-07-04
 
 ### Added
