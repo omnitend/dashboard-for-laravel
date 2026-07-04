@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.2] - 2026-07-04
+## [0.9.3] - 2026-07-04
+
+### Changed
+- **Rich component API metadata for the docs MCP.** The auto-generated API
+  manifest (consumed by the docs MCP server) previously carried only prop / slot
+  / event *names* with blank descriptions. The extended (DX*) components are now
+  annotated with `@slot` / `@binding` / `@component` docs and event JSDoc, so
+  every extended component ships a description and fully documented slots and
+  events. A generator fallback also surfaces each base `D*` wrapper's existing
+  `@component` description. No runtime/API behaviour changes.
 
 ### Added
 - **`actions` slot on `DXDashboardNavbar`** (forwarded from `DXDashboard` as
