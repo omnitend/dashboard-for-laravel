@@ -1,3 +1,8 @@
+<!--
+  @component
+  A form field label with an optional info affordance that reveals help text
+  in a hover/focus popover next to the label.
+-->
 <template>
     <span class="dx-field-label">
         <span class="dx-field-label__text">{{ label }}</span>

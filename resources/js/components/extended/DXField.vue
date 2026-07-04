@@ -1,6 +1,17 @@
+<!--
+  @component
+  Renders a single `FieldDefinition` of any type (text, select, checkbox, switch, repeater, currency, percentage, file/image, component, etc.) with its label, validation error, hint and help. Used by `DXForm` and `DXTable`'s edit modal; exposes `value`, `span`, `info`, `hint` and `repeater-row` slots for per-field customisation.
+-->
 <template>
     <!-- Full-width span field: delegate entirely to the #span slot -->
     <div v-if="field.span" :class="field.class || 'mb-3'">
+        <!--
+          @slot Replaces the entire field with custom full-width content when `field.span` is set, bypassing the label and built-in control.
+          @binding {FieldDefinition} field The field definition being rendered.
+          @binding {any} model The model passed to field predicates (defaults to the live form data).
+          @binding {any} value The current field value.
+          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
+        -->
         <slot
             name="span"
             :field="field"
@@ -12,6 +23,13 @@
 
     <!-- Checkbox: no label wrapper, label sits beside the control -->
     <div v-else-if="field.type === 'checkbox'" :class="field.class || 'mb-3'">
+        <!--
+          @slot Replaces the built-in control with a custom value editor.
+          @binding {FieldDefinition} field The field definition being rendered.
+          @binding {any} model The model passed to field predicates (defaults to the live form data).
+          @binding {any} value The current field value.
+          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
+        -->
         <slot
             v-if="$slots.value"
             name="value"
@@ -32,8 +50,18 @@
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
             {{ form.getError(errorKey) }}
         </DFormInvalidFeedback>
+        <!--
+          @slot Rich info block rendered below the control.
+          @binding {FieldDefinition} field The field definition being rendered.
+          @binding {any} model The model passed to field predicates (defaults to the live form data).
+        -->
         <slot name="info" :field="field" :model="model" />
         <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+            <!--
+              @slot Overrides the field's hint text shown below the control.
+              @binding {FieldDefinition} field The field definition being rendered.
+              @binding {any} model The model passed to field predicates (defaults to the live form data).
+            -->
             <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
         </DFormText>
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
@@ -44,6 +72,13 @@
         v-else-if="field.type === 'switch'"
         :class="[field.class || 'mb-3', 'dx-switch', { 'dx-switch--on': switchIsOn }]"
     >
+        <!--
+          @slot Replaces the built-in control with a custom value editor.
+          @binding {FieldDefinition} field The field definition being rendered.
+          @binding {any} model The model passed to field predicates (defaults to the live form data).
+          @binding {any} value The current field value.
+          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
+        -->
         <slot
             v-if="$slots.value"
             name="value"
@@ -65,8 +100,18 @@
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
             {{ form.getError(errorKey) }}
         </DFormInvalidFeedback>
+        <!--
+          @slot Rich info block rendered below the control.
+          @binding {FieldDefinition} field The field definition being rendered.
+          @binding {any} model The model passed to field predicates (defaults to the live form data).
+        -->
         <slot name="info" :field="field" :model="model" />
         <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+            <!--
+              @slot Overrides the field's hint text shown below the control.
+              @binding {FieldDefinition} field The field definition being rendered.
+              @binding {any} model The model passed to field predicates (defaults to the live form data).
+            -->
             <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
         </DFormText>
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
@@ -86,12 +131,23 @@
             >
                 <!-- Forward repeater row slot for custom row layouts -->
                 <template v-if="$slots['repeater-row']" #row="rowProps">
+                    <!-- @slot Custom layout for a single repeater row, forwarded to `DXRepeater`'s `row` slot with its row props (row index, item, remove handler, etc.). -->
                     <slot name="repeater-row" v-bind="rowProps" />
                 </template>
             </DXRepeater>
         </DFormGroup>
+        <!--
+          @slot Rich info block rendered below the control.
+          @binding {FieldDefinition} field The field definition being rendered.
+          @binding {any} model The model passed to field predicates (defaults to the live form data).
+        -->
         <slot name="info" :field="field" :model="model" />
         <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+            <!--
+              @slot Overrides the field's hint text shown below the control.
+              @binding {FieldDefinition} field The field definition being rendered.
+              @binding {any} model The model passed to field predicates (defaults to the live form data).
+            -->
             <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
         </DFormText>
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
@@ -105,6 +161,13 @@
         </template>
 
         <!-- Custom value slot overrides the built-in control -->
+        <!--
+          @slot Replaces the built-in control with a custom value editor.
+          @binding {FieldDefinition} field The field definition being rendered.
+          @binding {any} model The model passed to field predicates (defaults to the live form data).
+          @binding {any} value The current field value.
+          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
+        -->
         <slot
             v-if="$slots.value"
             name="value"
@@ -224,10 +287,20 @@
         </DFormInvalidFeedback>
 
         <!-- Optional rich info block -->
+        <!--
+          @slot Rich info block rendered below the control.
+          @binding {FieldDefinition} field The field definition being rendered.
+          @binding {any} model The model passed to field predicates (defaults to the live form data).
+        -->
         <slot name="info" :field="field" :model="model" />
 
         <!-- Hint (dynamic, slot-overridable) -->
         <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+            <!--
+              @slot Overrides the field's hint text shown below the control.
+              @binding {FieldDefinition} field The field definition being rendered.
+              @binding {any} model The model passed to field predicates (defaults to the live form data).
+            -->
             <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
         </DFormText>
 

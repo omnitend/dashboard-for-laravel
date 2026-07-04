@@ -1,5 +1,7 @@
 <!--
-  DXBasicForm — deprecated alias of DXForm.
+  @component
+  Deprecated alias of DXForm that renders a flat form (DXForm without a `tabs`
+  prop) and warns once on use.
 
   A flat form is just DXForm without a `tabs` prop. This wrapper forwards
   everything to DXForm and logs a one-time deprecation warning so existing
@@ -34,6 +36,7 @@ onMounted(() => {
     <DXForm v-bind="($attrs as any)">
         <!-- Forward all slots (#value(<key>), #footer, etc.) to DXForm. -->
         <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
+            <!-- @slot Passes every DXForm slot (e.g. `value(<key>)`, `footer`) straight through to the wrapped DXForm, along with its slot props. -->
             <slot :name="name" v-bind="slotProps" />
         </template>
     </DXForm>

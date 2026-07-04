@@ -33,7 +33,11 @@
                 :lazy="tab.lazy"
                 :active="index === 0"
             >
-                <!-- Replace the entire tab body -->
+                <!--
+                  @slot Replaces the entire body of a tab, keyed by tab (slot name `tab-content(<tabKey>)`).
+                  @binding {FormTab} tab The tab definition being rendered.
+                  @binding {object} model Live form data merged with `context`, for predicates.
+                -->
                 <slot
                     v-if="$slots[`tab-content(${tab.key})`]"
                     :name="`tab-content(${tab.key})`"
@@ -42,6 +46,11 @@
                 />
 
                 <div v-else class="pt-3">
+                    <!--
+                      @slot Content inserted above a tab's fields, keyed by tab (slot name `tab-before(<tabKey>)`).
+                      @binding {FormTab} tab The tab definition being rendered.
+                      @binding {object} model Live form data merged with `context`, for predicates.
+                    -->
                     <slot :name="`tab-before(${tab.key})`" :tab="tab" :model="model" />
 
                     <DXField
@@ -56,10 +65,16 @@
                             :key="target"
                             #[target]="slotProps"
                         >
+                            <!-- @slot Per-field overrides forwarded to DXField, keyed by field key: `value(<key>)`, `span(<key>)`, `info(<key>)`, `hint(<key>)`, `repeater-row(<key>)`. -->
                             <slot :name="slotName" v-bind="slotProps" />
                         </template>
                     </DXField>
 
+                    <!--
+                      @slot Content inserted below a tab's fields, keyed by tab (slot name `tab-after(<tabKey>)`).
+                      @binding {FormTab} tab The tab definition being rendered.
+                      @binding {object} model Live form data merged with `context`, for predicates.
+                    -->
                     <slot :name="`tab-after(${tab.key})`" :tab="tab" :model="model" />
                 </div>
             </DTab>
@@ -79,6 +94,7 @@
                     :key="target"
                     #[target]="slotProps"
                 >
+                    <!-- @slot Per-field overrides forwarded to DXField, keyed by field key: `value(<key>)`, `span(<key>)`, `info(<key>)`, `hint(<key>)`, `repeater-row(<key>)`. -->
                     <slot :name="slotName" v-bind="slotProps" />
                 </template>
             </DXField>
@@ -96,6 +112,10 @@
             <span v-else>{{ submitText }}</span>
         </DButton>
 
+        <!--
+          @slot Content rendered below the submit button (e.g. a cancel link or secondary actions).
+          @binding {UseFormReturn} form The resolved form instance (state, errors, submit helpers).
+        -->
         <slot name="footer" :form="resolvedForm" />
     </BForm>
 </template>
@@ -154,6 +174,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
+    /** Emitted when the form is submitted, after the native submit is prevented. */
     submit: [];
 }>();
 

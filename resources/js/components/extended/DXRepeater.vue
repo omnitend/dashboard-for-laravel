@@ -1,3 +1,9 @@
+<!--
+  @component
+  DXRepeater renders a nested, repeatable sub-form for a repeater field: a list
+  of rows (each a group of sub-fields) with add/remove controls, honouring the
+  field's `minItems`/`maxItems` limits.
+-->
 <template>
     <div class="dx-repeater">
         <div
@@ -5,7 +11,14 @@
             :key="rowKey(index)"
             class="dx-repeater-row"
         >
-            <!-- Custom row layout escape hatch -->
+            <!--
+              @slot Custom layout for a single repeater row, replacing the default sub-field stack.
+              @binding {object} row The current row's data object.
+              @binding {number} index The row's zero-based index.
+              @binding {FieldDefinition[]} fields The sub-field definitions for the row.
+              @binding {function} remove Removes this row (respects `minItems`).
+              @binding {string} path The dot path into `form.data` for this row (e.g. `lines.0`).
+            -->
             <slot
                 v-if="$slots.row"
                 name="row"

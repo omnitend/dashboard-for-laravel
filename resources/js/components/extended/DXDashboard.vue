@@ -1,3 +1,11 @@
+<!--
+  @component
+  DXDashboard is the full dashboard shell — a collapsible sidebar
+  (`DXDashboardSidebar`) alongside a top navbar (`DXDashboardNavbar`) and the
+  page content area. It owns sidebar visibility state (persisted to
+  localStorage, SSR-safe) and forwards any `sidebar-*` slot to the sidebar and
+  any `navbar-*` slot to the navbar, stripping the prefix.
+-->
 <template>
   <div class="dashboard-layout d-flex" :data-dashboard-id="dashboardId">
     <!-- Sidebar -->
@@ -17,6 +25,7 @@
         :key="strippedName"
         #[strippedName]="slotProps"
       >
+        <!-- @slot Forwards any `sidebar-*` slot to DXDashboardSidebar with the `sidebar-` prefix stripped (e.g. `sidebar-brand` becomes the sidebar's `brand` slot). -->
         <slot :name="originalName" v-bind="slotProps" />
       </template>
     </DXDashboardSidebar>
@@ -36,6 +45,7 @@
           :key="strippedName"
           #[strippedName]="slotProps"
         >
+          <!-- @slot Forwards any `navbar-*` slot to DXDashboardNavbar with the `navbar-` prefix stripped (e.g. `navbar-actions` becomes the navbar's `actions` slot). -->
           <slot :name="originalName" v-bind="slotProps" />
         </template>
       </DXDashboardNavbar>
@@ -45,6 +55,7 @@
         <DContainer fluid>
           <DRow class="justify-content-center">
             <DCol cols="12" xl="10">
+              <!-- @slot Default slot for the main page content, rendered in the centred content column. -->
               <slot />
             </DCol>
           </DRow>
