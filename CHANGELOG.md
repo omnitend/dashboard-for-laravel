@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.3] - 2026-07-04
+## [0.10.0] - 2026-07-04
+
+### Added
+- **Sidebar `footer` slot** on `DXDashboardSidebar` (forwarded from `DXDashboard`
+  as `sidebar-footer`) for utility links pinned to the bottom of the rail, below
+  the nav groups. The rail is now a flex column — fixed header, scrolling nav,
+  pinned footer — and the slot receives the `collapsed` state. Adds an optional
+  `key` to `NavigationGroup` for stable group open-state identity.
+
+### Changed
+- **Responsive navbar.** The centred `search` slot now drops to its own
+  full-width row below the `md` breakpoint (the toggle / title / user-menu
+  cluster stays on the first row), so the shell is usable on mobile out of the
+  box. Public slots/props are unchanged.
+- **Collapsible sidebar groups** now key their open/closed state by a stable id
+  (`key`/`label`, not array index), so reordering the nav can't leak open-state
+  to the wrong group; static group labels match the toggle header height when
+  collapsible groups are on; closed group items stay out of the tab order even
+  without `inert` support; and scroll re-centres after a group's expand settles.
+
+### Fixed
+- Sidebar nav could overflow the rail (flexbox `min-height: auto` trap); the
+  scroll region now sets `min-height: 0`.
 
 ### Changed
 - **Rich component API metadata for the docs MCP.** The auto-generated API
