@@ -21,11 +21,17 @@ const { mode, toggleMode } = usePlaygroundMode();
 
 const navigation: Navigation = [
   {
+    label: 'Catalogue',
     items: [
       { label: 'Products', url: '/', icon: IconPackage, active: false },
       { label: 'Categories', url: '/categories', icon: IconTags, active: false },
-      { label: 'Toasts', url: '/toasts', icon: IconBell, active: false },
+    ],
+  },
+  {
+    label: 'Sales',
+    items: [
       { label: 'Orders', url: '/orders', icon: IconShoppingCart, active: false },
+      { label: 'Toasts', url: '/toasts', icon: IconBell, active: false },
     ],
   },
   {
@@ -51,6 +57,7 @@ const user = {
     :page-title="pageTitle"
     :user="user"
     dashboard-id="playground"
+    collapsible-groups
   >
     <template #navbar-search>
       <div
