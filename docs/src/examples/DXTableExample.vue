@@ -8,6 +8,19 @@
       item-name="customer"
       title="Customers"
     />
+
+    <h5>Plain variant (:card="false")</h5>
+    <p class="text-muted">
+      Drops the card wrapper for a borderless look on data-heavy index pages.
+    </p>
+    <DXTable
+      :items="customerItems"
+      :fields="customerFields"
+      :card="false"
+      :client-side="true"
+      item-name="customer"
+      title="Customers"
+    />
   </div>
 </template>
 

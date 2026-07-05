@@ -32,6 +32,34 @@ describe('DXTable', () => {
     });
   });
 
+  describe('Card / plain variant (card prop)', () => {
+    it('wraps the table in a card by default', async () => {
+      const screen = render(DXTable, {
+        props: { items: customerData, fields: customerFields, title: 'Customers' },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.card')).toBeTruthy();
+      expect(screen.container.querySelector('.dx-table-plain')).toBeNull();
+      // Table still renders inside the card.
+      expect(screen.container.querySelector('.card table')).toBeTruthy();
+    });
+
+    it('renders plainly (no card) when :card="false"', async () => {
+      const screen = render(DXTable, {
+        props: { items: customerData, fields: customerFields, title: 'Customers', card: false },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.card')).toBeNull();
+      const plain = screen.container.querySelector('.dx-table-plain');
+      expect(plain).toBeTruthy();
+      // Same content: header row and table are still present, just uncarded.
+      expect(plain!.querySelector('.dx-table-plain__header')).toBeTruthy();
+      expect(plain!.querySelector('table')).toBeTruthy();
+    });
+  });
+
   describe('Fetch full record on edit (showUrl)', () => {
     afterEach(() => {
       vi.restoreAllMocks();
