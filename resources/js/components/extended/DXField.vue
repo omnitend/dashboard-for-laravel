@@ -590,15 +590,51 @@ onBeforeUnmount(() => {
     border-radius: var(--bs-border-radius);
 }
 
-/* Switch field: contextual styling that responds to the on/off state.
-   Off is muted; on turns the control and label a filled success green. */
+/* Switch field: a full-width "filled box" toggle, the same height as a select
+   or text input, that colour-codes its state — a neutral box when off, a filled
+   success green when on. The label sits on the left and the toggle on the right.
+   Renders the underlying `.form-check` (from the switch checkbox) as the box. */
+.dx-switch :deep(.form-check) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: calc(1.5em + 0.75rem + 2px); /* match .form-control height */
+    margin: 0;
+    /* Override Bootstrap `.form-switch`'s 2.5em left padding for the floated input. */
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background-color: var(--bs-body-bg);
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+/* Label on the left, toggle on the right (DOM order is input then label). */
 .dx-switch :deep(.form-check-label) {
+    order: 1;
+    margin: 0;
     color: var(--bs-secondary-color);
+    cursor: pointer;
     transition: color 0.15s ease-in-out;
 }
 
+.dx-switch :deep(.form-check-input) {
+    order: 2;
+    flex-shrink: 0;
+    /* Override `.form-switch`'s negative left margin now that we're flex-laid-out. */
+    margin: 0;
+    cursor: pointer;
+}
+
+/* On-state: filled success green. */
+.dx-switch--on :deep(.form-check) {
+    background-color: var(--bs-success-bg-subtle);
+    border-color: var(--bs-success);
+}
+
 .dx-switch--on :deep(.form-check-label) {
-    color: var(--bs-success);
+    color: var(--bs-success-text-emphasis);
     font-weight: 500;
 }
 

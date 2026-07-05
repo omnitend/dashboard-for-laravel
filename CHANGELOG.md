@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`switch` fields now render as a full-width, colour-coded "filled box"**
+  (#52) — the same height as a select/text input, with the label on the left and
+  the toggle on the right. The box is neutral when off and a filled success green
+  when on, so a boolean's state reads at a glance and switches line up with
+  sibling fields in a form. Replaces the previous inline toggle styling; no API
+  change (`type: 'switch'`, `textWhenTrue`/`textWhenFalse` unchanged).
+
 ### Fixed
 - **`DAutocomplete` closed-state rendering** (#53, regression from #49). The
   trigger chevron wrapped onto its own line below the input (Bootstrap
