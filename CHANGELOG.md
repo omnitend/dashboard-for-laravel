@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`DXTable` `select` column filters now render as a `DAutocomplete`
+  typeahead** (#49) instead of a native `<select>`. Click to browse the whole
+  list (with a check on the current selection), or type to narrow — a strict
+  superset of the old select. A clear (✕) button resets to "no filter" (the
+  synthetic "All" option is gone; the placeholder reads `All {label}`). The
+  public field API is unchanged (`filter: 'select'`, `filterOptions`), so this
+  is non-breaking. Multi-value filtering is a planned follow-up.
+
 ### Added
 - **`DXTable` `card` prop** (#47). Defaults to `true` (unchanged). Set
   `:card="false"` for a plain, borderless variant — the same header, filter row,
