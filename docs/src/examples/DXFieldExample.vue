@@ -10,8 +10,10 @@
     <!-- A currency field with a declarative info popover on the label -->
     <DXField :field="priceField" :form="form" />
 
-    <!-- A switch with contextual on/off text and an on-state style -->
+    <!-- Switches: a full-width filled-box toggle, colour-coded by state
+         (success-green when on, neutral when off) -->
     <DXField :field="defaultField" :form="form" />
+    <DXField :field="featuredField" :form="form" />
 
     <!-- Select with a custom hint slot -->
     <DXField :field="planField" :form="form">
@@ -47,7 +49,7 @@ import {
   type FieldDefinition,
 } from '@omnitend/dashboard-for-laravel';
 
-const form = useForm({ price: 12.5, is_default: true, plan: 'pro', rating: 3 });
+const form = useForm({ price: 12.5, is_default: true, is_featured: false, plan: 'pro', rating: 3 });
 
 const priceField: FieldDefinition = {
   key: 'price',
@@ -64,6 +66,14 @@ const defaultField: FieldDefinition = {
   label: 'Default VAT rate',
   textWhenTrue: 'This is the default VAT rate',
   textWhenFalse: 'This is not the default VAT rate',
+};
+
+const featuredField: FieldDefinition = {
+  key: 'is_featured',
+  type: 'switch',
+  label: 'Featured',
+  textWhenTrue: 'Featured on the storefront',
+  textWhenFalse: 'Not featured',
 };
 
 const planField: FieldDefinition = {
