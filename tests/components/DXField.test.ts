@@ -206,3 +206,64 @@ describe('DXField info tooltip', () => {
     expect(screen.container.querySelector('.dx-field-label__info')).not.toBeNull();
   });
 });
+
+describe('DXField autocomplete type', () => {
+  const options = [
+    { value: 'main', text: 'main' },
+    { value: 'develop', text: 'develop' },
+    { value: 'release/1.0', text: 'release/1.0' },
+  ];
+
+  it('renders a text input linked to a datalist of the options', async () => {
+    const { screen } = renderField(
+      { key: 'branch', type: 'autocomplete', label: 'Branch', options },
+      { branch: '' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="text"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    const listId = input.getAttribute('list');
+    expect(listId).toBeTruthy();
+
+    const datalist = screen.container.querySelector(`datalist[id="${listId}"]`);
+    expect(datalist).not.toBeNull();
+    const values = Array.from(datalist!.querySelectorAll('option')).map((o) =>
+      o.getAttribute('value'),
+    );
+    expect(values).toEqual(['main', 'develop', 'release/1.0']);
+  });
+
+  it('binds free text that is not one of the options', async () => {
+    const { screen, form } = renderField(
+      { key: 'branch', type: 'autocomplete', label: 'Branch', options },
+      { branch: '' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="text"]') as HTMLInputElement;
+    await userEvent.fill(input, 'feature/not-in-list');
+    expect(form.data.branch).toBe('feature/not-in-list');
+  });
+
+  it('populates the datalist from an async optionsLoader', async () => {
+    const { screen } = renderField(
+      {
+        key: 'branch',
+        type: 'autocomplete',
+        label: 'Branch',
+        optionsLoader: async () => options,
+      },
+      { branch: '' },
+    );
+    // Let the on-mounted loader promise resolve and the datalist re-render.
+    await flush();
+    await flush();
+
+    const datalist = screen.container.querySelector('datalist');
+    const values = Array.from(datalist!.querySelectorAll('option')).map((o) =>
+      o.getAttribute('value'),
+    );
+    expect(values).toEqual(['main', 'develop', 'release/1.0']);
+  });
+});
