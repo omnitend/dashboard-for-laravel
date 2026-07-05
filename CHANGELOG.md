@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`DAutocomplete` chevron styling now actually applies in consumer builds**
+  (#53). The 0.15.0 fix (#54) shipped its rules but they were inert: they were
+  written as `scoped` `:deep()` styles on a component whose only template root
+  was the `<BAutocomplete>` component, so the scope-id never landed on a real
+  host element and `[data-v-x] .input-group` matched nothing once bundled by a
+  consumer. `DAutocomplete` now wraps `BAutocomplete` in a real
+  `.d-autocomplete` element, giving the scope-id a deterministic host — so the
+  chevron sits inline (not wrapped below the input) and is softened via
+  Bootstrap's `--bs-btn-*` variables. Every `DXTable` `select` filter is fixed.
+
 ## [0.15.0] - 2026-07-05
 
 ### Changed
