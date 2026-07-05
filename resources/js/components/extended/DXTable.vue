@@ -628,6 +628,7 @@ import { router } from "@inertiajs/vue3";
 import axios from "axios";
 import pluralize from "pluralize";
 import { useToast } from "../../composables/useToast";
+import { useForm } from "../../composables/useForm";
 import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
 import DCol from "../base/DCol.vue";
@@ -1501,12 +1502,6 @@ const editLoading = ref(false);
 // the form after the user has since opened a different row.
 let editFetchToken = 0;
 
-// Monotonic token for opening the modal itself. The first edit dynamically
-// imports useForm; if the user clicks row A then row B before that import
-// resolves, A's callback must not seed/open/fetch over B. Each open captures
-// the current token and bails if it's since been superseded.
-let modalOpenToken = 0;
-
 // Toast (may not be available in test environment)
 let createToast: ((obj: any) => any) | undefined;
 try {
@@ -1587,40 +1582,27 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
         // Reset to first tab
         activeTabIndex.value = 0;
 
-        // Capture this open so a slow first-time useForm import can't seed the
-        // form after the user has since opened a different row (or create).
-        const openToken = ++modalOpenToken;
-
-        // Initialize form with item data
+        // Initialize form with item data. `useForm` is statically imported, so
+        // seeding is synchronous — no interleaving between successive row opens.
         if (!editForm.value) {
-            // Dynamically import useForm to avoid circular dependency
-            import('../../composables/useForm').then(({ useForm }) => {
-                if (openToken !== modalOpenToken) return; // superseded
-                const formData: Record<string, any> = {};
-                props.editFields!.forEach(field => {
-                    formData[field.key] = (item as any)[field.key] ?? field.default ?? '';
-                });
-                editForm.value = useForm(formData);
-
-                // Open modal
-                showEditModal.value = true;
-
-                // Optionally replace the row-seeded data with the full record.
-                if (props.showUrl) void fetchFullRecordForEdit(item);
+            const formData: Record<string, any> = {};
+            props.editFields!.forEach(field => {
+                formData[field.key] = (item as any)[field.key] ?? field.default ?? '';
             });
+            editForm.value = useForm(formData);
         } else {
             // Update existing form
             props.editFields.forEach(field => {
                 editForm.value.data[field.key] = (item as any)[field.key] ?? field.default ?? '';
             });
             editForm.value.clearErrors();
-
-            // Open modal
-            showEditModal.value = true;
-
-            // Optionally replace the row-seeded data with the full record.
-            if (props.showUrl) void fetchFullRecordForEdit(item);
         }
+
+        // Open modal
+        showEditModal.value = true;
+
+        // Optionally replace the row-seeded data with the full record.
+        if (props.showUrl) void fetchFullRecordForEdit(item);
     }
 };
 
@@ -1673,34 +1655,25 @@ const handleCreateNew = () => {
     selectedItem.value = null;
     activeTabIndex.value = 0;
 
-    // Supersede any in-flight row-open (and its pending fetch) so a slow
-    // useForm import from an earlier edit can't seed over this create.
-    const openToken = ++modalOpenToken;
+    // Supersede any in-flight row-open fetch so a slow showUrl fetch from an
+    // earlier edit can't seed over this create.
     editFetchToken++;
     editLoading.value = false;
 
-    const initForm = (useForm: any) => {
+    if (!editForm.value) {
         const formData: Record<string, any> = {};
         props.editFields!.forEach(field => {
             formData[field.key] = field.default ?? '';
         });
         editForm.value = useForm(formData);
-        showEditModal.value = true;
-    };
-
-    if (!editForm.value) {
-        import('../../composables/useForm').then(({ useForm }) => {
-            if (openToken !== modalOpenToken) return; // superseded
-            initForm(useForm);
-        });
     } else {
         // Reset existing form to defaults
         props.editFields!.forEach(field => {
             editForm.value.data[field.key] = field.default ?? '';
         });
         editForm.value.clearErrors();
-        showEditModal.value = true;
     }
+    showEditModal.value = true;
 };
 
 // Handle save from edit modal
