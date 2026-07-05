@@ -14,12 +14,22 @@ defineOptions({
 </script>
 
 <template>
-  <BAutocomplete v-bind="$attrs">
-    <!-- Dynamically pass through all named slots with their props -->
-    <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
-      <slot :name="name" v-bind="slotProps" />
-    </template>
-  </BAutocomplete>
+  <!--
+    Wrap BAutocomplete in a real element so our scoped styles have a concrete
+    host to attach the scope-id to. Styling BAutocomplete's internal DOM via
+    `:deep()` on a wrapper whose ONLY root is the `<BAutocomplete>` *component*
+    doesn't work: the scope-id isn't reliably forwarded onto BVN's rendered
+    root, so `[data-v-x] .input-group` matches nothing in a consumer build
+    (#53). A plain element root makes it deterministic.
+  -->
+  <div class="d-autocomplete">
+    <BAutocomplete v-bind="$attrs">
+      <!-- Dynamically pass through all named slots with their props -->
+      <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
+        <slot :name="name" v-bind="slotProps" />
+      </template>
+    </BAutocomplete>
+  </div>
 </template>
 
 <style scoped>
@@ -30,11 +40,11 @@ defineOptions({
   line below the input. Keep the group on a single row and let the input wrapper
   flex, so the trigger sits inline as an append. (#53)
 */
-:deep(.input-group) {
+.d-autocomplete :deep(.input-group) {
   flex-wrap: nowrap;
 }
 
-:deep(.b-autocomplete-input-wrapper) {
+.d-autocomplete :deep(.b-autocomplete-input-wrapper) {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -42,17 +52,20 @@ defineOptions({
 /*
   The trigger renders as a heavy `btn btn-secondary` (dark), which reads as a
   detached dark block. Soften it to a subtle bordered chevron that matches the
-  input and reads as a combobox affordance. Uses theme variables (no hardcoded
-  colours) and a more specific selector than `.btn-secondary` (no `!important`).
+  input and reads as a combobox affordance. Driving Bootstrap's own `--bs-btn-*`
+  variables (rather than raw properties) keeps hover/active/focus states
+  coherent and avoids fighting the `.btn-secondary` state selectors.
 */
-:deep(.b-autocomplete-trigger) {
-  background-color: var(--bs-body-bg);
-  border-color: var(--bs-border-color);
-  color: var(--bs-secondary-color);
-}
-
-:deep(.b-autocomplete-trigger:hover) {
-  background-color: var(--bs-tertiary-bg);
-  color: var(--bs-body-color);
+.d-autocomplete :deep(.b-autocomplete-trigger) {
+  --bs-btn-bg: var(--bs-body-bg);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-hover-bg: var(--bs-tertiary-bg);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-secondary-bg);
+  --bs-btn-active-border-color: var(--bs-border-color);
+  --bs-btn-active-color: var(--bs-body-color);
+  flex: 0 0 auto;
 }
 </style>
