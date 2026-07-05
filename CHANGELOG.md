@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`DAutocomplete` closed-state rendering** (#53, regression from #49). The
+  trigger chevron wrapped onto its own line below the input (Bootstrap
+  `.input-group` defaults to `flex-wrap: wrap` and the input wrapper takes full
+  width) and rendered as a heavy dark `btn-secondary`. It now sits inline as a
+  subtle, theme-coloured append. Fixes every `DXTable` `select` filter (and any
+  other `DAutocomplete` usage) showing a detached dark chevron below the input.
+
 ## [0.14.0] - 2026-07-05
 
 ### Changed
