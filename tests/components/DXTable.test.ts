@@ -32,6 +32,66 @@ describe('DXTable', () => {
     });
   });
 
+  describe('Select filter (DAutocomplete typeahead)', () => {
+    const statusFields = [
+      { key: 'name', label: 'Name' },
+      {
+        key: 'status',
+        label: 'Status',
+        filter: 'select',
+        filterOptions: [
+          { value: 'active', text: 'active' },
+          { value: 'inactive', text: 'inactive' },
+        ],
+      },
+    ];
+
+    it('renders the select filter as an autocomplete, not a native <select>', async () => {
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, { items: customerData, fields: statusFields, clientSide: true }),
+          ),
+      });
+      await flush();
+
+      const filterRow = screen.container.querySelector('.filter-row');
+      expect(filterRow).toBeTruthy();
+      // The typeahead is a text input (combobox), not a native select.
+      expect(filterRow!.querySelector('select')).toBeNull();
+      expect(filterRow!.querySelector('input')).toBeTruthy();
+    });
+
+    it('filters the table when an option is selected, and clears back to all', async () => {
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, { items: customerData, fields: statusFields, clientSide: true }),
+          ),
+      });
+      await flush();
+
+      const allRows = screen.container.querySelectorAll('tbody tr').length;
+      const inactiveCount = customerData.filter((c) => c.status === 'inactive').length;
+      expect(allRows).toBeGreaterThan(inactiveCount);
+
+      // Open the typeahead (opens on focus) and pick "inactive".
+      const input = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+      input.focus();
+      await wait(50);
+      const option = Array.from(document.querySelectorAll('[role="option"]')).find(
+        (o) => o.textContent?.trim() === 'inactive',
+      ) as HTMLElement | undefined;
+      expect(option).toBeTruthy();
+      option!.click();
+      await wait(60);
+
+      // Only inactive rows remain.
+      const filtered = screen.container.querySelectorAll('tbody tr').length;
+      expect(filtered).toBe(inactiveCount);
+    });
+  });
+
   describe('Card / plain variant (card prop)', () => {
     it('wraps the table in a card by default', async () => {
       const screen = render(DXTable, {

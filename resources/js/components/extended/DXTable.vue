@@ -69,13 +69,15 @@
                                         @update:model-value="handleFilterChange(field.key, $event as string)"
                                     />
 
-                                    <!-- Select Filter -->
-                                    <DFormSelect
+                                    <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
+                                    <DAutocomplete
                                         v-else-if="field.filter === 'select'"
                                         :model-value="effectiveFilters[field.key] || ''"
-                                        :options="[{ value: '', text: 'All' }, ...getFieldFilterOptions(field)]"
+                                        :options="getFieldFilterOptions(field)"
+                                        :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        open-on-focus
+                                        @update:model-value="handleFilterChange(field.key, ($event ?? '') as string)"
                                     />
 
                                     <!-- Number Filter -->
@@ -165,13 +167,15 @@
                                         @update:model-value="handleFilterChange(field.key, $event as string)"
                                     />
 
-                                    <!-- Select Filter -->
-                                    <DFormSelect
+                                    <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
+                                    <DAutocomplete
                                         v-else-if="field.filter === 'select'"
                                         :model-value="effectiveFilters[field.key] || ''"
-                                        :options="[{ value: '', text: 'All' }, ...getFieldFilterOptions(field)]"
+                                        :options="getFieldFilterOptions(field)"
+                                        :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        open-on-focus
+                                        @update:model-value="handleFilterChange(field.key, ($event ?? '') as string)"
                                     />
 
                                     <!-- Number Filter -->
@@ -262,13 +266,15 @@
                                         @update:model-value="handleFilterChange(field.key, $event as string)"
                                     />
 
-                                    <!-- Select Filter -->
-                                    <DFormSelect
+                                    <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
+                                    <DAutocomplete
                                         v-else-if="field.filter === 'select'"
                                         :model-value="effectiveFilters[field.key] || ''"
-                                        :options="[{ value: '', text: 'All' }, ...getFieldFilterOptions(field)]"
+                                        :options="getFieldFilterOptions(field)"
+                                        :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        open-on-focus
+                                        @update:model-value="handleFilterChange(field.key, ($event ?? '') as string)"
                                     />
 
                                     <!-- Number Filter -->
@@ -638,6 +644,7 @@ import DTable from "../base/DTable.vue";
 import DPagination from "../base/DPagination.vue";
 import DFormInput from "../base/DFormInput.vue";
 import DFormSelect from "../base/DFormSelect.vue";
+import DAutocomplete from "../base/DAutocomplete.vue";
 import DModal from "../base/DModal.vue";
 import DButton from "../base/DButton.vue";
 import DXForm from "./DXForm.vue";
