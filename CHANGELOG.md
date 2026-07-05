@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`DAutocomplete` dropdown no longer clips long options** (#59). The popup
+  (`.b-autocomplete-content`) only set a `max-height`, so it inherited the
+  (often narrow) input width and cut off long option labels — e.g. a `DXTable`
+  `select` filter in a narrow column. It now grows to `max-content` (at least
+  the trigger width, capped at `min(90vw, 32rem)`). Shipped as a global theme
+  rule rather than a scoped style because the popup can teleport out of the
+  component, which would escape `:deep()`.
+
 ## [0.16.0] - 2026-07-05
 
 ### Added

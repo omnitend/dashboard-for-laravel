@@ -90,6 +90,50 @@ describe('DXTable', () => {
       const filtered = screen.container.querySelectorAll('tbody tr').length;
       expect(filtered).toBe(inactiveCount);
     });
+
+    it('grows the dropdown popup so long options are not clipped (#59)', async () => {
+      const longFields = [
+        { key: 'name', label: 'Name' },
+        {
+          key: 'measure',
+          label: 'Measure',
+          filter: 'select',
+          filterOptions: [
+            { value: 'a', text: '11 Gallon (50.01 Litre) Keg' },
+            { value: 'b', text: '4.5 Gallon Rough Cask' },
+            { value: 'c', text: '10 Gallon (45.46 Litre)' },
+          ],
+        },
+      ];
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              items: [{ name: 'x', measure: 'a' }],
+              fields: longFields,
+              clientSide: true,
+            }),
+          ),
+      });
+      await flush();
+
+      // Open the typeahead popup (opens on focus).
+      const input = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+      input.focus();
+      await wait(80);
+
+      const content = document.querySelector('.b-autocomplete-content') as HTMLElement | null;
+      expect(content).toBeTruthy();
+
+      // The popup sizes to `max-content` (grows to the longest option) instead
+      // of inheriting the narrow input width and clipping. Asserting the applied
+      // rule directly, rather than measured widths, keeps this independent of the
+      // test viewport's column width.
+      const styles = getComputedStyle(content!);
+      expect(styles.minWidth).toBe('max-content');
+      // And it's capped so a pathological label can't make it run away.
+      expect(styles.maxWidth).not.toBe('none');
+    });
   });
 
   describe('Card / plain variant (card prop)', () => {
