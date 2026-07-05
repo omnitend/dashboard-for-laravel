@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-07-05
+
 ### Changed
 - **`DXTable` `select` column filters now render as a `DAutocomplete`
   typeahead** (#49) instead of a native `<select>`. Click to browse the whole
