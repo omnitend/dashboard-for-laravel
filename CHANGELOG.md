@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`DXTable` `card` prop** (#47). Defaults to `true` (unchanged). Set
+  `:card="false"` for a plain, borderless variant — the same header, filter row,
+  table and pagination rendered directly on the page background (no card
+  border/shadow), with a subtle rule under the header. For data-heavy admin
+  index pages that read as busy inside a card. Everything else (data modes,
+  filters, sorting, pagination, edit/create/delete) is unchanged.
+
 ### Fixed
 - **`DXTable` no longer breaks a page that also statically imports `useForm`**
   (#42). `DXTable` used to lazy-load `useForm` via a dynamic `import()` to dodge

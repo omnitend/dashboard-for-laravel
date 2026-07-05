@@ -9,7 +9,7 @@
     <DContainer :fluid="fluid" :class="containerClass">
         <DRow class="justify-content-center">
             <DCol :md="columnSize">
-                <DCard>
+                <DXTableShell :card="card">
                     <template v-if="title || createUrl || $slots.header" #header>
                         <!-- @slot Card header content; overrides the default title heading and the "New {item}" button. -->
                         <slot name="header">
@@ -473,7 +473,7 @@
                             </div>
                         </div>
                     </div>
-                </DCard>
+                </DXTableShell>
             </DCol>
         </DRow>
 
@@ -632,7 +632,7 @@ import { useForm } from "../../composables/useForm";
 import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
 import DCol from "../base/DCol.vue";
-import DCard from "../base/DCard.vue";
+import DXTableShell from "./DXTableShell.vue";
 import DSpinner from "../base/DSpinner.vue";
 import DTable from "../base/DTable.vue";
 import DPagination from "../base/DPagination.vue";
@@ -786,6 +786,14 @@ export interface Props<TItem = any> {
     /** Column size (Bootstrap grid) */
     columnSize?: string | number;
 
+    /**
+     * Wrap the table in a `DCard`. Defaults to `true`. Set `false` for a plain,
+     * borderless variant — the same header, filter row, table and pagination
+     * rendered directly on the page background (no card border/shadow), for
+     * data-heavy admin index pages that read as busy inside a card.
+     */
+    card?: boolean;
+
     // Edit Modal Props
     /** Form field definitions for edit modal (if provided, enables edit on row click) */
     editFields?: any[]; // FieldDefinition[] - using any to avoid circular import
@@ -856,6 +864,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     fluid: false,
     containerClass: "py-5",
     columnSize: "12",
+    card: true,
     editModalSize: "lg",
 });
 
