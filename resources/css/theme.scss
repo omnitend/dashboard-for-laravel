@@ -259,6 +259,24 @@ $dashboard-navbar-height: 64px;
 }
 
 // ----------------------------------------------------------------------------
+// Autocomplete
+// ----------------------------------------------------------------------------
+// BAutocomplete's dropdown popup (`.b-autocomplete-content`) only sets a
+// max-height, so it inherits the (often narrow) anchor/trigger width and clips
+// long option labels — a real problem for a DXTable `select` filter in a narrow
+// column. Let it grow to fit the longest option while staying at least the
+// trigger width, capped so a pathological label can't make it enormous.
+//
+// This lives in the global theme (not DAutocomplete's scoped styles) on
+// purpose: the popup can be teleported out of the component (BAutocomplete's
+// `teleportTo` prop), which escapes scoped `:deep()` entirely — a global rule
+// applies whether or not it's teleported.
+.b-autocomplete-content {
+  min-width: max-content; // grow to the longest option (floors at the trigger width)
+  max-width: min(90vw, 32rem); // but don't run away
+}
+
+// ----------------------------------------------------------------------------
 // Custom Utilities
 // ----------------------------------------------------------------------------
 
