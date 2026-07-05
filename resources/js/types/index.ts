@@ -29,6 +29,7 @@ export type FieldType =
     | "percentage"
     | "textarea"
     | "select"
+    | "autocomplete"
     | "checkbox"
     | "switch"
     | "radio"
@@ -83,12 +84,17 @@ export interface FieldDefinition {
     /** Whether field is required (optional) */
     required?: boolean;
 
-    /** Options for select or radio fields */
+    /**
+     * Options for `select`, `radio` and `autocomplete` fields. For
+     * `autocomplete` these are the datalist suggestions; the field still
+     * accepts free text not present in the list.
+     */
     options?: FieldOption[];
 
     /**
-     * Asynchronously load options for select/radio fields. Takes
-     * precedence over `options` once resolved.
+     * Asynchronously load options for `select`, `radio` and `autocomplete`
+     * fields (e.g. fetch a suggestion list). Takes precedence over `options`
+     * once resolved.
      */
     optionsLoader?: OptionsLoader;
 

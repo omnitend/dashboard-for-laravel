@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`autocomplete` field type** for `DXField` / `DXForm` (#2). A free-text input
+  with a `<datalist>` of suggestions rendered internally — takes `options` (same
+  shape as `select`) or an async `optionsLoader`, and unlike `select` still
+  accepts a value not present in the list (the consumer validates). For
+  type-to-filter pickers over a fetched list (e.g. a git branch) without a
+  hand-rolled datalist in the consuming page.
+
 ### Fixed
 - **`DAutocomplete` chevron styling now actually applies in consumer builds**
   (#53). The 0.15.0 fix (#54) shipped its rules but they were inert: they were

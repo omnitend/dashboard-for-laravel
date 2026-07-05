@@ -22,6 +22,13 @@
       </template>
     </DXField>
 
+    <!-- Autocomplete: free-text input with datalist suggestions -->
+    <DXField :field="branchField" :form="form">
+      <template #hint>
+        Pick a suggestion or type your own: <strong>{{ form.data.branch || 'none' }}</strong>
+      </template>
+    </DXField>
+
     <!-- Fully custom control via the #value slot -->
     <DXField :field="ratingField" :form="form">
       <template #value="{ value, update }">
@@ -49,7 +56,7 @@ import {
   type FieldDefinition,
 } from '@omnitend/dashboard-for-laravel';
 
-const form = useForm({ price: 12.5, is_default: true, is_featured: false, plan: 'pro', rating: 3 });
+const form = useForm({ price: 12.5, is_default: true, is_featured: false, plan: 'pro', branch: 'main', rating: 3 });
 
 const priceField: FieldDefinition = {
   key: 'price',
@@ -84,6 +91,19 @@ const planField: FieldDefinition = {
     { value: 'free', text: 'Free' },
     { value: 'pro', text: 'Pro' },
     { value: 'team', text: 'Team' },
+  ],
+};
+
+const branchField: FieldDefinition = {
+  key: 'branch',
+  type: 'autocomplete',
+  label: 'Branch',
+  placeholder: 'Type or pick a branch…',
+  options: [
+    { value: 'main', text: 'main' },
+    { value: 'develop', text: 'develop' },
+    { value: 'staging', text: 'staging' },
+    { value: 'release/1.0', text: 'release/1.0' },
   ],
 };
 

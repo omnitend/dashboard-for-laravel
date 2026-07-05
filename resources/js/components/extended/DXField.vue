@@ -1,6 +1,6 @@
 <!--
   @component
-  Renders a single `FieldDefinition` of any type (text, select, checkbox, switch, repeater, currency, percentage, file/image, component, etc.) with its label, validation error, hint and help. Used by `DXForm` and `DXTable`'s edit modal; exposes `value`, `span`, `info`, `hint` and `repeater-row` slots for per-field customisation.
+  Renders a single `FieldDefinition` of any type (text, select, autocomplete, checkbox, switch, repeater, currency, percentage, file/image, component, etc.) with its label, validation error, hint and help. Used by `DXForm` and `DXTable`'s edit modal; exposes `value`, `span`, `info`, `hint` and `repeater-row` slots for per-field customisation.
 -->
 <template>
     <!-- Full-width span field: delegate entirely to the #span slot -->
@@ -265,6 +265,33 @@
             </template>
         </DInputGroup>
 
+        <!-- Autocomplete: a free-text input with a datalist of suggestions
+             (sync or async options). Unlike select, a value not in the list can
+             still be typed and submitted; the consumer validates. -->
+        <template v-else-if="field.type === 'autocomplete'">
+            <DFormInput
+                v-model="fieldValue"
+                type="text"
+                :list="datalistId"
+                :required="field.required"
+                :placeholder="field.placeholder"
+                :state="fieldState"
+                :disabled="isDisabled"
+                :readonly="isReadonly"
+                autocomplete="off"
+                v-bind="field.inputProps"
+            />
+            <datalist :id="datalistId">
+                <option
+                    v-for="opt in resolvedOptions"
+                    :key="String(opt.value)"
+                    :value="String(opt.value)"
+                >
+                    {{ opt.text }}
+                </option>
+            </datalist>
+        </template>
+
         <!-- Text-based inputs (text/email/password/number/url/tel/date/time/datetime) -->
         <DFormInput
             v-else
@@ -316,6 +343,7 @@ import {
     onBeforeUnmount,
     onMounted,
     ref,
+    useId,
     watch,
 } from "vue";
 import DFormGroup from "../base/DFormGroup.vue";
@@ -511,6 +539,10 @@ const inputType = computed<string>(() => {
     if (type === "datetime") return "datetime-local";
     return type;
 });
+
+// Unique, SSR-safe id linking an `autocomplete` field's input to its
+// `<datalist>` of suggestions (via the input's `list` attribute).
+const datalistId = useId();
 
 // ————————————————— async options
 
