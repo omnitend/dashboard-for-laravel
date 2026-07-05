@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-07-05
+
 ### Fixed
 - **`DAutocomplete` dropdown no longer clips long options** (#59). The popup
   (`.b-autocomplete-content`) only set a `max-height`, so it inherited the
