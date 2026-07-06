@@ -258,6 +258,9 @@ interface FieldDefinition {
   min?: number | string
   max?: number | string
   currencySymbol?: string           // Default: "£"
+  decimals?: number                 // Currency only. Minor-unit precision the display
+                                    // value is formatted to on blur/seed (default: 2;
+                                    // pass 0 for a currency with no minor unit, e.g. JPY)
 
   // File (image / file)
   accept?: string                   // e.g. "image/*"

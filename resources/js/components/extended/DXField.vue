@@ -247,12 +247,34 @@
             <template v-if="field.type === 'currency'" #prepend>
                 <span class="input-group-text">{{ field.currencySymbol || "£" }}</span>
             </template>
+
+            <!-- Currency: the displayed text is padded to the minor-unit
+                 precision on blur/seed (e.g. `3.8` -> `3.80`); the model stays
+                 a plain number and typing is never reformatted mid-edit. -->
             <DFormInput
+                v-if="field.type === 'currency'"
+                :model-value="currencyDisplayValue"
+                type="number"
+                :required="field.required"
+                :placeholder="field.placeholder"
+                :step="field.step ?? '0.01'"
+                :min="field.min"
+                :max="field.max"
+                :state="fieldState"
+                :disabled="isDisabled"
+                :readonly="isReadonly"
+                v-bind="field.inputProps"
+                @input="handleCurrencyInput"
+                @focus="handleCurrencyFocus"
+                @blur="handleCurrencyBlur"
+            />
+            <DFormInput
+                v-else
                 v-model="numericInputValue"
                 type="number"
                 :required="field.required"
                 :placeholder="field.placeholder"
-                :step="field.step ?? (field.type === 'currency' ? '0.01' : undefined)"
+                :step="field.step"
                 :min="field.min"
                 :max="field.max"
                 :state="fieldState"
@@ -260,6 +282,7 @@
                 :readonly="isReadonly"
                 v-bind="field.inputProps"
             />
+
             <template v-if="field.type === 'percentage'" #append>
                 <span class="input-group-text">%</span>
             </template>
@@ -478,6 +501,50 @@ function setValue(value: any): void {
     props.form.clearError(errorKey.value);
 }
 
+// ————————————————— currency display formatting (#69)
+
+// The model stays a plain number throughout; only the input's *displayed*
+// text is padded to the minor-unit precision (`3.8` -> `3.80`), on blur and on
+// initial seed. Reformatting reactively on every keystroke (rather than on
+// blur) would fight the user mid-edit — e.g. rounding "3." to "3.00" before
+// they've typed the fractional digits — so a local ref tracks the shown text
+// independently of the numeric model, and is only resynced from the model
+// while the input isn't focused.
+const currencyDecimals = computed(() => props.field.decimals ?? 2);
+const isCurrencyFocused = ref(false);
+const currencyDisplayValue = ref("");
+
+function formatCurrency(value: any): string {
+    if (value === null || value === undefined || value === "") return "";
+    const num = Number(value);
+    if (!Number.isFinite(num)) return String(value);
+    return num.toFixed(currencyDecimals.value);
+}
+
+watch(
+    () => fieldValue.value,
+    (value) => {
+        if (isCurrencyFocused.value) return;
+        currencyDisplayValue.value = formatCurrency(value);
+    },
+    { immediate: true },
+);
+
+function handleCurrencyFocus(): void {
+    isCurrencyFocused.value = true;
+}
+
+function handleCurrencyInput(event: Event): void {
+    const raw = (event.target as HTMLInputElement).value;
+    currencyDisplayValue.value = raw;
+    setValue(raw);
+}
+
+function handleCurrencyBlur(): void {
+    isCurrencyFocused.value = false;
+    currencyDisplayValue.value = formatCurrency(fieldValue.value);
+}
+
 const fieldState = computed(() => props.form.getState(errorKey.value));
 
 const resolvedLabel = computed(
@@ -623,17 +690,23 @@ onBeforeUnmount(() => {
     border-radius: var(--bs-border-radius);
 }
 
-/* Switch field: a full-width "filled box" toggle, the same height as a select
-   or text input, that colour-codes its state — a neutral box when off, a filled
-   success green when on. The label sits on the left and the toggle on the right.
-   Renders the underlying `.form-check` (from the switch checkbox) as the box. */
+/* Switch field: a compact "filled box" toggle, sized to its content — like the
+   plain `checkbox` field type, it doesn't stretch to fill the form row — but
+   matching standard input height so it lines up with sibling text/select
+   fields. Colour-codes its state: a neutral box when off, a filled success
+   green when on. The label sits on the left and the toggle on the right.
+   Renders the underlying `.form-check` (from the switch checkbox) as the box.
+   `justify-content: space-between` on a full-width box used to leave a wide
+   unclickable gap between the label and the toggle (only the tiny toggle
+   itself was a real click target); shrinking the box to fit its content
+   removes that dead zone entirely. */
 .dx-switch :deep(.form-check) {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
     gap: 0.75rem;
-    width: 100%;
-    min-height: calc(1.5em + 0.75rem + 2px); /* match .form-control height */
+    width: fit-content;
+    max-width: 100%; /* wrap/ellipsize rather than overflow a narrow field */
+    min-height: var(--dx-input-height, calc(1.5em + 0.75rem + 2px)); /* match .form-control height */
     margin: 0;
     /* Override Bootstrap `.form-switch`'s 2.5em left padding for the floated input. */
     padding: 0.375rem 0.75rem;

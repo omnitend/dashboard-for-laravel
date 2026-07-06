@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`switch` field: compact box (matches sibling input width/height), single
+  click target** (#64). The filled box always stretched to the full form
+  width — unlike the plain `checkbox` type — visually dominating a form next
+  to content-sized siblings, and its `justify-content: space-between` layout
+  left a wide unclickable gap between the label and the toggle so only the
+  small toggle itself reliably registered a click. It's also fixed a height
+  mismatch: the box's `min-height` was hardcoded to Bootstrap's *default*
+  input padding formula rather than this theme's actual `$input-padding-y`,
+  so it rendered shorter than a real `.form-control`/`.form-select`. The box
+  now sizes to its content (like `checkbox`), matches standard input height
+  exactly via a new `--dx-input-height` theme variable (computed once from
+  the real theme values, so it can't drift), and the dead click-zone is gone
+  now that the box no longer force-stretches.
+- **`currency` field now displays minor-unit precision** (#69). A value of
+  `3.8` displayed as `3.8` rather than `3.80`. The input now formats its
+  *displayed* text to the currency's decimal places (default 2; a new
+  `field.decimals` option overrides it, e.g. `0` for a currency with no minor
+  unit) on blur and on initial seed — the model stays a plain number
+  throughout, and typing is never reformatted mid-edit.
+
 ## [0.16.2] - 2026-07-06
 
 ### Fixed

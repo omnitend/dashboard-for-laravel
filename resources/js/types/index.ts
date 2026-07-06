@@ -115,6 +115,15 @@ export interface FieldDefinition {
     currencySymbol?: string;
 
     /**
+     * For `currency` fields: minor-unit decimal places the *display* value is
+     * formatted to on blur and on initial seed (default: 2, e.g. GBP/EUR/USD —
+     * pass 0 for a currency with no minor unit, e.g. JPY). The model stays a
+     * plain number throughout; only the input's shown text is padded (`3.8` →
+     * `3.80`). Typing is never reformatted mid-edit.
+     */
+    decimals?: number;
+
+    /**
      * For `percentage` fields: treat the underlying model value as a 0–1
      * fraction while showing/editing it as a 0–100 percentage. The model keeps
      * the fraction (e.g. `0.2`), the input shows `20`. Off by default (the value
