@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.3] - 2026-07-06
+
 ### Fixed
 - **`switch` field: compact box (matches sibling input width/height), single
   click target** (#64). The filled box always stretched to the full form
