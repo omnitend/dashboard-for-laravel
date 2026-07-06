@@ -168,6 +168,80 @@ describe('DXRepeater', () => {
     expect(form.data.groups[0].tags).not.toBe(form.data.groups[1].tags);
   });
 
+  describe('softDeleteKey', () => {
+    const softDeleteField: FieldDefinition = {
+      ...lineField,
+      softDeleteKey: 'to_delete',
+    };
+
+    it('flags a persisted row instead of splicing it, and hides it from the UI', async () => {
+      const form = useForm({
+        lines: [
+          { id: 1, name: 'First', qty: 1 },
+          { id: 2, name: 'Second', qty: 2 },
+        ],
+      });
+      const screen = render(DXRepeater, {
+        props: { form, field: softDeleteField, keyPath: 'lines' },
+      });
+
+      const removeButtons = screen.container.querySelectorAll('.dx-repeater-row button');
+      (removeButtons[0] as HTMLButtonElement).click();
+      await flush();
+
+      // Still in form.data (so it's submitted), flagged, and no longer spliced away.
+      expect(form.data.lines.length).toBe(2);
+      expect(form.data.lines[0]).toEqual({ id: 1, name: 'First', qty: 1, to_delete: true });
+      // Hidden from the UI.
+      expect(screen.container.querySelectorAll('.dx-repeater-row').length).toBe(1);
+    });
+
+    it('splices a never-persisted (id-less) row as before', async () => {
+      const form = useForm({ lines: [{ name: 'Draft', qty: 1 }] });
+      const screen = render(DXRepeater, {
+        props: { form, field: softDeleteField, keyPath: 'lines' },
+      });
+
+      const removeButtons = screen.container.querySelectorAll('.dx-repeater-row button');
+      (removeButtons[0] as HTMLButtonElement).click();
+      await flush();
+
+      expect(form.data.lines.length).toBe(0);
+      expect(screen.container.querySelectorAll('.dx-repeater-row').length).toBe(0);
+    });
+
+    it('excludes soft-deleted rows from minItems/maxItems counts', async () => {
+      const form = useForm({
+        lines: [
+          { id: 1, name: 'First', qty: 1 },
+          { id: 2, name: 'Second', qty: 2 },
+        ],
+      });
+      const screen = render(DXRepeater, {
+        props: {
+          form,
+          field: { ...softDeleteField, minItems: 1, maxItems: 2 },
+          keyPath: 'lines',
+        },
+      });
+
+      // Soft-delete the first row: one visible row remains, at minItems, so
+      // its own remove button is disabled — but the add button, which counts
+      // against maxItems, is enabled since only one row is now visible.
+      const removeButtons = screen.container.querySelectorAll('.dx-repeater-row button');
+      (removeButtons[0] as HTMLButtonElement).click();
+      await flush();
+
+      const remainingRemove = screen.container.querySelector(
+        '.dx-repeater-row button',
+      ) as HTMLButtonElement;
+      expect(remainingRemove.disabled).toBe(true);
+
+      const addButton = screen.getByRole('button', { name: 'Add line' }).element() as HTMLButtonElement;
+      expect(addButton.disabled).toBe(false);
+    });
+  });
+
   it('binds nested sub-field inputs to form.data via dotted paths', async () => {
     const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
     const screen = render(DXRepeater, {

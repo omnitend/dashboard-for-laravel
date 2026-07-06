@@ -7,37 +7,37 @@
 <template>
     <div class="dx-repeater">
         <div
-            v-for="(row, index) in rows"
-            :key="rowKey(index)"
+            v-for="(entry, position) in visibleRows"
+            :key="rowKey(entry.row, position)"
             class="dx-repeater-row"
         >
             <!--
               @slot Custom layout for a single repeater row, replacing the default sub-field stack.
               @binding {object} row The current row's data object.
-              @binding {number} index The row's zero-based index.
+              @binding {number} index The row's zero-based position among visible rows.
               @binding {FieldDefinition[]} fields The sub-field definitions for the row.
-              @binding {function} remove Removes this row (respects `minItems`).
+              @binding {function} remove Removes this row (respects `minItems`; soft-deletes instead of splicing when `field.softDeleteKey` is set and the row has an `id`).
               @binding {string} path The dot path into `form.data` for this row (e.g. `lines.0`).
             -->
             <slot
                 v-if="$slots.row"
                 name="row"
-                :row="row"
-                :index="index"
+                :row="entry.row"
+                :index="position"
                 :fields="subFields"
-                :remove="() => removeRow(index)"
-                :path="rowPath(index)"
+                :remove="() => removeRow(entry.index)"
+                :path="rowPath(entry.index)"
             />
 
             <!-- Default row: stack each sub-field -->
             <template v-else>
                 <div class="dx-repeater-row-header">
-                    <span class="dx-repeater-row-index">{{ index + 1 }}</span>
+                    <span class="dx-repeater-row-index">{{ position + 1 }}</span>
                     <DButton
                         variant="outline-danger"
                         size="sm"
-                        :disabled="rows.length <= minItems"
-                        @click="removeRow(index)"
+                        :disabled="visibleRows.length <= minItems"
+                        @click="removeRow(entry.index)"
                     >
                         Remove
                     </DButton>
@@ -47,9 +47,9 @@
                     :key="subField.key"
                     :field="subField"
                     :form="form"
-                    :model="row"
-                    :key-path="`${rowPath(index)}.${subField.key}`"
-                    :error-key="`${rowPath(index)}.${subField.key}`"
+                    :model="entry.row"
+                    :key-path="`${rowPath(entry.index)}.${subField.key}`"
+                    :error-key="`${rowPath(entry.index)}.${subField.key}`"
                 />
             </template>
         </div>
@@ -57,7 +57,7 @@
         <DButton
             variant="outline-primary"
             size="sm"
-            :disabled="maxItems !== undefined && rows.length >= maxItems"
+            :disabled="maxItems !== undefined && visibleRows.length >= maxItems"
             @click="addRow"
         >
             {{ field.addLabel || "Add" }}
@@ -97,16 +97,39 @@ const arrayPath = computed(() => props.keyPath ?? props.field.key);
 const subFields = computed<FieldDefinition[]>(() => props.field.fields ?? []);
 const minItems = computed(() => props.field.minItems ?? 0);
 const maxItems = computed(() => props.field.maxItems);
+const softDeleteKey = computed(() => props.field.softDeleteKey);
+
+function isSoftDeleted(row: any): boolean {
+    return Boolean(
+        softDeleteKey.value &&
+            row &&
+            typeof row === "object" &&
+            row[softDeleteKey.value],
+    );
+}
 
 /**
- * The live rows array. Ensures form.data holds an array at the path so
- * push/splice are reactive even when the form was seeded without one.
+ * The full rows array, including any row flagged via `softDeleteKey`. Ensures
+ * form.data holds an array at the path so push/splice are reactive even when
+ * the form was seeded without one.
  */
 const rows = computed<any[]>(() => {
     const existing = getByPath(props.form.data, arrayPath.value);
     if (Array.isArray(existing)) return existing;
     return [];
 });
+
+/**
+ * Rows shown in the UI, paired with their real (unfiltered) array index —
+ * a soft-deleted row stays in `form.data` (so it's submitted) but is hidden
+ * here, and every path/splice operation must still target its true index,
+ * not its position among visible rows.
+ */
+const visibleRows = computed<Array<{ row: any; index: number }>>(() =>
+    rows.value
+        .map((row, index) => ({ row, index }))
+        .filter(({ row }) => !isSoftDeleted(row)),
+);
 
 const rowPath = (index: number): string => `${arrayPath.value}.${index}`;
 
@@ -118,8 +141,7 @@ const rowPath = (index: number): string => `${arrayPath.value}.${index}`;
 const generatedKeys = new WeakMap<object, number>();
 let nextGeneratedKey = 0;
 
-const rowKey = (index: number): string | number => {
-    const row = rows.value[index];
+const rowKey = (row: any, fallbackPosition: number): string | number => {
     if (row && typeof row === "object") {
         if (row.id !== undefined && row.id !== null) return row.id;
         let key = generatedKeys.get(row);
@@ -130,7 +152,7 @@ const rowKey = (index: number): string | number => {
         }
         return `gen-${key}`;
     }
-    return index;
+    return fallbackPosition;
 };
 
 /** Default value for a freshly added row's sub-field. */
@@ -188,7 +210,7 @@ function clearArrayErrors(): void {
 }
 
 function addRow(): void {
-    if (maxItems.value !== undefined && rows.value.length >= maxItems.value) {
+    if (maxItems.value !== undefined && visibleRows.value.length >= maxItems.value) {
         return;
     }
     // Ensure the array exists on form.data before pushing (path may be
@@ -202,8 +224,21 @@ function addRow(): void {
 }
 
 function removeRow(index: number): void {
-    if (rows.value.length <= minItems.value) return;
-    getByPath(props.form.data, arrayPath.value).splice(index, 1);
+    if (visibleRows.value.length <= minItems.value) return;
+    const array = getByPath(props.form.data, arrayPath.value);
+    const row = array?.[index];
+
+    // A row the server already knows about (carries an `id`) can't just be
+    // spliced away under an upsert-children contract — the server never
+    // learns it was removed. Flag it instead so it's still submitted, and
+    // let it disappear from the UI via `visibleRows`.
+    if (softDeleteKey.value && row && typeof row === "object" && row.id !== undefined && row.id !== null) {
+        row[softDeleteKey.value] = true;
+        clearArrayErrors();
+        return;
+    }
+
+    array.splice(index, 1);
     clearArrayErrors();
 }
 </script>
