@@ -33,7 +33,7 @@ exported directly for custom layouts.
 
 <PropsTable client:load props={[
   { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance owning the repeater array.' },
-  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems.' },
+  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey.' },
   { name: 'keyPath', type: 'string', required: 'No', default: 'field.key', description: 'Dot path into form.data for the array.' },
   { name: 'errorKey', type: 'string', required: 'No', default: 'keyPath', description: 'Base error key for nested validation.' },
   { name: 'model', type: 'any', required: 'No', default: '-', description: 'Model passed to predicates from the parent context.' },
@@ -64,6 +64,37 @@ const fields = [
 New rows are seeded from each sub-field's `default` (or a sensible per-type
 default). Rows keep stable identity across reordering/removal, so editing a row
 and removing another never shuffles your inputs.
+
+## Upsert-children APIs (`softDeleteKey`)
+
+Some Laravel backends manage child rows via an upsert contract: existing rows
+carry an `id` and are only deleted server-side when submitted flagged, e.g.
+`{ id, to_delete: true }`. Splicing a removed row out of the array (the
+default behaviour) never tells such a server the row was removed — it just
+silently survives.
+
+Set `softDeleteKey` to the sub-field name the server expects, and removing a
+row that already has an `id` flags it instead of deleting it from the array:
+
+```ts
+const fields = [
+  {
+    key: 'lines',
+    type: 'repeater',
+    label: 'Line items',
+    softDeleteKey: 'to_delete',
+    fields: [
+      { key: 'description', type: 'text', label: 'Description' },
+      { key: 'unit_price', type: 'currency', label: 'Unit price' },
+    ],
+  },
+];
+```
+
+A row without an `id` (freshly added, never persisted) is still spliced away
+as normal — the server never saw it. Flagged rows stay in `form.data` (so
+they're submitted) but are hidden from the UI and excluded from
+`minItems`/`maxItems` counts.
 
 ## Slots
 

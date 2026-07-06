@@ -190,6 +190,19 @@ export interface FieldDefinition {
     minItems?: number;
     maxItems?: number;
 
+    /**
+     * For `repeater` fields backed by an upsert-children API contract (rows
+     * carrying a persisted `id` are only deleted server-side when submitted
+     * flagged, e.g. Laravel's `{ id, to_delete: true }` pattern): the
+     * sub-field key to set `true` when a row is removed, instead of splicing
+     * it out of the array. Only applies to rows that already have an `id`
+     * (freshly added, never-persisted rows are still spliced normally since
+     * the server has never seen them). Flagged rows remain in `form.data`
+     * (so they're submitted) but are hidden from the UI and excluded from
+     * `minItems`/`maxItems` counts.
+     */
+    softDeleteKey?: string;
+
     /** Disable the field (static or computed from the model). */
     disabled?: MaybeFn<boolean>;
 

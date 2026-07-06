@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`form.touched` is now set for fields driven through `DXField`/`DXForm`**
+  (#61). `useForm`'s `touched` map was only ever populated by the `field()`
+  computed's setter, but `DXField` writes to `form.data` directly (including
+  the nested/`keyPath` branch used by repeaters), so `form.touched` stayed
+  `{}` forever for any form built from field definitions. Consumers building
+  dirty-aware payloads (e.g. omitting untouched fields on a partial update)
+  got a guard that never fired. `DXField` now marks the field's key (or full
+  `keyPath` for nested/repeater fields) touched on every write.
+- **`DXRepeater` supports upsert-children (`to_delete`-style) APIs** (#62).
+  Removing a row always spliced it out of the array, so a backend that only
+  deletes a persisted child row when it's submitted flagged (e.g. Laravel's
+  `{ id, to_delete: true }` upsert pattern) never learned the row was
+  removed — the row silently survived. A new `field.softDeleteKey` option
+  flags a row with an `id` instead of splicing it; the row stays in
+  `form.data` (so it's submitted) but is hidden from the UI and excluded
+  from `minItems`/`maxItems` counts. Rows without an `id` (never persisted)
+  are still spliced as before.
+
 ## [0.16.1] - 2026-07-05
 
 ### Fixed

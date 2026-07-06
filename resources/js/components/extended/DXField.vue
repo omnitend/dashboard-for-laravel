@@ -474,6 +474,7 @@ function setValue(value: any): void {
     } else {
         (props.form.data as Record<string, any>)[props.field.key] = next;
     }
+    props.form.touched[errorKey.value] = true;
     props.form.clearError(errorKey.value);
 }
 
