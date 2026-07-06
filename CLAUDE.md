@@ -883,6 +883,20 @@ during the v0.8.0 toast restyle and sidebar accordion):
   scope-id and give a false-positive screenshot that a consumer's production
   Rollup build won't reproduce. Prefer driving `--bs-*` component variables
   (e.g. `--bs-btn-*`) over raw properties when restyling a BVN control.
+  **Guard**: `tests/components/scoped-deep-styles.test.ts` renders every known
+  `:deep()` site from the **built `dist/` bundle** and asserts the scope-id
+  actually reaches the targeted element, plus a coverage check that fails if a
+  new scoped `:deep()` shows up in any component that isn't in its
+  `KNOWN_DEEP_TARGETS` list. A #58 audit against `dist/` found the current
+  sites (DAutocomplete, DXField's switch, DXTable's `tbody tr`/`.pagination`,
+  DXStatCard, DXDashboardSidebar's `.nav-link`) all forward correctly — even
+  ones whose own template root is a `<B*>`/`D*` **component**, not a plain
+  element (DXTable's root is `<DContainer>`, DXStatCard's is `<DCard>`) — so a
+  component-only root is not an automatic failure; only DOM-level testing
+  against the real build tells you either way. When adding a new `:deep()`
+  rule, add it to `KNOWN_DEEP_TARGETS` and a DOM-level assertion in that file
+  (rebuild first — the test reads the scope-id straight out of `dist/style.css`
+  so it self-updates across unrelated style edits, no hardcoded hash).
 
 ### Bumping the vitest browser-mode family (vitest / @vitest/browser / @vitest/browser-playwright)
 

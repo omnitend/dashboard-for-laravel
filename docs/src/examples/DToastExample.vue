@@ -28,7 +28,7 @@
     <div class="example-section">
       <h5>Usage Note</h5>
       <p class="info-text">
-        DToast is typically used with DToaster and the <code>useToast()</code> composable from Bootstrap Vue Next
+        DToast is typically used with DToaster and this library's <code>useToast()</code> composable
         for programmatic toast notifications. The examples above show the component's visual variants.
         For interactive toast notifications, combine DToast with DToaster in your application layout.
       </p>
