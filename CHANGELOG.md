@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-07-06
+
 ### Fixed
 - **`form.touched` is now set for fields driven through `DXField`/`DXForm`**
   (#61). `useForm`'s `touched` map was only ever populated by the `field()`
