@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Audited the `:deep()` scoped-style trap (#53) across every current
+  usage** (#58). Confirmed at the DOM level, against the built `dist`
+  bundle — not a docs dev-build screenshot, which previously gave a false
+  positive — that DAutocomplete, DXField's switch, DXTable's
+  `tbody tr`/`.pagination`, DXStatCard, and DXDashboardSidebar's `.nav-link`
+  all forward their scope-id correctly today; no other live bugs found.
+  Added `tests/components/scoped-deep-styles.test.ts` as a permanent guard:
+  it fails if a new scoped `:deep()` rule appears anywhere without a
+  corresponding DOM-level assertion, and the DOM-level checks themselves read
+  the scope-id straight out of `dist/style.css` so they don't need updating
+  when unrelated style edits change the hash.
+
 ## [0.16.3] - 2026-07-06
 
 ### Fixed
