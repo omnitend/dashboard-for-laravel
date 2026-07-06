@@ -865,6 +865,24 @@ during the v0.8.0 toast restyle and sidebar accordion):
   flex-column can't stack its items in the tiny height and wraps them into
   side-by-side columns — a visible reflow flash. Add `flex-wrap: nowrap` to the
   collapsing list. (See `DXDashboardSidebar.vue`.)
+- **A `<style scoped>` `:deep()` block on a `D*` wrapper whose ONLY root is the
+  BVN component is INERT in consumer builds.** The scope-id (`data-v-x`) isn't
+  reliably forwarded onto BVN's rendered root across the wrapper→BVN boundary,
+  so `[data-v-x] .bvn-internal` matches no host once bundled — the CSS ships in
+  `dist/style.css` but does nothing (bit us on #53/#54; the fix "worked" in the
+  docs build yet was inert for a consumer). **Fix:** wrap the BVN component in a
+  real element the wrapper owns and anchor the rules on it —
+  `<div class="d-autocomplete"><BAutocomplete/></div>` +
+  `.d-autocomplete :deep(…)`. A plain-element root always carries the scope-id.
+  For popup/menu content BVN can **teleport** out of the component (e.g.
+  `teleportTo`), even a real host won't help — put those rules in the **global**
+  theme.scss (`.b-autocomplete-content { … }`), which applies regardless of
+  teleport (#59). **Verify BVN-styling fixes at the DOM level** (dump the
+  rendered DOM, confirm the scope-id lands on a host containing the target) or
+  in a real consumer bundle — the docs Astro/Vite dev build can forward the
+  scope-id and give a false-positive screenshot that a consumer's production
+  Rollup build won't reproduce. Prefer driving `--bs-*` component variables
+  (e.g. `--bs-btn-*`) over raw properties when restyling a BVN control.
 
 ### Bumping the vitest browser-mode family (vitest / @vitest/browser / @vitest/browser-playwright)
 
