@@ -221,17 +221,24 @@ $dashboard-navbar-height: 64px;
 // Toasts
 // ----------------------------------------------------------------------------
 // Bootstrap Vue Next renders toasts with Bootstrap's `.text-bg-{variant}`
-// utility, which fills the whole toast with a saturated colour and white text —
-// loud "candy" blocks that are wrong for a dashboard. Restyle them as a calm,
-// neutral surface with a subtle semantic tint + a coloured left accent rail and
-// progress bar. Colour still signals the toast type, but the bold palette stays
-// where it belongs (actions, badges, selected states).
+// utility by default, which fills the whole toast with a saturated colour and
+// white text — loud "candy" blocks that are wrong for a dashboard. Restyle
+// them as a calm, neutral surface with a subtle semantic tint. Colour still
+// signals the toast type, but the bold palette stays where it belongs
+// (actions, badges, selected states).
+//
+// `useToast()` (resources/js/composables/useToast.ts) intercepts a themed
+// `variant` and swaps it for a `toast-{variant}` class instead of BVN's own
+// `variant` prop, so these rules drive Bootstrap's own `--bs-toast-*`
+// variables — no `!important` needed to fight the `.text-bg-*` utility, which
+// sets its colours `!important` by design. An untouched (non-themed) variant
+// still falls through to BVN's default `.text-bg-*` styling.
 
 .toast {
   overflow: hidden; // clip the bottom progress bar to the rounded corners
   border: 1px solid $border-color;
   border-radius: $border-radius;
-  background-color: $white;
+  --bs-toast-bg: #{$white};
   box-shadow:
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -260,19 +267,16 @@ $dashboard-navbar-height: 64px;
     display: none;
   }
 
-  // Semantic variants: subtle tinted surface. Overrides the saturated
-  // `.text-bg-*` fill (compound selector wins on specificity); the dark title /
-  // muted body from the base rules above stay.
+  // Semantic variants: subtle tinted surface, driven through the CSS variable
+  // the base `.toast` rule (above, and Bootstrap's own) already reads.
   @each $name, $color in (
     "success": $success,
     "danger": $danger,
     "warning": $warning,
     "info": $info
   ) {
-    &.text-bg-#{$name} {
-      // !important overrides Bootstrap's `.text-bg-*` helper, which sets a
-      // saturated background-color !important that BVN applies per variant.
-      background-color: mix($color, $white, 8%) !important;
+    &.toast-#{$name} {
+      --bs-toast-bg: #{mix($color, $white, 8%)};
     }
   }
 }

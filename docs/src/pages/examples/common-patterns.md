@@ -220,11 +220,11 @@ const fields: FieldDefinition[] = [
 const handleSubmit = async () => {
   await form.post('/api/customers', {
     onSuccess: () => {
-      toast.success('Customer created successfully')
+      toast.create({ body: 'Customer created successfully', variant: 'success' })
       router.push('/customers')
     },
     onError: () => {
-      toast.error('Please fix the validation errors')
+      toast.create({ body: 'Please fix the validation errors', variant: 'danger' })
     }
   })
 }
@@ -350,19 +350,19 @@ import { useToast, DButton, DCard } from '@omnitend/dashboard-for-laravel'
 const toast = useToast()
 
 const showSuccess = () => {
-  toast.success('Operation completed successfully!')
+  toast.create({ body: 'Operation completed successfully!', variant: 'success' })
 }
 
 const showError = () => {
-  toast.error('Something went wrong. Please try again.')
+  toast.create({ body: 'Something went wrong. Please try again.', variant: 'danger' })
 }
 
 const showInfo = () => {
-  toast.info('This is an informational message.')
+  toast.create({ body: 'This is an informational message.', variant: 'info' })
 }
 
 const showWarning = () => {
-  toast.warning('Please review this warning.')
+  toast.create({ body: 'Please review this warning.', variant: 'warning' })
 }
 </script>
 

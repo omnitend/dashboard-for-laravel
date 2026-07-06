@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`useToast()` now themes success/danger/warning/info toasts through
+  `--bs-toast-*` CSS variables instead of overriding Bootstrap's `.text-bg-*`
+  utility with `!important`** (#15). `useToast()` (exported from this
+  library, wrapping Bootstrap Vue Next's) translates a themed `variant` into
+  a `toast-{variant}` class instead of forwarding BVN's own `variant` prop;
+  theme.scss drives colours through the CSS variables Bootstrap's own
+  `.toast` rule already reads. Non-breaking: the public API
+  (`create({ title, body, variant })`, `show(...)`) is unchanged and the
+  default visual result is identical. An unrecognised variant (e.g.
+  `primary`, `dark`, or none) still falls through to BVN's default
+  `.text-bg-*` styling. Consumers calling `bootstrap-vue-next`'s `useToast()`
+  directly (bypassing this library's export) are unaffected either way.
+
 ### Fixed
 - **Audited the `:deep()` scoped-style trap (#53) across every current
   usage** (#58). Confirmed at the DOM level, against the built `dist`
