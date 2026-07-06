@@ -156,6 +156,63 @@ describe('DXField switch type', () => {
   });
 });
 
+describe('DXField touched tracking', () => {
+  it('marks form.touched on a plain field write', async () => {
+    const { screen, form } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+    );
+    await flush();
+
+    expect(form.touched.name).toBeUndefined();
+
+    const input = screen.container.querySelector('input[type="text"]') as HTMLInputElement;
+    await userEvent.fill(input, 'Ada');
+    await flush();
+
+    expect(form.data.name).toBe('Ada');
+    expect(form.touched.name).toBe(true);
+  });
+
+  it('marks form.touched at the keyPath for a nested/repeater-style field', async () => {
+    const form = useForm({ lines: [{ price: 0 }] });
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXField, {
+            field: { key: 'price', type: 'number', label: 'Price' },
+            form,
+            keyPath: 'lines.0.price',
+          }),
+        ),
+    });
+    await flush();
+
+    const input = screen.container.querySelector('input[type="number"]') as HTMLInputElement;
+    await userEvent.fill(input, '12');
+    await flush();
+
+    expect(form.data.lines[0].price).toBe(12);
+    expect(form.touched['lines.0.price']).toBe(true);
+    // The bare field key must not be touched instead of the full path.
+    expect(form.touched.price).toBeUndefined();
+  });
+
+  it('marks form.touched on a switch toggle', async () => {
+    const { screen, form } = renderField(
+      { key: 'active', type: 'switch', label: 'Active' },
+      { active: false },
+    );
+    await flush();
+
+    const input = screen.container.querySelector<HTMLInputElement>('.form-check-input')!;
+    await userEvent.click(input);
+    await flush();
+
+    expect(form.touched.active).toBe(true);
+  });
+});
+
 describe('DXField info tooltip', () => {
   it('renders an info trigger on the label when `info` is set', async () => {
     const { screen } = renderField(

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`form.touched` is now set for fields driven through `DXField`/`DXForm`**
+  (#61). `useForm`'s `touched` map was only ever populated by the `field()`
+  computed's setter, but `DXField` writes to `form.data` directly (including
+  the nested/`keyPath` branch used by repeaters), so `form.touched` stayed
+  `{}` forever for any form built from field definitions. Consumers building
+  dirty-aware payloads (e.g. omitting untouched fields on a partial update)
+  got a guard that never fired. `DXField` now marks the field's key (or full
+  `keyPath` for nested/repeater fields) touched on every write.
+
 ## [0.16.1] - 2026-07-05
 
 ### Fixed
