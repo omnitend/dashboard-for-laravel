@@ -213,6 +213,117 @@ describe('DXField touched tracking', () => {
   });
 });
 
+describe('DXField switch box sizing and click target (#64)', () => {
+  it('sizes the box to its content instead of stretching full width, like the plain checkbox type', async () => {
+    const { screen } = renderField(
+      { key: 'active', type: 'switch', label: 'Active' },
+      { active: true },
+    );
+    await flush();
+
+    const box = screen.container.querySelector<HTMLElement>('.dx-switch .form-check')!;
+    const wrapper = screen.container.querySelector<HTMLElement>('.dx-switch')!;
+    const boxRect = box.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+
+    expect(getComputedStyle(box).display).toBe('inline-flex');
+    // A short label shouldn't stretch the box anywhere near the full field width.
+    expect(boxRect.width).toBeLessThan(wrapperRect.width * 0.6);
+  });
+
+  it('matches standard input height', async () => {
+    const { screen: textScreen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+    );
+    const { screen: switchScreen } = renderField(
+      { key: 'active', type: 'switch', label: 'Active' },
+      { active: true },
+    );
+    await flush();
+
+    const textInput = textScreen.container.querySelector('input[type="text"]')!;
+    const switchBox = switchScreen.container.querySelector('.dx-switch .form-check')!;
+
+    expect(switchBox.getBoundingClientRect().height).toBeCloseTo(
+      textInput.getBoundingClientRect().height,
+      0,
+    );
+  });
+
+  it('toggles when clicking the label text, not just the small toggle control', async () => {
+    const { screen, form } = renderField(
+      { key: 'active', type: 'switch', label: 'Active' },
+      { active: false },
+    );
+    await flush();
+
+    const labelText = screen.container.querySelector<HTMLElement>('.dx-field-label__text')!;
+    await userEvent.click(labelText);
+    await flush();
+
+    expect(form.data.active).toBe(true);
+  });
+});
+
+describe('DXField currency display formatting (#69)', () => {
+  it('formats the initial seed value to minor-unit precision', async () => {
+    const { screen } = renderField(
+      { key: 'price', type: 'currency', label: 'Price' },
+      { price: 3.8 },
+    );
+    await flush();
+
+    const input = screen.container.querySelector<HTMLInputElement>('input[type="number"]')!;
+    expect(input.value).toBe('3.80');
+  });
+
+  it('does not reformat mid-edit, but reformats on blur, keeping the model numeric', async () => {
+    const { screen, form } = renderField(
+      { key: 'price', type: 'currency', label: 'Price' },
+      { price: 3.8 },
+    );
+    await flush();
+
+    const input = screen.container.querySelector<HTMLInputElement>('input[type="number"]')!;
+    await userEvent.fill(input, '12.5');
+    await flush();
+
+    // Not reformatted while focused — the user can still type more digits.
+    expect(input.value).toBe('12.5');
+    expect(form.data.price).toBe(12.5);
+
+    input.blur();
+    input.dispatchEvent(new Event('blur', { bubbles: true }));
+    await flush();
+
+    expect(input.value).toBe('12.50');
+    expect(form.data.price).toBe(12.5);
+  });
+
+  it('respects a custom `decimals` option (e.g. 0dp for a currency with no minor unit)', async () => {
+    const { screen } = renderField(
+      { key: 'price', type: 'currency', label: 'Price', decimals: 0 },
+      { price: 1200 },
+    );
+    await flush();
+
+    const input = screen.container.querySelector<HTMLInputElement>('input[type="number"]')!;
+    expect(input.value).toBe('1200');
+  });
+
+  it('leaves the display blank for an empty seed value rather than forcing "0.00"', async () => {
+    const { screen } = renderField(
+      { key: 'price', type: 'currency', label: 'Price' },
+      { price: '' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector<HTMLInputElement>('input[type="number"]')!;
+    expect(input.value).toBe('');
+  });
+});
+
 describe('DXField info tooltip', () => {
   it('renders an info trigger on the label when `info` is set', async () => {
     const { screen } = renderField(
