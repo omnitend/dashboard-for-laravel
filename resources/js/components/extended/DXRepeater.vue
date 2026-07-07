@@ -9,16 +9,19 @@
          needs real horizontal room for its columns, and the same viewport
          width can put this repeater in a wide standalone form or a narrow
          sidebar column — a viewport breakpoint can't tell those apart. A
-         ResizeObserver on this (always-visible) wrapper measures the space
-         actually available and falls back to the cards layout when it's
-         not enough, scaling to this repeater's own column count (see
-         `neededTableWidth`/`showTable` below). The wrapper itself is never
-         hidden — only its two children toggle via `v-show` — because an
-         element measures 0×0 once `display:none`, which would leave a
-         hidden table with no way to detect regained space and un-hide
-         itself. -->
+         ResizeObserver on THIS OUTER wrapper measures the space actually
+         available and falls back to the cards layout when it's not enough,
+         scaling to this repeater's own column count (see
+         `neededTableWidth`/`showTable` below). This outer wrapper is never
+         hidden (an element measures 0×0 once `display:none`, which would
+         leave a hidden table with no way to detect regained space and
+         un-hide itself) — but its two children below ARE mutually exclusive
+         via `v-if`/`v-else`, not `v-show`: only ever ONE of table/cards is
+         actually mounted, so a field with side effects (e.g. an async
+         `optionsLoader`) doesn't run twice forever just because table mode
+         is configured. -->
     <div v-if="wantsTableLayout" ref="containerRef" class="dx-repeater-container">
-        <div v-show="showTable" class="dx-repeater-table-wrapper">
+        <div v-if="showTable" class="dx-repeater-table-wrapper">
             <table class="dx-repeater-table table">
                 <thead>
                     <tr>
@@ -89,8 +92,13 @@
         </div>
 
         <!-- Cards fallback: identical to the default cards markup below,
-             shown instead of the table when there isn't enough room for it. -->
-        <div v-show="!showTable" class="dx-repeater">
+             shown instead of the table when there isn't enough room for it.
+             `v-else` (not `v-show`) — only the OUTER wrapper above needs to
+             stay mounted for measurement; unmounting whichever of these two
+             isn't current avoids permanently double-running every DXField
+             in both layouts at once (double async optionsLoader fetches,
+             double watchers, double everything else a field might do). -->
+        <div v-else class="dx-repeater">
             <div
                 v-for="(entry, position) in visibleRows"
                 :key="rowKey(entry.row, position)"

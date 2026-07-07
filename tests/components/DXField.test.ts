@@ -684,13 +684,12 @@ describe('DXField repeater table-layout responsiveness via the async DXRepeater 
     let cards: Element | null = null;
     while (Date.now() - start < 2000) {
       cards = screen.container.querySelector('.dx-repeater-container .dx-repeater');
-      if (cards && getComputedStyle(cards).display === 'block') break;
+      if (cards) break;
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
     expect(cards).toBeTruthy();
-    expect(getComputedStyle(cards!).display).toBe('block');
-    expect(
-      getComputedStyle(screen.container.querySelector('.dx-repeater-table-wrapper')!).display,
-    ).toBe('none');
+    // Mutually exclusive via v-if/v-else — the table must not also be
+    // mounted (double-running every DXField/optionsLoader inside it).
+    expect(screen.container.querySelector('.dx-repeater-table-wrapper')).toBeFalsy();
   });
 });

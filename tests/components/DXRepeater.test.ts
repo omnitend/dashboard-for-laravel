@@ -8,15 +8,15 @@ import type { FieldDefinition } from '../../resources/js/types';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-/** Polls (real ResizeObserver callbacks are async) until an element's
- *  computed `display` matches the expected value, or throws on timeout. */
-async function waitForDisplay(el: HTMLElement, expected: 'none' | 'block', timeoutMs = 2000) {
+/** Polls (real ResizeObserver callbacks are async) until `check()` returns
+ *  true, or throws on timeout. Table/cards are mounted via v-if/v-else (only
+ *  one exists in the DOM at a time), so tests poll for presence/absence via
+ *  a querySelector-based check rather than a computed `display` value. */
+async function waitFor(check: () => boolean, timeoutMs = 2000) {
   const start = Date.now();
-  while (getComputedStyle(el).display !== expected) {
+  while (!check()) {
     if (Date.now() - start > timeoutMs) {
-      throw new Error(
-        `Timed out waiting for display to become "${expected}" (was "${getComputedStyle(el).display}")`,
-      );
+      throw new Error('Timed out waiting for condition');
     }
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
@@ -300,24 +300,6 @@ describe('DXRepeater', () => {
       expect(screen.container.querySelector('tbody .form-label')).toBeFalsy();
     });
 
-    it('also renders the cards markup as a fallback (both always exist in the DOM; only one is visible)', async () => {
-      const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
-      const screen = render(DXRepeater, {
-        props: { form, field: tableField, keyPath: 'lines' },
-      });
-
-      // Both live inside the same measured container; there is exactly one
-      // `.dx-repeater` (the fallback) and one `.dx-repeater-table-wrapper`
-      // (the table), toggled via v-show — never removed from the DOM,
-      // since a `display:none` element can't be measured to detect
-      // regained space and un-hide itself.
-      const cards = screen.container.querySelector(
-        '.dx-repeater-container .dx-repeater',
-      )!;
-      expect(cards).toBeTruthy();
-      expect(cards.querySelectorAll('.dx-repeater-row').length).toBe(1);
-    });
-
     it('does not wrap in a container or add a ResizeObserver in cards mode', async () => {
       const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
       const screen = render(DXRepeater, {
@@ -328,7 +310,7 @@ describe('DXRepeater', () => {
       expect(screen.container.querySelector('.dx-repeater-table-wrapper')).toBeFalsy();
     });
 
-    it('shows the table when the container is wide enough for its columns', async () => {
+    it('shows the table when the container is wide enough for its columns, and only mounts the table (not the cards fallback)', async () => {
       const form = useForm({
         lines: [
           { name: 'First', qty: 1 },
@@ -341,16 +323,13 @@ describe('DXRepeater', () => {
           h('div', { style: 'width: 900px' }, [h(DXRepeater, { form, field: tableField, keyPath: 'lines' })]),
       });
 
-      await waitForDisplay(
-        screen.container.querySelector('.dx-repeater-table-wrapper') as HTMLElement,
-        'block',
-      );
-      expect(
-        getComputedStyle(screen.container.querySelector('.dx-repeater-container .dx-repeater')!).display,
-      ).toBe('none');
+      await waitFor(() => screen.container.querySelector('.dx-repeater-table-wrapper') !== null);
+      // Mutually exclusive via v-if/v-else — the cards fallback must not
+      // also be mounted just because table mode is configured.
+      expect(screen.container.querySelector('.dx-repeater-container .dx-repeater')).toBeFalsy();
     });
 
-    it('falls back to cards when the container is too narrow for the table', async () => {
+    it('falls back to cards when the container is too narrow for the table, and only mounts the cards fallback (not the table)', async () => {
       const form = useForm({
         lines: [
           { name: 'First', qty: 1 },
@@ -363,13 +342,12 @@ describe('DXRepeater', () => {
           h('div', { style: 'width: 150px' }, [h(DXRepeater, { form, field: tableField, keyPath: 'lines' })]),
       });
 
-      await waitForDisplay(
-        screen.container.querySelector('.dx-repeater-container .dx-repeater') as HTMLElement,
-        'block',
+      await waitFor(
+        () => screen.container.querySelector('.dx-repeater-container .dx-repeater') !== null,
       );
-      expect(
-        getComputedStyle(screen.container.querySelector('.dx-repeater-table-wrapper')!).display,
-      ).toBe('none');
+      const cards = screen.container.querySelector('.dx-repeater-container .dx-repeater')!;
+      expect(cards.querySelectorAll('.dx-repeater-row').length).toBe(2);
+      expect(screen.container.querySelector('.dx-repeater-table-wrapper')).toBeFalsy();
     });
 
     it('requires more width for a repeater with more columns', async () => {
@@ -393,13 +371,10 @@ describe('DXRepeater', () => {
           h('div', { style: 'width: 400px' }, [h(DXRepeater, { form, field: wideColumnField, keyPath: 'rows' })]),
       });
 
-      await waitForDisplay(
-        screen.container.querySelector('.dx-repeater-container .dx-repeater') as HTMLElement,
-        'block',
+      await waitFor(
+        () => screen.container.querySelector('.dx-repeater-container .dx-repeater') !== null,
       );
-      expect(
-        getComputedStyle(screen.container.querySelector('.dx-repeater-table-wrapper')!).display,
-      ).toBe('none');
+      expect(screen.container.querySelector('.dx-repeater-table-wrapper')).toBeFalsy();
     });
 
     it('requires more width for a currency/percentage column (extra room for the affix)', async () => {
@@ -421,13 +396,10 @@ describe('DXRepeater', () => {
           h('div', { style: 'width: 350px' }, [h(DXRepeater, { form, field: currencyField, keyPath: 'lines' })]),
       });
 
-      await waitForDisplay(
-        screen.container.querySelector('.dx-repeater-container .dx-repeater') as HTMLElement,
-        'block',
+      await waitFor(
+        () => screen.container.querySelector('.dx-repeater-container .dx-repeater') !== null,
       );
-      expect(
-        getComputedStyle(screen.container.querySelector('.dx-repeater-table-wrapper')!).display,
-      ).toBe('none');
+      expect(screen.container.querySelector('.dx-repeater-table-wrapper')).toBeFalsy();
     });
 
     it('appends a row when the add button is clicked', async () => {
