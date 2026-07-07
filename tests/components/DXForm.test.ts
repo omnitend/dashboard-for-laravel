@@ -251,6 +251,83 @@ describe('DXForm', () => {
       expect(hint).toBeTruthy();
       expect(hint?.textContent).toContain('ABC-123');
     });
+
+    it('renders a #field-before(key) slot directly above the field', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, showSubmit: false },
+        slots: {
+          'field-before(sku)': () => h('div', { class: 'sku-before' }, 'before sku'),
+        },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.sku-before')).toBeTruthy();
+      // The field itself still renders alongside the slot.
+      expect(labelTexts(screen.container)).toContain('SKU');
+    });
+
+    it('renders a #field-after(key) slot directly below the field', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, showSubmit: false },
+        slots: {
+          'field-after(sku)': () => h('div', { class: 'sku-after' }, 'after sku'),
+        },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.sku-after')).toBeTruthy();
+      expect(labelTexts(screen.container)).toContain('SKU');
+    });
+
+    it('fully replaces a field with a #field(key) slot, bypassing DXField', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, showSubmit: false },
+        slots: {
+          'field(sku)': () => h('div', { class: 'sku-replacement' }, 'replaced'),
+        },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.sku-replacement')).toBeTruthy();
+      // The default label/control for the replaced field must not render.
+      expect(labelTexts(screen.container)).not.toContain('SKU');
+    });
+
+    it('supersedes field-before/field-after for the same key, like tab-content does for tabs', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, showSubmit: false },
+        slots: {
+          'field(sku)': () => h('div', { class: 'sku-replacement' }, 'replaced'),
+          'field-before(sku)': () => h('div', { class: 'sku-before' }, 'before sku'),
+          'field-after(sku)': () => h('div', { class: 'sku-after' }, 'after sku'),
+        },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.sku-replacement')).toBeTruthy();
+      expect(screen.container.querySelector('.sku-before')).toBeFalsy();
+      expect(screen.container.querySelector('.sku-after')).toBeFalsy();
+    });
+
+    it('renders field-before/field-after and #field(key) slots inside a tabbed form', async () => {
+      const screen = render(DXForm, {
+        props: {
+          form: makeForm(),
+          fields: productFields,
+          tabs: productTabs,
+          showSubmit: false,
+        },
+        slots: {
+          'field-before(sku)': () => h('div', { class: 'sku-before' }, 'before sku'),
+          'field(active)': () => h('div', { class: 'active-replacement' }, 'replaced'),
+        },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.sku-before')).toBeTruthy();
+      expect(screen.container.querySelector('.active-replacement')).toBeTruthy();
+      expect(labelTexts(screen.container)).not.toContain('Active');
+    });
   });
 
   describe('Auto-switch to error tab', () => {

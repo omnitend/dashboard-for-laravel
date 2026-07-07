@@ -12,7 +12,14 @@
       :tabs="tabs"
       submit-text="Save product"
       @submit="handleSubmit"
-    />
+    >
+      <!-- Per-field slot: content rendered directly below a named field. -->
+      <template #field-after(sku)>
+        <DButton size="sm" variant="outline-secondary" class="mb-3" @click="generateSku">
+          Generate SKU
+        </DButton>
+      </template>
+    </DXForm>
 
     <p v-if="lastError" class="text-danger mt-2 mb-0">
       Validation failed — the form jumped to the “{{ lastError }}” tab.
@@ -23,6 +30,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import {
+  DButton,
   DXForm,
   useForm,
   type FieldDefinition,
@@ -60,6 +68,11 @@ const tabs: FormTab[] = [
 ];
 
 const lastError = ref('');
+
+let skuCounter = 1;
+const generateSku = () => {
+  form.data.sku = `ABC-${String(skuCounter++).padStart(3, '0')}`;
+};
 
 const handleSubmit = () => {
   // Pretend the server rejected an Inventory-tab field. Setting errors makes
