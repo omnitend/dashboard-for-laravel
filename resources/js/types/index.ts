@@ -62,6 +62,23 @@ export interface FieldOption extends Record<string, unknown> {
 export type OptionsLoader = (model: any) => Promise<FieldOption[]>;
 
 /**
+ * Label column width for horizontal layout, mirroring Bootstrap Vue Next's
+ * `BFormGroup` `labelCols`/`labelCols*` props: either a single width applied
+ * at all breakpoints, or a per-breakpoint object (omitted breakpoints fall
+ * back to BFormGroup's own defaults, which is how "collapse to vertical
+ * below a breakpoint" comes for free — e.g. `{ md: 3 }` stacks below `md`).
+ *
+ * Deliberately excludes `boolean` (which BFormGroup's own `labelCols` prop
+ * accepts): Vue's type-based `defineProps` auto-defaults an omitted prop to
+ * `false` (not `undefined`) whenever its declared type includes `boolean`,
+ * which would silently break the `field.labelCols ?? formLabelCols ?? 3`
+ * fallback chain used to resolve this value.
+ */
+export type LabelCols =
+    | number
+    | { sm?: number; md?: number; lg?: number; xl?: number };
+
+/**
  * Field definition shared by every form renderer.
  *
  * DXForm and DXTable's edit modal honour `hint`, `span`, `when`,
@@ -172,9 +189,23 @@ export interface FieldDefinition {
 
     /**
      * Render the field full-width with no label wrapper, delegating its
-     * content to the `#span(<key>)` slot. Useful for custom blocks.
+     * content to the `#span(<key>)` slot. Useful for custom blocks. Also
+     * doubles as the "fill both columns" escape hatch in horizontal layout —
+     * a span field always bypasses the label/content column split.
      */
     span?: boolean;
+
+    /**
+     * Per-field override of DXForm's `layout` prop ("vertical" | "horizontal").
+     * Falls back to the form-level `layout` when omitted.
+     */
+    layout?: "vertical" | "horizontal";
+
+    /**
+     * Per-field override of DXForm's `labelCols` prop, for horizontal
+     * layout. Falls back to the form-level `labelCols` when omitted.
+     */
+    labelCols?: LabelCols;
 
     /**
      * Component rendered for `type: "component"` fields. Receives

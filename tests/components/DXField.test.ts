@@ -10,10 +10,14 @@ import type { FieldDefinition } from '../../resources/js/types';
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 // Popovers render through BVN's orchestrator, which needs a BApp ancestor.
-const renderField = (field: FieldDefinition, data: Record<string, any>) => {
+const renderField = (
+  field: FieldDefinition,
+  data: Record<string, any>,
+  extraProps: Record<string, any> = {},
+) => {
   const form = useForm(data);
   const screen = render({
-    render: () => h(BApp, {}, () => h(DXField, { field, form })),
+    render: () => h(BApp, {}, () => h(DXField, { field, form, ...extraProps })),
   });
   return { screen, form };
 };
@@ -433,5 +437,170 @@ describe('DXField autocomplete type', () => {
       o.getAttribute('value'),
     );
     expect(values).toEqual(['main', 'develop', 'release/1.0']);
+  });
+});
+
+describe('DXField horizontal layout (#66)', () => {
+  it('renders a standard field vertically by default (no row/column classes)', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.row')).toBeFalsy();
+    expect(screen.container.querySelector('.col-form-label')).toBeFalsy();
+  });
+
+  it('renders a standard field horizontally with a label/content column split', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.row')).toBeTruthy();
+    const label = screen.container.querySelector('.col-form-label');
+    expect(label).toBeTruthy();
+    expect(label?.textContent).toContain('Name');
+    // Defaults to a 3-column label when no labelCols is configured.
+    expect(label?.classList.contains('col-3')).toBe(true);
+  });
+
+  it('honours a numeric labelCols for the label column width', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+      { layout: 'horizontal', labelCols: 4 },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.col-form-label.col-4')).toBeTruthy();
+  });
+
+  it('activates horizontal layout for a numeric-string labelCols (e.g. from an unbound template attribute or JSON config)', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+      { layout: 'horizontal', labelCols: '4' as any },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.col-form-label.col-4')).toBeTruthy();
+  });
+
+  it('honours a per-breakpoint labelCols object', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+      { layout: 'horizontal', labelCols: { md: 3, lg: 2 } },
+    );
+    await flush();
+
+    const label = screen.container.querySelector('.col-form-label');
+    expect(label?.classList.contains('col-md-3')).toBe(true);
+    expect(label?.classList.contains('col-lg-2')).toBe(true);
+  });
+
+  it('keeps a span field full-width even when the layout is horizontal', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(
+            DXField,
+            {
+              field: { key: 'custom', type: 'text', span: true },
+              form: useForm({ custom: '' }),
+              layout: 'horizontal',
+            },
+            { span: () => h('div', { class: 'custom-span' }, 'custom') },
+          ),
+        ),
+    });
+    await flush();
+
+    expect(screen.container.querySelector('.custom-span')).toBeTruthy();
+    expect(screen.container.querySelector('.row')).toBeFalsy();
+  });
+
+  it('renders a checkbox vertically by default with no DFormGroup wrapper', async () => {
+    const { screen } = renderField(
+      { key: 'active', type: 'checkbox', label: 'Active' },
+      { active: false },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.row')).toBeFalsy();
+    expect(screen.container.querySelector('fieldset')).toBeFalsy();
+  });
+
+  it('wraps a checkbox in a label/content column split when horizontal', async () => {
+    const { screen } = renderField(
+      { key: 'active', type: 'checkbox', label: 'Active' },
+      { active: false },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.row')).toBeTruthy();
+    const label = screen.container.querySelector('.col-form-label');
+    expect(label?.textContent).toContain('Active');
+    // The checkbox control itself still renders in the content column.
+    expect(screen.container.querySelector('.form-check-input[type="checkbox"]')).toBeTruthy();
+  });
+
+  it('renders the info popover trigger only once on a horizontal checkbox (not duplicated)', async () => {
+    const { screen } = renderField(
+      { key: 'active', type: 'checkbox', label: 'Active', info: 'Extra detail' },
+      { active: false },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    expect(screen.container.querySelectorAll('.dx-field-label__info').length).toBe(1);
+  });
+
+  it('wraps a switch in a label/content column split when horizontal', async () => {
+    const { screen } = renderField(
+      { key: 'is_default', type: 'switch', label: 'Default VAT rate' },
+      { is_default: false },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.row')).toBeTruthy();
+    const label = screen.container.querySelector('.col-form-label');
+    expect(label?.textContent).toContain('Default VAT rate');
+    expect(screen.container.querySelector('.dx-switch')).toBeTruthy();
+  });
+
+  it('renders the info popover trigger only once on a horizontal switch (not duplicated)', async () => {
+    const { screen } = renderField(
+      { key: 'is_default', type: 'switch', label: 'Default VAT rate', info: 'Extra detail' },
+      { is_default: false },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    expect(screen.container.querySelectorAll('.dx-field-label__info').length).toBe(1);
+  });
+
+  it('adds column classes to a repeater field when horizontal', async () => {
+    const { screen } = renderField(
+      {
+        key: 'lines',
+        type: 'repeater',
+        label: 'Line items',
+        fields: [{ key: 'name', type: 'text', label: 'Name' }],
+      },
+      { lines: [] },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.row')).toBeTruthy();
+    const label = screen.container.querySelector('.col-form-label');
+    expect(label?.textContent).toContain('Line items');
   });
 });

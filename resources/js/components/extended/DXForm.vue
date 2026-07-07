@@ -82,7 +82,13 @@
                                 -->
                                 <slot :name="`field-before(${field.key})`" :field="field" :model="model" />
 
-                                <DXField :field="field" :form="resolvedForm" :model="model">
+                                <DXField
+                                    :field="field"
+                                    :form="resolvedForm"
+                                    :model="model"
+                                    :layout="field.layout ?? layout"
+                                    :label-cols="field.labelCols ?? labelCols"
+                                >
                                     <template
                                         v-for="(slotName, target) in fieldSlotMap(field.key)"
                                         :key="target"
@@ -139,7 +145,13 @@
                         -->
                         <slot :name="`field-before(${field.key})`" :field="field" :model="model" />
 
-                        <DXField :field="field" :form="resolvedForm" :model="model">
+                        <DXField
+                            :field="field"
+                            :form="resolvedForm"
+                            :model="model"
+                            :layout="field.layout ?? layout"
+                            :label-cols="field.labelCols ?? labelCols"
+                        >
                             <template
                                 v-for="(slotName, target) in fieldSlotMap(field.key)"
                                 :key="target"
@@ -217,7 +229,7 @@ import DTab from "../base/DTab.vue";
 import DXField from "./DXField.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { DefineFormReturn } from "../../composables/defineForm";
-import type { FieldDefinition, FormTab, MaybeFn } from "../../types";
+import type { FieldDefinition, FormTab, LabelCols, MaybeFn } from "../../types";
 
 interface Props {
     /**
@@ -259,6 +271,21 @@ interface Props {
      * DXForm is commonly embedded in a page card or modal already.
      */
     card?: boolean;
+
+    /**
+     * Form-wide field layout: "vertical" (default, label above input) or
+     * "horizontal" (label left, input right). Overridable per-field via
+     * `field.layout`. A field with `span: true` always renders full-width,
+     * regardless of layout.
+     */
+    layout?: "vertical" | "horizontal";
+
+    /**
+     * Label column width for horizontal layout (mirrors BFormGroup's
+     * `labelCols`/`labelCols*` props). Overridable per-field via
+     * `field.labelCols`. Ignored when `layout` is "vertical".
+     */
+    labelCols?: LabelCols;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -267,6 +294,7 @@ const props = withDefaults(defineProps<Props>(), {
     showSubmit: true,
     autoErrorTab: true,
     card: false,
+    layout: "vertical",
 });
 
 const emit = defineEmits<{
