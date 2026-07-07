@@ -259,4 +259,113 @@ describe('DXRepeater', () => {
 
     expect(form.data.lines[0].name).toBe('Renamed');
   });
+
+  describe('table layout (#68)', () => {
+    const tableField: FieldDefinition = { ...lineField, repeaterLayout: 'table' };
+
+    it('renders one <tr> per row with a header per sub-field, instead of cards', async () => {
+      const form = useForm({
+        lines: [
+          { name: 'First', qty: 1 },
+          { name: 'Second', qty: 2 },
+        ],
+      });
+      const screen = render(DXRepeater, {
+        props: { form, field: tableField, keyPath: 'lines' },
+      });
+
+      expect(screen.container.querySelectorAll('.dx-repeater-row').length).toBe(0);
+      expect(screen.container.querySelector('table.dx-repeater-table')).toBeTruthy();
+      const headers = Array.from(screen.container.querySelectorAll('thead th')).map(
+        (th) => th.textContent?.trim(),
+      );
+      expect(headers).toEqual(['Line name', 'Quantity', '']);
+      expect(screen.container.querySelectorAll('tbody tr').length).toBe(2);
+      // Sub-field labels are hidden per-row (the column header names them).
+      expect(screen.container.querySelector('tbody .form-label')).toBeFalsy();
+    });
+
+    it('appends a row when the add button is clicked', async () => {
+      const form = useForm({ lines: [] as Array<Record<string, any>> });
+      const screen = render(DXRepeater, {
+        props: { form, field: tableField, keyPath: 'lines' },
+      });
+
+      expect(screen.container.querySelectorAll('tbody tr').length).toBe(0);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add line' }));
+      await flush();
+
+      expect(screen.container.querySelectorAll('tbody tr').length).toBe(1);
+      expect(form.data.lines[0]).toEqual({ name: '', qty: 0 });
+    });
+
+    it('removes a row when its remove button is clicked', async () => {
+      const form = useForm({
+        lines: [
+          { name: 'First', qty: 1 },
+          { name: 'Second', qty: 2 },
+        ],
+      });
+      const screen = render(DXRepeater, {
+        props: { form, field: tableField, keyPath: 'lines' },
+      });
+
+      const removeButtons = screen.container.querySelectorAll('tbody tr button');
+      (removeButtons[0] as HTMLButtonElement).click();
+      await flush();
+
+      expect(form.data.lines.length).toBe(1);
+      expect(form.data.lines[0].name).toBe('Second');
+    });
+
+    it('respects maxItems (add disabled at the limit)', async () => {
+      const form = useForm({ lines: [{ name: 'Only', qty: 1 }] });
+      const screen = render(DXRepeater, {
+        props: {
+          form,
+          field: { ...tableField, maxItems: 1 },
+          keyPath: 'lines',
+        },
+      });
+
+      const addButton = screen.getByRole('button', { name: 'Add line' }).element() as HTMLButtonElement;
+      expect(addButton.disabled).toBe(true);
+    });
+
+    it('binds nested sub-field inputs to form.data via dotted paths', async () => {
+      const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
+      const screen = render(DXRepeater, {
+        props: { form, field: tableField, keyPath: 'lines' },
+      });
+
+      const firstInput = screen.container.querySelector('input[type="text"]') as HTMLInputElement;
+      expect(firstInput.value).toBe('First');
+
+      firstInput.value = 'Renamed';
+      firstInput.dispatchEvent(new Event('input', { bubbles: true }));
+      await flush();
+
+      expect(form.data.lines[0].name).toBe('Renamed');
+    });
+
+    it('resolves a function-valued sub-field label against the outer model for the column header', async () => {
+      const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
+      const field: FieldDefinition = {
+        ...tableField,
+        fields: [
+          { key: 'name', type: 'text', label: (model: any) => `Name (${model.currency})` },
+          { key: 'qty', type: 'number', label: 'Quantity' },
+        ],
+      };
+      const screen = render(DXRepeater, {
+        props: { form, field, keyPath: 'lines', model: { currency: 'GBP' } },
+      });
+
+      const headers = Array.from(screen.container.querySelectorAll('thead th')).map(
+        (th) => th.textContent?.trim(),
+      );
+      expect(headers).toContain('Name (GBP)');
+    });
+  });
 });

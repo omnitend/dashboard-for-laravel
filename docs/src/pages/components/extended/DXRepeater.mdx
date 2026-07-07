@@ -33,7 +33,7 @@ exported directly for custom layouts.
 
 <PropsTable client:load props={[
   { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance owning the repeater array.' },
-  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey.' },
+  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey, repeaterLayout.' },
   { name: 'keyPath', type: 'string', required: 'No', default: 'field.key', description: 'Dot path into form.data for the array.' },
   { name: 'errorKey', type: 'string', required: 'No', default: 'keyPath', description: 'Base error key for nested validation.' },
   { name: 'model', type: 'any', required: 'No', default: '-', description: 'Model passed to predicates from the parent context.' },
@@ -95,6 +95,39 @@ A row without an `id` (freshly added, never persisted) is still spliced away
 as normal — the server never saw it. Flagged rows stay in `form.data` (so
 they're submitted) but are hidden from the UI and excluded from
 `minItems`/`maxItems` counts.
+
+## Table layout (compact mode)
+
+The default `cards` layout stacks each row's sub-fields vertically inside its
+own bordered box — right for rows with several or complex sub-fields, but
+tall for simple lists. Set `repeaterLayout: 'table'` for a compact
+one-row-per-item table instead, where sub-fields become columns and Remove is
+a trailing icon-button cell:
+
+```ts
+const fields = [
+  {
+    key: 'lines',
+    type: 'repeater',
+    label: 'Line items',
+    repeaterLayout: 'table',
+    fields: [
+      { key: 'description', type: 'text', label: 'Description' },
+      { key: 'quantity', type: 'number', label: 'Qty', default: 1 },
+      { key: 'unit_price', type: 'currency', label: 'Unit price' },
+    ],
+  },
+];
+```
+
+Column headers come from each sub-field's `label`. The `#row` slot still fully
+overrides a row's rendering in table layout — it renders as the `<tr>`'s
+children, so supply one `<td>` per sub-field plus a trailing `<td>` to match
+the header's column count (the header always reserves an empty column for the
+built-in remove button), and call the slot's `remove()` binding yourself since
+the built-in Remove control is bypassed along with the rest of the row. For
+table-shaped editors with computed columns beyond a simple field list, build
+your own table on the raw `DXField`/`DTable` primitives instead.
 
 ## Slots
 

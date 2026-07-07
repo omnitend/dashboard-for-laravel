@@ -604,3 +604,29 @@ describe('DXField horizontal layout (#66)', () => {
     expect(label?.textContent).toContain('Line items');
   });
 });
+
+describe('DXField hideLabel (#68)', () => {
+  it('omits the label entirely on a standard field when hideLabel is set', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+      { hideLabel: true },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.form-label')).toBeFalsy();
+    expect(screen.container.querySelector('.dx-field-label')).toBeFalsy();
+    // The control itself still renders.
+    expect(screen.container.querySelector('input[type="text"]')).toBeTruthy();
+  });
+
+  it('renders the label as usual when hideLabel is not set', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.dx-field-label')).toBeTruthy();
+  });
+});

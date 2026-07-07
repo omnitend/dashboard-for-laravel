@@ -5,7 +5,81 @@
   field's `minItems`/`maxItems` limits.
 -->
 <template>
-    <div class="dx-repeater">
+    <!-- Table layout: one row per item, sub-fields as columns. Far more
+         compact than the default cards layout for simple 2-3-field rows. -->
+    <div v-if="isTableLayout" class="dx-repeater-table-wrapper">
+        <table class="dx-repeater-table table">
+            <thead>
+                <tr>
+                    <th v-for="subField in subFields" :key="subField.key">
+                        {{ headerLabel(subField) }}
+                    </th>
+                    <th class="dx-repeater-table-remove-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr
+                    v-for="(entry, position) in visibleRows"
+                    :key="rowKey(entry.row, position)"
+                >
+                    <!--
+                      @slot Custom layout for a single repeater row, replacing the default sub-field stack (including the built-in Remove control — call `remove()` yourself). In table layout, rendered as the `<tr>`'s children: supply one `<td>` per sub-field plus a trailing `<td>` to match the header's column count (the header always includes an empty column for the built-in remove button).
+                      @binding {object} row The current row's data object.
+                      @binding {number} index The row's zero-based position among visible rows.
+                      @binding {FieldDefinition[]} fields The sub-field definitions for the row.
+                      @binding {function} remove Removes this row (respects `minItems`; soft-deletes instead of splicing when `field.softDeleteKey` is set and the row has an `id`).
+                      @binding {string} path The dot path into `form.data` for this row (e.g. `lines.0`).
+                    -->
+                    <slot
+                        v-if="$slots.row"
+                        name="row"
+                        :row="entry.row"
+                        :index="position"
+                        :fields="subFields"
+                        :remove="() => removeRow(entry.index)"
+                        :path="rowPath(entry.index)"
+                    />
+
+                    <template v-else>
+                        <td v-for="subField in subFields" :key="subField.key">
+                            <DXField
+                                :field="subField"
+                                :form="form"
+                                :model="entry.row"
+                                :key-path="`${rowPath(entry.index)}.${subField.key}`"
+                                :error-key="`${rowPath(entry.index)}.${subField.key}`"
+                                hide-label
+                            />
+                        </td>
+                        <td class="dx-repeater-table-remove-col">
+                            <DButton
+                                variant="outline-danger"
+                                size="sm"
+                                :disabled="visibleRows.length <= minItems"
+                                :aria-label="`Remove row ${position + 1}`"
+                                @click="removeRow(entry.index)"
+                            >
+                                <i-lucide-trash-2 aria-hidden="true" />
+                            </DButton>
+                        </td>
+                    </template>
+                </tr>
+            </tbody>
+        </table>
+
+        <DButton
+            variant="outline-primary"
+            size="sm"
+            :disabled="maxItems !== undefined && visibleRows.length >= maxItems"
+            @click="addRow"
+        >
+            {{ field.addLabel || "Add" }}
+        </DButton>
+    </div>
+
+    <!-- Cards layout (default): each row is its own bordered card with
+         sub-fields stacked vertically. -->
+    <div v-else class="dx-repeater">
         <div
             v-for="(entry, position) in visibleRows"
             :key="rowKey(entry.row, position)"
@@ -98,6 +172,15 @@ const subFields = computed<FieldDefinition[]>(() => props.field.fields ?? []);
 const minItems = computed(() => props.field.minItems ?? 0);
 const maxItems = computed(() => props.field.maxItems);
 const softDeleteKey = computed(() => props.field.softDeleteKey);
+const isTableLayout = computed(() => props.field.repeaterLayout === "table");
+
+/** Column header text for a sub-field. No specific row context exists for a
+ *  header, so a function-valued label resolves against the outer model. */
+function headerLabel(subField: FieldDefinition): string {
+    const label = subField.label;
+    if (typeof label === "function") return label(props.model ?? {});
+    return label || subField.key;
+}
 
 function isSoftDeleted(row: any): boolean {
     return Boolean(
@@ -261,5 +344,21 @@ function removeRow(index: number): void {
 .dx-repeater-row-index {
     font-weight: 600;
     color: var(--bs-secondary-color);
+}
+
+.dx-repeater-table td {
+    vertical-align: middle;
+}
+
+/* Sub-fields render with their default mb-3 (matching the standalone-field
+   default), which is unwanted spacing inside an already-compact table cell. */
+.dx-repeater-table td :deep(.mb-3) {
+    margin-bottom: 0;
+}
+
+.dx-repeater-table-remove-col {
+    width: 1%;
+    white-space: nowrap;
+    text-align: center;
 }
 </style>

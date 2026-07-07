@@ -231,6 +231,17 @@ export interface FieldDefinition {
     maxItems?: number;
 
     /**
+     * For `repeater` fields: `"cards"` (default) stacks each row as its own
+     * card with sub-fields listed vertically — best for rows with several
+     * or complex sub-fields. `"table"` renders one row per item with
+     * sub-fields as columns — far more compact for simple child-row lists
+     * (e.g. 2-3 short sub-fields). Named `repeaterLayout` (not `layout`) to
+     * avoid colliding with the unrelated form-level `layout` prop
+     * ("vertical" | "horizontal") every field type accepts.
+     */
+    repeaterLayout?: "cards" | "table";
+
+    /**
      * For `repeater` fields backed by an upsert-children API contract (rows
      * carrying a persisted `id` are only deleted server-side when submitted
      * flagged, e.g. Laravel's `{ id, to_delete: true }` pattern): the

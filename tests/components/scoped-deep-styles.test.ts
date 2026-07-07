@@ -14,6 +14,7 @@ import {
   DXTable,
   DXStatCard,
   DXDashboardSidebar,
+  DXRepeater,
 } from '../../dist/dashboard-for-laravel.js';
 import builtCss from '../../dist/style.css?raw';
 import { useForm } from '../../resources/js/composables/useForm';
@@ -65,6 +66,7 @@ const KNOWN_DEEP_TARGETS: Record<string, string[]> = {
   'DXTable.vue': ['tbody tr', '.pagination', '.pagination-sm .page-link', '.pagination .page-item.disabled .page-link'],
   'DXStatCard.vue': ['.dx-stat-card__body'],
   'DXDashboardSidebar.vue': ['.nav-link', '.nav-icon', '.nav-label'],
+  'DXRepeater.vue': ['.mb-3'],
 };
 
 describe('scoped :deep() coverage guard (#58)', () => {
@@ -145,6 +147,27 @@ describe('scoped :deep() DOM-level audit (#58)', () => {
     const body = screen.container.querySelector('.dx-stat-card__body');
     expect(body).not.toBeNull();
     expect(ancestorHasScopeId(body!, scopeIdForSelector('.dx-stat-card__body'))).toBe(true);
+  });
+
+  it('DXRepeater table layout: .dx-repeater-table td :deep(.mb-3)', async () => {
+    const form = useForm({ lines: [{ name: 'First' }] });
+    const screen = render(DXRepeater, {
+      props: {
+        form,
+        keyPath: 'lines',
+        field: {
+          key: 'lines',
+          type: 'repeater',
+          repeaterLayout: 'table',
+          fields: [{ key: 'name', type: 'text', label: 'Name' }],
+        },
+      },
+    });
+    await flush();
+
+    const control = screen.container.querySelector('.mb-3');
+    expect(control).not.toBeNull();
+    expect(ancestorHasScopeId(control!, scopeIdForSelector('.mb-3'))).toBe(true);
   });
 
   it('DXDashboardSidebar: :deep(.nav-link)', async () => {

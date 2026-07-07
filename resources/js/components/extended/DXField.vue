@@ -238,8 +238,10 @@
 
     <!-- Standard labelled field -->
     <DFormGroup v-else :class="field.class || 'mb-3'" v-bind="horizontalAttrs">
-        <!-- Label with optional info popover -->
-        <template #label>
+        <!-- Label with optional info popover. Omitted entirely (not just
+             emptied) when hideLabel is set, so BFormGroup doesn't reserve a
+             label column/row for it (see DXRepeater's table layout). -->
+        <template v-if="!hideLabel" #label>
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
         </template>
 
@@ -499,6 +501,14 @@ interface Props {
 
     /** Label column width for horizontal layout (mirrors BFormGroup). */
     labelCols?: LabelCols;
+
+    /**
+     * Skip rendering the field's own label entirely (only affects the
+     * standard labelled-field branch). Used by DXRepeater's `table` layout,
+     * where a column header already names the field and a per-row label
+     * would waste space in the cell.
+     */
+    hideLabel?: boolean;
 }
 
 const props = defineProps<Props>();
