@@ -437,4 +437,65 @@ describe('DXForm', () => {
       expect(screen.emitted().submit).toBeTruthy();
     });
   });
+
+  describe('Horizontal layout (#66)', () => {
+    it('renders vertically by default (no row/column classes)', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, showSubmit: false },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.row')).toBeFalsy();
+    });
+
+    it('renders a label/content column split for every field when layout is horizontal', async () => {
+      const screen = render(DXForm, {
+        props: {
+          form: makeForm(),
+          fields: productFields,
+          showSubmit: false,
+          layout: 'horizontal',
+        },
+      });
+      await flush();
+
+      const labels = screen.container.querySelectorAll('.col-form-label');
+      // One per rendered field (name, price, discount, sku, description, active).
+      expect(labels.length).toBe(productFields.length);
+    });
+
+    it('lets a per-field layout override the form-level default', async () => {
+      const fields: FieldDefinition[] = [
+        { key: 'name', type: 'text', label: 'Name', layout: 'vertical' },
+        { key: 'sku', type: 'text', label: 'SKU' },
+      ];
+      const screen = render(DXForm, {
+        props: {
+          form: useForm({ name: '', sku: '' }),
+          fields,
+          showSubmit: false,
+          layout: 'horizontal',
+        },
+      });
+      await flush();
+
+      // Only the SKU field (no override) gets the column split.
+      expect(screen.container.querySelectorAll('.col-form-label').length).toBe(1);
+    });
+
+    it('honours a form-level labelCols', async () => {
+      const screen = render(DXForm, {
+        props: {
+          form: makeForm(),
+          fields: productFields,
+          showSubmit: false,
+          layout: 'horizontal',
+          labelCols: 4,
+        },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.col-form-label.col-4')).toBeTruthy();
+    });
+  });
 });

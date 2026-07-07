@@ -21,7 +21,51 @@
         />
     </div>
 
-    <!-- Checkbox: no label wrapper, label sits beside the control -->
+    <!-- Checkbox (horizontal layout): wrapped in DFormGroup for the same
+         label/content column split as other field types, instead of the
+         label-beside-control layout below. The inline label beside the
+         checkbox itself is kept (not deduplicated against the outer label)
+         so the control's accessible name doesn't depend on aria-labelledby
+         association through the fieldset alone — but its `info` popover is
+         omitted here, since rendering the same popover trigger twice (once
+         per label) would be a duplicated interactive element, not just
+         duplicated text. -->
+    <DFormGroup
+        v-else-if="field.type === 'checkbox' && isHorizontal"
+        :class="field.class || 'mb-3'"
+        v-bind="horizontalAttrs"
+    >
+        <template #label>
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+        </template>
+        <slot
+            v-if="$slots.value"
+            name="value"
+            :field="field"
+            :model="model"
+            :value="fieldValue"
+            :update="setValue"
+        />
+        <DFormCheckbox
+            v-else
+            v-model="fieldValue"
+            :disabled="isDisabled || isReadonly"
+            v-bind="field.inputProps"
+        >
+            <DXFieldLabel :label="resolvedLabel" />
+        </DFormCheckbox>
+
+        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
+            {{ form.getError(errorKey) }}
+        </DFormInvalidFeedback>
+        <slot name="info" :field="field" :model="model" />
+        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
+        </DFormText>
+        <DFormText v-if="field.help">{{ field.help }}</DFormText>
+    </DFormGroup>
+
+    <!-- Checkbox (vertical, default): no label wrapper, label sits beside the control -->
     <div v-else-if="field.type === 'checkbox'" :class="field.class || 'mb-3'">
         <!--
           @slot Replaces the built-in control with a custom value editor.
@@ -67,7 +111,46 @@
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
     </div>
 
-    <!-- Switch: toggle with contextual on/off text and an on-state style -->
+    <!-- Switch (horizontal layout): same column-split treatment as checkbox
+         above, including omitting `info` from the inner label to avoid a
+         duplicated popover trigger. -->
+    <DFormGroup
+        v-else-if="field.type === 'switch' && isHorizontal"
+        :class="[field.class || 'mb-3', 'dx-switch', { 'dx-switch--on': switchIsOn }]"
+        v-bind="horizontalAttrs"
+    >
+        <template #label>
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+        </template>
+        <slot
+            v-if="$slots.value"
+            name="value"
+            :field="field"
+            :model="model"
+            :value="fieldValue"
+            :update="setValue"
+        />
+        <DFormCheckbox
+            v-else
+            v-model="switchModel"
+            switch
+            :disabled="isDisabled || isReadonly"
+            v-bind="field.inputProps"
+        >
+            <DXFieldLabel :label="switchText" />
+        </DFormCheckbox>
+
+        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
+            {{ form.getError(errorKey) }}
+        </DFormInvalidFeedback>
+        <slot name="info" :field="field" :model="model" />
+        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
+        </DFormText>
+        <DFormText v-if="field.help">{{ field.help }}</DFormText>
+    </DFormGroup>
+
+    <!-- Switch (vertical, default): toggle with contextual on/off text and an on-state style -->
     <div
         v-else-if="field.type === 'switch'"
         :class="[field.class || 'mb-3', 'dx-switch', { 'dx-switch--on': switchIsOn }]"
@@ -119,7 +202,7 @@
 
     <!-- Repeater: nested, repeatable sub-form -->
     <div v-else-if="field.type === 'repeater'" :class="field.class || 'mb-3'">
-        <DFormGroup>
+        <DFormGroup v-bind="horizontalAttrs">
             <template #label>
                 <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
             </template>
@@ -154,7 +237,7 @@
     </div>
 
     <!-- Standard labelled field -->
-    <DFormGroup v-else :class="field.class || 'mb-3'">
+    <DFormGroup v-else :class="field.class || 'mb-3'" v-bind="horizontalAttrs">
         <!-- Label with optional info popover -->
         <template #label>
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
@@ -380,7 +463,7 @@ import DFormText from "../base/DFormText.vue";
 import DInputGroup from "../base/DInputGroup.vue";
 import DXFieldLabel from "./DXFieldLabel.vue";
 import type { UseFormReturn } from "../../composables/useForm";
-import type { FieldDefinition, FieldOption, FieldType } from "../../types";
+import type { FieldDefinition, FieldOption, FieldType, LabelCols } from "../../types";
 import { getByPath, setByPath } from "../../utils/objectPath";
 
 // Async to break the DXField <-> DXRepeater circular import.
@@ -405,11 +488,57 @@ interface Props {
 
     /** Error key for validation lookups (defaults to keyPath/field.key). */
     errorKey?: string;
+
+    /**
+     * Field layout: "vertical" (default, label above input) or "horizontal"
+     * (label left, input right). Normally set by DXForm (form-level, with
+     * `field.layout` taking precedence); pass directly when using DXField
+     * standalone.
+     */
+    layout?: "vertical" | "horizontal";
+
+    /** Label column width for horizontal layout (mirrors BFormGroup). */
+    labelCols?: LabelCols;
 }
 
 const props = defineProps<Props>();
 
 const effectiveModel = computed(() => props.model ?? props.form.data);
+
+// ————————————————— horizontal layout (#66)
+
+// A `span` field always bypasses the label/content column split — it's
+// rendered as fully custom full-width content via the very first template
+// branch, before layout is ever considered.
+const isHorizontal = computed(
+    () => props.layout === "horizontal" && !props.field.span,
+);
+
+/** Translate a `LabelCols` value into the BFormGroup attrs it expects. */
+function labelColsAttrs(cols: LabelCols | undefined): Record<string, any> {
+    if (cols === undefined) return {};
+    // BFormGroup's own `labelCols` prop accepts a number OR a numeric string
+    // (BVN's `Numberish` type) — pass anything that isn't the breakpoint
+    // object straight through, rather than gatekeeping on `typeof === "number"`,
+    // so a numeric string (e.g. from an unbound template attribute or a
+    // JSON-driven field config) still activates horizontal layout instead of
+    // silently falling through to an empty breakpoint-object read.
+    if (typeof cols !== "object" || cols === null) {
+        return { labelCols: cols };
+    }
+    const attrs: Record<string, any> = {};
+    if (cols.sm !== undefined) attrs.labelColsSm = cols.sm;
+    if (cols.md !== undefined) attrs.labelColsMd = cols.md;
+    if (cols.lg !== undefined) attrs.labelColsLg = cols.lg;
+    if (cols.xl !== undefined) attrs.labelColsXl = cols.xl;
+    return attrs;
+}
+
+// Default to a 3-column label when horizontal but no width was configured,
+// so `layout: "horizontal"` alone is enough to see the effect.
+const horizontalAttrs = computed<Record<string, any>>(() =>
+    isHorizontal.value ? labelColsAttrs(props.labelCols ?? 3) : {},
+);
 
 // Path semantics (getByPath/setByPath) are only used when a parent passes an
 // explicit keyPath (e.g. a repeater binding `lines.0.price`). For top-level

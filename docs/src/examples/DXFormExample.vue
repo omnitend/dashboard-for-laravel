@@ -24,6 +24,20 @@
     <p v-if="lastError" class="text-danger mt-2 mb-0">
       Validation failed — the form jumped to the “{{ lastError }}” tab.
     </p>
+
+    <h5 class="mt-4">Horizontal layout</h5>
+    <p class="text-muted">
+      Setting <code>layout="horizontal"</code> moves every field's label to a
+      left-hand column, including checkbox and repeater fields. A field can
+      opt back into vertical with <code>field.layout</code>.
+    </p>
+    <DXForm
+      :form="contactForm"
+      :fields="contactFields"
+      layout="horizontal"
+      :label-cols="3"
+      :show-submit="false"
+    />
   </div>
 </template>
 
@@ -68,6 +82,18 @@ const tabs: FormTab[] = [
 ];
 
 const lastError = ref('');
+
+const contactForm = useForm({
+  full_name: '',
+  email: '',
+  subscribe: false,
+});
+
+const contactFields: FieldDefinition[] = [
+  { key: 'full_name', type: 'text', label: 'Full name', required: true },
+  { key: 'email', type: 'email', label: 'Email', required: true },
+  { key: 'subscribe', type: 'checkbox', label: 'Subscribe to updates' },
+];
 
 let skuCounter = 1;
 const generateSku = () => {
