@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-07-07
+
+### Added
+- **`DXForm` per-field slots: `field(<key>)`, `field-before(<key>)`,
+  `field-after(<key>)`** (#67). Mirrors the existing
+  `tab-before`/`tab-content`/`tab-after` pattern one level down: add content
+  around a field (e.g. a quick-create button beneath a select) or fully
+  replace its rendering, without a bespoke prop per use case. `field(<key>)`
+  supersedes `field-before`/`field-after` for the same key, same as
+  `tab-content` does for tabs.
+- **`DXForm` `card` prop** (#65). Wraps the form in a `DCard` for a visual
+  boundary, mirroring `DXTable`'s `card` prop. Off by default, since
+  `DXForm` is commonly already embedded in a page card or modal. For tabbed
+  forms, the tab nav renders as a BS5 `card-header-tabs` instead of
+  double-wrapping.
+- **`DXForm`/`DXField` horizontal layout: `layout: "horizontal"`,
+  `labelCols`** (#66). Puts the label to the left of the input instead of
+  above it, with a configurable label column width (mirrors `BFormGroup`'s
+  `labelCols`/`labelCols*`). Overridable per-field via `field.layout` /
+  `field.labelCols`; a field marked `span: true` always stays full-width,
+  bypassing the column split.
+- **`DXRepeater` compact `table` layout: `repeaterLayout: "table"`** (#68).
+  Renders sub-fields as columns with one row per item — far more compact
+  than the default `cards` layout for simple 2-3-field child rows. Column
+  headers come from each sub-field's `label`; Remove is a trailing
+  icon-button cell. `table` is a *preference*, not a guarantee: a
+  `ResizeObserver` measures the repeater's own rendered width (not the
+  viewport — the same viewport width can put a repeater in a wide
+  standalone form or a narrow sidebar column) and falls back to `cards`
+  whenever there isn't enough room for its columns to stay legible, scaling
+  the required width to this repeater's own column count and types (a
+  `currency`/`percentage` column gets extra budget for its affix).
+- **`DXRepeater` `showRowIndex` option** (#68 follow-up). The cards layout's
+  row header now shows only a Remove button by default; set
+  `showRowIndex: true` to also show each row's 1-based position.
+- **`DXField` `hideLabel` prop** (#68 follow-up). Skips the field's own
+  label entirely (rather than rendering an empty one) — used by
+  `DXRepeater`'s `table` layout, where a column header already names the
+  field.
+
+### Fixed
+- **Bootstrap's `.input-group` no longer wraps its affix onto its own line
+  in a narrow container** (#68 follow-up). `.input-group` defaults to
+  `flex-wrap: wrap`; a currency/percentage field's `£`/`%` prefix could
+  stack above the input instead of sitting beside it. Now forced to
+  `flex-wrap: nowrap` globally.
+
 ## [0.16.4] - 2026-07-06
 
 ### Changed
