@@ -352,9 +352,15 @@ function removeRow(index: number): void {
 }
 
 /* Sub-fields render with their default mb-3 (matching the standalone-field
-   default), which is unwanted spacing inside an already-compact table cell. */
+   default), which is unwanted spacing inside an already-compact table cell —
+   and leaves the field vertically off-centre against the trailing remove
+   button, since that residual margin-bottom is inside the td's own
+   vertical-align:middle box. Bootstrap's spacing utilities are `!important`
+   by design (same as the toast-variant override elsewhere in this project),
+   so overriding one requires `!important` too — a plain declaration silently
+   loses and the margin survives. */
 .dx-repeater-table td :deep(.mb-3) {
-    margin-bottom: 0;
+    margin-bottom: 0 !important;
 }
 
 .dx-repeater-table-remove-col {

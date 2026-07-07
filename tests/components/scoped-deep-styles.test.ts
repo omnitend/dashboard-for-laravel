@@ -168,6 +168,11 @@ describe('scoped :deep() DOM-level audit (#58)', () => {
     const control = screen.container.querySelector('.mb-3');
     expect(control).not.toBeNull();
     expect(ancestorHasScopeId(control!, scopeIdForSelector('.mb-3'))).toBe(true);
+    // Bootstrap's `.mb-3` utility is `!important` — a plain (non-!important)
+    // override silently loses, leaving the field vertically off-centre
+    // against the row's trailing remove button. Assert the CASCADE actually
+    // won, not just that the rule is present in the stylesheet.
+    expect(getComputedStyle(control!).marginBottom).toBe('0px');
   });
 
   it('DXDashboardSidebar: :deep(.nav-link)', async () => {
