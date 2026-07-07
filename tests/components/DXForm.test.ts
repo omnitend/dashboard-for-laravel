@@ -407,7 +407,15 @@ describe('DXForm', () => {
 
       const card = screen.container.querySelector('.card');
       expect(card).toBeTruthy();
-      expect(card?.querySelector('.card-header.card-header-tabs, .card-header .nav-tabs')).toBeTruthy();
+      // BVN puts `card-header` on the nav's wrapper div and `card-header-tabs`
+      // on the nested `<ul>` — not both on the same element.
+      expect(card?.querySelector('.card-header .nav.card-header-tabs')).toBeTruthy();
+      // DTabs' own `.tabs` root must be a direct child of `.card` — not
+      // nested inside an extra `.card-body` (DCard's default no-body: false
+      // would wrap it one level too deep, since DTabs already provides its
+      // own card-header/card-body internally per tab pane).
+      expect(card?.querySelector(':scope > .tabs')).toBeTruthy();
+      expect(card?.querySelector(':scope > .card-body')).toBeFalsy();
       expect(navLabels(screen.container)).toEqual(['General', 'Details']);
     });
   });

@@ -29,8 +29,11 @@
              `card-body` classes to its nav/content internally) AND an outer
              `.card` element wrapping it (BVN's `card` prop does not add the
              outer wrapper itself — the consumer supplies it, per BVN's docs
-             pattern). -->
-        <component :is="card ? DCard : 'div'" v-if="hasTabs">
+             pattern). `no-body` stops DCard from adding its own
+             `.card-body` wrapper — DTabs already provides `.card-header`/
+             `.card-body` internally via its own `card` prop, so wrapping
+             that in another `.card-body` would double up. -->
+        <component :is="card ? DCard : 'div'" v-if="hasTabs" v-bind="card ? { noBody: true } : {}">
             <DTabs v-model:index="activeTab" :card="card">
                 <DTab
                     v-for="(tab, index) in visibleTabs"
@@ -130,8 +133,11 @@
             </component>
         </template>
 
-        <!-- Tabbed layout: submit button + footer render as siblings below
-             the (optionally card-wrapped) DTabs. -->
+        <!-- Tabbed layout: submit button + footer always render as siblings
+             below DTabs (outside the card, when `card` is set) — unlike the
+             flat layout, they aren't pulled inside the card here, since
+             DTabs' own card-body padding belongs to its tab content, not to
+             trailing form-level actions. -->
         <template v-else>
             <!-- Submit button -->
             <DButton
