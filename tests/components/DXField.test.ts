@@ -603,4 +603,93 @@ describe('DXField horizontal layout (#66)', () => {
     const label = screen.container.querySelector('.col-form-label');
     expect(label?.textContent).toContain('Line items');
   });
+
+  it('keeps a table-layout repeater label above the table even when horizontal (a table is too wide for a narrow label column)', async () => {
+    const { screen } = renderField(
+      {
+        key: 'lines',
+        type: 'repeater',
+        label: 'Line items',
+        repeaterLayout: 'table',
+        fields: [{ key: 'name', type: 'text', label: 'Name' }],
+      },
+      { lines: [] },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    // No `.row`/column split — the label renders above the table, not to its
+    // left. (A repeater's legend always carries `.col-form-label` even when
+    // NOT horizontal — BFormGroup applies it to any label with no `label-for`
+    // target, not just horizontal ones — so `.row`'s absence is the reliable
+    // signal here, not the label's own class.)
+    expect(screen.container.querySelector('.row')).toBeFalsy();
+    const label = screen.container.querySelector('.dx-field-label__text');
+    expect(label?.textContent).toContain('Line items');
+  });
+});
+
+describe('DXField hideLabel (#68)', () => {
+  it('omits the label entirely on a standard field when hideLabel is set', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+      { hideLabel: true },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.form-label')).toBeFalsy();
+    expect(screen.container.querySelector('.dx-field-label')).toBeFalsy();
+    // The control itself still renders.
+    expect(screen.container.querySelector('input[type="text"]')).toBeTruthy();
+  });
+
+  it('renders the label as usual when hideLabel is not set', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name' },
+      { name: '' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.dx-field-label')).toBeTruthy();
+  });
+});
+
+describe('DXField repeater table-layout responsiveness via the async DXRepeater loader (#68 regression)', () => {
+  // DXField lazy-loads DXRepeater via defineAsyncComponent (to break a
+  // circular import). That async-resolved boundary is the exact path where
+  // DXRepeater's ResizeObserver setup previously never ran — its template
+  // ref was still null when `onMounted` fired, only surfacing when rendered
+  // this way (not via a direct, synchronous `render(DXRepeater, ...)`).
+  it('falls back to cards when the container is too narrow, when reached through DXField', async () => {
+    const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
+    const field: FieldDefinition = {
+      key: 'lines',
+      type: 'repeater',
+      repeaterLayout: 'table',
+      fields: [
+        { key: 'name', type: 'text', label: 'Name' },
+        { key: 'qty', type: 'number', label: 'Qty' },
+      ],
+    };
+    // 2 columns need ~130*2+70=330px; 150px is well under that.
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h('div', { style: 'width: 150px' }, [h(DXField, { field, form })]),
+        ),
+    });
+
+    const start = Date.now();
+    let cards: Element | null = null;
+    while (Date.now() - start < 2000) {
+      cards = screen.container.querySelector('.dx-repeater-container .dx-repeater');
+      if (cards) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(cards).toBeTruthy();
+    // Mutually exclusive via v-if/v-else — the table must not also be
+    // mounted (double-running every DXField/optionsLoader inside it).
+    expect(screen.container.querySelector('.dx-repeater-table-wrapper')).toBeFalsy();
+  });
 });

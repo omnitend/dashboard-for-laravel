@@ -9,6 +9,14 @@
     <DXForm :form="form" :fields="fields" :show-submit="false" />
 
     <pre class="state">{{ JSON.stringify(form.data, null, 2) }}</pre>
+
+    <h5 class="mt-4">Table layout (compact mode)</h5>
+    <p class="text-muted">
+      Setting <code>repeaterLayout: 'table'</code> renders sub-fields as
+      columns with one row per item — far more compact than the cards layout
+      above for simple 2-3-field rows.
+    </p>
+    <DXForm :form="tableForm" :fields="tableFields" :show-submit="false" />
   </div>
 </template>
 
@@ -37,6 +45,27 @@ const fields: FieldDefinition[] = [
       { key: 'description', type: 'text', label: 'Description' },
       { key: 'quantity', type: 'number', label: 'Qty', default: 1 },
       { key: 'unit_price', type: 'currency', label: 'Unit price', currencySymbol: '£' },
+    ],
+  },
+];
+
+const tableForm = useForm({
+  tags: [
+    { key: 'colour', value: 'blue' },
+    { key: 'size', value: 'medium' },
+  ],
+});
+
+const tableFields: FieldDefinition[] = [
+  {
+    key: 'tags',
+    type: 'repeater',
+    label: 'Tags',
+    addLabel: 'Add tag',
+    repeaterLayout: 'table',
+    fields: [
+      { key: 'key', type: 'text', label: 'Key' },
+      { key: 'value', type: 'text', label: 'Value' },
     ],
   },
 ];

@@ -7,6 +7,7 @@ import {
   DCard,
   DButton,
   DBadge,
+  DFormCheckbox,
   useForm,
   useToast,
   type FieldDefinition,
@@ -48,7 +49,12 @@ const blankOrder = () => ({
 
 const form = useForm(blankOrder());
 
-const fields: FieldDefinition[] = [
+// Live toggles so the playground can demo the layout/repeaterLayout props
+// without needing two separate forms.
+const formLayout = ref<'vertical' | 'horizontal'>('vertical');
+const compactLines = ref(false);
+
+const fields = computed<FieldDefinition[]>(() => [
   { key: 'reference', type: 'text', label: 'Reference', required: true, placeholder: 'ORD-1004' },
   { key: 'customer_name', type: 'text', label: 'Customer', required: true },
   {
@@ -78,13 +84,34 @@ const fields: FieldDefinition[] = [
     label: 'Line items',
     addLabel: 'Add line',
     minItems: 1,
+    // #68: compact table layout toggle, for rows with only a few sub-fields.
+    repeaterLayout: compactLines.value ? 'table' : 'cards',
     fields: [
       { key: 'description', type: 'text', label: 'Description', required: true },
       { key: 'quantity', type: 'number', label: 'Qty', default: 1, min: 1 },
       { key: 'unit_price', type: 'currency', label: 'Unit price', currencySymbol: '£' },
     ],
   },
+]);
+
+function generateReference() {
+  const slug = form.data.customer_name
+    ? form.data.customer_name.slice(0, 3).toUpperCase()
+    : 'ORD';
+  form.data.reference = `${slug}-${Date.now().toString().slice(-4)}`;
+}
+
+// ————————————————— card variant demo (#65)
+
+const noteForm = useForm({ title: '', body: '', pin_to_top: false });
+
+const noteFields: FieldDefinition[] = [
+  { key: 'title', type: 'text', label: 'Title', required: true },
+  { key: 'body', type: 'textarea', label: 'Note', rows: 3 },
+  { key: 'pin_to_top', type: 'checkbox', label: 'Pin to top' },
 ];
+
+const noteTabs: FormTab[] = [{ key: 'note', label: 'Note', fieldKeys: ['title', 'body', 'pin_to_top'] }];
 
 const tabs: FormTab[] = [
   {
@@ -230,15 +257,53 @@ async function handleSubmit() {
               repeater. Submit with a paid order but no payment reference — or a
               blank line description — to see it jump to the tab with the error.
             </p>
+
+            <div class="d-flex gap-3 mb-3">
+              <DFormCheckbox v-model="formLayout" value="horizontal" unchecked-value="vertical" switch>
+                Horizontal layout (#66)
+              </DFormCheckbox>
+              <DFormCheckbox v-model="compactLines" switch>
+                Compact line items table (#68)
+              </DFormCheckbox>
+            </div>
+
             <DXForm
               :form="form"
               :fields="fields"
               :tabs="tabs"
+              :layout="formLayout"
               :submit-text="isNew ? 'Create order' : 'Save changes'"
               @submit="handleSubmit"
-            />
+            >
+              <!-- #67: per-field slot, e.g. a quick-generate action -->
+              <template #field-after(reference)>
+                <DButton size="sm" variant="outline-secondary" class="mb-3" @click="generateReference">
+                  Generate reference
+                </DButton>
+              </template>
+            </DXForm>
           </div>
         </DCard>
+      </div>
+
+      <!-- #65: card prop — a standalone form NOT already wrapped in its own
+           DCard (unlike the order editor above, which already provides its
+           own card chrome and would double up if `card` were set there). -->
+      <div class="col-12">
+        <h5 class="mt-2">Card variant (#65)</h5>
+        <p class="text-muted">
+          A quick customer-note form using DXForm's <code>card</code> prop for
+          its own visual boundary, with tabs rendering as a BS5
+          card-header-tabs.
+        </p>
+        <DXForm
+          :form="noteForm"
+          :fields="noteFields"
+          :tabs="noteTabs"
+          card
+          submit-text="Save note"
+          @submit="() => noteForm.reset()"
+        />
       </div>
     </div>
   </PlaygroundLayout>

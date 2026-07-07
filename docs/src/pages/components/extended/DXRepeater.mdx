@@ -33,7 +33,7 @@ exported directly for custom layouts.
 
 <PropsTable client:load props={[
   { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance owning the repeater array.' },
-  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey.' },
+  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey, repeaterLayout, showRowIndex.' },
   { name: 'keyPath', type: 'string', required: 'No', default: 'field.key', description: 'Dot path into form.data for the array.' },
   { name: 'errorKey', type: 'string', required: 'No', default: 'keyPath', description: 'Base error key for nested validation.' },
   { name: 'model', type: 'any', required: 'No', default: '-', description: 'Model passed to predicates from the parent context.' },
@@ -65,6 +65,11 @@ New rows are seeded from each sub-field's `default` (or a sensible per-type
 default). Rows keep stable identity across reordering/removal, so editing a row
 and removing another never shuffles your inputs.
 
+In `cards` layout, each row's header shows only a Remove button by default —
+set `showRowIndex: true` to also show its 1-based position (e.g. "1", "2")
+next to it, for cases where rows are meaningfully ordered/numbered. Not
+applicable to `table` layout, which has no equivalent column.
+
 ## Upsert-children APIs (`softDeleteKey`)
 
 Some Laravel backends manage child rows via an upsert contract: existing rows
@@ -95,6 +100,52 @@ A row without an `id` (freshly added, never persisted) is still spliced away
 as normal — the server never saw it. Flagged rows stay in `form.data` (so
 they're submitted) but are hidden from the UI and excluded from
 `minItems`/`maxItems` counts.
+
+## Table layout (compact mode)
+
+The default `cards` layout stacks each row's sub-fields vertically inside its
+own bordered box — right for rows with several or complex sub-fields, but
+tall for simple lists. Set `repeaterLayout: 'table'` for a compact
+one-row-per-item table instead, where sub-fields become columns and Remove is
+a trailing icon-button cell:
+
+```ts
+const fields = [
+  {
+    key: 'lines',
+    type: 'repeater',
+    label: 'Line items',
+    repeaterLayout: 'table',
+    fields: [
+      { key: 'description', type: 'text', label: 'Description' },
+      { key: 'quantity', type: 'number', label: 'Qty', default: 1 },
+      { key: 'unit_price', type: 'currency', label: 'Unit price' },
+    ],
+  },
+];
+```
+
+**`table` is a preference, not a guarantee.** A table has no room to shrink
+into a narrow column, and the same *viewport* width can put this repeater in
+a wide standalone form or a cramped sidebar column — a viewport breakpoint
+can't tell those apart. Instead, a `ResizeObserver` measures the repeater's
+own *rendered* width and falls back to the `cards` layout whenever there
+isn't enough room for its columns to stay legible, scaling the required
+width to this repeater's own column count and types (a `currency`/`percentage`
+column gets extra budget for its affix). Same field config either way, no
+extra work — and no layout-swap flicker, since the table and its cards
+fallback are both always present in the DOM (toggled via `v-show`, not
+conditionally rendered) so the measurement never has a hidden element to
+contend with.
+
+Column headers come from each sub-field's `label`. The `#row` slot still fully
+overrides a row's rendering in table layout — it renders as the `<tr>`'s
+children, so supply one `<td>` per sub-field plus a trailing `<td>` to match
+the header's column count (the header always reserves an empty column for the
+built-in remove button), and call the slot's `remove()` binding yourself since
+the built-in Remove control is bypassed along with the rest of the row. For
+table-shaped editors with computed columns beyond a simple field list, build
+your own table on the raw `DXField`/`DTable` primitives instead.
 
 ## Slots
 
