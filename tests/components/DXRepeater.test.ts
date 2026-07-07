@@ -263,7 +263,7 @@ describe('DXRepeater', () => {
   describe('table layout (#68)', () => {
     const tableField: FieldDefinition = { ...lineField, repeaterLayout: 'table' };
 
-    it('renders one <tr> per row with a header per sub-field, instead of cards', async () => {
+    it('renders one <tr> per row with a header per sub-field', async () => {
       const form = useForm({
         lines: [
           { name: 'First', qty: 1 },
@@ -274,7 +274,12 @@ describe('DXRepeater', () => {
         props: { form, field: tableField, keyPath: 'lines' },
       });
 
-      expect(screen.container.querySelectorAll('.dx-repeater-row').length).toBe(0);
+      const tableWrapper = screen.container.querySelector('.dx-repeater-table-wrapper')!;
+      expect(tableWrapper).toBeTruthy();
+      // The table is desktop/tablet-only (hidden below `sm`, per the
+      // small-screen fallback below) — never hidden at this default width.
+      expect(tableWrapper.classList.contains('d-none')).toBe(true);
+      expect(tableWrapper.classList.contains('d-sm-block')).toBe(true);
       expect(screen.container.querySelector('table.dx-repeater-table')).toBeTruthy();
       const headers = Array.from(screen.container.querySelectorAll('thead th')).map(
         (th) => th.textContent?.trim(),
@@ -285,6 +290,30 @@ describe('DXRepeater', () => {
       expect(screen.container.querySelector('tbody .form-label')).toBeFalsy();
     });
 
+    it('also renders the cards markup as a small-screen fallback (d-block d-sm-none)', async () => {
+      const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
+      const screen = render(DXRepeater, {
+        props: { form, field: tableField, keyPath: 'lines' },
+      });
+
+      const cards = screen.container.querySelector('.dx-repeater')!;
+      expect(cards).toBeTruthy();
+      expect(cards.classList.contains('d-block')).toBe(true);
+      expect(cards.classList.contains('d-sm-none')).toBe(true);
+      expect(cards.querySelectorAll('.dx-repeater-row').length).toBe(1);
+    });
+
+    it('does not add responsive display classes to the cards markup in cards mode', async () => {
+      const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
+      const screen = render(DXRepeater, {
+        props: { form, field: lineField, keyPath: 'lines' },
+      });
+
+      const cards = screen.container.querySelector('.dx-repeater')!;
+      expect(cards.classList.contains('d-block')).toBe(false);
+      expect(cards.classList.contains('d-sm-none')).toBe(false);
+    });
+
     it('appends a row when the add button is clicked', async () => {
       const form = useForm({ lines: [] as Array<Record<string, any>> });
       const screen = render(DXRepeater, {
@@ -293,7 +322,16 @@ describe('DXRepeater', () => {
 
       expect(screen.container.querySelectorAll('tbody tr').length).toBe(0);
 
-      await userEvent.click(screen.getByRole('button', { name: 'Add line' }));
+      // Two "Add line" buttons exist (table + small-screen cards fallback) —
+      // scope to the table's own. A raw `.click()` (not userEvent.click,
+      // which enforces real visibility) because the table is `d-none` below
+      // `sm`, and the test runner's viewport is narrower than that — a real
+      // screen at normal width shows it; this test only cares that the
+      // handler still works.
+      const addButton = Array.from(
+        screen.container.querySelectorAll('.dx-repeater-table-wrapper button'),
+      ).find((b) => b.textContent?.trim() === 'Add line') as HTMLButtonElement;
+      addButton.click();
       await flush();
 
       expect(screen.container.querySelectorAll('tbody tr').length).toBe(1);
@@ -329,7 +367,9 @@ describe('DXRepeater', () => {
         },
       });
 
-      const addButton = screen.getByRole('button', { name: 'Add line' }).element() as HTMLButtonElement;
+      const addButton = Array.from(
+        screen.container.querySelectorAll('.dx-repeater-table-wrapper button'),
+      ).find((b) => b.textContent?.trim() === 'Add line') as HTMLButtonElement;
       expect(addButton.disabled).toBe(true);
     });
 

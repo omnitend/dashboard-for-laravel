@@ -120,6 +120,13 @@ const fields = [
 ];
 ```
 
+**Responsive fallback:** a table has no room to shrink into a phone-width
+column, so below Bootstrap's `sm` breakpoint (576px) the table hides and the
+`cards` layout renders instead — same field config, no extra work. Both are
+always present in the DOM; only one is ever visible per breakpoint (Bootstrap's
+own `d-none`/`d-sm-block` pattern), so there's no layout-swap flicker or
+JS involved.
+
 Column headers come from each sub-field's `label`. The `#row` slot still fully
 overrides a row's rendering in table layout — it renders as the `<tr>`'s
 children, so supply one `<td>` per sub-field plus a trailing `<td>` to match

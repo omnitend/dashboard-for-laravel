@@ -6,8 +6,13 @@
 -->
 <template>
     <!-- Table layout: one row per item, sub-fields as columns. Far more
-         compact than the default cards layout for simple 2-3-field rows. -->
-    <div v-if="isTableLayout" class="dx-repeater-table-wrapper">
+         compact than the default cards layout for simple 2-3-field rows.
+         Hidden below `sm` — a table has no room to shrink into a phone-width
+         column, so the cards markup below (always rendered) becomes its
+         small-screen fallback via the same `d-*` responsive display classes
+         Bootstrap itself uses for this exact "swap layout per breakpoint"
+         pattern; no JS/matchMedia needed. -->
+    <div v-if="isTableLayout" class="dx-repeater-table-wrapper d-none d-sm-block">
         <table class="dx-repeater-table table">
             <thead>
                 <tr>
@@ -54,7 +59,6 @@
                         <td class="dx-repeater-table-remove-col">
                             <DButton
                                 variant="outline-danger"
-                                size="sm"
                                 class="dx-repeater-table-remove-btn"
                                 :disabled="visibleRows.length <= minItems"
                                 :aria-label="`Remove row ${position + 1}`"
@@ -78,9 +82,13 @@
         </DButton>
     </div>
 
-    <!-- Cards layout (default): each row is its own bordered card with
-         sub-fields stacked vertically. -->
-    <div v-else class="dx-repeater">
+    <!-- Cards layout: each row is its own bordered card with sub-fields
+         stacked vertically. This is the default (`repeaterLayout: "cards"`)
+         AND table layout's small-screen fallback (`d-block d-sm-none` only
+         applies when table layout is also active; otherwise unclassed and
+         always visible, so this markup is byte-for-byte what cards mode
+         has always rendered). -->
+    <div class="dx-repeater" :class="{ 'd-block d-sm-none': isTableLayout }">
         <div
             v-for="(entry, position) in visibleRows"
             :key="rowKey(entry.row, position)"
@@ -369,9 +377,13 @@ function removeRow(index: number): void {
     text-align: center;
 }
 
-/* Match the row's text-input height (same var the switch field uses) instead
-   of the button's own (shorter) small-size default, so the remove control
-   lines up with its row's inputs. */
+/* Match the row's text-input height (same var the switch field uses).
+   `--dx-input-height`'s `em` term resolves against the CONSUMING element's
+   own font-size, not the input's — so this only lines up if the button's
+   font-size equals .form-control's (both derive from Bootstrap's base
+   font-size var, but a `size="sm"` DButton sets a smaller one). The button
+   is deliberately NOT `size="sm"` here for that reason; min-height still
+   keeps it visually compact regardless. */
 .dx-repeater-table-remove-btn {
     display: inline-flex;
     align-items: center;

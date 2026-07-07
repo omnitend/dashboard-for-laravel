@@ -171,6 +171,17 @@ $dashboard-navbar-height: 64px;
   );
 }
 
+// Bootstrap's `.input-group` defaults to `flex-wrap: wrap`, letting a
+// narrow container (e.g. a compact table cell, a small screen) stack the
+// prepend/append affix onto its own line below the input. That breaks the
+// visual "one control" continuity an input-group exists to provide — an
+// affix + input should shrink/scroll before it wraps, never stack. Applies
+// globally (currency/percentage fields, DAutocomplete's own `:deep()`
+// override becomes redundant but harmless here).
+.input-group {
+  flex-wrap: nowrap;
+}
+
 // ----------------------------------------------------------------------------
 // Dashboard Custom Styles
 // ----------------------------------------------------------------------------
