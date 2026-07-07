@@ -360,4 +360,55 @@ describe('DXForm', () => {
       expect(screen.emitted().submit).toBeTruthy();
     });
   });
+
+  describe('Card prop', () => {
+    it('does not render a card by default (flat form)', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, showSubmit: false },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.card')).toBeFalsy();
+    });
+
+    it('wraps a flat form in a card when card is true', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, showSubmit: true, card: true },
+      });
+      await flush();
+
+      const card = screen.container.querySelector('.card');
+      expect(card).toBeTruthy();
+      // Fields and the submit button render inside the card.
+      expect(card?.querySelector('input')).toBeTruthy();
+      expect(card?.querySelector('button[type="submit"]')).toBeTruthy();
+    });
+
+    it('does not render a card for a tabbed form by default', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, tabs: productTabs, showSubmit: false },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.card')).toBeFalsy();
+    });
+
+    it('renders the tab nav as card-header-tabs when card is true on a tabbed form', async () => {
+      const screen = render(DXForm, {
+        props: {
+          form: makeForm(),
+          fields: productFields,
+          tabs: productTabs,
+          showSubmit: false,
+          card: true,
+        },
+      });
+      await flush();
+
+      const card = screen.container.querySelector('.card');
+      expect(card).toBeTruthy();
+      expect(card?.querySelector('.card-header.card-header-tabs, .card-header .nav-tabs')).toBeTruthy();
+      expect(navLabels(screen.container)).toEqual(['General', 'Details']);
+    });
+  });
 });

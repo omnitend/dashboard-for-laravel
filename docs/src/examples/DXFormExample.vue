@@ -10,6 +10,7 @@
       :form="form"
       :fields="fields"
       :tabs="tabs"
+      card
       submit-text="Save product"
       @submit="handleSubmit"
     />
