@@ -202,7 +202,7 @@
 
     <!-- Repeater: nested, repeatable sub-form -->
     <div v-else-if="field.type === 'repeater'" :class="field.class || 'mb-3'">
-        <DFormGroup v-bind="horizontalAttrs">
+        <DFormGroup v-bind="repeaterHorizontalAttrs">
             <template #label>
                 <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
             </template>
@@ -548,6 +548,14 @@ function labelColsAttrs(cols: LabelCols | undefined): Record<string, any> {
 // so `layout: "horizontal"` alone is enough to see the effect.
 const horizontalAttrs = computed<Record<string, any>>(() =>
     isHorizontal.value ? labelColsAttrs(props.labelCols ?? 3) : {},
+);
+
+// A table-layout repeater is inherently wide — squeezing its own label into a
+// narrow left column (as if it were a single-line input) reads badly, unlike
+// a normal horizontal field. Its label always renders above, regardless of
+// the form/field's horizontal layout setting (#68 follow-up).
+const repeaterHorizontalAttrs = computed<Record<string, any>>(() =>
+    props.field.repeaterLayout === "table" ? {} : horizontalAttrs.value,
 );
 
 // Path semantics (getByPath/setByPath) are only used when a parent passes an

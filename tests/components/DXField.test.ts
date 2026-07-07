@@ -603,6 +603,30 @@ describe('DXField horizontal layout (#66)', () => {
     const label = screen.container.querySelector('.col-form-label');
     expect(label?.textContent).toContain('Line items');
   });
+
+  it('keeps a table-layout repeater label above the table even when horizontal (a table is too wide for a narrow label column)', async () => {
+    const { screen } = renderField(
+      {
+        key: 'lines',
+        type: 'repeater',
+        label: 'Line items',
+        repeaterLayout: 'table',
+        fields: [{ key: 'name', type: 'text', label: 'Name' }],
+      },
+      { lines: [] },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    // No `.row`/column split — the label renders above the table, not to its
+    // left. (A repeater's legend always carries `.col-form-label` even when
+    // NOT horizontal — BFormGroup applies it to any label with no `label-for`
+    // target, not just horizontal ones — so `.row`'s absence is the reliable
+    // signal here, not the label's own class.)
+    expect(screen.container.querySelector('.row')).toBeFalsy();
+    const label = screen.container.querySelector('.dx-field-label__text');
+    expect(label?.textContent).toContain('Line items');
+  });
 });
 
 describe('DXField hideLabel (#68)', () => {

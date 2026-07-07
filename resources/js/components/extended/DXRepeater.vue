@@ -55,6 +55,7 @@
                             <DButton
                                 variant="outline-danger"
                                 size="sm"
+                                class="dx-repeater-table-remove-btn"
                                 :disabled="visibleRows.length <= minItems"
                                 :aria-label="`Remove row ${position + 1}`"
                                 @click="removeRow(entry.index)"
@@ -360,5 +361,15 @@ function removeRow(index: number): void {
     width: 1%;
     white-space: nowrap;
     text-align: center;
+}
+
+/* Match the row's text-input height (same var the switch field uses) instead
+   of the button's own (shorter) small-size default, so the remove control
+   lines up with its row's inputs. */
+.dx-repeater-table-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--dx-input-height, calc(1.5em + 0.75rem + 2px));
 }
 </style>
