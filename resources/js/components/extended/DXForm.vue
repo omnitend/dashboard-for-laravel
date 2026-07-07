@@ -24,145 +24,185 @@
         </DAlert>
 
         <!-- Tabbed layout. BTabs exposes the active *index* via v-model:index
-             (plain v-model is the active tab id), which is what we track. -->
-        <DTabs v-if="hasTabs" v-model:index="activeTab">
-            <DTab
-                v-for="(tab, index) in visibleTabs"
-                :key="tab.key"
-                :title="resolveTabLabel(tab)"
-                :lazy="tab.lazy"
-                :active="index === 0"
-            >
-                <!--
-                  @slot Replaces the entire body of a tab, keyed by tab (slot name `tab-content(<tabKey>)`).
-                  @binding {FormTab} tab The tab definition being rendered.
-                  @binding {object} model Live form data merged with `context`, for predicates.
-                -->
-                <slot
-                    v-if="$slots[`tab-content(${tab.key})`]"
-                    :name="`tab-content(${tab.key})`"
-                    :tab="tab"
-                    :model="model"
-                />
-
-                <div v-else class="pt-3">
+             (plain v-model is the active tab id), which is what we track.
+             `card` needs BOTH: DTabs' own `card` prop (adds `card-header`/
+             `card-body` classes to its nav/content internally) AND an outer
+             `.card` element wrapping it (BVN's `card` prop does not add the
+             outer wrapper itself — the consumer supplies it, per BVN's docs
+             pattern). `no-body` stops DCard from adding its own
+             `.card-body` wrapper — DTabs already provides `.card-header`/
+             `.card-body` internally via its own `card` prop, so wrapping
+             that in another `.card-body` would double up. -->
+        <component :is="card ? DCard : 'div'" v-if="hasTabs" v-bind="card ? { noBody: true } : {}">
+            <DTabs v-model:index="activeTab" :card="card">
+                <DTab
+                    v-for="(tab, index) in visibleTabs"
+                    :key="tab.key"
+                    :title="resolveTabLabel(tab)"
+                    :lazy="tab.lazy"
+                    :active="index === 0"
+                >
                     <!--
-                      @slot Content inserted above a tab's fields, keyed by tab (slot name `tab-before(<tabKey>)`).
+                      @slot Replaces the entire body of a tab, keyed by tab (slot name `tab-content(<tabKey>)`).
                       @binding {FormTab} tab The tab definition being rendered.
                       @binding {object} model Live form data merged with `context`, for predicates.
                     -->
-                    <slot :name="`tab-before(${tab.key})`" :tab="tab" :model="model" />
+                    <slot
+                        v-if="$slots[`tab-content(${tab.key})`]"
+                        :name="`tab-content(${tab.key})`"
+                        :tab="tab"
+                        :model="model"
+                    />
 
-                    <template v-for="field in visibleFieldsFor(tab)" :key="field.key">
+                    <div v-else class="pt-3">
                         <!--
-                          @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely — like `tab-content`, this also supersedes `field-before(<key>)`/`field-after(<key>)` for the same key.
-                          @binding {FieldDefinition} field The field definition being replaced.
+                          @slot Content inserted above a tab's fields, keyed by tab (slot name `tab-before(<tabKey>)`).
+                          @binding {FormTab} tab The tab definition being rendered.
                           @binding {object} model Live form data merged with `context`, for predicates.
                         -->
-                        <slot
-                            v-if="$slots[`field(${field.key})`]"
-                            :name="`field(${field.key})`"
-                            :field="field"
-                            :model="model"
-                        />
-                        <template v-else>
+                        <slot :name="`tab-before(${tab.key})`" :tab="tab" :model="model" />
+
+                        <template v-for="field in visibleFieldsFor(tab)" :key="field.key">
                             <!--
-                              @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`. Not rendered when `field(<key>)` replaces the same field.
-                              @binding {FieldDefinition} field The field about to be rendered.
+                              @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely — like `tab-content`, this also supersedes `field-before(<key>)`/`field-after(<key>)` for the same key.
+                              @binding {FieldDefinition} field The field definition being replaced.
                               @binding {object} model Live form data merged with `context`, for predicates.
                             -->
-                            <slot :name="`field-before(${field.key})`" :field="field" :model="model" />
+                            <slot
+                                v-if="$slots[`field(${field.key})`]"
+                                :name="`field(${field.key})`"
+                                :field="field"
+                                :model="model"
+                            />
+                            <template v-else>
+                                <!--
+                                  @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`. Not rendered when `field(<key>)` replaces the same field.
+                                  @binding {FieldDefinition} field The field about to be rendered.
+                                  @binding {object} model Live form data merged with `context`, for predicates.
+                                -->
+                                <slot :name="`field-before(${field.key})`" :field="field" :model="model" />
 
-                            <DXField :field="field" :form="resolvedForm" :model="model">
-                                <template
-                                    v-for="(slotName, target) in fieldSlotMap(field.key)"
-                                    :key="target"
-                                    #[target]="slotProps"
-                                >
-                                    <!-- @slot Per-field overrides forwarded to DXField, keyed by field key: `value(<key>)`, `span(<key>)`, `info(<key>)`, `hint(<key>)`, `repeater-row(<key>)`. -->
-                                    <slot :name="slotName" v-bind="slotProps" />
-                                </template>
-                            </DXField>
+                                <DXField :field="field" :form="resolvedForm" :model="model">
+                                    <template
+                                        v-for="(slotName, target) in fieldSlotMap(field.key)"
+                                        :key="target"
+                                        #[target]="slotProps"
+                                    >
+                                        <!-- @slot Per-field overrides forwarded to DXField, keyed by field key: `value(<key>)`, `span(<key>)`, `info(<key>)`, `hint(<key>)`, `repeater-row(<key>)`. -->
+                                        <slot :name="slotName" v-bind="slotProps" />
+                                    </template>
+                                </DXField>
 
-                            <!--
-                              @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`. Not rendered when `field(<key>)` replaces the same field.
-                              @binding {FieldDefinition} field The field that was just rendered.
-                              @binding {object} model Live form data merged with `context`, for predicates.
-                            -->
-                            <slot :name="`field-after(${field.key})`" :field="field" :model="model" />
+                                <!--
+                                  @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`. Not rendered when `field(<key>)` replaces the same field.
+                                  @binding {FieldDefinition} field The field that was just rendered.
+                                  @binding {object} model Live form data merged with `context`, for predicates.
+                                -->
+                                <slot :name="`field-after(${field.key})`" :field="field" :model="model" />
+                            </template>
                         </template>
+
+                        <!--
+                          @slot Content inserted below a tab's fields, keyed by tab (slot name `tab-after(<tabKey>)`).
+                          @binding {FormTab} tab The tab definition being rendered.
+                          @binding {object} model Live form data merged with `context`, for predicates.
+                        -->
+                        <slot :name="`tab-after(${tab.key})`" :tab="tab" :model="model" />
+                    </div>
+                </DTab>
+            </DTabs>
+        </component>
+
+        <!-- Flat layout (no tabs). When `card` is set, the fields + submit
+             button + footer render inside a DCard, giving the form a visual
+             boundary (the tabbed case gets this from DTabs' own `card` prop
+             instead, above). -->
+        <template v-if="!hasTabs">
+            <component :is="card ? DCard : 'div'">
+                <template v-for="field in visibleFlatFields" :key="field.key">
+                    <!--
+                      @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely — like `tab-content`, this also supersedes `field-before(<key>)`/`field-after(<key>)` for the same key.
+                      @binding {FieldDefinition} field The field definition being replaced.
+                      @binding {object} model Live form data merged with `context`, for predicates.
+                    -->
+                    <slot
+                        v-if="$slots[`field(${field.key})`]"
+                        :name="`field(${field.key})`"
+                        :field="field"
+                        :model="model"
+                    />
+                    <template v-else>
+                        <!--
+                          @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`. Not rendered when `field(<key>)` replaces the same field.
+                          @binding {FieldDefinition} field The field about to be rendered.
+                          @binding {object} model Live form data merged with `context`, for predicates.
+                        -->
+                        <slot :name="`field-before(${field.key})`" :field="field" :model="model" />
+
+                        <DXField :field="field" :form="resolvedForm" :model="model">
+                            <template
+                                v-for="(slotName, target) in fieldSlotMap(field.key)"
+                                :key="target"
+                                #[target]="slotProps"
+                            >
+                                <!-- @slot Per-field overrides forwarded to DXField, keyed by field key: `value(<key>)`, `span(<key>)`, `info(<key>)`, `hint(<key>)`, `repeater-row(<key>)`. -->
+                                <slot :name="slotName" v-bind="slotProps" />
+                            </template>
+                        </DXField>
+
+                        <!--
+                          @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`. Not rendered when `field(<key>)` replaces the same field.
+                          @binding {FieldDefinition} field The field that was just rendered.
+                          @binding {object} model Live form data merged with `context`, for predicates.
+                        -->
+                        <slot :name="`field-after(${field.key})`" :field="field" :model="model" />
                     </template>
-
-                    <!--
-                      @slot Content inserted below a tab's fields, keyed by tab (slot name `tab-after(<tabKey>)`).
-                      @binding {FormTab} tab The tab definition being rendered.
-                      @binding {object} model Live form data merged with `context`, for predicates.
-                    -->
-                    <slot :name="`tab-after(${tab.key})`" :tab="tab" :model="model" />
-                </div>
-            </DTab>
-        </DTabs>
-
-        <!-- Flat layout (no tabs) -->
-        <template v-else>
-            <template v-for="field in visibleFlatFields" :key="field.key">
-                <!--
-                  @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely — like `tab-content`, this also supersedes `field-before(<key>)`/`field-after(<key>)` for the same key.
-                  @binding {FieldDefinition} field The field definition being replaced.
-                  @binding {object} model Live form data merged with `context`, for predicates.
-                -->
-                <slot
-                    v-if="$slots[`field(${field.key})`]"
-                    :name="`field(${field.key})`"
-                    :field="field"
-                    :model="model"
-                />
-                <template v-else>
-                    <!--
-                      @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`. Not rendered when `field(<key>)` replaces the same field.
-                      @binding {FieldDefinition} field The field about to be rendered.
-                      @binding {object} model Live form data merged with `context`, for predicates.
-                    -->
-                    <slot :name="`field-before(${field.key})`" :field="field" :model="model" />
-
-                    <DXField :field="field" :form="resolvedForm" :model="model">
-                        <template
-                            v-for="(slotName, target) in fieldSlotMap(field.key)"
-                            :key="target"
-                            #[target]="slotProps"
-                        >
-                            <!-- @slot Per-field overrides forwarded to DXField, keyed by field key: `value(<key>)`, `span(<key>)`, `info(<key>)`, `hint(<key>)`, `repeater-row(<key>)`. -->
-                            <slot :name="slotName" v-bind="slotProps" />
-                        </template>
-                    </DXField>
-
-                    <!--
-                      @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`. Not rendered when `field(<key>)` replaces the same field.
-                      @binding {FieldDefinition} field The field that was just rendered.
-                      @binding {object} model Live form data merged with `context`, for predicates.
-                    -->
-                    <slot :name="`field-after(${field.key})`" :field="field" :model="model" />
                 </template>
-            </template>
+
+                <!-- Submit button -->
+                <DButton
+                    v-if="showSubmit"
+                    type="submit"
+                    variant="primary"
+                    :disabled="resolvedForm.processing"
+                    class="w-100 mt-3"
+                >
+                    <span v-if="resolvedForm.processing">{{ submitLoadingText }}</span>
+                    <span v-else>{{ submitText }}</span>
+                </DButton>
+
+                <!--
+                  @slot Content rendered below the submit button (e.g. a cancel link or secondary actions).
+                  @binding {UseFormReturn} form The resolved form instance (state, errors, submit helpers).
+                -->
+                <slot name="footer" :form="resolvedForm" />
+            </component>
         </template>
 
-        <!-- Submit button -->
-        <DButton
-            v-if="showSubmit"
-            type="submit"
-            variant="primary"
-            :disabled="resolvedForm.processing"
-            class="w-100 mt-3"
-        >
-            <span v-if="resolvedForm.processing">{{ submitLoadingText }}</span>
-            <span v-else>{{ submitText }}</span>
-        </DButton>
+        <!-- Tabbed layout: submit button + footer always render as siblings
+             below DTabs (outside the card, when `card` is set) — unlike the
+             flat layout, they aren't pulled inside the card here, since
+             DTabs' own card-body padding belongs to its tab content, not to
+             trailing form-level actions. -->
+        <template v-else>
+            <!-- Submit button -->
+            <DButton
+                v-if="showSubmit"
+                type="submit"
+                variant="primary"
+                :disabled="resolvedForm.processing"
+                class="w-100 mt-3"
+            >
+                <span v-if="resolvedForm.processing">{{ submitLoadingText }}</span>
+                <span v-else>{{ submitText }}</span>
+            </DButton>
 
-        <!--
-          @slot Content rendered below the submit button (e.g. a cancel link or secondary actions).
-          @binding {UseFormReturn} form The resolved form instance (state, errors, submit helpers).
-        -->
-        <slot name="footer" :form="resolvedForm" />
+            <!--
+              @slot Content rendered below the submit button (e.g. a cancel link or secondary actions).
+              @binding {UseFormReturn} form The resolved form instance (state, errors, submit helpers).
+            -->
+            <slot name="footer" :form="resolvedForm" />
+        </template>
     </BForm>
 </template>
 
@@ -171,6 +211,7 @@ import { computed, watch } from "vue";
 import { BForm } from "bootstrap-vue-next";
 import DAlert from "../base/DAlert.vue";
 import DButton from "../base/DButton.vue";
+import DCard from "../base/DCard.vue";
 import DTabs from "../base/DTabs.vue";
 import DTab from "../base/DTab.vue";
 import DXField from "./DXField.vue";
@@ -210,6 +251,14 @@ interface Props {
 
     /** Auto-switch to the first tab containing a validation error. */
     autoErrorTab?: boolean;
+
+    /**
+     * Wrap the form in a card for a visual boundary (mirrors DXTable's
+     * `card` prop). Tabbed forms render the tab nav as a BS5
+     * card-header-tabs instead of double-wrapping. Off by default since
+     * DXForm is commonly embedded in a page card or modal already.
+     */
+    card?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -217,6 +266,7 @@ const props = withDefaults(defineProps<Props>(), {
     submitLoadingText: "Submitting...",
     showSubmit: true,
     autoErrorTab: true,
+    card: false,
 });
 
 const emit = defineEmits<{
