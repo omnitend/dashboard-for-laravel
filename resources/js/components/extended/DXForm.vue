@@ -55,7 +55,7 @@
 
                     <template v-for="field in visibleFieldsFor(tab)" :key="field.key">
                         <!--
-                          @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely.
+                          @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely — like `tab-content`, this also supersedes `field-before(<key>)`/`field-after(<key>)` for the same key.
                           @binding {FieldDefinition} field The field definition being replaced.
                           @binding {object} model Live form data merged with `context`, for predicates.
                         -->
@@ -67,7 +67,7 @@
                         />
                         <template v-else>
                             <!--
-                              @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`.
+                              @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`. Not rendered when `field(<key>)` replaces the same field.
                               @binding {FieldDefinition} field The field about to be rendered.
                               @binding {object} model Live form data merged with `context`, for predicates.
                             -->
@@ -85,7 +85,7 @@
                             </DXField>
 
                             <!--
-                              @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`.
+                              @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`. Not rendered when `field(<key>)` replaces the same field.
                               @binding {FieldDefinition} field The field that was just rendered.
                               @binding {object} model Live form data merged with `context`, for predicates.
                             -->
@@ -107,7 +107,7 @@
         <template v-else>
             <template v-for="field in visibleFlatFields" :key="field.key">
                 <!--
-                  @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely.
+                  @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely — like `tab-content`, this also supersedes `field-before(<key>)`/`field-after(<key>)` for the same key.
                   @binding {FieldDefinition} field The field definition being replaced.
                   @binding {object} model Live form data merged with `context`, for predicates.
                 -->
@@ -119,7 +119,7 @@
                 />
                 <template v-else>
                     <!--
-                      @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`.
+                      @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`. Not rendered when `field(<key>)` replaces the same field.
                       @binding {FieldDefinition} field The field about to be rendered.
                       @binding {object} model Live form data merged with `context`, for predicates.
                     -->
@@ -137,7 +137,7 @@
                     </DXField>
 
                     <!--
-                      @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`.
+                      @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`. Not rendered when `field(<key>)` replaces the same field.
                       @binding {FieldDefinition} field The field that was just rendered.
                       @binding {object} model Live form data merged with `context`, for predicates.
                     -->

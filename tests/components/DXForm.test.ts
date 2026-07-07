@@ -293,6 +293,22 @@ describe('DXForm', () => {
       expect(labelTexts(screen.container)).not.toContain('SKU');
     });
 
+    it('supersedes field-before/field-after for the same key, like tab-content does for tabs', async () => {
+      const screen = render(DXForm, {
+        props: { form: makeForm(), fields: productFields, showSubmit: false },
+        slots: {
+          'field(sku)': () => h('div', { class: 'sku-replacement' }, 'replaced'),
+          'field-before(sku)': () => h('div', { class: 'sku-before' }, 'before sku'),
+          'field-after(sku)': () => h('div', { class: 'sku-after' }, 'after sku'),
+        },
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.sku-replacement')).toBeTruthy();
+      expect(screen.container.querySelector('.sku-before')).toBeFalsy();
+      expect(screen.container.querySelector('.sku-after')).toBeFalsy();
+    });
+
     it('renders field-before/field-after and #field(key) slots inside a tabbed form', async () => {
       const screen = render(DXForm, {
         props: {
