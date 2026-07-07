@@ -242,6 +242,15 @@ export interface FieldDefinition {
     repeaterLayout?: "cards" | "table";
 
     /**
+     * For `repeater` fields in `cards` layout: show each row's 1-based
+     * position (e.g. "1", "2") next to its Remove button. Off by default —
+     * only meaningful once a consumer explicitly wants it (e.g. rows the
+     * user thinks of as numbered/ordered); most repeaters don't need it.
+     * Not applicable to `table` layout, which has no equivalent column.
+     */
+    showRowIndex?: boolean;
+
+    /**
      * For `repeater` fields backed by an upsert-children API contract (rows
      * carrying a persisted `id` are only deleted server-side when submitted
      * flagged, e.g. Laravel's `{ id, to_delete: true }` pattern): the

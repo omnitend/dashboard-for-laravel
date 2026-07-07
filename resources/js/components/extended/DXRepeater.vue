@@ -116,7 +116,7 @@
 
                 <template v-else>
                     <div class="dx-repeater-row-header">
-                        <span class="dx-repeater-row-index">{{ position + 1 }}</span>
+                        <span v-if="field.showRowIndex" class="dx-repeater-row-index">{{ position + 1 }}</span>
                         <DButton
                             variant="outline-danger"
                             size="sm"
@@ -182,7 +182,7 @@
             <!-- Default row: stack each sub-field -->
             <template v-else>
                 <div class="dx-repeater-row-header">
-                    <span class="dx-repeater-row-index">{{ position + 1 }}</span>
+                    <span v-if="field.showRowIndex" class="dx-repeater-row-index">{{ position + 1 }}</span>
                     <DButton
                         variant="outline-danger"
                         size="sm"
@@ -477,8 +477,15 @@ function removeRow(index: number): void {
 .dx-repeater-row-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     margin-bottom: 0.75rem;
+}
+
+/* The Remove control is always this header's last child, whether or not the
+   (opt-in) row-index span is also present — push it to the end explicitly
+   rather than relying on `justify-content: space-between`, which centres a
+   single remaining child at the *start* once the index is off (the default). */
+.dx-repeater-row-header > :last-child {
+    margin-inline-start: auto;
 }
 
 .dx-repeater-row-index {

@@ -49,6 +49,39 @@ describe('DXRepeater', () => {
     expect(screen.container.querySelectorAll('.dx-repeater-row').length).toBe(2);
   });
 
+  describe('showRowIndex', () => {
+    it('does not render a row index by default', async () => {
+      const form = useForm({
+        lines: [
+          { name: 'First', qty: 1 },
+          { name: 'Second', qty: 2 },
+        ],
+      });
+      const screen = render(DXRepeater, {
+        props: { form, field: lineField, keyPath: 'lines' },
+      });
+
+      expect(screen.container.querySelector('.dx-repeater-row-index')).toBeFalsy();
+    });
+
+    it('renders the 1-based row index when showRowIndex is set', async () => {
+      const form = useForm({
+        lines: [
+          { name: 'First', qty: 1 },
+          { name: 'Second', qty: 2 },
+        ],
+      });
+      const screen = render(DXRepeater, {
+        props: { form, field: { ...lineField, showRowIndex: true }, keyPath: 'lines' },
+      });
+
+      const indices = Array.from(
+        screen.container.querySelectorAll('.dx-repeater-row-index'),
+      ).map((el) => el.textContent?.trim());
+      expect(indices).toEqual(['1', '2']);
+    });
+  });
+
   it('appends a row when the add button is clicked', async () => {
     const form = useForm({ lines: [] as Array<Record<string, any>> });
 

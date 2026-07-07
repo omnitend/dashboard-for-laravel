@@ -33,7 +33,7 @@ exported directly for custom layouts.
 
 <PropsTable client:load props={[
   { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance owning the repeater array.' },
-  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey, repeaterLayout.' },
+  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey, repeaterLayout, showRowIndex.' },
   { name: 'keyPath', type: 'string', required: 'No', default: 'field.key', description: 'Dot path into form.data for the array.' },
   { name: 'errorKey', type: 'string', required: 'No', default: 'keyPath', description: 'Base error key for nested validation.' },
   { name: 'model', type: 'any', required: 'No', default: '-', description: 'Model passed to predicates from the parent context.' },
@@ -64,6 +64,11 @@ const fields = [
 New rows are seeded from each sub-field's `default` (or a sensible per-type
 default). Rows keep stable identity across reordering/removal, so editing a row
 and removing another never shuffles your inputs.
+
+In `cards` layout, each row's header shows only a Remove button by default —
+set `showRowIndex: true` to also show its 1-based position (e.g. "1", "2")
+next to it, for cases where rows are meaningfully ordered/numbered. Not
+applicable to `table` layout, which has no equivalent column.
 
 ## Upsert-children APIs (`softDeleteKey`)
 
