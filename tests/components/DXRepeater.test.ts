@@ -1,11 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
+import { h } from 'vue';
 import DXRepeater from '../../resources/js/components/extended/DXRepeater.vue';
 import { useForm } from '../../resources/js/composables/useForm';
 import type { FieldDefinition } from '../../resources/js/types';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+/** Polls (real ResizeObserver callbacks are async) until an element's
+ *  computed `display` matches the expected value, or throws on timeout. */
+async function waitForDisplay(el: HTMLElement, expected: 'none' | 'block', timeoutMs = 2000) {
+  const start = Date.now();
+  while (getComputedStyle(el).display !== expected) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(
+        `Timed out waiting for display to become "${expected}" (was "${getComputedStyle(el).display}")`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+}
 
 const lineField: FieldDefinition = {
   key: 'lines',
@@ -274,12 +289,7 @@ describe('DXRepeater', () => {
         props: { form, field: tableField, keyPath: 'lines' },
       });
 
-      const tableWrapper = screen.container.querySelector('.dx-repeater-table-wrapper')!;
-      expect(tableWrapper).toBeTruthy();
-      // The table is desktop/tablet-only (hidden below `sm`, per the
-      // small-screen fallback below) — never hidden at this default width.
-      expect(tableWrapper.classList.contains('d-none')).toBe(true);
-      expect(tableWrapper.classList.contains('d-sm-block')).toBe(true);
+      expect(screen.container.querySelector('.dx-repeater-container')).toBeTruthy();
       expect(screen.container.querySelector('table.dx-repeater-table')).toBeTruthy();
       const headers = Array.from(screen.container.querySelectorAll('thead th')).map(
         (th) => th.textContent?.trim(),
@@ -290,28 +300,134 @@ describe('DXRepeater', () => {
       expect(screen.container.querySelector('tbody .form-label')).toBeFalsy();
     });
 
-    it('also renders the cards markup as a small-screen fallback (d-block d-sm-none)', async () => {
+    it('also renders the cards markup as a fallback (both always exist in the DOM; only one is visible)', async () => {
       const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
       const screen = render(DXRepeater, {
         props: { form, field: tableField, keyPath: 'lines' },
       });
 
-      const cards = screen.container.querySelector('.dx-repeater')!;
+      // Both live inside the same measured container; there is exactly one
+      // `.dx-repeater` (the fallback) and one `.dx-repeater-table-wrapper`
+      // (the table), toggled via v-show — never removed from the DOM,
+      // since a `display:none` element can't be measured to detect
+      // regained space and un-hide itself.
+      const cards = screen.container.querySelector(
+        '.dx-repeater-container .dx-repeater',
+      )!;
       expect(cards).toBeTruthy();
-      expect(cards.classList.contains('d-block')).toBe(true);
-      expect(cards.classList.contains('d-sm-none')).toBe(true);
       expect(cards.querySelectorAll('.dx-repeater-row').length).toBe(1);
     });
 
-    it('does not add responsive display classes to the cards markup in cards mode', async () => {
+    it('does not wrap in a container or add a ResizeObserver in cards mode', async () => {
       const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
       const screen = render(DXRepeater, {
         props: { form, field: lineField, keyPath: 'lines' },
       });
 
-      const cards = screen.container.querySelector('.dx-repeater')!;
-      expect(cards.classList.contains('d-block')).toBe(false);
-      expect(cards.classList.contains('d-sm-none')).toBe(false);
+      expect(screen.container.querySelector('.dx-repeater-container')).toBeFalsy();
+      expect(screen.container.querySelector('.dx-repeater-table-wrapper')).toBeFalsy();
+    });
+
+    it('shows the table when the container is wide enough for its columns', async () => {
+      const form = useForm({
+        lines: [
+          { name: 'First', qty: 1 },
+          { name: 'Second', qty: 2 },
+        ],
+      });
+      // 2 sub-fields need ~130*2+70=330px; give it plenty of room.
+      const screen = render({
+        render: () =>
+          h('div', { style: 'width: 900px' }, [h(DXRepeater, { form, field: tableField, keyPath: 'lines' })]),
+      });
+
+      await waitForDisplay(
+        screen.container.querySelector('.dx-repeater-table-wrapper') as HTMLElement,
+        'block',
+      );
+      expect(
+        getComputedStyle(screen.container.querySelector('.dx-repeater-container .dx-repeater')!).display,
+      ).toBe('none');
+    });
+
+    it('falls back to cards when the container is too narrow for the table', async () => {
+      const form = useForm({
+        lines: [
+          { name: 'First', qty: 1 },
+          { name: 'Second', qty: 2 },
+        ],
+      });
+      // 2 sub-fields need ~330px; 150px is well under that.
+      const screen = render({
+        render: () =>
+          h('div', { style: 'width: 150px' }, [h(DXRepeater, { form, field: tableField, keyPath: 'lines' })]),
+      });
+
+      await waitForDisplay(
+        screen.container.querySelector('.dx-repeater-container .dx-repeater') as HTMLElement,
+        'block',
+      );
+      expect(
+        getComputedStyle(screen.container.querySelector('.dx-repeater-table-wrapper')!).display,
+      ).toBe('none');
+    });
+
+    it('requires more width for a repeater with more columns', async () => {
+      const form = useForm({ rows: [{ a: '', b: '', c: '', d: '', e: '' }] });
+      const wideColumnField: FieldDefinition = {
+        key: 'rows',
+        type: 'repeater',
+        repeaterLayout: 'table',
+        fields: [
+          { key: 'a', type: 'text', label: 'A' },
+          { key: 'b', type: 'text', label: 'B' },
+          { key: 'c', type: 'text', label: 'C' },
+          { key: 'd', type: 'text', label: 'D' },
+          { key: 'e', type: 'text', label: 'E' },
+        ],
+      };
+      // 5 columns need ~130*5+70=720px — 400px is enough for a 2-column
+      // repeater (see the test above) but not this one.
+      const screen = render({
+        render: () =>
+          h('div', { style: 'width: 400px' }, [h(DXRepeater, { form, field: wideColumnField, keyPath: 'rows' })]),
+      });
+
+      await waitForDisplay(
+        screen.container.querySelector('.dx-repeater-container .dx-repeater') as HTMLElement,
+        'block',
+      );
+      expect(
+        getComputedStyle(screen.container.querySelector('.dx-repeater-table-wrapper')!).display,
+      ).toBe('none');
+    });
+
+    it('requires more width for a currency/percentage column (extra room for the affix)', async () => {
+      const form = useForm({ lines: [{ name: '', price: 0 }] });
+      const currencyField: FieldDefinition = {
+        key: 'lines',
+        type: 'repeater',
+        repeaterLayout: 'table',
+        fields: [
+          { key: 'name', type: 'text', label: 'Name' },
+          { key: 'price', type: 'currency', label: 'Price' },
+        ],
+      };
+      // A plain 2-text-field repeater needs ~130*2+70=330px and would show
+      // the table at 350px; a currency field bumps that column to ~160px
+      // (330+30=360px needed), so the same 350px falls back to cards.
+      const screen = render({
+        render: () =>
+          h('div', { style: 'width: 350px' }, [h(DXRepeater, { form, field: currencyField, keyPath: 'lines' })]),
+      });
+
+      await waitForDisplay(
+        screen.container.querySelector('.dx-repeater-container .dx-repeater') as HTMLElement,
+        'block',
+      );
+      expect(
+        getComputedStyle(screen.container.querySelector('.dx-repeater-table-wrapper')!).display,
+      ).toBe('none');
     });
 
     it('appends a row when the add button is clicked', async () => {
@@ -322,12 +438,11 @@ describe('DXRepeater', () => {
 
       expect(screen.container.querySelectorAll('tbody tr').length).toBe(0);
 
-      // Two "Add line" buttons exist (table + small-screen cards fallback) —
-      // scope to the table's own. A raw `.click()` (not userEvent.click,
-      // which enforces real visibility) because the table is `d-none` below
-      // `sm`, and the test runner's viewport is narrower than that — a real
-      // screen at normal width shows it; this test only cares that the
-      // handler still works.
+      // Two "Add line" buttons exist (table + cards fallback, both always in
+      // the DOM) — scope to the table's own. A raw `.click()` (not
+      // userEvent.click, which enforces real visibility) since which one is
+      // actually visible depends on the ResizeObserver measurement timing —
+      // this test only cares that the handler still works.
       const addButton = Array.from(
         screen.container.querySelectorAll('.dx-repeater-table-wrapper button'),
       ).find((b) => b.textContent?.trim() === 'Add line') as HTMLButtonElement;

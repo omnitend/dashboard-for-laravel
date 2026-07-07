@@ -654,3 +654,43 @@ describe('DXField hideLabel (#68)', () => {
     expect(screen.container.querySelector('.dx-field-label')).toBeTruthy();
   });
 });
+
+describe('DXField repeater table-layout responsiveness via the async DXRepeater loader (#68 regression)', () => {
+  // DXField lazy-loads DXRepeater via defineAsyncComponent (to break a
+  // circular import). That async-resolved boundary is the exact path where
+  // DXRepeater's ResizeObserver setup previously never ran — its template
+  // ref was still null when `onMounted` fired, only surfacing when rendered
+  // this way (not via a direct, synchronous `render(DXRepeater, ...)`).
+  it('falls back to cards when the container is too narrow, when reached through DXField', async () => {
+    const form = useForm({ lines: [{ name: 'First', qty: 1 }] });
+    const field: FieldDefinition = {
+      key: 'lines',
+      type: 'repeater',
+      repeaterLayout: 'table',
+      fields: [
+        { key: 'name', type: 'text', label: 'Name' },
+        { key: 'qty', type: 'number', label: 'Qty' },
+      ],
+    };
+    // 2 columns need ~130*2+70=330px; 150px is well under that.
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h('div', { style: 'width: 150px' }, [h(DXField, { field, form })]),
+        ),
+    });
+
+    const start = Date.now();
+    let cards: Element | null = null;
+    while (Date.now() - start < 2000) {
+      cards = screen.container.querySelector('.dx-repeater-container .dx-repeater');
+      if (cards && getComputedStyle(cards).display === 'block') break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(cards).toBeTruthy();
+    expect(getComputedStyle(cards!).display).toBe('block');
+    expect(
+      getComputedStyle(screen.container.querySelector('.dx-repeater-table-wrapper')!).display,
+    ).toBe('none');
+  });
+});

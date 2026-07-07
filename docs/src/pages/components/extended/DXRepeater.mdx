@@ -120,12 +120,18 @@ const fields = [
 ];
 ```
 
-**Responsive fallback:** a table has no room to shrink into a phone-width
-column, so below Bootstrap's `sm` breakpoint (576px) the table hides and the
-`cards` layout renders instead — same field config, no extra work. Both are
-always present in the DOM; only one is ever visible per breakpoint (Bootstrap's
-own `d-none`/`d-sm-block` pattern), so there's no layout-swap flicker or
-JS involved.
+**`table` is a preference, not a guarantee.** A table has no room to shrink
+into a narrow column, and the same *viewport* width can put this repeater in
+a wide standalone form or a cramped sidebar column — a viewport breakpoint
+can't tell those apart. Instead, a `ResizeObserver` measures the repeater's
+own *rendered* width and falls back to the `cards` layout whenever there
+isn't enough room for its columns to stay legible, scaling the required
+width to this repeater's own column count and types (a `currency`/`percentage`
+column gets extra budget for its affix). Same field config either way, no
+extra work — and no layout-swap flicker, since the table and its cards
+fallback are both always present in the DOM (toggled via `v-show`, not
+conditionally rendered) so the measurement never has a hidden element to
+contend with.
 
 Column headers come from each sub-field's `label`. The `#row` slot still fully
 overrides a row's rendering in table layout — it renders as the `<tr>`'s
