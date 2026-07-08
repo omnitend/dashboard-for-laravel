@@ -497,6 +497,35 @@ describe('DXForm', () => {
 
       expect(screen.container.querySelector('.col-form-label.col-4')).toBeTruthy();
     });
+
+    it('forwards field.hideLabel to DXField, dropping the outer label (#78)', async () => {
+      const fields: FieldDefinition[] = [
+        { key: 'name', type: 'text', label: 'Name' },
+        {
+          key: 'collect_allergens',
+          type: 'switch',
+          label: 'Collect allergen information',
+          hideLabel: true,
+        },
+      ];
+      const screen = render(DXForm, {
+        props: {
+          form: useForm({ name: '', collect_allergens: true }),
+          fields,
+          showSubmit: false,
+          layout: 'horizontal',
+        },
+      });
+      await flush();
+
+      // Only the (non-hidden) text field gets an outer label column; the
+      // hideLabel switch does not.
+      const labels = screen.container.querySelectorAll('.col-form-label');
+      expect(labels.length).toBe(1);
+      expect(labels[0].textContent).toContain('Name');
+      // The switch itself still renders.
+      expect(screen.container.querySelector('.dx-switch')).toBeTruthy();
+    });
   });
 
   describe('Card prop', () => {

@@ -35,7 +35,10 @@
         :class="field.class || 'mb-3'"
         v-bind="horizontalAttrs"
     >
-        <template #label>
+        <!-- The inner label (beside the checkbox) always names the control, so
+             hideLabel drops only the redundant outer row label; horizontalAttrs
+             then reserves no label column, letting the control span full width. -->
+        <template v-if="!hideLabel" #label>
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
         </template>
         <slot
@@ -119,7 +122,10 @@
         :class="[field.class || 'mb-3', 'dx-switch', { 'dx-switch--on': switchIsOn }]"
         v-bind="horizontalAttrs"
     >
-        <template #label>
+        <!-- The switch renders its own label inside the control, so hideLabel
+             drops only the redundant outer row label; horizontalAttrs then
+             reserves no label column, letting the toggle span full width. -->
+        <template v-if="!hideLabel" #label>
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
         </template>
         <slot
@@ -203,7 +209,7 @@
     <!-- Repeater: nested, repeatable sub-form -->
     <div v-else-if="field.type === 'repeater'" :class="field.class || 'mb-3'">
         <DFormGroup v-bind="repeaterHorizontalAttrs">
-            <template #label>
+            <template v-if="!hideLabel" #label>
                 <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
             </template>
             <DXRepeater
@@ -503,10 +509,14 @@ interface Props {
     labelCols?: LabelCols;
 
     /**
-     * Skip rendering the field's own label entirely (only affects the
-     * standard labelled-field branch). Used by DXRepeater's `table` layout,
-     * where a column header already names the field and a per-row label
-     * would waste space in the cell.
+     * Skip rendering the field's own (outer) label. Applies to the standard
+     * labelled-field branch and to the checkbox/switch/repeater branches. In
+     * horizontal layout no label column is reserved either, so the control
+     * spans the full width (a switch/checkbox self-label then lines up with
+     * sibling row labels). Used by DXRepeater's `table` layout (a column
+     * header already names the field) and by consumers hiding the redundant
+     * row label on a switch/checkbox, which render their own label inside the
+     * control (#78).
      */
     hideLabel?: boolean;
 }
@@ -545,9 +555,17 @@ function labelColsAttrs(cols: LabelCols | undefined): Record<string, any> {
 }
 
 // Default to a 3-column label when horizontal but no width was configured,
-// so `layout: "horizontal"` alone is enough to see the effect.
+// so `layout: "horizontal"` alone is enough to see the effect. When the
+// field's label is hidden, reserve no label column at all — BFormGroup would
+// otherwise still emit an empty label column (it goes horizontal whenever any
+// labelCols are set, regardless of whether a label exists), leaving the
+// control indented in the input column beside dead space. Dropping the column
+// lets the control span full width, so a switch/checkbox self-label lines up
+// with sibling row labels (#78).
 const horizontalAttrs = computed<Record<string, any>>(() =>
-    isHorizontal.value ? labelColsAttrs(props.labelCols ?? 3) : {},
+    isHorizontal.value && !props.hideLabel
+        ? labelColsAttrs(props.labelCols ?? 3)
+        : {},
 );
 
 // A table-layout repeater is inherently wide — squeezing its own label into a
@@ -846,9 +864,12 @@ onBeforeUnmount(() => {
    `justify-content: space-between` on a full-width box used to leave a wide
    unclickable gap between the label and the toggle (only the tiny toggle
    itself was a real click target); shrinking the box to fit its content
-   removes that dead zone entirely. */
+   removes that dead zone entirely. Uses block-level `flex` (not `inline-flex`)
+   so the box stays shrink-to-fit yet still takes its own line: an inline-level
+   box let a following `<small class="form-text">` hint flow inline beside it
+   instead of dropping below the control like every other field type (#79). */
 .dx-switch :deep(.form-check) {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.75rem;
     width: fit-content;

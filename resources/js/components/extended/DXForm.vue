@@ -88,6 +88,7 @@
                                     :model="model"
                                     :layout="field.layout ?? layout"
                                     :label-cols="field.labelCols ?? labelCols"
+                                    :hide-label="field.hideLabel"
                                 >
                                     <template
                                         v-for="(slotName, target) in fieldSlotMap(field.key)"
@@ -151,6 +152,7 @@
                             :model="model"
                             :layout="field.layout ?? layout"
                             :label-cols="field.labelCols ?? labelCols"
+                            :hide-label="field.hideLabel"
                         >
                             <template
                                 v-for="(slotName, target) in fieldSlotMap(field.key)"

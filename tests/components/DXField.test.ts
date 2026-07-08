@@ -230,9 +230,34 @@ describe('DXField switch box sizing and click target (#64)', () => {
     const boxRect = box.getBoundingClientRect();
     const wrapperRect = wrapper.getBoundingClientRect();
 
-    expect(getComputedStyle(box).display).toBe('inline-flex');
+    // Block-level `flex` (not `inline-flex`) so the box stays shrink-to-fit yet
+    // still takes its own line — see the hint-placement test below (#79).
+    expect(getComputedStyle(box).display).toBe('flex');
     // A short label shouldn't stretch the box anywhere near the full field width.
     expect(boxRect.width).toBeLessThan(wrapperRect.width * 0.6);
+  });
+
+  it('renders a switch hint below the box, not inline beside it (#79)', async () => {
+    const { screen } = renderField(
+      {
+        key: 'collect_allergens',
+        type: 'switch',
+        label: 'Collect allergen information',
+        hint: 'Whether to collect and display allergen information for products',
+      },
+      { collect_allergens: true },
+      { layout: 'horizontal', labelCols: { sm: 4, lg: 3 } },
+    );
+    await flush();
+
+    const box = screen.container.querySelector<HTMLElement>('.dx-switch .form-check')!;
+    const hint = screen.container.querySelector<HTMLElement>('.form-text')!;
+    const boxRect = box.getBoundingClientRect();
+    const hintRect = hint.getBoundingClientRect();
+
+    // The hint sits on its own line below the toggle box (top at/below the box
+    // bottom), rather than flowing inline to its right.
+    expect(hintRect.top).toBeGreaterThanOrEqual(boxRect.bottom - 1);
   });
 
   it('matches standard input height', async () => {
@@ -652,6 +677,44 @@ describe('DXField hideLabel (#68)', () => {
     await flush();
 
     expect(screen.container.querySelector('.dx-field-label')).toBeTruthy();
+  });
+
+  it('drops the redundant outer row label on a horizontal switch when hideLabel is set (#78)', async () => {
+    const { screen } = renderField(
+      { key: 'collect_allergens', type: 'switch', label: 'Collect allergen information' },
+      { collect_allergens: true },
+      { layout: 'horizontal', hideLabel: true },
+    );
+    await flush();
+
+    // No outer label column…
+    expect(screen.container.querySelector('.col-form-label')).toBeFalsy();
+    // …but the switch (with its own inner label) still renders in the input column.
+    expect(screen.container.querySelector('.dx-switch')).toBeTruthy();
+    expect(screen.container.textContent).toContain('Collect allergen information');
+  });
+
+  it('renders the outer label on a horizontal switch when hideLabel is not set (#78)', async () => {
+    const { screen } = renderField(
+      { key: 'collect_allergens', type: 'switch', label: 'Collect allergen information' },
+      { collect_allergens: true },
+      { layout: 'horizontal' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.col-form-label')).toBeTruthy();
+  });
+
+  it('drops the redundant outer row label on a horizontal checkbox when hideLabel is set (#78)', async () => {
+    const { screen } = renderField(
+      { key: 'active', type: 'checkbox', label: 'Active' },
+      { active: false },
+      { layout: 'horizontal', hideLabel: true },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.col-form-label')).toBeFalsy();
+    expect(screen.container.querySelector('.form-check-input[type="checkbox"]')).toBeTruthy();
   });
 });
 

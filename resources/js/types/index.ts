@@ -208,6 +208,17 @@ export interface FieldDefinition {
     labelCols?: LabelCols;
 
     /**
+     * Skip rendering the field's own label. In horizontal layout no label
+     * column is reserved either, so the control spans the full width. Useful
+     * for `switch` (and `checkbox`) fields, which render their own label
+     * inside the control — the outer row label would otherwise duplicate it,
+     * and the self-label then lines up with sibling row labels. Also used
+     * internally by `DXRepeater`'s `table` layout, where a column header
+     * already names the field.
+     */
+    hideLabel?: boolean;
+
+    /**
      * Component rendered for `type: "component"` fields. Receives
      * `modelValue`, `field`, `model` props and emits `update:modelValue`.
      */
