@@ -153,6 +153,23 @@ $dashboard-navbar-height: 64px;
 @import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
 
 // ----------------------------------------------------------------------------
+// Import Bootstrap Icons
+// ----------------------------------------------------------------------------
+// Ships the icon font so `DButton`'s `icon` prop (and any consumer `<i class="bi
+// bi-*">`) renders without the consumer wiring up their own icon set.
+//
+// Imported as SCSS (not the prebuilt CSS) so we can override the font `src` to
+// woff2 ONLY — dropping bootstrap-icons' legacy `woff` fallback. In the library
+// build Vite inlines CSS `url()` assets as data URIs, so shipping both formats
+// doubled the embedded font bytes in `dist/style.css` for no benefit (every
+// browser we target reads woff2). The override must come BEFORE the import so
+// bootstrap-icons' own `!default` src doesn't re-add the woff. The bare
+// `bootstrap-icons/...` specifier resolves through Vite's module resolver.
+$bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2")
+  format("woff2");
+@import "bootstrap-icons/font/bootstrap-icons";
+
+// ----------------------------------------------------------------------------
 // Forms
 // ----------------------------------------------------------------------------
 // Bootstrap's compiled `.form-control`/`.form-select` height isn't exposed as

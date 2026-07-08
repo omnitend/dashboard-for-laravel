@@ -88,6 +88,53 @@ signatures from positional to a destructured object.
 
 ---
 
+### 3. `DButton` `icon` — glyph-name string vs bvn boolean
+
+| | |
+| --- | --- |
+| **Our API** | `icon?: string` — a Bootstrap Icons glyph name (`icon="save"` → `<i class="bi bi-save">`) |
+| **bvn API** | `icon?: boolean` — icon-button styling mode (inherited from `BLinkProps`) |
+| **Shielded in** | `resources/js/components/base/DButton.vue` (declared prop + template) |
+| **Applies to** | `DButton` |
+| **Introduced** | issue #76 |
+
+**Why:** #76 wanted a terse leading-icon API (`icon="save"`) matching the admin
+apps being migrated onto this library. `icon` is the natural name, but bvn
+already uses `icon` as a `boolean`. Because we declare `icon` as a prop it's
+stripped from `$attrs`, so bvn's boolean icon-button mode is **unreachable**
+through `DButton`. This is a type-incompatible takeover, not a pass-through.
+
+**Convergence (future major):** to be decided — either rename our prop (e.g.
+`leadingIcon`) and restore bvn's boolean `icon`, or keep the string form and
+drop bvn's boolean mode deliberately. A codemod can rewrite `icon="name"` call
+sites either way. Tracked alongside the icon-strategy spike (#77).
+
+---
+
+### 4. `DButton` `loading` / `loadingText` — anti-flash override of bvn's native loading
+
+| | |
+| --- | --- |
+| **Our API** | `loading`/`loadingText` drive an **anti-flash** spinner (delayed show + minimum display), rendered by us |
+| **bvn API** | `BButton` has native `loading`/`loadingText`/`loadingFill` that show a spinner **immediately** |
+| **Shielded in** | `resources/js/components/base/DButton.vue` (declared props + spinner state machine) |
+| **Applies to** | `DButton` |
+| **Introduced** | issue #76 |
+
+**Why:** #76 asked for the anti-flash behaviour (no spinner for sub-`spinnerDelay`
+actions; a `minSpinnerTime` floor once shown) that bvn's immediate spinner
+doesn't provide. Same prop names and types as bvn, but we intercept them so
+bvn's native loading never fires — the behaviour differs. `loadingFill` is not
+re-exposed. Unlike #1/#2 this is an *enhancement* of a same-typed prop, so it's
+source-compatible with bvn; only the runtime timing differs.
+
+**Convergence (future major):** decide whether the anti-flash timing becomes the
+default everywhere or an opt-in, then either keep this override or delegate to
+bvn. No consumer source change needed (types match); document the timing
+behaviour in the changelog.
+
+---
+
 ## Components that are NOT wrapped (raw bvn passthrough)
 
 These are exported directly as the underlying bvn component (not a `D*`

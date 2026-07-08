@@ -176,11 +176,12 @@
                     v-if="showSubmit"
                     type="submit"
                     variant="primary"
-                    :disabled="resolvedForm.processing"
-                    class="w-100 mt-3"
+                    block
+                    :loading="resolvedForm.processing"
+                    :loading-text="submitLoadingText"
+                    class="mt-3"
                 >
-                    <span v-if="resolvedForm.processing">{{ submitLoadingText }}</span>
-                    <span v-else>{{ submitText }}</span>
+                    {{ submitText }}
                 </DButton>
 
                 <!--
@@ -202,11 +203,12 @@
                 v-if="showSubmit"
                 type="submit"
                 variant="primary"
-                :disabled="resolvedForm.processing"
-                class="w-100 mt-3"
+                block
+                :loading="resolvedForm.processing"
+                :loading-text="submitLoadingText"
+                class="mt-3"
             >
-                <span v-if="resolvedForm.processing">{{ submitLoadingText }}</span>
-                <span v-else>{{ submitText }}</span>
+                {{ submitText }}
             </DButton>
 
             <!--

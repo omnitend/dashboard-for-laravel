@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-07-08
+
+### Added
+- **`DButton` `loading` / `loadingText` props with anti-flash timing** (#76).
+  `:loading` disables the button immediately and shows a trailing spinner while
+  an async action runs. The spinner is anti-flashed: it only appears once
+  `loading` has held for `spinnerDelay` (default 500ms) — so sub-500ms actions
+  never flicker one in — and stays for at least `minSpinnerTime` (default 100ms)
+  once shown, so it never strobes. `loadingText` optionally swaps the label
+  while the spinner is visible. Overrides bvn's native immediate loading; see
+  `DIVERGENCES.md`.
+- **`DButton` `icon` prop** (#76). A leading Bootstrap Icons glyph by name, e.g.
+  `icon="save"` renders `<i class="bi bi-save">`. The Bootstrap Icons font (woff2
+  only) now ships in the theme CSS, so `icon` works with no consumer setup.
+  Diverges from bvn's boolean `icon`; see `DIVERGENCES.md`.
+- **`DButton` `block` prop** (#76). Full-width button (the BS5 replacement for
+  the dropped `.btn-block`).
+
+### Changed
+- **`DXForm` and `DXTable` submit / save / delete buttons now use `DButton`'s
+  `loading` prop.** They previously hand-rolled the disabled + label-swap
+  pattern; they now get the anti-flash spinner for free. Visible effect: these
+  buttons show a spinner during in-flight actions, and the "Saving…/Deleting…"
+  label swap is delayed by `spinnerDelay` (no flicker on instant actions).
+
 ## [0.17.0] - 2026-07-07
 
 ### Added

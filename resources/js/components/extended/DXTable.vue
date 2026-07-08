@@ -599,10 +599,12 @@
                         <DButton
                             v-if="deleteUrl && !isCreateMode"
                             variant="danger"
+                            :loading="pendingAction === 'delete'"
+                            loading-text="Deleting..."
                             :disabled="editForm?.processing || editLoading"
                             @click="handleDelete"
                         >
-                            {{ pendingAction === 'delete' ? 'Deleting...' : 'Delete' }}
+                            Delete
                         </DButton>
                     </div>
                     <div class="d-flex gap-2">
@@ -611,15 +613,12 @@
                         </DButton>
                         <DButton
                             variant="primary"
+                            :loading="pendingAction === 'save'"
+                            :loading-text="isCreateMode ? 'Creating...' : 'Saving...'"
                             :disabled="editForm?.processing || editLoading"
                             @click="handleEditSave"
                         >
-                            <template v-if="isCreateMode">
-                                {{ pendingAction === 'save' ? 'Creating...' : 'Create' }}
-                            </template>
-                            <template v-else>
-                                {{ pendingAction === 'save' ? 'Saving...' : 'Save Changes' }}
-                            </template>
+                            {{ isCreateMode ? 'Create' : 'Save Changes' }}
                         </DButton>
                     </div>
                 </div>
