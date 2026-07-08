@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-07-09
+
+### Fixed
+- **`DXForm` horizontal layout: `field.hideLabel` is now honoured** (#78).
+  Previously `DXForm` never forwarded `hideLabel` to the field, and the
+  switch/checkbox/repeater branches always rendered the label (with
+  `BFormGroup` still reserving an empty label column). Now a `hideLabel` field
+  drops its label entirely and reserves no label column, so the control spans
+  the full width — a `switch`/`checkbox`, which renders its own label inside
+  the control, no longer shows the label twice, and that inner label lines up
+  with sibling row labels. `hideLabel` is also now part of the public
+  `FieldDefinition` type.
+- **`DXForm` horizontal layout: a `switch` field's hint now renders below the
+  control** (#79). The switch box was inline-level, so a following hint flowed
+  inline to its right instead of onto its own line. It is now block-level
+  (still shrink-to-fit), so the hint sits below the control like every other
+  field type (also fixes the equivalent vertical-layout case).
+
 ## [0.18.0] - 2026-07-08
 
 ### Added
