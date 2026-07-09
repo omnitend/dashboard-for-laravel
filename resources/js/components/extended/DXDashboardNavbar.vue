@@ -5,7 +5,7 @@
   `DXDashboard`, which forwards these slots with a `navbar-` prefix.
 -->
 <template>
-  <header class="dashboard-navbar bg-white border-bottom">
+  <header class="dashboard-navbar border-bottom">
     <DContainer fluid>
       <!-- Flex bar that wraps: below `md` the search drops to its own
            full-width row beneath the toggle/title/user-menu row. -->

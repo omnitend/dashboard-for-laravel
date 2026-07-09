@@ -23,6 +23,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the fallback-to-label text is hidden rather than shown twice. This supersedes
   the 0.18.1 `hideLabel`-in-horizontal behaviour for the common case (a bare
   checkbox/switch now aligns without needing `hideLabel`).
+- **Theme: compact, higher-contrast forms and dashboard.** A pass to make the
+  default form and dashboard look tighter and clearer:
+  - `$input-padding-y` back to Bootstrap's `0.375rem` (was an oversized
+    `0.625rem`), so text inputs and selects are more compact.
+  - **Check/radio inputs now share the input border colour.** They defaulted
+    their border to `$border-color` (Gray-200), not `$input-border-color`
+    (Gray-300), so a bare checkbox looked faint beside the darker inputs.
+    `$form-check-input-border` now uses `$input-border-color`.
+  - **Bigger check/radio boxes** (`1.25rem`) — Bootstrap's `1em` default read
+    small next to the inputs and made a fiddly touch target.
+  - **Softer field labels.** `DXFieldLabel` renders in gray-700 rather than the
+    near-black body colour, so the label leads the row without dominating it,
+    while the (lighter, secondary-grey) hint recedes.
+  - **Horizontal forms: compact rhythm + top-aligned rows.** `DXForm` tags its
+    root `.dx-form--horizontal`; the theme gives horizontal forms tighter field
+    spacing and top-aligns the label + control so a checkbox/switch sits on the
+    label's first line rather than floating above it. Vertical forms unchanged.
+  - **Dashboard: white content panel under a light grey top bar** (was a grey
+    content area with a white navbar), for higher contrast between the content
+    and the chrome. `DXDashboardNavbar` drops its `bg-white` class; the theme
+    styles the bar, and `DXDashboard`'s content panel is white.
 
 ## [0.18.1] - 2026-07-09
 

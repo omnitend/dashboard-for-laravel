@@ -53,6 +53,13 @@ const infoId = `dx-field-info-${useId()}`;
     gap: 0.35rem;
 }
 
+/* Soften the label from the near-black body colour so it doesn't dominate the
+   row — but keep it a step darker than the (lighter, secondary-grey) hint so the
+   label still leads. */
+.dx-field-label__text {
+    color: #495057; /* gray-700 */
+}
+
 .dx-field-label__info {
     display: inline-flex;
     align-items: center;
