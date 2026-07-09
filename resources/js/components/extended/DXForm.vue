@@ -12,7 +12,10 @@
   (no Inertia required).
 -->
 <template>
-    <BForm @submit.prevent="handleSubmit">
+    <BForm
+        @submit.prevent="handleSubmit"
+        :class="{ 'dx-form--horizontal': layout === 'horizontal' }"
+    >
         <!-- Form-level error message -->
         <DAlert
             v-if="resolvedForm.shouldShowMessage"

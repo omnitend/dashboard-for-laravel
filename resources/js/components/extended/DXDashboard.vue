@@ -247,5 +247,8 @@ const toggleSidebar = () => {
 .dashboard-main {
   flex: 1;
   max-width: 100%;
+  /* A white content panel under the light grey top bar / layout, so forms and
+     content sit on white (higher contrast than a grey-everywhere dashboard). */
+  background-color: #fff;
 }
 </style>
