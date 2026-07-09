@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`DXForm`/`DXField` horizontal layout: hint moves into the label column and
+  labels right-align.** In horizontal layout the field hint now renders beneath
+  the label in the (right-aligned) label column, so a row reads
+  "label + hint │ control" — a classic label-left settings form — instead of the
+  hint sitting below the control. Vertical layout is unchanged (hint below the
+  control). No other consumers relied on the previous horizontal hint placement.
+- **`checkbox` and `switch` in horizontal layout no longer duplicate the row
+  label.** The control's own inline label is kept for assistive tech but hidden
+  visually, so the row label (in the label column) names the control and the
+  right column holds just the control — lining up with text/select fields. A
+  `switch` still shows visible inner text when it opts into contextual on/off
+  text (`textWhenTrue`/`textWhenFalse`, e.g. "Product is current"); without it,
+  the fallback-to-label text is hidden rather than shown twice. This supersedes
+  the 0.18.1 `hideLabel`-in-horizontal behaviour for the common case (a bare
+  checkbox/switch now aligns without needing `hideLabel`).
+
 ## [0.18.1] - 2026-07-09
 
 ### Fixed
