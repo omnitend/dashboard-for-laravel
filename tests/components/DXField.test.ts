@@ -237,7 +237,7 @@ describe('DXField switch box sizing and click target (#64)', () => {
     expect(boxRect.width).toBeLessThan(wrapperRect.width * 0.6);
   });
 
-  it('renders a switch hint below the box, not inline beside it (#79)', async () => {
+  it('renders a switch hint in the label column, beneath the label (horizontal)', async () => {
     const { screen } = renderField(
       {
         key: 'collect_allergens',
@@ -251,13 +251,20 @@ describe('DXField switch box sizing and click target (#64)', () => {
     await flush();
 
     const box = screen.container.querySelector<HTMLElement>('.dx-switch .form-check')!;
-    const hint = screen.container.querySelector<HTMLElement>('.form-text')!;
-    const boxRect = box.getBoundingClientRect();
-    const hintRect = hint.getBoundingClientRect();
+    const label = screen.container.querySelector<HTMLElement>('.dx-field-label')!;
+    const hint = screen.container.querySelector<HTMLElement>('.dx-field-hint')!;
 
-    // The hint sits on its own line below the toggle box (top at/below the box
-    // bottom), rather than flowing inline to its right.
-    expect(hintRect.top).toBeGreaterThanOrEqual(boxRect.bottom - 1);
+    // In horizontal layout the hint lives in the label column, beneath the
+    // label — so it renders BEFORE the control in DOM order (the label column
+    // precedes the content column), not below the control on the right. (The
+    // grid CSS isn't loaded in the test env, so assert structure, not geometry.)
+    expect(hint).not.toBeNull();
+    expect(
+      box.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+    expect(
+      hint.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
   });
 
   it('matches standard input height', async () => {

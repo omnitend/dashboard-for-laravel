@@ -35,11 +35,20 @@
         :class="field.class || 'mb-3'"
         v-bind="horizontalAttrs"
     >
-        <!-- The inner label (beside the checkbox) always names the control, so
-             hideLabel drops only the redundant outer row label; horizontalAttrs
-             then reserves no label column, letting the control span full width. -->
+        <!-- The row label (left column) names the control; the checkbox's own
+             label is kept for screen readers but hidden visually so it doesn't
+             duplicate the row label. In horizontal layout the hint sits beneath
+             the label here rather than below the control. -->
         <template v-if="!hideLabel" #label>
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            <small
+                v-if="isHorizontal && (resolvedHint || $slots.hint)"
+                class="form-text text-muted d-block dx-field-hint"
+            >
+                <slot name="hint" :field="field" :model="model">{{
+                    resolvedHint
+                }}</slot>
+            </small>
         </template>
         <slot
             v-if="$slots.value"
@@ -55,14 +64,14 @@
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
-            <DXFieldLabel :label="resolvedLabel" />
+            <DXFieldLabel :label="resolvedLabel" class="visually-hidden" />
         </DFormCheckbox>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
             {{ form.getError(errorKey) }}
         </DFormInvalidFeedback>
         <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+        <DFormText v-if="!hintInLabel && (resolvedHint || $slots.hint)" class="text-muted">
             <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
         </DFormText>
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
@@ -122,11 +131,22 @@
         :class="[field.class || 'mb-3', 'dx-switch', { 'dx-switch--on': switchIsOn }]"
         v-bind="horizontalAttrs"
     >
-        <!-- The switch renders its own label inside the control, so hideLabel
-             drops only the redundant outer row label; horizontalAttrs then
-             reserves no label column, letting the toggle span full width. -->
+        <!-- The row label (left column) names the control. The switch's own
+             inner text is shown only when the field opts into contextual on/off
+             text (e.g. "Product is current"); otherwise it falls back to the row
+             label and is hidden visually (kept for screen readers). In horizontal
+             layout the hint sits beneath the label here rather than below the
+             control. -->
         <template v-if="!hideLabel" #label>
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            <small
+                v-if="isHorizontal && (resolvedHint || $slots.hint)"
+                class="form-text text-muted d-block dx-field-hint"
+            >
+                <slot name="hint" :field="field" :model="model">{{
+                    resolvedHint
+                }}</slot>
+            </small>
         </template>
         <slot
             v-if="$slots.value"
@@ -143,14 +163,17 @@
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
-            <DXFieldLabel :label="switchText" />
+            <DXFieldLabel
+                :label="switchText"
+                :class="switchHasContextualText ? undefined : 'visually-hidden'"
+            />
         </DFormCheckbox>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
             {{ form.getError(errorKey) }}
         </DFormInvalidFeedback>
         <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+        <DFormText v-if="!hintInLabel && (resolvedHint || $slots.hint)" class="text-muted">
             <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
         </DFormText>
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
@@ -246,9 +269,19 @@
     <DFormGroup v-else :class="field.class || 'mb-3'" v-bind="horizontalAttrs">
         <!-- Label with optional info popover. Omitted entirely (not just
              emptied) when hideLabel is set, so BFormGroup doesn't reserve a
-             label column/row for it (see DXRepeater's table layout). -->
+             label column/row for it (see DXRepeater's table layout). In
+             horizontal layout the hint sits beneath the label here rather than
+             below the control. -->
         <template v-if="!hideLabel" #label>
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            <small
+                v-if="isHorizontal && (resolvedHint || $slots.hint)"
+                class="form-text text-muted d-block dx-field-hint"
+            >
+                <slot name="hint" :field="field" :model="model">{{
+                    resolvedHint
+                }}</slot>
+            </small>
         </template>
 
         <!-- Custom value slot overrides the built-in control -->
@@ -435,8 +468,9 @@
         -->
         <slot name="info" :field="field" :model="model" />
 
-        <!-- Hint (dynamic, slot-overridable) -->
-        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+        <!-- Hint (dynamic, slot-overridable). In horizontal layout it renders in
+             the label column instead (see the #label slot above). -->
+        <DFormText v-if="!hintInLabel && (resolvedHint || $slots.hint)" class="text-muted">
             <!--
               @slot Overrides the field's hint text shown below the control.
               @binding {FieldDefinition} field The field definition being rendered.
@@ -564,8 +598,32 @@ function labelColsAttrs(cols: LabelCols | undefined): Record<string, any> {
 // with sibling row labels (#78).
 const horizontalAttrs = computed<Record<string, any>>(() =>
     isHorizontal.value && !props.hideLabel
-        ? labelColsAttrs(props.labelCols ?? 3)
+        ? {
+              ...labelColsAttrs(props.labelCols ?? 3),
+              // Right-align the label column so the label (and the hint that
+              // sits beneath it in horizontal layout) line up against the
+              // control column, like a classic label-left settings form.
+              labelClass: "text-sm-end dx-field-label-col",
+          }
         : {},
+);
+
+// In horizontal layout the hint moves up into the label column (beneath the
+// label), rather than below the control — so a row reads "label + hint | control".
+// Vertical layout (and a hidden label, which reserves no label column) keeps the
+// hint below the control.
+const hintInLabel = computed(() => isHorizontal.value && !props.hideLabel);
+
+// A `switch` renders visible text inside the control only when the field opts
+// into contextual on/off text (textWhenTrue/textWhenFalse) — e.g. "Product is
+// current". Without it, `switchText` falls back to the row label, which would
+// duplicate the outer label, so the inner label is kept for screen readers but
+// hidden visually (the row label names the control). A plain `checkbox` never
+// shows visible inner text for the same reason.
+const switchHasContextualText = computed(
+    () =>
+        props.field.textWhenTrue !== undefined ||
+        props.field.textWhenFalse !== undefined,
 );
 
 // A table-layout repeater is inherently wide — squeezing its own label into a
