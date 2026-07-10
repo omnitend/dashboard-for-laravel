@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-07-10
+
 ### Added
 - **`DXSwitch`** — a reusable "filled box" toggle switch (bordered box sized like
   a form control, label left, toggle right, colour-coded on-state). This is the
   same control `DXForm`/`DXField` render for a `type: 'switch'` field, now
   extracted so it can be dropped in standalone: `<DXSwitch v-model="x" label="…" />`.
   `DXField`'s switch branches consume it, so a form switch and a lone switch share
-  one implementation and one look.
+  one implementation and one look. Supports **contextual text** via
+  `textWhenTrue`/`textWhenFalse` (the label reflects the state, e.g. "Product is
+  current" ↔ "Product is not current"), plus a default slot scoped with `{ on }`
+  for rich state-dependent content.
 
 ### Changed
 - **Switch on-state colour: green → primary.** The `DXForm`/`DXField` `switch`
