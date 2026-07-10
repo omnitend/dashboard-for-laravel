@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.2] - 2026-07-10
+
+### Fixed
+- **`DFormSelect`: round-trip a `null` option value.** A select option with
+  `value: null` (a common "None"/"no selection" entry) didn't round-trip through
+  BVN's `BFormSelect`: BVN renders each option's value as a plain HTML `value`
+  attribute, so a `null` value is omitted and the browser falls back to using the
+  option's *text* as its DOM value — a model bound to `null` then matched no
+  option and the select rendered blank. Legacy Bootstrap-Vue (BS4) handled this;
+  BVN does not. `DFormSelect` now maps a `null` option value (and a `null` model,
+  scalar or array) to a private sentinel so BVN renders a real value attribute,
+  while keeping the consumer's model and emitted value as `null`. Found during the
+  Omni Tend settings cutover. See `DIVERGENCES.md` #5.
+- **`DXTable`: refetch when `api-url` changes in provider mode.** Changing the
+  bound `api-url` on a mounted table didn't trigger a refetch — the `api-url`
+  isn't part of BTable's provider context, so the table kept showing the previous
+  url's rows until some other trigger (sort, per-page, create/edit/delete) fired.
+  The `apiUrl` watcher now resets to page 1 and refetches (exactly one fetch,
+  no double-fetch race), which also fixes the secondary bug where a url change to
+  a smaller result set left the user stranded on an out-of-range empty page.
+
 ## [0.19.1] - 2026-07-10
 
 ### Fixed
