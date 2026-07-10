@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`useForm`/`DXTable` delete no longer leaks the form payload into the fetch
+  request options** (#87). `api.delete` was `(url, options)` while its siblings
+  are `(url, data, options)`, so `useForm.submit`'s uniform call spread the whole
+  model into the fetch `RequestInit` (a field named `headers`/`mode`/`body` could
+  clobber the CSRF header → 419, or make `fetch` throw) and silently dropped the
+  `{ signal }` argument, so deletes couldn't be aborted. `api.delete` now takes
+  the consistent `(url, data, options)` signature and `useForm` deletes by URL
+  (no body). No behaviour change for `DXTable` — delete stays bodyless, just the
+  fragility and dropped signal fixed.
+- **`DXField` `date`/`datetime`/`time` inputs now display Laravel timestamp
+  formats** (#85). A native `<input type="date">`/`datetime-local`/`time` only
+  accepts a strict format and renders **empty** for anything else, so a field
+  seeded with a Laravel ISO-8601 (`…Z`) or `Y-m-d H:i:s` value (e.g. a `created_at`
+  shown as "Requested") showed a blank placeholder. The displayed value is now
+  reshaped to the input's format; the setter writes the input's native value back
+  unchanged. This is a pure string reshape, not a timezone conversion — the stored
+  wall-clock is shown as-is (convert before seeding if you need local time).
+
 ## [0.20.0] - 2026-07-10
 
 ### Added

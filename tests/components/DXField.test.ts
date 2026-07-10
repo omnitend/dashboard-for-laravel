@@ -763,3 +763,85 @@ describe('DXField repeater table-layout responsiveness via the async DXRepeater 
     expect(screen.container.querySelector('.dx-repeater-table-wrapper')).toBeFalsy();
   });
 });
+
+describe('DXField date/datetime seeding (#85)', () => {
+  it('shows an ISO-8601 (Z) timestamp in a datetime-local input (was empty)', async () => {
+    const { screen } = renderField(
+      { key: 'requested_at', type: 'datetime', label: 'Requested' },
+      { requested_at: '2026-08-01T09:30:00.000000Z' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    expect(input.value).toBe('2026-08-01T09:30');
+  });
+
+  it('shows a `Y-m-d H:i:s` timestamp in a datetime-local input', async () => {
+    const { screen } = renderField(
+      { key: 'requested_at', type: 'datetime', label: 'Requested' },
+      { requested_at: '2026-08-01 09:30:00' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    expect(input.value).toBe('2026-08-01T09:30');
+  });
+
+  it('slices a timestamp down to YYYY-MM-DD for a date input', async () => {
+    const { screen } = renderField(
+      { key: 'starts_on', type: 'date', label: 'Starts' },
+      { starts_on: '2026-08-01T00:00:00.000000Z' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="date"]') as HTMLInputElement;
+    expect(input.value).toBe('2026-08-01');
+  });
+
+  it('slices a timestamp down to HH:MM for a time input', async () => {
+    const { screen } = renderField(
+      { key: 'at', type: 'time', label: 'At' },
+      { at: '09:30:00' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="time"]') as HTMLInputElement;
+    expect(input.value).toBe('09:30');
+  });
+
+  it('passes an already-correct value through unchanged', async () => {
+    const { screen } = renderField(
+      { key: 'requested_at', type: 'datetime', label: 'Requested' },
+      { requested_at: '2026-08-01T09:30' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    expect(input.value).toBe('2026-08-01T09:30');
+  });
+
+  it('renders empty (not the placeholder-rejecting raw value) for null', async () => {
+    const { screen } = renderField(
+      { key: 'requested_at', type: 'datetime', label: 'Requested' },
+      { requested_at: null },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    expect(input.value).toBe('');
+  });
+
+  it('writes the input\'s native value straight back to the model on edit', async () => {
+    const { screen, form } = renderField(
+      { key: 'requested_at', type: 'datetime', label: 'Requested' },
+      { requested_at: '2026-08-01T09:30:00Z' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    await userEvent.fill(input, '2026-09-15T14:00');
+    await flush();
+
+    expect(form.data.requested_at).toBe('2026-09-15T14:00');
+  });
+});

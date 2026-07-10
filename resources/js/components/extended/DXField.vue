@@ -440,7 +440,7 @@
         <!-- Text-based inputs (text/email/password/number/url/tel/date/time/datetime) -->
         <DFormInput
             v-else
-            v-model="fieldValue"
+            v-model="textFieldModel"
             :type="inputType"
             :required="field.required"
             :placeholder="field.placeholder"
@@ -658,6 +658,39 @@ const fieldValue = computed({
         usePathSemantics.value
             ? getByPath(props.form.data, valuePath.value)
             : (props.form.data as Record<string, any>)[props.field.key],
+    set: (value: any) => setValue(value),
+});
+
+// Native <input type=date/datetime-local/time> only accept a strict format
+// (YYYY-MM-DD, YYYY-MM-DDTHH:MM, HH:MM) and render EMPTY for anything else —
+// including Laravel's ISO-8601 (`…Z`) and `Y-m-d H:i:s` serialisations, so a
+// field seeded with `created_at` shows a blank placeholder. Reshape the
+// *displayed* value to the input's format for those types; the setter writes
+// the input's native value straight back. This is a pure string reshape, not a
+// timezone conversion — the stored wall-clock is shown as-is, so a UTC `…Z`
+// value displays its UTC time (convert before seeding if you need local).
+const DATE_FAMILY_TYPES = new Set<FieldType>(["date", "datetime", "time"]);
+
+function normaliseDateForInput(value: unknown, type: FieldType): string {
+    if (value === null || value === undefined || value === "") return "";
+    const iso = String(value).replace(" ", "T"); // `Y-m-d H:i:s` → ISO-ish
+    if (type === "date") {
+        return iso.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? "";
+    }
+    if (type === "time") {
+        return iso.match(/(\d{2}:\d{2})/)?.[1] ?? "";
+    }
+    // datetime → datetime-local
+    return iso.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)?.[1] ?? "";
+}
+
+// Model for the text-based input branch. Reshapes date-family values for the
+// native picker; every other type passes straight through.
+const textFieldModel = computed({
+    get: () =>
+        DATE_FAMILY_TYPES.has(props.field.type)
+            ? normaliseDateForInput(fieldValue.value, props.field.type)
+            : fieldValue.value,
     set: (value: any) => setValue(value),
 });
 
