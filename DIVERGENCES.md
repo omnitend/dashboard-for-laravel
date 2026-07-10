@@ -135,6 +135,39 @@ behaviour in the changelog.
 
 ---
 
+### 5. `DFormSelect` `null` option value — round-trips where bvn drops it
+
+| | |
+| --- | --- |
+| **Our API** | a `select` option with `value: null` (and a `null` model) selects/round-trips correctly; emit stays `null` |
+| **bvn API** | `BFormSelect` renders the option's value as a plain `value` attribute, so `null` is omitted → the browser uses the option **text** as its value and a `null` model matches nothing (renders blank) |
+| **Shielded in** | `resources/js/components/base/DFormSelect.vue` (intercepts `options`/`modelValue`, maps `null` ↔ a private sentinel) |
+| **Applies to** | `DFormSelect` |
+| **Introduced** | issue #81 |
+
+**Why:** legacy Bootstrap-Vue (BS4) handled a `null` option value; bvn's
+`BFormSelect` does not. A "None"/"no selection" option stored as `null` is very
+common, so without this every consumer repeats a sentinel workaround. Same prop
+names/types as bvn (`options`, `modelValue`) — this is a same-typed behavioural
+enhancement (like #4), source-compatible with bvn; only the `null`-handling
+runtime behaviour differs. The sentinel is internal and never leaves the
+component (the consumer's model and emitted value stay `null`).
+
+**Known limitation:** the sentinel is decoded on the model/emit boundary but
+**not** inside bvn's `option` scoped slot — a consumer using
+`<template #option="{ value }">` receives the private sentinel string (not
+`null`) for the null option. Nothing in this library uses that slot, and
+decoding it would mean special-casing the slot name in the forwarder (against
+the "don't enumerate known slots" rule), so it's left as-is until a consumer
+needs it.
+
+**Convergence (future major):** if a future bvn fixes `null` option handling
+natively, drop the encode/decode in `DFormSelect` and pass straight through. No
+consumer source change needed (types match); document in the changelog.
+(Radios likely need the same treatment — tracked in #81.)
+
+---
+
 ## Components that are NOT wrapped (raw bvn passthrough)
 
 These are exported directly as the underlying bvn component (not a `D*`
