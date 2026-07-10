@@ -75,9 +75,9 @@
     "vue-docgen-api": "^4.79.2"
   },
   "devDependencies": {
-    "@astrojs/mdx": "^4.3.8",
-    "@astrojs/sitemap": "^3.6.0",
-    "@astrojs/vue": "^5.1.1",
+    "@astrojs/mdx": "^7.0.1",
+    "@astrojs/sitemap": "^3.7.3",
+    "@astrojs/vue": "^7.0.1",
     "@iconify-json/lucide": "^1.2.71",
     "@iconify/json": "^2.2.397",
     "@inertiajs/vue3": "^2.2.15",
@@ -86,7 +86,7 @@
     "@vitest/browser": "^4.1.8",
     "@vitest/browser-playwright": "^4.1.8",
     "@vue/test-utils": "^2.4.6",
-    "astro": "^5.15.1",
+    "astro": "^7.0.5",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^4.5.1",
