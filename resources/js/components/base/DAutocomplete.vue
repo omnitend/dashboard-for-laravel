@@ -68,4 +68,26 @@ defineOptions({
   --bs-btn-active-color: var(--bs-body-color);
   flex: 0 0 auto;
 }
+
+/*
+  The clear affordance renders as Bootstrap's `.btn-close` — a bold, filled ✕
+  that reads as a heavy black mark against a light field (and is noisy when
+  several autocompletes sit in a row, e.g. a table's column filters). Scale it
+  down via `font-size` (btn-close sizes both its box and its background SVG in
+  `em`, so this shrinks it proportionally without clipping) and rest it at a
+  lower opacity so it's a quiet clear affordance that only asserts on
+  hover/focus. Matches the softened trigger above.
+*/
+.d-autocomplete :deep(.b-autocomplete-clear.btn-close) {
+  font-size: 0.8em;
+  opacity: 0.4;
+}
+
+.d-autocomplete :deep(.b-autocomplete-clear.btn-close:hover) {
+  opacity: 0.7;
+}
+
+.d-autocomplete :deep(.b-autocomplete-clear.btn-close:focus) {
+  opacity: 0.9;
+}
 </style>
