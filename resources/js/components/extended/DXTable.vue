@@ -1126,14 +1126,27 @@ watch(() => props.filters, (newFilters, oldFilters) => {
     }
 }, { deep: true });
 
-// Watch apiUrl changes to reset filter cache (prevents stale dropdown options)
+// Watch apiUrl changes to reset filter cache and refetch. The api-url isn't part
+// of BTable's provider context, so an api-url-only change doesn't re-invoke the
+// provider on its own — without this the table keeps showing the previous url's
+// rows until some other trigger (sort, per-page, create/edit/delete) fires.
 watch(() => props.apiUrl, (newUrl, oldUrl) => {
     if (newUrl !== oldUrl && isProviderMode.value) {
-        // Clear cached filter values and pagination when API endpoint changes
+        // Clear cached filter values and pagination when API endpoint changes.
+        // The next provider call will request fresh filter values.
         apiFilterValues.value = {};
         apiPaginationMeta.value = null;
         apiError.value = null;
-        // Next provider call will request fresh filter values
+        // A url change is a fresh dataset — go back to page 1. If we were past
+        // page 1, resetting the page re-invokes the provider on its own (so the
+        // out-of-range page can't linger); if we were already on page 1 the prop
+        // doesn't change, so refresh() forces the refetch. Exactly one fetch
+        // either way.
+        const wasOnFirstPage = apiCurrentPage.value === 1;
+        apiCurrentPage.value = 1;
+        if (wasOnFirstPage) {
+            refresh();
+        }
     }
 });
 
@@ -1382,8 +1395,14 @@ const handleBusyChange = (busy: boolean) => {
 // Debounce timer for filter changes
 let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-const handlePerPageChange = (newPerPage: number | string) => {
-    const perPageNum = typeof newPerPage === 'string' ? parseInt(newPerPage, 10) : newPerPage;
+// DFormSelect's model can be null/array (it mirrors BVN's BFormSelect), but the
+// per-page selector only ever emits a numeric-string scalar; narrow defensively.
+const handlePerPageChange = (newPerPage: number | string | null | (number | string)[]) => {
+    const rawPerPage = Array.isArray(newPerPage) ? newPerPage[0] : newPerPage;
+    if (rawPerPage === null || rawPerPage === undefined) {
+        return;
+    }
+    const perPageNum = typeof rawPerPage === 'string' ? parseInt(rawPerPage, 10) : rawPerPage;
 
     // Update internal state if not using external perPage
     if (props.perPage === undefined) {

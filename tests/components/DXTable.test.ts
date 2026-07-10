@@ -707,4 +707,122 @@ describe('DXTable', () => {
       expect(customBadges.length).toBe(customerData.length);
     });
   });
+
+  describe('api-url mode: refetch on api-url change (#82)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const respond = (rows: any[]) => ({
+      data: {
+        data: rows,
+        pagination: {
+          current_page: 1,
+          per_page: 10,
+          total: rows.length,
+          from: 1,
+          to: rows.length,
+        },
+      },
+    });
+
+    it('refetches with the new url when api-url changes (page-1 provider)', async () => {
+      const rowsFor = (url: string) =>
+        url.includes('archived')
+          ? [{ id: 2, name: 'Archived Co' }]
+          : [{ id: 1, name: 'Current Co' }];
+
+      const getSpy = vi
+        .spyOn(axios, 'get')
+        .mockImplementation((url: string) => Promise.resolve(respond(rowsFor(url))) as any);
+
+      const apiUrl = ref('/api/things');
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              apiUrl: apiUrl.value,
+              fields: [{ key: 'name', label: 'Name' }],
+            }),
+          ),
+      });
+
+      // Initial load fetches the first url.
+      await flush();
+      await wait(30);
+      expect(getSpy).toHaveBeenCalledWith('/api/things', expect.anything());
+      const callsAfterInitial = getSpy.mock.calls.length;
+
+      // Change the bound api-url (a page-level filter outside the table).
+      apiUrl.value = '/api/things?filter[archived]=1';
+      await flush();
+      await wait(30);
+
+      // The table refetched from the new url exactly once, at page 1.
+      const newUrlCalls = getSpy.mock.calls.filter(
+        (c) => c[0] === '/api/things?filter[archived]=1',
+      );
+      expect(newUrlCalls.length).toBe(1);
+      expect((newUrlCalls[0][1] as any).params.page).toBe(1);
+      expect(getSpy.mock.calls.length).toBe(callsAfterInitial + 1);
+
+      // The rendered rows reflect the new url, not the stale ones.
+      await wait(10);
+      expect(screen.container.textContent).toContain('Archived Co');
+      expect(screen.container.textContent).not.toContain('Current Co');
+    });
+
+    it('resets to page 1 and refetches once when api-url changes while past page 1', async () => {
+      // A multi-page dataset so the user can be on page 2 when the url changes.
+      const getSpy = vi.spyOn(axios, 'get').mockImplementation((url: string, config?: any) => {
+        const page = config?.params?.page ?? 1;
+        return Promise.resolve({
+          data: {
+            data: [{ id: page, name: `${url.includes('archived') ? 'Archived' : 'Current'} p${page}` }],
+            pagination: { current_page: page, per_page: 10, total: 25, from: 1, to: 10 },
+          },
+        }) as any;
+      });
+
+      const apiUrl = ref('/api/things');
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              apiUrl: apiUrl.value,
+              fields: [{ key: 'name', label: 'Name' }],
+            }),
+          ),
+      });
+      await flush();
+      await wait(30);
+
+      // Navigate to page 2 via the pagination control.
+      const pageTwo = Array.from(
+        screen.container.querySelectorAll('.pagination button, .pagination a'),
+      ).find((el) => el.textContent?.trim() === '2') as HTMLElement | undefined;
+      expect(pageTwo).toBeTruthy();
+      pageTwo!.click();
+      await wait(30);
+      expect(
+        getSpy.mock.calls.some((c) => c[0] === '/api/things' && (c[1] as any).params.page === 2),
+      ).toBe(true);
+
+      const callsBeforeUrlChange = getSpy.mock.calls.length;
+
+      // Change the url while on page 2.
+      apiUrl.value = '/api/things?filter[archived]=1';
+      await flush();
+      await wait(30);
+
+      // Exactly one refetch, at page 1, on the new url — the out-of-range page 2
+      // must not linger (this is the branch that relies on resetting the page
+      // re-invoking the provider).
+      const newCalls = getSpy.mock.calls
+        .slice(callsBeforeUrlChange)
+        .filter((c) => c[0] === '/api/things?filter[archived]=1');
+      expect(newCalls.length).toBe(1);
+      expect((newCalls[0][1] as any).params.page).toBe(1);
+    });
+  });
 });
