@@ -165,7 +165,10 @@ export interface FieldDefinition {
      * Longer help text revealed in a popover from a small info affordance
      * on the field's label (on hover/focus). Complements `hint` (which is
      * always-visible muted text below the control). May be a function of
-     * the model. For rich content, use the `#info` slot instead.
+     * the model. Plain text only — for a rich popover body (lists, bold,
+     * paragraphs) use the `#info-popover(<key>)` slot. Note the separate
+     * `#info(<key>)` slot renders an always-visible block below the control,
+     * not popover content.
      */
     info?: MaybeFn<string>;
 

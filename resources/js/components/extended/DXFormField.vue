@@ -86,6 +86,7 @@ function fieldSlotMap(): Record<string, string> {
     ["value", `value(${key})`],
     ["span", `span(${key})`],
     ["info", `info(${key})`],
+    ["info-popover", `info-popover(${key})`],
     ["hint", `hint(${key})`],
     ["repeater-row", `repeater-row(${key})`],
   ];

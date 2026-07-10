@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Rich content in the field-label info popover** (#91). `field.info` renders a
+  hover/focus popover on the label, but its body was plain text — and the docs
+  wrongly pointed at the `#info` slot for rich content (that slot is an
+  always-visible block *below* the control). New `#info-popover(<key>)` slot on
+  `DXForm` (and `#info-popover` on `DXField`, `#popover` on `DXFieldLabel`) lets
+  the popover body carry lists, bold and paragraphs; the affordance appears from
+  the slot alone. The `field.info` docblock is corrected.
 - **`DXDashboard` `contentMaxWidth` prop** (#88). The default (non-`fluid`)
   content column was a *proportional* `col-xl-10` — ~2000px on a 2560px display,
   which defeats a reading width for forms/text. It now has a genuine `max-width`

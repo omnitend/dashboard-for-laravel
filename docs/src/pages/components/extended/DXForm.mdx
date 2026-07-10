@@ -61,7 +61,8 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
 <SlotsTable client:load slots={[
   { name: 'value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s input control with custom markup.' },
   { name: 'span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for a field marked span: true.' },
-  { name: 'info(<key>)', props: 'field, model', description: 'Rich info block rendered below the field.' },
+  { name: 'info(<key>)', props: 'field, model', description: 'Rich info block rendered always-visible below the field (not the label popover).' },
+  { name: 'info-popover(<key>)', props: 'field, model', description: 'Rich body for the label’s hover/focus info popover (lists, bold, paragraphs). Overrides the plain field.info text.' },
   { name: 'hint(<key>)', props: 'field, model', description: 'Override the hint text rendered below the field.' },
   { name: 'repeater-row(<key>)', props: 'row, index, fields, remove, path', description: 'Custom row layout for a repeater field.' },
   { name: 'field(<key>)', props: 'field, model', description: 'Fully replace a field\'s rendering (including its label), bypassing DXField entirely. Supersedes field-before/field-after for the same key.' },

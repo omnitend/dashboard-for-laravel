@@ -1,6 +1,6 @@
 <!--
   @component
-  Renders a single `FieldDefinition` of any type (text, select, autocomplete, checkbox, switch, repeater, currency, percentage, file/image, component, etc.) with its label, validation error, hint and help. Used by `DXForm` and `DXTable`'s edit modal; exposes `value`, `span`, `info`, `hint` and `repeater-row` slots for per-field customisation.
+  Renders a single `FieldDefinition` of any type (text, select, autocomplete, checkbox, switch, repeater, currency, percentage, file/image, component, etc.) with its label, validation error, hint and help. Used by `DXForm` and `DXTable`'s edit modal; exposes `value`, `span`, `info`, `info-popover`, `hint` and `repeater-row` slots for per-field customisation.
 -->
 <template>
     <!-- Full-width span field: delegate entirely to the #span slot -->
@@ -40,7 +40,11 @@
              duplicate the row label. In horizontal layout the hint sits beneath
              the label here rather than below the control. -->
         <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
+                <template v-if="$slots['info-popover']" #popover>
+                    <slot name="info-popover" :field="field" :model="model" />
+                </template>
+            </DXFieldLabel>
             <small
                 v-if="isHorizontal && (resolvedHint || $slots.hint)"
                 class="form-text text-muted d-block dx-field-hint"
@@ -100,7 +104,11 @@
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
+                <template v-if="$slots['info-popover']" #popover>
+                    <slot name="info-popover" :field="field" :model="model" />
+                </template>
+            </DXFieldLabel>
         </DFormCheckbox>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
@@ -138,7 +146,11 @@
              layout the hint sits beneath the label here rather than below the
              control. -->
         <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
+                <template v-if="$slots['info-popover']" #popover>
+                    <slot name="info-popover" :field="field" :model="model" />
+                </template>
+            </DXFieldLabel>
             <small
                 v-if="isHorizontal && (resolvedHint || $slots.hint)"
                 class="form-text text-muted d-block dx-field-hint"
@@ -204,7 +216,11 @@
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
-            <DXFieldLabel :label="switchText" :info="resolvedInfo" />
+            <DXFieldLabel :label="switchText" :info="resolvedInfo">
+                <template v-if="$slots['info-popover']" #popover>
+                    <slot name="info-popover" :field="field" :model="model" />
+                </template>
+            </DXFieldLabel>
         </DXSwitch>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
@@ -231,7 +247,11 @@
     <div v-else-if="field.type === 'repeater'" :class="field.class || 'mb-3'">
         <DFormGroup v-bind="repeaterHorizontalAttrs">
             <template v-if="!hideLabel" #label>
-                <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+                <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
+                    <template v-if="$slots['info-popover']" #popover>
+                        <slot name="info-popover" :field="field" :model="model" />
+                    </template>
+                </DXFieldLabel>
             </template>
             <DXRepeater
                 :form="form"
@@ -271,7 +291,11 @@
              horizontal layout the hint sits beneath the label here rather than
              below the control. -->
         <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
+                <template v-if="$slots['info-popover']" #popover>
+                    <slot name="info-popover" :field="field" :model="model" />
+                </template>
+            </DXFieldLabel>
             <small
                 v-if="isHorizontal && (resolvedHint || $slots.hint)"
                 class="form-text text-muted d-block dx-field-hint"

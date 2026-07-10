@@ -6,7 +6,7 @@
 <template>
     <span class="dx-field-label">
         <span class="dx-field-label__text">{{ label }}</span>
-        <template v-if="info">
+        <template v-if="info || $slots.popover">
             <button
                 :id="infoId"
                 type="button"
@@ -22,7 +22,11 @@
                 focus
                 placement="top"
             >
-                {{ info }}
+                <!--
+                  @slot Rich popover body. Overrides the plain `info` text — use
+                  it for lists, bold, paragraphs. Falls back to `{{ info }}`.
+                -->
+                <slot name="popover">{{ info }}</slot>
             </DPopover>
         </template>
     </span>
