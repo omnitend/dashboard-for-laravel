@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import vue from '@astrojs/vue';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import { unified } from '@astrojs/markdown-remark';
 import pagefind from './docs/pagefind.integration.mjs';
 import Icons from 'unplugin-icons/vite';
 import Components from 'unplugin-vue-components/vite';
@@ -17,10 +18,16 @@ export default defineConfig({
   base: '/dashboard-for-laravel',
   outDir: './docs/dist',
   markdown: {
-    rehypePlugins: [
-      rehypeSlug,
-      [rehypeAutolinkHeadings, { behavior: 'wrap' }],
-    ],
+    // Astro 7 deprecated `markdown.rehypePlugins` in favour of an explicit
+    // processor. `unified()` is the same remark/rehype pipeline the old config
+    // fed, so this preserves syntax highlighting + GFM while keeping our
+    // heading-slug + autolink plugins.
+    processor: unified({
+      rehypePlugins: [
+        rehypeSlug,
+        [rehypeAutolinkHeadings, { behavior: 'wrap' }],
+      ],
+    }),
   },
   integrations: [
     vue(),
