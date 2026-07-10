@@ -89,5 +89,9 @@ const tableFields: FieldDefinition[] = [
   border: 1px solid var(--bs-border-color);
   border-radius: var(--bs-border-radius);
   font-size: 0.85rem;
+  /* Explicit readable colour: a bare <pre> inherits a faint colour on the
+     light background (grey-on-grey). Matches the .state-display blocks in the
+     other examples. */
+  color: var(--bs-dark);
 }
 </style>

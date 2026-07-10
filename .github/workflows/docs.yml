@@ -31,7 +31,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Astro 7's build requires Node >= 22.12; Node 24 also ships npm 11,
+          # which matches the committed lockfile (npm 10 rejects it as unsynced).
+          node-version: 24
           cache: npm
 
       - name: Setup Pages
