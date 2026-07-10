@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`DXSwitch`** — a reusable "filled box" toggle switch (bordered box sized like
+  a form control, label left, toggle right, colour-coded on-state). This is the
+  same control `DXForm`/`DXField` render for a `type: 'switch'` field, now
+  extracted so it can be dropped in standalone: `<DXSwitch v-model="x" label="…" />`.
+  `DXField`'s switch branches consume it, so a form switch and a lone switch share
+  one implementation and one look.
+
+### Changed
+- **Switch on-state colour: green → primary.** The `DXForm`/`DXField` `switch`
+  field's filled box previously turned **success green** when on; it now uses
+  **`--bs-primary`**, matching the base `DFormCheckbox` switch, checkboxes and
+  radios so every boolean control shares one on-colour. Green is reserved for
+  real success semantics. Visible change for existing consumers (e.g. an
+  on-switch that read green now reads indigo); no API change.
+
 ## [0.19.2] - 2026-07-10
 
 ### Fixed

@@ -1,0 +1,61 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXSwitch
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXSwitchExample from '../../../examples/DXSwitchExample.vue';
+import DXSwitchExampleRaw from '../../../examples/DXSwitchExample.vue?raw';
+
+# DXSwitch
+
+A "filled box" toggle switch built on `DFormCheckbox`: a bordered box sized like
+a form control, with the label on the left and the toggle on the right, that
+colour-codes its state (a neutral box when off, a filled **primary** box when
+on). Unlike a checkbox it can say what each state *means* via
+`textWhenTrue`/`textWhenFalse`. It's the same control `DXForm` / `DXField` render
+for a `type: 'switch'` field — reach for `DXSwitch` directly when you want that
+styled toggle outside a form.
+
+> **Use a switch sparingly.** A switch implies a distinct, meaningful on/off
+> *state* (e.g. "Product is current" / "not current"), and reads best with
+> `textWhenTrue`/`textWhenFalse` so the label reflects that state. For selecting
+> options, opting in, or a plain boolean you're editing in a form that saves on
+> submit, a **checkbox** (`DFormCheckbox`, or a `DXField` `type: 'checkbox'`) is
+> usually the clearer choice.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXSwitchExampleRaw}
+>
+  <DXSwitchExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'modelValue', type: 'boolean', required: 'No', default: 'false', description: 'Whether the switch is on (v-model). Expects a real boolean; normalise a truthy non-boolean (e.g. a serialised 1) before binding.' },
+  { name: 'label', type: 'string', required: 'No', default: '-', description: 'Static text beside the toggle; the fallback when no contextual text applies.' },
+  { name: 'textWhenTrue', type: 'string', required: 'No', default: '-', description: 'Text shown when on — overrides label in the on state (e.g. "Product is current").' },
+  { name: 'textWhenFalse', type: 'string', required: 'No', default: '-', description: 'Text shown when off — overrides label in the off state (e.g. "Product is not current").' },
+]} />
+
+Any other attributes (`disabled`, `id`, `name`, `aria-*`, …) are forwarded to
+the underlying `DFormCheckbox`.
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'default', props: '{ on: boolean }', description: 'Label content beside the toggle; overrides the text props. Scoped with the current on-state so you can vary rich content by state.' },
+]} />
+
+## Notes
+
+The on-state uses `--bs-primary`, matching the base `DFormCheckbox` switch,
+checkboxes and radios; green stays reserved for success semantics. For a form
+field with a label column, validation, hint and contextual on/off text, use a
+`DXForm` / `DXField` `type: 'switch'` (which renders `DXSwitch` internally).

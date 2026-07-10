@@ -9,6 +9,7 @@ export { default as DXDashboard } from "./components/extended/DXDashboard.vue";
 export { default as DXForm } from "./components/extended/DXForm.vue";
 export { default as DXField } from "./components/extended/DXField.vue";
 export { default as DXFieldLabel } from "./components/extended/DXFieldLabel.vue";
+export { default as DXSwitch } from "./components/extended/DXSwitch.vue";
 export { default as DXStatCard } from "./components/extended/DXStatCard.vue";
 export { default as DXBarChart } from "./components/charts/DXBarChart.vue";
 export { default as DXLineChart } from "./components/charts/DXLineChart.vue";
