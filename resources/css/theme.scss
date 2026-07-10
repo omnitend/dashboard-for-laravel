@@ -91,6 +91,19 @@ $input-focus-box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 // Gray-300) text inputs. Share the input border colour across all controls.
 $form-check-input-border: 1px solid $input-border-color;
 
+// Bigger check/radio boxes (Bootstrap's 1em default reads small next to the
+// theme's inputs and is a fiddly touch target). Drive it through Bootstrap's own
+// `$form-check-input-width` — NOT a raw `.form-check-input { width }` override —
+// so the container's `padding-left` and the input's negative `margin-left` (both
+// derived from `$form-check-padding-start`) track the larger box. Overriding just
+// the CSS width left the padding at `1em + .5em`, which the ~20px box then filled
+// almost entirely, collapsing the box↔label gap to ~1px (cramped/flush). The
+// explicit padding-start keeps a real gap and avoids a rem+em unit mix in
+// Bootstrap's default `$form-check-input-width + .5em`. Switches are unaffected
+// (they use the independent `$form-switch-*` variables).
+$form-check-input-width: 1.25rem;
+$form-check-padding-start: $form-check-input-width + 0.5rem;
+
 // ----------------------------------------------------------------------------
 // Cards
 // ----------------------------------------------------------------------------
@@ -191,13 +204,6 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   --dx-input-height: calc(
     #{$input-line-height * 1em} + #{$input-padding-y * 2} + (2 * #{$input-border-width})
   );
-}
-
-// Bigger check/radio boxes — Bootstrap's 1em default reads small next to the
-// theme's inputs and is a fiddly touch target.
-.form-check-input {
-  width: 1.25rem;
-  height: 1.25rem;
 }
 
 // Horizontal ("label-left") forms: a compact settings-form rhythm, with the
