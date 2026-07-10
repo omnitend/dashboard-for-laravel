@@ -10,7 +10,7 @@ import { BApp } from 'bootstrap-vue-next';
 // Bootstrap Vue Next component styling" section and issue #58.
 import {
   DAutocomplete,
-  DXField,
+  DXSwitch,
   DXTable,
   DXStatCard,
   DXDashboardSidebar,
@@ -62,7 +62,7 @@ function ancestorHasScopeId(el: Element, scopeAttr: string): boolean {
 // ---------------------------------------------------------------------------
 const KNOWN_DEEP_TARGETS: Record<string, string[]> = {
   'DAutocomplete.vue': ['.input-group', '.b-autocomplete-input-wrapper', '.b-autocomplete-trigger'],
-  'DXField.vue': ['.form-check', '.form-check-label', '.form-check-input'],
+  'DXSwitch.vue': ['.form-check', '.form-check-label', '.form-check-input'],
   'DXTable.vue': ['tbody tr', '.pagination', '.pagination-sm .page-link', '.pagination .page-item.disabled .page-link'],
   'DXStatCard.vue': ['.dx-stat-card__body'],
   'DXDashboardSidebar.vue': ['.nav-link', '.nav-icon', '.nav-label'],
@@ -105,13 +105,10 @@ describe('scoped :deep() DOM-level audit (#58)', () => {
     expect(ancestorHasScopeId(group, scopeIdForSelector('.input-group'))).toBe(true);
   });
 
-  it('DXField switch: .dx-switch :deep(.form-check)', async () => {
-    const form = useForm({ active: true });
+  it('DXSwitch: .dx-switch :deep(.form-check)', async () => {
     const screen = render({
       render: () =>
-        h(BApp, {}, () =>
-          h(DXField, { field: { key: 'active', type: 'switch', label: 'Active' }, form }),
-        ),
+        h(BApp, {}, () => h(DXSwitch, { modelValue: true, label: 'Active' })),
     });
     await flush();
 

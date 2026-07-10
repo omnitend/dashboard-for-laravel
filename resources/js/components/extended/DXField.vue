@@ -128,7 +128,7 @@
          duplicated popover trigger. -->
     <DFormGroup
         v-else-if="field.type === 'switch' && isHorizontal"
-        :class="[field.class || 'mb-3', 'dx-switch', { 'dx-switch--on': switchIsOn }]"
+        :class="field.class || 'mb-3'"
         v-bind="horizontalAttrs"
     >
         <!-- The row label (left column) names the control. The switch's own
@@ -156,10 +156,9 @@
             :value="fieldValue"
             :update="setValue"
         />
-        <DFormCheckbox
+        <DXSwitch
             v-else
             v-model="switchModel"
-            switch
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
@@ -167,7 +166,7 @@
                 :label="switchText"
                 :class="switchHasContextualText ? undefined : 'visually-hidden'"
             />
-        </DFormCheckbox>
+        </DXSwitch>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
             {{ form.getError(errorKey) }}
@@ -179,10 +178,10 @@
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
     </DFormGroup>
 
-    <!-- Switch (vertical, default): toggle with contextual on/off text and an on-state style -->
+    <!-- Switch (vertical, default): toggle with contextual on/off text (DXSwitch owns the filled-box on-state style) -->
     <div
         v-else-if="field.type === 'switch'"
-        :class="[field.class || 'mb-3', 'dx-switch', { 'dx-switch--on': switchIsOn }]"
+        :class="field.class || 'mb-3'"
     >
         <!--
           @slot Replaces the built-in control with a custom value editor.
@@ -199,15 +198,14 @@
             :value="fieldValue"
             :update="setValue"
         />
-        <DFormCheckbox
+        <DXSwitch
             v-else
             v-model="switchModel"
-            switch
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
             <DXFieldLabel :label="switchText" :info="resolvedInfo" />
-        </DFormCheckbox>
+        </DXSwitch>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
             {{ form.getError(errorKey) }}
@@ -500,6 +498,7 @@ import DFormTextarea from "../base/DFormTextarea.vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import DFormRadioGroup from "../base/DFormRadioGroup.vue";
 import DFormCheckbox from "../base/DFormCheckbox.vue";
+import DXSwitch from "./DXSwitch.vue";
 import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
 import DFormText from "../base/DFormText.vue";
 import DInputGroup from "../base/DInputGroup.vue";
@@ -913,70 +912,4 @@ onBeforeUnmount(() => {
     border-radius: var(--bs-border-radius);
 }
 
-/* Switch field: a compact "filled box" toggle, sized to its content — like the
-   plain `checkbox` field type, it doesn't stretch to fill the form row — but
-   matching standard input height so it lines up with sibling text/select
-   fields. Colour-codes its state: a neutral box when off, a filled success
-   green when on. The label sits on the left and the toggle on the right.
-   Renders the underlying `.form-check` (from the switch checkbox) as the box.
-   `justify-content: space-between` on a full-width box used to leave a wide
-   unclickable gap between the label and the toggle (only the tiny toggle
-   itself was a real click target); shrinking the box to fit its content
-   removes that dead zone entirely. Uses block-level `flex` (not `inline-flex`)
-   so the box stays shrink-to-fit yet still takes its own line: an inline-level
-   box let a following `<small class="form-text">` hint flow inline beside it
-   instead of dropping below the control like every other field type (#79). */
-.dx-switch :deep(.form-check) {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    width: fit-content;
-    max-width: 100%; /* wrap/ellipsize rather than overflow a narrow field */
-    min-height: var(--dx-input-height, calc(1.5em + 0.75rem + 2px)); /* match .form-control height */
-    margin: 0;
-    /* Override Bootstrap `.form-switch`'s 2.5em left padding for the floated input. */
-    padding: 0.375rem 0.75rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: var(--bs-border-radius);
-    background-color: var(--bs-body-bg);
-    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-}
-
-/* Label on the left, toggle on the right (DOM order is input then label). */
-.dx-switch :deep(.form-check-label) {
-    order: 1;
-    margin: 0;
-    color: var(--bs-secondary-color);
-    cursor: pointer;
-    transition: color 0.15s ease-in-out;
-}
-
-.dx-switch :deep(.form-check-input) {
-    order: 2;
-    flex-shrink: 0;
-    /* Override `.form-switch`'s negative left margin now that we're flex-laid-out. */
-    margin: 0;
-    cursor: pointer;
-}
-
-/* On-state: filled success green. */
-.dx-switch--on :deep(.form-check) {
-    background-color: var(--bs-success-bg-subtle);
-    border-color: var(--bs-success);
-}
-
-.dx-switch--on :deep(.form-check-label) {
-    color: var(--bs-success-text-emphasis);
-    font-weight: 500;
-}
-
-.dx-switch--on :deep(.form-check-input:checked) {
-    background-color: var(--bs-success);
-    border-color: var(--bs-success);
-}
-
-.dx-switch--on :deep(.form-check-input:focus) {
-    border-color: var(--bs-success);
-    box-shadow: 0 0 0 0.25rem rgba(var(--bs-success-rgb), 0.25);
-}
 </style>

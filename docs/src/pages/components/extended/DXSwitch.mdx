@@ -1,0 +1,51 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXSwitch
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXSwitchExample from '../../../examples/DXSwitchExample.vue';
+import DXSwitchExampleRaw from '../../../examples/DXSwitchExample.vue?raw';
+
+# DXSwitch
+
+A "filled box" toggle switch built on `DFormCheckbox`: a bordered box sized like
+a form control, with the label on the left and the toggle on the right, that
+colour-codes its state (a neutral box when off, a filled **primary** box when
+on). It's the same control `DXForm` / `DXField` render for a `type: 'switch'`
+field — reach for `DXSwitch` directly when you want that styled toggle outside a
+form.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXSwitchExampleRaw}
+>
+  <DXSwitchExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'modelValue', type: 'boolean', required: 'No', default: 'false', description: 'Whether the switch is on (v-model). Expects a real boolean; normalise a truthy non-boolean (e.g. a serialised 1) before binding.' },
+  { name: 'label', type: 'string', required: 'No', default: '-', description: 'Text shown beside the toggle. Ignored when the default slot is used.' },
+]} />
+
+Any other attributes (`disabled`, `id`, `name`, `aria-*`, …) are forwarded to
+the underlying `DFormCheckbox`.
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'default', props: '-', description: 'Label content shown beside the toggle. Overrides the `label` prop — use it for richer markup.' },
+]} />
+
+## Notes
+
+The on-state uses `--bs-primary`, matching the base `DFormCheckbox` switch,
+checkboxes and radios; green stays reserved for success semantics. For a form
+field with a label column, validation, hint and contextual on/off text, use a
+`DXForm` / `DXField` `type: 'switch'` (which renders `DXSwitch` internally).
