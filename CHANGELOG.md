@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Checkbox/radio: restore the box↔label gap.** 0.19.0 enlarged the check/radio
+  box by overriding `.form-check-input { width/height: 1.25rem }` directly but left
+  Bootstrap's `$form-check-input-width` (and thus `.form-check`'s `padding-left` +
+  the input's negative `margin-left`) at `1em`/`1.5em` — so the ~20px box filled
+  the ~21px padding and the label sat ~1px from it (cramped/flush). Now driven
+  through `$form-check-input-width: 1.25rem` + an explicit
+  `$form-check-padding-start: … + 0.5rem`, so the padding/margin track the larger
+  box and a real ~8px gap returns. Switches are unaffected (independent
+  `$form-switch-*` variables).
 - **`DAutocomplete`: soften the clear (✕) button.** The clear affordance renders
   as Bootstrap's `.btn-close` — a bold, filled ✕ that read as a heavy black mark
   against a light field, and was especially noisy with several autocompletes in a
