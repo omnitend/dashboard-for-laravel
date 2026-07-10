@@ -2,50 +2,55 @@
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import ComponentsTable from '../components/ComponentsTable.vue';
 
-const components = [
+// Each component's page route matches its name exactly (e.g. DXDashboard →
+// /components/extended/DXDashboard). Derive the link from the name and prefix
+// the configured base path so the table links can't drift out of case with the
+// pages or drop the base path — both of which 404'd before (the URLs were
+// hardcoded lowercase and unprefixed).
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const extendedComponents = [
   {
     name: 'DXDashboard',
     description: 'Complete dashboard layout combining sidebar, navbar, and content area with state management',
-    type: 'Extended',
-    url: '/components/extended/dxdashboard',
   },
   {
     name: 'DXDashboardNavbar',
     description: 'Top navigation bar with hamburger menu, page title, and user dropdown',
-    type: 'Extended',
-    url: '/components/extended/dxdashboardnavbar',
   },
   {
     name: 'DXDashboardSidebar',
     description: 'Responsive collapsible sidebar with navigation, localStorage persistence, and custom branding',
-    type: 'Extended',
-    url: '/components/extended/dxdashboardsidebar',
   },
   {
     name: 'DXForm',
     description: 'Form renderer from field definitions, with optional tabs, conditional fields, per-field slots, async options, and nested repeaters',
-    type: 'Extended',
-    url: '/components/extended/dxform',
   },
   {
     name: 'DXField',
     description: 'Single-field renderer for any field type, with value/span/info/hint slots',
-    type: 'Extended',
-    url: '/components/extended/dxfield',
   },
   {
     name: 'DXRepeater',
     description: 'Repeatable nested sub-form (field array) for dynamic collections',
-    type: 'Extended',
-    url: '/components/extended/dxrepeater',
+  },
+  {
+    name: 'DXStatCard',
+    description: 'Stat/metric card with label, value, trend indicator, and optional icon',
+  },
+  {
+    name: 'DXChart',
+    description: 'Themed chart wrappers (DXBarChart, DXLineChart, DXDoughnutChart) built on chart.js',
   },
   {
     name: 'DXTable',
     description: 'Data table with pagination, sorting, and custom cell rendering',
-    type: 'Extended',
-    url: '/components/extended/dxtable',
   },
 ];
+const components = extendedComponents.map((component) => ({
+  ...component,
+  type: 'Extended',
+  url: `${base}/components/extended/${component.name}`,
+}));
 
 const fields = [
   { key: 'name', label: 'Component', sortable: true },
