@@ -293,9 +293,16 @@ export function useForm<TData extends Record<string, any>>(
                         sendPayload as Record<string, unknown>,
                         { signal: options?.signal },
                     )
-                    : await api[sendMethod]<TResponse>(url, sendPayload, {
-                        signal: options?.signal,
-                    });
+                    : sendMethod === "delete"
+                        // A record is deleted by its URL — don't submit the form
+                        // fields as a request body. Passing the payload here would
+                        // send the whole model on every delete.
+                        ? await api.delete<TResponse>(url, undefined, {
+                            signal: options?.signal,
+                        })
+                        : await api[sendMethod]<TResponse>(url, sendPayload, {
+                            signal: options?.signal,
+                        });
 
             state.recentlySuccessful = true;
             setTimeout(() => (state.recentlySuccessful = false), 1500);

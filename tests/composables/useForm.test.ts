@@ -104,3 +104,52 @@ describe('useForm multipart submission', () => {
     expect(body.get('_method')).toBe('PUT');
   });
 });
+
+describe('useForm delete (#87)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('deletes by URL without submitting the form fields as a body', async () => {
+    const deleteSpy = vi
+      .spyOn(api, 'delete')
+      .mockResolvedValue({ data: {}, response: {} as Response });
+
+    const form = useForm({ id: 5, name: 'Acme', notes: 'x' });
+    await form.delete('/api/things/5');
+
+    // (url, data, options): data is undefined — the model is NOT sent, and the
+    // options object is the third argument (not the second).
+    const [url, data, options] = deleteSpy.mock.calls[0];
+    expect(url).toBe('/api/things/5');
+    expect(data).toBeUndefined();
+    expect(options).toBeTypeOf('object');
+  });
+
+  it('forwards the abort signal to api.delete (deletes are abortable)', async () => {
+    const deleteSpy = vi
+      .spyOn(api, 'delete')
+      .mockResolvedValue({ data: {}, response: {} as Response });
+
+    const controller = new AbortController();
+    const form = useForm({ id: 5 });
+    await form.delete('/api/things/5', { signal: controller.signal });
+
+    const options = deleteSpy.mock.calls[0][2] as { signal?: AbortSignal };
+    expect(options.signal).toBe(controller.signal);
+  });
+
+  it('never spreads a fetch-option-named field (headers/mode/body) into the request options', async () => {
+    const deleteSpy = vi
+      .spyOn(api, 'delete')
+      .mockResolvedValue({ data: {}, response: {} as Response });
+
+    // A model whose attributes collide with fetch RequestInit keys used to leak
+    // straight into the fetch config (clobbering the CSRF header, throwing, etc.).
+    const form = useForm({ id: 5, headers: { evil: '1' }, mode: 'nope', body: 'oops' });
+    await form.delete('/api/things/5');
+
+    // The whole model is dropped for delete, so nothing leaks.
+    expect(deleteSpy.mock.calls[0][1]).toBeUndefined();
+  });
+});

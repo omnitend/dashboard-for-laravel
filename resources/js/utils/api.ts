@@ -173,9 +173,26 @@ class ApiClient {
 
     async delete<T = unknown>(
         url: string,
-        options: Omit<RequestOptions, "method"> = {},
+        data: any = undefined,
+        options: Omit<RequestOptions, "method" | "body"> = {},
     ) {
-        return this.request<T>(url, { ...options, method: "DELETE" });
+        // Consistent (url, data, options) signature with post/put/patch so the
+        // third argument is always the request options (e.g. `{ signal }`) — it
+        // used to be the second, so `useForm.submit`'s uniform call spread the
+        // form payload into the fetch config and dropped the abort signal.
+        // DELETE bodies are legal but unusual: only send one when data is given
+        // (a record is deleted by its URL — `useForm.delete()` sends none).
+        const body =
+            data === undefined || data === null
+                ? undefined
+                : data instanceof FormData
+                  ? data
+                  : JSON.stringify(data);
+        return this.request<T>(url, {
+            ...options,
+            method: "DELETE",
+            ...(body !== undefined ? { body } : {}),
+        });
     }
 }
 
