@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-07-10
+
 ### Fixed
 - **Checkbox/radio: restore the box↔label gap.** 0.19.0 enlarged the check/radio
   box by overriding `.form-check-input { width/height: 1.25rem }` directly but left
