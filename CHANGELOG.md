@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`DAutocomplete`: soften the clear (✕) button.** The clear affordance renders
+  as Bootstrap's `.btn-close` — a bold, filled ✕ that read as a heavy black mark
+  against a light field, and was especially noisy with several autocompletes in a
+  row (e.g. a `DXTable` column-filter row). It's now scaled down (via `font-size`,
+  so the box and its SVG shrink together without clipping) and rested at a lower
+  opacity, asserting only on hover/focus — matching the already-softened trigger
+  chevron. Found during the Omni Tend cutover.
+
 ## [0.19.0] - 2026-07-09
 
 ### Changed
