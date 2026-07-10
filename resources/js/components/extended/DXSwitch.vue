@@ -21,10 +21,12 @@
   <div class="dx-switch" :class="{ 'dx-switch--on': isOn }">
     <DFormCheckbox v-model="model" switch v-bind="$attrs">
       <!--
-        @slot Label content shown beside the toggle. Falls back to the `label`
-        prop. Lets a caller (e.g. DXField) pass a richer label element.
+        @slot Label content shown beside the toggle. Falls back to the contextual
+        text / `label` prop. Scoped with the current on-state so a caller can vary
+        rich content by state; DXField passes a richer label element here.
+        @binding {boolean} on Whether the switch is currently on.
       -->
-      <slot><span>{{ label }}</span></slot>
+      <slot :on="isOn"><span>{{ displayText }}</span></slot>
     </DFormCheckbox>
   </div>
 </template>
@@ -36,8 +38,12 @@ import DFormCheckbox from "../base/DFormCheckbox.vue";
 interface Props {
   /** Whether the switch is on. */
   modelValue?: boolean;
-  /** Text shown beside the toggle (ignored when the default slot is used). */
+  /** Static text beside the toggle; the fallback when no contextual text applies. */
   label?: string;
+  /** Text shown when on — overrides `label` in the on state (e.g. "Product is current"). */
+  textWhenTrue?: string;
+  /** Text shown when off — overrides `label` in the off state (e.g. "Product is not current"). */
+  textWhenFalse?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -49,6 +55,14 @@ const emit = defineEmits<{
 }>();
 
 const isOn = computed(() => props.modelValue);
+
+// A switch (unlike a checkbox) can say what each state *means*: prefer the
+// state-specific text, falling back to the static `label`. Ignored when the
+// default slot supplies its own content.
+const displayText = computed(() => {
+  const contextual = isOn.value ? props.textWhenTrue : props.textWhenFalse;
+  return contextual ?? props.label ?? "";
+});
 
 // Proxy the v-model so the underlying bvn checkbox's update re-emits as this
 // component's `update:modelValue`. Expects a real boolean — callers that hold a

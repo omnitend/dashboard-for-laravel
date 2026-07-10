@@ -1,15 +1,19 @@
 <template>
   <div class="switch-examples">
     <div class="example-section">
-      <h5>Basic</h5>
-      <DXSwitch v-model="current" label="Product is current" />
-      <p class="state-display">current: {{ current }}</p>
+      <h5>Contextual text (changes with state)</h5>
+      <DXSwitch
+        v-model="current"
+        text-when-true="Product is current"
+        text-when-false="Product is not current"
+      />
+      <p class="state-display">current: {{ current }} — toggle it to see the label change</p>
     </div>
 
     <div class="example-section">
-      <h5>On and off</h5>
+      <h5>Static label</h5>
       <DXSwitch v-model="on" label="Enabled" />
-      <DXSwitch v-model="off" label="Disabled feature" />
+      <DXSwitch v-model="off" label="Auto-save" />
     </div>
 
     <div class="example-section">

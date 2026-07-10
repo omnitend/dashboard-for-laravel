@@ -21,6 +21,24 @@ describe('DXSwitch', () => {
     expect(screen.container.textContent).toContain('Auto-save');
   });
 
+  it('shows textWhenTrue / textWhenFalse for the current state', async () => {
+    const on = mount({ modelValue: true, textWhenTrue: 'Product is current', textWhenFalse: 'Product is not current' });
+    await flush();
+    expect(on.container.textContent).toContain('Product is current');
+    expect(on.container.textContent).not.toContain('Product is not current');
+
+    const off = mount({ modelValue: false, textWhenTrue: 'Product is current', textWhenFalse: 'Product is not current' });
+    await flush();
+    expect(off.container.textContent).toContain('Product is not current');
+  });
+
+  it('falls back to label when no contextual text applies to the state', async () => {
+    // On, but only textWhenFalse given -> falls back to label.
+    const screen = mount({ modelValue: true, label: 'Fallback', textWhenFalse: 'Off text' });
+    await flush();
+    expect(screen.container.textContent).toContain('Fallback');
+  });
+
   it('lets the default slot override the label prop', async () => {
     const screen = mount(
       { modelValue: false, label: 'ignored' },
