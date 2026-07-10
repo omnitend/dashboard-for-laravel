@@ -4,6 +4,10 @@
 // Custom Bootstrap theme for the Laravel Dashboard library
 // Override Bootstrap variables BEFORE importing Bootstrap
 
+// The Sass module for `color.mix()` etc. `@use` must precede all other
+// statements (variable overrides, `@import`), so it stays at the very top.
+@use "sass:color";
+
 // ----------------------------------------------------------------------------
 // Colors
 // ----------------------------------------------------------------------------
@@ -349,7 +353,7 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     "info": $info
   ) {
     &.toast-#{$name} {
-      --bs-toast-bg: #{mix($color, $white, 8%)};
+      --bs-toast-bg: #{color.mix($color, $white, 8%)};
     }
   }
 }
