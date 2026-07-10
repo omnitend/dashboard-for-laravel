@@ -65,52 +65,22 @@
                         -->
                         <slot :name="`tab-before(${tab.key})`" :tab="tab" :model="model" />
 
-                        <template v-for="field in visibleFieldsFor(tab)" :key="field.key">
-                            <!--
-                              @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely — like `tab-content`, this also supersedes `field-before(<key>)`/`field-after(<key>)` for the same key.
-                              @binding {FieldDefinition} field The field definition being replaced.
-                              @binding {object} model Live form data merged with `context`, for predicates.
-                            -->
-                            <slot
-                                v-if="$slots[`field(${field.key})`]"
-                                :name="`field(${field.key})`"
-                                :field="field"
-                                :model="model"
-                            />
-                            <template v-else>
-                                <!--
-                                  @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`. Not rendered when `field(<key>)` replaces the same field.
-                                  @binding {FieldDefinition} field The field about to be rendered.
-                                  @binding {object} model Live form data merged with `context`, for predicates.
-                                -->
-                                <slot :name="`field-before(${field.key})`" :field="field" :model="model" />
-
-                                <DXField
-                                    :field="field"
-                                    :form="resolvedForm"
-                                    :model="model"
-                                    :layout="field.layout ?? layout"
-                                    :label-cols="field.labelCols ?? labelCols"
-                                    :hide-label="field.hideLabel"
-                                >
-                                    <template
-                                        v-for="(slotName, target) in fieldSlotMap(field.key)"
-                                        :key="target"
-                                        #[target]="slotProps"
-                                    >
-                                        <!-- @slot Per-field overrides forwarded to DXField, keyed by field key: `value(<key>)`, `span(<key>)`, `info(<key>)`, `hint(<key>)`, `repeater-row(<key>)`. -->
-                                        <slot :name="slotName" v-bind="slotProps" />
-                                    </template>
-                                </DXField>
-
-                                <!--
-                                  @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`. Not rendered when `field(<key>)` replaces the same field.
-                                  @binding {FieldDefinition} field The field that was just rendered.
-                                  @binding {object} model Live form data merged with `context`, for predicates.
-                                -->
-                                <slot :name="`field-after(${field.key})`" :field="field" :model="model" />
+                        <DXFormField
+                            v-for="field in visibleFieldsFor(tab)"
+                            :key="field.key"
+                            :field="field"
+                            :form="resolvedForm"
+                            :model="model"
+                            :layout="layout"
+                            :label-cols="labelCols"
+                        >
+                            <!-- Forward every DXForm slot so the field can render
+                                 its keyed field(<key>)/field-before/field-after/
+                                 value/span/info/hint/repeater-row slots. -->
+                            <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
+                                <slot :name="name" v-bind="slotProps" />
                             </template>
-                        </template>
+                        </DXFormField>
 
                         <!--
                           @slot Content inserted below a tab's fields, keyed by tab (slot name `tab-after(<tabKey>)`).
@@ -129,52 +99,22 @@
              instead, above). -->
         <template v-if="!hasTabs">
             <component :is="card ? DCard : 'div'">
-                <template v-for="field in visibleFlatFields" :key="field.key">
-                    <!--
-                      @slot Fully replaces a field's rendering (including its label), keyed by field key: `field(<key>)`. Unlike `value(<key>)`, bypasses DXField entirely — like `tab-content`, this also supersedes `field-before(<key>)`/`field-after(<key>)` for the same key.
-                      @binding {FieldDefinition} field The field definition being replaced.
-                      @binding {object} model Live form data merged with `context`, for predicates.
-                    -->
-                    <slot
-                        v-if="$slots[`field(${field.key})`]"
-                        :name="`field(${field.key})`"
-                        :field="field"
-                        :model="model"
-                    />
-                    <template v-else>
-                        <!--
-                          @slot Content inserted directly above a field, keyed by field key: `field-before(<key>)`. Not rendered when `field(<key>)` replaces the same field.
-                          @binding {FieldDefinition} field The field about to be rendered.
-                          @binding {object} model Live form data merged with `context`, for predicates.
-                        -->
-                        <slot :name="`field-before(${field.key})`" :field="field" :model="model" />
-
-                        <DXField
-                            :field="field"
-                            :form="resolvedForm"
-                            :model="model"
-                            :layout="field.layout ?? layout"
-                            :label-cols="field.labelCols ?? labelCols"
-                            :hide-label="field.hideLabel"
-                        >
-                            <template
-                                v-for="(slotName, target) in fieldSlotMap(field.key)"
-                                :key="target"
-                                #[target]="slotProps"
-                            >
-                                <!-- @slot Per-field overrides forwarded to DXField, keyed by field key: `value(<key>)`, `span(<key>)`, `info(<key>)`, `hint(<key>)`, `repeater-row(<key>)`. -->
-                                <slot :name="slotName" v-bind="slotProps" />
-                            </template>
-                        </DXField>
-
-                        <!--
-                          @slot Content inserted directly below a field, keyed by field key: `field-after(<key>)`. Not rendered when `field(<key>)` replaces the same field.
-                          @binding {FieldDefinition} field The field that was just rendered.
-                          @binding {object} model Live form data merged with `context`, for predicates.
-                        -->
-                        <slot :name="`field-after(${field.key})`" :field="field" :model="model" />
+                <DXFormField
+                    v-for="field in visibleFlatFields"
+                    :key="field.key"
+                    :field="field"
+                    :form="resolvedForm"
+                    :model="model"
+                    :layout="layout"
+                    :label-cols="labelCols"
+                >
+                    <!-- Forward every DXForm slot so the field can render its
+                         keyed field(<key>)/field-before/field-after/value/span/
+                         info/hint/repeater-row slots. -->
+                    <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
+                        <slot :name="name" v-bind="slotProps" />
                     </template>
-                </template>
+                </DXFormField>
 
                 <!-- Submit button -->
                 <DButton
@@ -233,7 +173,7 @@ import DButton from "../base/DButton.vue";
 import DCard from "../base/DCard.vue";
 import DTabs from "../base/DTabs.vue";
 import DTab from "../base/DTab.vue";
-import DXField from "./DXField.vue";
+import DXFormField from "./DXFormField.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { DefineFormReturn } from "../../composables/defineForm";
 import type { FieldDefinition, FormTab, LabelCols, MaybeFn } from "../../types";
@@ -407,24 +347,6 @@ const visibleTabs = computed<FormTab[]>(() => {
 const visibleFlatFields = computed<FieldDefinition[]>(() =>
     resolvedFields.value.filter(isFieldVisible),
 );
-
-// ————————————————— per-field slot forwarding
-
-/** Map a DXField slot name to the parent's keyed slot, when present. */
-function fieldSlotMap(key: string): Record<string, string> {
-    const map: Record<string, string> = {};
-    const candidates: Array<[string, string]> = [
-        ["value", `value(${key})`],
-        ["span", `span(${key})`],
-        ["info", `info(${key})`],
-        ["hint", `hint(${key})`],
-        ["repeater-row", `repeater-row(${key})`],
-    ];
-    for (const [target, source] of candidates) {
-        if (slots[source]) map[target] = source;
-    }
-    return map;
-}
 
 // ————————————————— auto-switch to the first error tab
 

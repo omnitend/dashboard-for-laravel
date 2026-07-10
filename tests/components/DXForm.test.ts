@@ -528,6 +528,74 @@ describe('DXForm', () => {
     });
   });
 
+  // Both the flat and tabbed layouts render every field through the SAME
+  // DXFormField, so a per-field prop or slot can't silently apply to only one
+  // branch (the drift that bit #78's hideLabel, motivating #83). These run the
+  // identical field definition through both modes and assert matching output.
+  describe('Flat and tabbed forward per-field props identically (#83 guard)', () => {
+    const guardFields: FieldDefinition[] = [
+      { key: 'name', type: 'text', label: 'Name' },
+      {
+        key: 'collect_allergens',
+        type: 'switch',
+        label: 'Collect allergen information',
+        hideLabel: true,
+      },
+    ];
+
+    const modes: Array<{ mode: string; tabs?: FormTab[] }> = [
+      { mode: 'flat' },
+      {
+        mode: 'tabbed',
+        tabs: [{ key: 'main', label: 'Main', fieldKeys: ['name', 'collect_allergens'] }],
+      },
+    ];
+
+    for (const { mode, tabs } of modes) {
+      it(`applies field.hideLabel to the field in ${mode} mode`, async () => {
+        const screen = render(DXForm, {
+          props: {
+            form: useForm({ name: '', collect_allergens: true }),
+            fields: guardFields,
+            tabs,
+            showSubmit: false,
+            layout: 'horizontal',
+          },
+        });
+        await flush();
+
+        // Only the non-hidden text field gets an outer label column; the
+        // hideLabel switch does not — identical to the flat #78 assertion.
+        const labels = screen.container.querySelectorAll('.col-form-label');
+        expect(labels.length).toBe(1);
+        expect(labels[0].textContent).toContain('Name');
+        expect(screen.container.querySelector('.dx-switch')).toBeTruthy();
+      });
+
+      it(`forwards #value(key) / field-before / field-after slots in ${mode} mode`, async () => {
+        const screen = render(DXForm, {
+          props: {
+            form: useForm({ name: '', collect_allergens: true }),
+            fields: guardFields,
+            tabs,
+            showSubmit: false,
+          },
+          slots: {
+            'value(name)': () => h('div', { class: 'custom-name-control' }, 'custom'),
+            'field-before(collect_allergens)': () =>
+              h('div', { class: 'ca-before' }, 'before'),
+            'field-after(collect_allergens)': () => h('div', { class: 'ca-after' }, 'after'),
+          },
+        });
+        await flush();
+
+        expect(screen.container.querySelector('.custom-name-control')).toBeTruthy();
+        expect(screen.container.querySelector('.ca-before')).toBeTruthy();
+        expect(screen.container.querySelector('.ca-after')).toBeTruthy();
+      });
+    }
+  });
+
   describe('Card prop', () => {
     it('does not render a card by default (flat form)', async () => {
       const screen = render(DXForm, {
