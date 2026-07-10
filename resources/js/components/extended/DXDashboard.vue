@@ -60,7 +60,10 @@
         </DContainer>
         <DContainer v-else fluid>
           <DRow class="justify-content-center">
-            <DCol cols="12" xl="10" :class="contentClass">
+            <!-- A genuine max-width cap (not the proportional col-xl-10), so the
+                 reading column doesn't stretch to ~2000px on a wide display. The
+                 centred row handles the horizontal centring. -->
+            <DCol cols="12" :style="{ maxWidth: contentMaxWidth }" :class="contentClass">
               <slot />
             </DCol>
           </DRow>
@@ -96,10 +99,16 @@ interface Props {
 
   /**
    * Render the page content full-width and left-aligned instead of the default
-   * centred, reading-width (`col-xl-10`) column. Use for data-heavy admin pages
-   * (wide tables).
+   * centred, reading-width column. Use for data-heavy admin pages (wide tables).
    */
   fluid?: boolean;
+
+  /**
+   * Max width of the centred content column (any CSS length). A genuine cap, so
+   * forms and text-heavy pages don't stretch to ~2000px on a wide display.
+   * Ignored when `fluid`. Set a large value (or use `fluid`) for full width.
+   */
+  contentMaxWidth?: string;
 
   /** Extra class(es) applied to the content container/column. */
   contentClass?: string;
@@ -143,6 +152,7 @@ const props = withDefaults(defineProps<Props>(), {
   autoCollapseInactiveGroups: true,
   storageKey: 'dashboard-sidebar-hidden',
   dashboardId: '',
+  contentMaxWidth: '1140px',
 });
 
 const collapsed = ref(false);

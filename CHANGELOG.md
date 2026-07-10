@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`DXDashboard` `contentMaxWidth` prop** (#88). The default (non-`fluid`)
+  content column was a *proportional* `col-xl-10` — ~2000px on a 2560px display,
+  which defeats a reading width for forms/text. It now has a genuine `max-width`
+  cap (default `1140px`, any CSS length), still centred; `fluid` remains the
+  full-width opt-out. Replaces per-app CSS width workarounds.
+
 ### Fixed
 - **`useForm`/`DXTable` delete no longer leaks the form payload into the fetch
   request options** (#87). `api.delete` was `(url, options)` while its siblings

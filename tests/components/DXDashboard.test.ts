@@ -221,4 +221,41 @@ describe('DXDashboard', () => {
       expect(actionButton?.textContent).toBe('New customer');
     });
   });
+
+  describe('Content max-width (#88)', () => {
+    // The centred content column sits inside .justify-content-center; the cap is
+    // an inline max-width on that column (not the old proportional col-xl-10).
+    const contentCol = (root) =>
+      root.querySelector('.justify-content-center > [class*="col"]');
+
+    it('caps the reading column at the default 1140px', async () => {
+      const screen = render(DXDashboard, {
+        props: { navigation: sampleNavigation, currentUrl: '/dashboard' },
+        slots: { default: '<div>content</div>' },
+      });
+      const col = contentCol(screen.container);
+      expect(col).toBeTruthy();
+      expect((col).style.maxWidth).toBe('1140px');
+      // No longer the proportional cap.
+      expect((col).className).not.toMatch(/col-xl-10/);
+    });
+
+    it('honours a custom contentMaxWidth', async () => {
+      const screen = render(DXDashboard, {
+        props: { navigation: sampleNavigation, currentUrl: '/dashboard', contentMaxWidth: '800px' },
+        slots: { default: '<div>content</div>' },
+      });
+      expect((contentCol(screen.container)).style.maxWidth).toBe('800px');
+    });
+
+    it('does not cap in fluid mode', async () => {
+      const screen = render(DXDashboard, {
+        props: { navigation: sampleNavigation, currentUrl: '/dashboard', fluid: true },
+        slots: { default: '<div>content</div>' },
+      });
+      // Fluid renders no centred reading column.
+      expect(contentCol(screen.container)).toBeNull();
+    });
+  });
+
 });
