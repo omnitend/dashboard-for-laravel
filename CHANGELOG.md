@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-07-11
+
 ### Added
 - **`DXDashboardNavbar` `searchAlign` prop** (#92). The search slot wrapper was
   hardcoded `justify-content-center`, forcing apps that want the search flush
