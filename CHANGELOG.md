@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty string, an empty array) purely because it was declared.
 
 ### Fixed
+- **Clickable rows now look clickable** (#107). A row that opens something on
+  click showed the default text cursor, so there was no affordance that it did
+  anything — consumers had to reach into the table's internals with
+  `:deep(tbody tr) { cursor: pointer }`. DXTable already knows whether rows are
+  interactive, so it now owns the cursor and hover affordance: rows get a
+  pointer when `editFields` is set **or** a `row-clicked` listener is bound. The
+  listener case was the gap; only `editFields` used to count.
 - **A static `per-page` / `sort-by` / `filters` prop no longer disables the
   matching control** (#110). These props are dual-purpose: with a `v-model` they
   are *controlled state*; without one they read as an *initial value*. DXTable

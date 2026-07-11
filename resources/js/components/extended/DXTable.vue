@@ -990,19 +990,36 @@ const effectiveBusy = computed(() => isProviderMode.value ? props.busy : props.l
  */
 const instance = getCurrentInstance();
 
-const hasUpdateListener = (name: string): boolean => {
+const hasListener = (event: string): boolean => {
     const vnodeProps = instance?.vnode.props ?? {};
-    // `v-model:per-page` compiles to `onUpdate:perPage`, but a hand-written
-    // `@update:per-page` stays hyphenated — accept either.
-    const hyphenated = name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
-    return `onUpdate:${name}` in vnodeProps || `onUpdate:${hyphenated}` in vnodeProps;
+    const toHandlerKey = (name: string) => `on${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+    // `v-model:per-page` / `@row-clicked` compile to camelCase handler keys, but
+    // a hand-written hyphenated listener stays hyphenated — accept either.
+    const hyphenated = event.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+    return toHandlerKey(event) in vnodeProps || toHandlerKey(hyphenated) in vnodeProps;
 };
 
 const isControlled = {
-    perPage: hasUpdateListener('perPage'),
-    sortBy: hasUpdateListener('sortBy'),
-    filters: hasUpdateListener('filters'),
+    perPage: hasListener('update:perPage'),
+    sortBy: hasListener('update:sortBy'),
+    filters: hasListener('update:filters'),
 };
+
+/*
+ * Rows are interactive when clicking one does something: the built-in edit
+ * modal (`editFields`) opens, or the consumer is listening for `row-clicked`.
+ * The cursor and hover affordance follow from that — DXTable already knows,
+ * so consumers shouldn't have to reach into `:deep(tbody tr)` to say it (#107).
+ * The listener case was the gap: only `editFields` used to count.
+ */
+const rowsAreInteractive = computed(
+    () => (props.editFields?.length ?? 0) > 0 || hasListener('rowClicked'),
+);
+
+const rowCursor = computed(() => (rowsAreInteractive.value ? 'pointer' : 'default'));
+const rowHoverBackground = computed(() =>
+    rowsAreInteractive.value ? 'var(--bs-table-hover-bg)' : 'inherit',
+);
 
 // Internal sortBy state, seeded from the prop when it's an initial value.
 const internalSortBy = ref<BTableSortBy[]>(props.sortBy ? [...props.sortBy] : []);
@@ -2105,13 +2122,13 @@ defineExpose({
 </script>
 
 <style scoped>
-/* Add pointer cursor to table rows when editFields is enabled */
+/* Rows that do something on click look like it — see `rowsAreInteractive`. */
 :deep(tbody tr) {
-    cursor: v-bind('editFields && editFields.length > 0 ? "pointer" : "default"');
+    cursor: v-bind(rowCursor);
 }
 
 :deep(tbody tr:hover) {
-    background-color: v-bind('editFields && editFields.length > 0 ? "var(--bs-table-hover-bg)" : "inherit"');
+    background-color: v-bind(rowHoverBackground);
 }
 
 /* Improve pagination button sizing to match form controls */

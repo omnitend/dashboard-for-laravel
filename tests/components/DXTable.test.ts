@@ -1492,3 +1492,37 @@ describe('DXTable presentational edit fields (#110)', () => {
     expect(payload).toHaveProperty('notice');
   });
 });
+
+/**
+ * #107. Rows that do something on click must look like it. DXTable already
+ * knows whether they're interactive, so a consumer shouldn't have to reach into
+ * `:deep(tbody tr)`. The `editFields` case already worked; a bare `@row-clicked`
+ * listener (a page opening its own detail modal) was the gap.
+ */
+describe('DXTable clickable-row affordance (#107)', () => {
+  const rows = [{ id: 1, name: 'A' }];
+  const fields = [{ key: 'name', label: 'Name' }];
+
+  const cursorOf = async (props: Record<string, any>) => {
+    const screen = render({
+      render: () => h(BApp, {}, () => h(DXTable, { items: rows, fields, ...props })),
+    });
+    await wait(80);
+    const row = screen.container.querySelector('tbody tr') as HTMLElement;
+    return getComputedStyle(row).cursor;
+  };
+
+  it('gives rows a pointer when a row-clicked listener is bound', async () => {
+    expect(await cursorOf({ onRowClicked: () => {} })).toBe('pointer');
+  });
+
+  it('gives rows a pointer when the built-in edit modal is enabled', async () => {
+    expect(
+      await cursorOf({ editFields: [{ key: 'name', type: 'text', label: 'Name' }] }),
+    ).toBe('pointer');
+  });
+
+  it('leaves a plain, non-interactive table alone', async () => {
+    expect(await cursorOf({})).toBe('default');
+  });
+});
