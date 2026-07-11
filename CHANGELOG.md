@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-07-11
+
 ### Added
 - **`DXUserAvatar` component** (#98). The navbar's circular avatar is now an
   exported component, and is the default content of `DXDashboardNavbar`'s
@@ -40,14 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   native readonly state are disabled, as they already are for `readonly`).
   `readonly` itself is unchanged.
 
-### Changed
-- **Password fields now render a reveal (eye) toggle by default** (#100).
-  `DXField`'s `type: "password"` previously rendered a bare masked input.
-  Typing a long generated password blind into three boxes on a change-password
-  form is exactly where the toggle earns its keep, so it is opt-out rather than
-  opt-in: set `revealable: false` on the field for the old bare input.
-
-### Added
 - **`DXTable` forwards every slot the inner table understands** (#99, #111,
   #112). It previously forwarded only slots whose name started with `cell`, so
   the footer, empty-state and row-expansion slots that the underlying table has
@@ -68,6 +62,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and field hints) and `thead-top` (the inline filter row).
 
 ### Changed
+- **Password fields now render a reveal (eye) toggle by default** (#100).
+  `DXField`'s `type: "password"` previously rendered a bare masked input.
+  Typing a long generated password blind into three boxes on a change-password
+  form is exactly where the toggle earns its keep, so it is opt-out rather than
+  opt-in: set `revealable: false` on the field for the old bare input.
+
 - **`DXTable` now shows an empty-state message instead of a bare header** (#111).
   An empty result rendered a header row with nothing under it, which is
   indistinguishable from a broken table — especially given #109, where a failed
