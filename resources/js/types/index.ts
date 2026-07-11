@@ -319,6 +319,18 @@ export interface FieldDefinition {
     revealable?: boolean;
 
     /**
+     * Include this field's value in the submitted payload. Default `true`.
+     *
+     * Set `false` for a **presentational** field — a header, an alert, an
+     * explanatory block rendered via `span` — that exists to lay out the form,
+     * not to hold data. Without it, `DXTable`'s edit modal seeds its form from
+     * every `editFields` key, so those decorative fields are POSTed alongside
+     * the real ones (an empty string, an empty array) purely because they were
+     * declared.
+     */
+    submit?: boolean;
+
+    /**
      * Conditionally show or hide this field. When omitted the field is
      * always visible. Boolean or a function of the form model; evaluated
      * reactively for cross-field conditional fields.

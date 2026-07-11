@@ -635,7 +635,7 @@
 </template>
 
 <script setup lang="ts" generic="T = any">
-import { computed, ref, watch, useSlots } from "vue";
+import { computed, getCurrentInstance, ref, watch, useSlots } from "vue";
 import { router } from "@inertiajs/vue3";
 import axios from "axios";
 import pluralize from "pluralize";
@@ -972,17 +972,51 @@ if (props.clientSide && (props.apiUrl || props.inertiaUrl)) {
 // Computed for effective busy state (provider mode uses 'busy', inertia uses 'loading')
 const effectiveBusy = computed(() => isProviderMode.value ? props.busy : props.loading);
 
-// Internal sortBy state for auto modes
-const internalSortBy = ref<BTableSortBy[]>([]);
+/*
+ * `perPage`, `sortBy` and `filters` are dual-purpose: with a `v-model` they are
+ * CONTROLLED state; without one they read as an INITIAL value.
+ *
+ * DXTable used to treat any passed value as controlled, so `:per-page="50"` —
+ * the natural way to say "start with 50 per page" — rendered a working-looking
+ * per-page selector that did nothing: the user picked 10, the select showed 10,
+ * and the table kept rendering 50 (#110). The control responded, nothing
+ * errored, and the table quietly ignored it.
+ *
+ * A prop is only controlled if the consumer is listening for its update, so
+ * that is what we check. It has to come off the raw vnode props: Vue strips
+ * DECLARED emit listeners out of `$attrs`, so `useAttrs()` can't see them.
+ * Listener presence doesn't meaningfully change over a component's life, so
+ * this is resolved once at setup rather than per render.
+ */
+const instance = getCurrentInstance();
 
-// Computed effective sortBy (use external if provided, otherwise internal)
-const effectiveSortBy = computed(() => props.sortBy !== undefined ? props.sortBy : internalSortBy.value);
+const hasUpdateListener = (name: string): boolean => {
+    const vnodeProps = instance?.vnode.props ?? {};
+    // `v-model:per-page` compiles to `onUpdate:perPage`, but a hand-written
+    // `@update:per-page` stays hyphenated — accept either.
+    const hyphenated = name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+    return `onUpdate:${name}` in vnodeProps || `onUpdate:${hyphenated}` in vnodeProps;
+};
 
-// Internal filters state for auto modes
-const internalFilters = ref<Record<string, string>>({});
+const isControlled = {
+    perPage: hasUpdateListener('perPage'),
+    sortBy: hasUpdateListener('sortBy'),
+    filters: hasUpdateListener('filters'),
+};
 
-// Computed effective filters (use external if provided, otherwise internal)
-const effectiveFilters = computed(() => props.filters !== undefined ? props.filters : internalFilters.value);
+// Internal sortBy state, seeded from the prop when it's an initial value.
+const internalSortBy = ref<BTableSortBy[]>(props.sortBy ? [...props.sortBy] : []);
+
+const effectiveSortBy = computed(() =>
+    isControlled.sortBy && props.sortBy !== undefined ? props.sortBy : internalSortBy.value,
+);
+
+// Internal filters state, seeded from the prop when it's an initial value.
+const internalFilters = ref<Record<string, string>>({ ...(props.filters ?? {}) });
+
+const effectiveFilters = computed(() =>
+    isControlled.filters && props.filters !== undefined ? props.filters : internalFilters.value,
+);
 
 // Computed: check if any field has filtering enabled
 const hasFilters = computed(() => props.fields.some(field => field.filter !== false && field.filter !== undefined));
@@ -1201,8 +1235,9 @@ watch(() => props.apiUrl, (newUrl, oldUrl) => {
 
 // Computed effective perPage (use external if provided, otherwise internal)
 const effectivePerPage = computed(() => {
-    // If external perPage prop is provided, use it
-    if (props.perPage !== undefined) {
+    // Only when the consumer is actually driving it (v-model). A bare
+    // `:per-page="50"` is an initial value — see `isControlled` (#110).
+    if (isControlled.perPage && props.perPage !== undefined) {
         return props.perPage;
     }
 
@@ -1435,8 +1470,8 @@ const handleSortChange = (sortBy: BTableSortBy[]) => {
         }
     }
 
-    // Update internal state if not using external sortBy
-    if (props.sortBy === undefined) {
+    // Write internal state unless the consumer controls it with v-model.
+    if (!isControlled.sortBy) {
         internalSortBy.value = normalizedSortBy;
     }
 
@@ -1484,8 +1519,8 @@ const handlePerPageChange = (newPerPage: number | string | null | (number | stri
     }
     const perPageNum = typeof rawPerPage === 'string' ? parseInt(rawPerPage, 10) : rawPerPage;
 
-    // Update internal state if not using external perPage
-    if (props.perPage === undefined) {
+    // Write internal state unless the consumer controls it with v-model.
+    if (!isControlled.perPage) {
         internalPerPage.value = perPageNum;
     }
 
@@ -1533,8 +1568,8 @@ const handleFilterChange = (fieldKey: string, value: string) => {
         delete newFilters[fieldKey];
     }
 
-    // Update internal state if not using external filters
-    if (props.filters === undefined) {
+    // Write internal state unless the consumer controls it with v-model.
+    if (!isControlled.filters) {
         internalFilters.value = newFilters;
     }
 
@@ -1635,6 +1670,12 @@ try {
 // Forward only the keyed edit slots the consumer actually provided, so
 // DXForm doesn't mistake an always-present (but empty) wrapper for
 // a real custom-value override.
+// Fields whose value actually belongs in the payload. A presentational field
+// (submit: false) renders but holds no data — see FieldDefinition.submit.
+const submittableEditFields = computed(() =>
+    (props.editFields ?? []).filter((field) => field.submit !== false),
+);
+
 const tableSlots = useSlots();
 
 /*
@@ -1754,13 +1795,15 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
         // seeding is synchronous — no interleaving between successive row opens.
         if (!editForm.value) {
             const formData: Record<string, any> = {};
-            props.editFields!.forEach(field => {
+            // Presentational fields (submit: false) lay the form out; they hold
+            // no data and must not be POSTed just because they were declared.
+            submittableEditFields.value.forEach(field => {
                 formData[field.key] = (item as any)[field.key] ?? field.default ?? '';
             });
             editForm.value = useForm(formData);
         } else {
             // Update existing form
-            props.editFields.forEach(field => {
+            submittableEditFields.value.forEach(field => {
                 editForm.value.data[field.key] = (item as any)[field.key] ?? field.default ?? '';
             });
             editForm.value.clearErrors();
@@ -1791,7 +1834,7 @@ const fetchFullRecordForEdit = async (item: T) => {
 
         const record = response.data?.data ?? response.data;
         if (record && editForm.value) {
-            props.editFields!.forEach(field => {
+            submittableEditFields.value.forEach(field => {
                 if (Object.prototype.hasOwnProperty.call(record, field.key)) {
                     editForm.value.data[field.key] = record[field.key];
                 }
@@ -1831,13 +1874,13 @@ const handleCreateNew = () => {
 
     if (!editForm.value) {
         const formData: Record<string, any> = {};
-        props.editFields!.forEach(field => {
+        submittableEditFields.value.forEach(field => {
             formData[field.key] = field.default ?? '';
         });
         editForm.value = useForm(formData);
     } else {
         // Reset existing form to defaults
-        props.editFields!.forEach(field => {
+        submittableEditFields.value.forEach(field => {
             editForm.value.data[field.key] = field.default ?? '';
         });
         editForm.value.clearErrors();

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`submit: false` field option** (#110). Marks a field **presentational** — a
+  header, an alert, an explanatory block rendered via `span` — that lays the
+  form out but holds no data. `DXTable`'s edit modal seeds its form from every
+  `editFields` key, so a decorative field was POSTed alongside the real ones (an
+  empty string, an empty array) purely because it was declared.
+
+### Fixed
+- **A static `per-page` / `sort-by` / `filters` prop no longer disables the
+  matching control** (#110). These props are dual-purpose: with a `v-model` they
+  are *controlled state*; without one they read as an *initial value*. DXTable
+  treated any passed value as controlled, so `:per-page="50"` — the natural way
+  to say "start with 50 per page" — rendered a per-page selector that responded
+  to clicks and changed nothing: the user picked 10, the select showed 10, and
+  the table kept rendering 50. Same for `sort-by` (the header wouldn't sort) and
+  `filters` (the filter row wouldn't filter).
+
+  A prop is now controlled only when you're actually listening for its update,
+  so `:per-page="50"` seeds the table and the selector works, while
+  `v-model:per-page` stays fully controlled — including the parent's right to
+  refuse a change.
+
 ## [0.23.0] - 2026-07-11
 
 ### Added

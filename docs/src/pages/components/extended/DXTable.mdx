@@ -109,8 +109,8 @@ const items = ref([
   { name: 'provider', type: 'BTableProvider<TItem>', required: 'No', default: '-', description: 'Provider function for API mode' },
   { name: 'apiUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint URL for auto-provider mode' },
   { name: 'fields', type: 'TableField[]', required: 'Yes', default: '-', description: 'Table field definitions (see TableField interface)' },
-  { name: 'sortBy', type: 'BTableSortBy[]', required: 'No', default: '[]', description: 'Sort configuration (v-model support). Also the table\'s INITIAL sort — when nothing is sorted, no sort params are sent at all (see Sorting below)' },
-  { name: 'filters', type: 'Record<string, string>', required: 'No', default: '{}', description: 'Filter values (v-model support)' },
+  { name: 'sortBy', type: 'BTableSortBy[]', required: 'No', default: '[]', description: 'Sort state. With v-model, controlled by you; without one, the table\'s INITIAL sort and the user can change it. When nothing is sorted, no sort params are sent (see Sorting)' },
+  { name: 'filters', type: 'Record<string, string>', required: 'No', default: '{}', description: 'Filter values. With v-model, controlled by you; without one, the INITIAL filters and the user can change them' },
   { name: 'filterValues', type: 'Record<string, string[]>', required: 'No', default: '-', description: 'Dynamic filter options from server' },
   { name: 'inertiaUrl', type: 'string', required: 'No', default: '-', description: 'Inertia route URL (enables auto-navigation)' },
   { name: 'busy', type: 'boolean', required: 'No', default: 'false', description: 'Loading/busy state (v-model support, API mode)' },
@@ -122,7 +122,7 @@ const items = ref([
   { name: 'showPerPageSelector', type: 'boolean', required: 'No', default: 'true', description: 'Show per-page selector' },
   { name: 'perPageOptions', type: 'number[]', required: 'No', default: '[10, 25, 50, 100]', description: 'Per-page options for selector' },
   { name: 'currentPage', type: 'number', required: 'No', default: '1', description: 'Current page (for provider mode)' },
-  { name: 'perPage', type: 'number', required: 'No', default: '10', description: 'Items per page (v-model support)' },
+  { name: 'perPage', type: 'number', required: 'No', default: '10', description: 'Page size. With v-model, controlled by you; without one, the INITIAL page size and the per-page selector still works' },
   { name: 'striped', type: 'boolean', required: 'No', default: 'false', description: 'Striped (banded) rows. Off by default; opt in for dense tables' },
   { name: 'hover', type: 'boolean', required: 'No', default: 'true', description: 'Hover effect on rows' },
   { name: 'responsive', type: 'boolean', required: 'No', default: 'true', description: 'Responsive table' },
@@ -230,6 +230,26 @@ content **under** a row, instead of pushing every per-row detail into a modal:
   </template>
 </DXTable>
 ```
+
+## Initial values vs controlled state
+
+`per-page`, `sort-by` and `filters` mean different things depending on whether
+you bind a `v-model`:
+
+- **Without a `v-model`** they are **initial values**. The table owns the state
+  from then on, and the matching control keeps working.
+  ```vue
+  <DXTable :per-page="50" ... />   <!-- start at 50; the selector still works -->
+  ```
+- **With a `v-model`** they are **controlled state**. You are the source of
+  truth, and the table renders whatever you hand it — including refusing a
+  change.
+  ```vue
+  <DXTable v-model:per-page="perPage" ... />
+  ```
+
+Until 0.24.0 any passed value was treated as controlled, so `:per-page="50"`
+rendered a per-page selector that responded to clicks and changed nothing.
 
 ## Sorting
 

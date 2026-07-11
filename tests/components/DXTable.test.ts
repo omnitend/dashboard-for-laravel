@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
+import { userEvent } from 'vitest/browser';
 import { h, ref } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import axios from 'axios';
@@ -1276,5 +1277,218 @@ describe('DXTable forwards the inner table\'s slots (#99, #111, #112)', () => {
       expect(screen.container.querySelector('.card-title')?.textContent).toBe('Sales');
       expect(screen.container.querySelector('table .card-title')).toBeNull();
     });
+  });
+});
+
+/**
+ * #110. `perPage` / `sortBy` / `filters` are dual-purpose: with a v-model they
+ * are controlled state, without one they read as an initial value. DXTable used
+ * to treat any passed value as controlled, so `:per-page="50"` rendered a
+ * per-page selector that responded to clicks and changed nothing — two ported
+ * pages shipped with a dead selector before it was caught.
+ */
+describe('DXTable initial-value vs controlled props (#110)', () => {
+  const manyRows = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, name: `Row ${i + 1}` }));
+  const nameField = [{ key: 'name', label: 'Name', sortable: true }];
+
+  const pickPerPage = async (screen: any, value: string) => {
+    const select = screen.container.querySelector('select') as HTMLSelectElement;
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await wait(60);
+  };
+
+  it('treats a bare :per-page as an INITIAL value — the selector still works', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, { items: manyRows, fields: nameField, clientSide: true, perPage: 25 }),
+        ),
+    });
+    await flush();
+
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(25);
+
+    await pickPerPage(screen, '10');
+
+    // Before the fix: the select showed 10 and the table kept rendering 25.
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(10);
+  });
+
+  it('keeps a v-model:per-page fully controlled — the parent decides', async () => {
+    const perPage = ref(25);
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: manyRows,
+            fields: nameField,
+            clientSide: true,
+            perPage: perPage.value,
+            'onUpdate:perPage': (value: number) => {
+              perPage.value = value;
+            },
+          }),
+        ),
+    });
+    await flush();
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(25);
+
+    await pickPerPage(screen, '10');
+
+    // The parent accepted the update, so it flows back down.
+    expect(perPage.value).toBe(10);
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(10);
+  });
+
+  it('a v-model parent that REFUSES the change keeps the table pinned', async () => {
+    // The whole point of controlled state: the parent is the source of truth.
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: manyRows,
+            fields: nameField,
+            clientSide: true,
+            perPage: 25,
+            'onUpdate:perPage': () => {
+              /* parent ignores it */
+            },
+          }),
+        ),
+    });
+    await flush();
+
+    await pickPerPage(screen, '10');
+
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(25);
+  });
+
+  it('treats a bare :sort-by as an INITIAL sort — the header still sorts', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: [
+              { id: 1, name: 'Beta' },
+              { id: 2, name: 'Alpha' },
+            ],
+            fields: nameField,
+            clientSide: true,
+            sortBy: [{ key: 'name', order: 'asc' }],
+          }),
+        ),
+    });
+    await flush();
+
+    const firstCell = () =>
+      screen.container.querySelector('tbody tr td')?.textContent?.trim();
+    expect(firstCell()).toBe('Alpha');
+
+    (screen.container.querySelector('thead th') as HTMLElement).click();
+    await wait(60);
+
+    // Before the fix, the prop won every time and this stayed 'Alpha'.
+    expect(firstCell()).toBe('Beta');
+  });
+
+  it('treats a bare :filters as INITIAL filters — the filter row still works', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: [
+              { id: 1, name: 'Alpha' },
+              { id: 2, name: 'Beta' },
+            ],
+            fields: [{ key: 'name', label: 'Name', filter: 'text' }],
+            clientSide: true,
+            filters: { name: 'Alpha' },
+          }),
+        ),
+    });
+    await flush();
+
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(1);
+
+    const input = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+    expect(input.value).toBe('Alpha');
+
+    await userEvent.fill(input, 'Beta');
+    await wait(80);
+
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(1);
+    expect(screen.container.querySelector('tbody tr td')?.textContent?.trim()).toBe('Beta');
+  });
+});
+
+/**
+ * #110, second half. DXTable seeds the edit form from every `editFields` key,
+ * so a presentational field smuggled in as a `span` (a header, an alert) was
+ * POSTed alongside the real data — greendragon saw `bookings: []` and
+ * `no_places_left: ""` in the payload purely because they were declared.
+ */
+describe('DXTable presentational edit fields (#110)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const openModalAndSave = async (editFields: any[]) => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({ data: {} }),
+        }) as any,
+    );
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: [{ id: 1, name: 'Row A', notice: '' }],
+            fields: [{ key: 'name', label: 'Name' }],
+            editFields,
+            editUrl: '/api/things/:id',
+          }),
+        ),
+    });
+    await flush();
+
+    (screen.container.querySelector('tbody tr') as HTMLElement).click();
+    await wait(150);
+
+    const saveButton = [...document.querySelectorAll('button')].find((button) =>
+      button.textContent?.match(/save changes/i),
+    ) as HTMLElement;
+    expect(saveButton).toBeTruthy();
+    saveButton.click();
+    await wait(150);
+
+    expect(fetchSpy).toHaveBeenCalled();
+    const request = fetchSpy.mock.calls[0][1] as RequestInit;
+    return JSON.parse(request.body as string);
+  };
+
+  it('does not submit a field marked submit: false', async () => {
+    const payload = await openModalAndSave([
+      { key: 'name', type: 'text', label: 'Name' },
+      { key: 'notice', type: 'text', span: true, submit: false },
+    ]);
+
+    expect(payload).toHaveProperty('name');
+    expect(payload).not.toHaveProperty('notice');
+  });
+
+  it('submits every field by default', async () => {
+    const payload = await openModalAndSave([
+      { key: 'name', type: 'text', label: 'Name' },
+      { key: 'notice', type: 'text', span: true },
+    ]);
+
+    expect(payload).toHaveProperty('name');
+    expect(payload).toHaveProperty('notice');
   });
 });
