@@ -331,12 +331,13 @@ interface NavigationItem {
 ```typescript
 interface Props {
   user?: { name: string; email: string } | null;
-  logoutUrl?: string;         // Default: '/logout'
+  searchAlign?: 'start' | 'center';  // Default: 'start'
 }
 ```
 
 **Slots:**
 - `#user-icon="{ initial }"` - Custom user icon/avatar
+- `#user-menu-items="{ user }"` - Dropdown items (consumers pass DDropdownItem, incl. their own log-out link)
 
 **Avatar Styling:**
 ```vue
@@ -589,11 +590,11 @@ Always define prop types:
 <script setup lang="ts">
 interface Props {
   user?: { name: string; email: string } | null;
-  logoutUrl?: string;
+  pageTitle?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  logoutUrl: '/logout',
+  pageTitle: '',
 });
 </script>
 ```

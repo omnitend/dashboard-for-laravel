@@ -77,6 +77,7 @@ const handleLogout = () => {
 <PropsTable client:load props={[
   { name: 'user', type: '{ name: string; email: string; [key: string]: any } | null', required: 'No', default: 'null', description: 'Current user object with name and email' },
   { name: 'pageTitle', type: 'string', required: 'No', default: 'Dashboard', description: 'Page title displayed in the navbar' },
+  { name: 'searchAlign', type: "'start' | 'center'", required: 'No', default: "'start'", description: 'Horizontal alignment of the search slot content within its region: flush left (start) or centred (center). The region is inline in the bar from md up, its own full-width row below' },
 ]} />
 
 ## Events
@@ -89,7 +90,7 @@ const handleLogout = () => {
 
 <SlotsTable client:load slots={[
   { name: 'menu-icon', description: 'Custom hamburger menu icon (default: three horizontal lines SVG)' },
-  { name: 'search', description: 'Search input or component. Centred in the bar on wider screens; drops to its own full-width row below the md breakpoint' },
+  { name: 'search', description: 'Search input or component. Aligned per searchAlign within its region; drops to its own full-width row below the md breakpoint' },
   { name: 'actions', props: 'pageTitle', description: 'Page-level primary actions (e.g. a Create button), right-aligned next to the user menu. Receives pageTitle as slot prop' },
   { name: 'user-menu', description: 'Complete custom user menu (replaces default dropdown). Receives user as slot prop' },
   { name: 'user-icon', description: 'Custom user avatar/icon. Receives initial (first letter of name) as slot prop' },

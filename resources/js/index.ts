@@ -139,4 +139,5 @@ export type {
     NavigationItem,
     NavigationGroup,
     Navigation,
+    NavbarSearchAlign,
 } from "./types/navigation";

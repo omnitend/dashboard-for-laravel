@@ -220,6 +220,22 @@ describe('DXDashboard', () => {
       expect(actionButton).toBeTruthy();
       expect(actionButton?.textContent).toBe('New customer');
     });
+
+    it('forwards searchAlign to the navbar search region (#92)', async () => {
+      const screen = render(DXDashboard, {
+        props: {
+          navigation: sampleNavigation,
+          currentUrl: '/dashboard',
+          searchAlign: 'center',
+        },
+        slots: {
+          'navbar-search': '<input class="custom-search" />',
+        },
+      });
+
+      const region = screen.container.querySelector('.dashboard-navbar__search');
+      expect(region?.classList.contains('justify-content-center')).toBe(true);
+    });
   });
 
   describe('Content max-width (#88)', () => {

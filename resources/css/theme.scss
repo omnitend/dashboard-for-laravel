@@ -291,7 +291,7 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   // A light grey top bar over the white content panel (higher contrast than a
   // grey-everywhere layout). The navbar markup drops its `bg-white` class so
   // this wins without `!important`.
-  background-color: #f8f9fa;
+  background-color: var(--bs-light);
 }
 
 // ----------------------------------------------------------------------------

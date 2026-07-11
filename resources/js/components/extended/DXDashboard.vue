@@ -36,7 +36,7 @@
       <DXDashboardNavbar
         :page-title="pageTitle"
         :user="user"
-        :logout-url="logoutUrl"
+        :search-align="searchAlign"
         @toggle-sidebar="toggleSidebar"
       >
         <!-- Dynamically forward all navbar-* slots by stripping the prefix -->
@@ -80,7 +80,7 @@ import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
 import DRow from '../base/DRow.vue';
 import DCol from '../base/DCol.vue';
-import type { Navigation } from '../../types/navigation';
+import type { Navigation, NavbarSearchAlign } from '../../types/navigation';
 
 const slots = useSlots();
 
@@ -116,8 +116,11 @@ interface Props {
   /** User object for navbar dropdown */
   user?: { name: string; email: string } | null;
 
-  /** Logout URL for navbar dropdown */
-  logoutUrl?: string;
+  /**
+   * Horizontal alignment of the navbar search slot content (`"start"` = flush
+   * left, `"center"` = centred), forwarded to DXDashboardNavbar.
+   */
+  searchAlign?: NavbarSearchAlign;
 
   /**
    * Turn sidebar group headers into accordion toggles that collapse/expand
@@ -147,12 +150,12 @@ const props = withDefaults(defineProps<Props>(), {
   title: 'Dashboard',
   pageTitle: '',
   user: null,
-  logoutUrl: '/logout',
   collapsibleGroups: false,
   autoCollapseInactiveGroups: true,
   storageKey: 'dashboard-sidebar-hidden',
   dashboardId: '',
   contentMaxWidth: '1140px',
+  searchAlign: 'start',
 });
 
 const collapsed = ref(false);
@@ -245,7 +248,7 @@ const toggleSidebar = () => {
 <style scoped>
 .dashboard-layout {
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--bs-light);
 }
 
 .dashboard-content {
@@ -259,6 +262,6 @@ const toggleSidebar = () => {
   max-width: 100%;
   /* A white content panel under the light grey top bar / layout, so forms and
      content sit on white (higher contrast than a grey-everywhere dashboard). */
-  background-color: #fff;
+  background-color: var(--bs-white);
 }
 </style>

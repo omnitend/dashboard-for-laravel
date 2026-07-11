@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`DXDashboardNavbar` `searchAlign` prop** (#92). The search slot wrapper was
+  hardcoded `justify-content-center`, forcing apps that want the search flush
+  after the hamburger/title to fight it with an `!important` override. New
+  `searchAlign?: "start" | "center"` prop, forwarded from `DXDashboard`.
+
+### Changed
+- **The navbar search is now left-aligned by default** (#92). `searchAlign`
+  defaults to `"start"` (the Omni Tend layout: search flush after the title,
+  actions right-aligned before the user menu). Consumers relying on the old
+  centred search must set `search-align="center"`.
+
+### Removed
+- **`DXDashboard` `logoutUrl` prop.** It was dead wiring: forwarded to
+  `DXDashboardNavbar`, which has no such prop — nothing ever rendered a logout
+  link from it (the attribute just fell through onto the navbar's `<header>`).
+  Logout belongs to the consumer via the `user-menu-items` slot (pass a
+  `DDropdownItem`), as the docs example already shows.
+
+### Fixed
+- **`DXDashboard` no longer hardcodes its background colours.** The layout and
+  content-panel backgrounds (`#f8f9fa` / `#fff`) are now `var(--bs-light)` /
+  `var(--bs-white)` — identical rendering with stock Bootstrap, but they now
+  follow a theme that overrides those variables.
+
 ## [0.21.0] - 2026-07-11
 
 ### Added

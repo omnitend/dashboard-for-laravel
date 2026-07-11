@@ -32,7 +32,7 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
   { name: 'contentMaxWidth', type: 'string', default: "'1140px'", description: 'Max width of the centred content column (any CSS length) — a genuine cap so pages don’t stretch to ~2000px on a wide display. Ignored when fluid' },
   { name: 'contentClass', type: 'string', default: '-', description: 'Extra class(es) applied to the content container/column' },
   { name: 'user', type: '{ name: string; email: string } | null', default: 'null', description: 'User object for navbar dropdown' },
-  { name: 'logoutUrl', type: 'string', default: '\'/logout\'', description: 'Logout URL for navbar dropdown' },
+  { name: 'searchAlign', type: "'start' | 'center'", default: "'start'", description: 'Horizontal alignment of the navbar search slot content (start = flush left, center = centred), forwarded to DXDashboardNavbar' },
   { name: 'storageKey', type: 'string', default: '\'dashboard-sidebar-hidden\'', description: 'LocalStorage key for sidebar state persistence' },
 ]} />
 

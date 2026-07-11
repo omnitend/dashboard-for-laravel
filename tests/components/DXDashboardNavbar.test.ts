@@ -129,6 +129,31 @@ describe('DXDashboardNavbar', () => {
       expect(region?.querySelector('.custom-search')).toBeTruthy();
     });
 
+    it('left-aligns the search region by default', async () => {
+      const screen = render(DXDashboardNavbar, {
+        props: { pageTitle: 'Dashboard' },
+        slots: {
+          search: '<input class="custom-search" />',
+        },
+      });
+
+      const region = screen.container.querySelector('.dashboard-navbar__search');
+      expect(region?.classList.contains('justify-content-start')).toBe(true);
+      expect(region?.classList.contains('justify-content-center')).toBe(false);
+    });
+
+    it('centres the search region when searchAlign is "center"', async () => {
+      const screen = render(DXDashboardNavbar, {
+        props: { pageTitle: 'Dashboard', searchAlign: 'center' },
+        slots: {
+          search: '<input class="custom-search" />',
+        },
+      });
+
+      const region = screen.container.querySelector('.dashboard-navbar__search');
+      expect(region?.classList.contains('justify-content-center')).toBe(true);
+    });
+
     it('omits the search region when no search slot is provided', async () => {
       const screen = render(DXDashboardNavbar, {
         props: { pageTitle: 'Dashboard' },

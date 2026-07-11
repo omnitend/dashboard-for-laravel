@@ -30,3 +30,10 @@ export interface NavigationGroup {
 }
 
 export type Navigation = NavigationGroup[];
+
+/**
+ * Horizontal alignment of the navbar search slot content within its region:
+ * `"start"` = flush left (after the title from `md` up), `"center"` = centred.
+ * Shared by DXDashboard (which forwards it) and DXDashboardNavbar.
+ */
+export type NavbarSearchAlign = "start" | "center";

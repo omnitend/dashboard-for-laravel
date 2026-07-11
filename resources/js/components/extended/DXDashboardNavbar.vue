@@ -1,8 +1,9 @@
 <!--
   @component
-  Top navigation bar for the dashboard shell: menu toggle, page title, centred
-  search, page-level actions, and the user menu. Usually rendered by
-  `DXDashboard`, which forwards these slots with a `navbar-` prefix.
+  Top navigation bar for the dashboard shell: menu toggle, page title, search
+  (aligned per `searchAlign`, left by default), page-level actions, and the
+  user menu. Usually rendered by `DXDashboard`, which forwards these slots
+  with a `navbar-` prefix.
 -->
 <template>
   <header class="dashboard-navbar border-bottom">
@@ -39,9 +40,10 @@
 
         <div
           v-if="$slots.search"
-          class="dashboard-navbar__search d-flex justify-content-center"
+          class="dashboard-navbar__search d-flex"
+          :class="searchAlignClass"
         >
-          <!-- @slot Search input or component. Centred in the bar on wider screens; drops to its own full-width row below the `md` breakpoint. -->
+          <!-- @slot Search input or component. Aligned per `searchAlign` within its region (inline in the bar from `md` up; its own full-width row below). -->
           <slot name="search" />
         </div>
 
@@ -96,11 +98,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import DContainer from "../base/DContainer.vue";
 import DButton from "../base/DButton.vue";
 import DDropdown from "../base/DDropdown.vue";
+import type { NavbarSearchAlign } from "../../types/navigation";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     /** The signed-in user shown in the avatar dropdown. `null` hides the menu. */
     user?: {
@@ -110,11 +114,31 @@ withDefaults(
     } | null;
     /** Page title shown at the left of the navbar (hidden below the `md` breakpoint). */
     pageTitle?: string;
+    /**
+     * Horizontal alignment of the search slot content within its region
+     * (`"start"` = flush left, `"center"` = centred). Applies at every size:
+     * the region sits inline after the title from `md` up, and is its own
+     * full-width row below.
+     */
+    searchAlign?: NavbarSearchAlign;
   }>(),
   {
     user: null,
     pageTitle: "",
+    searchAlign: "start",
   },
+);
+
+// Explicit map (not string interpolation) so an out-of-union value at runtime
+// falls back to a valid class instead of a silent Bootstrap no-op, and the
+// full class names stay greppable.
+const SEARCH_ALIGN_CLASSES: Record<NavbarSearchAlign, string> = {
+  start: "justify-content-start",
+  center: "justify-content-center",
+};
+
+const searchAlignClass = computed(
+  () => SEARCH_ALIGN_CLASSES[props.searchAlign] ?? SEARCH_ALIGN_CLASSES.start,
 );
 
 defineEmits<{
@@ -148,8 +172,8 @@ const getUserInitial = (user: { name: string } | null) => {
 /*
  * Mobile-first: the search sits on its own full-width row below the toggle /
  * title / user-menu row (order after both, flex-basis 100% forces the wrap).
- * From `md` up it moves inline between the title and the user menu and grows to
- * fill the middle, centring its content.
+ * From `md` up it moves inline between the title and the user menu and grows
+ * to fill the middle; `searchAlign` controls where its content sits.
  */
 .dashboard-navbar__search {
   order: 3;
