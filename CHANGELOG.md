@@ -23,11 +23,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty string, an empty array) purely because it was declared.
 
 ### Fixed
+- **A custom `provider` gets the per-page selector, not just page buttons**
+  (#106). The pager and the selector were reading different pagination sources.
+- **`submit: false` is enforced at submit, not just at seeding** (#110). The
+  modal still renders the field, so a control — or a `span` slot calling
+  `update` — wrote the key straight back into the form data after seeding, and
+  the whole of it was submitted. Non-submitting keys are now stripped on the way
+  out.
 - **A column can filter on a different key** (#106). The filter param was
   hard-wired to the column's own key, forcing columns to be named after the
   server's filter params (`customer_id`) and the human-facing value into a
   `#cell` slot. New `filterKey` field option: a "Customer" column can render a
-  name and filter on `customer_id`.
+  name and filter on `customer_id`. `filterKey` names the param the *server*
+  filters on; client-side, a row that doesn't carry that key falls back to the
+  column's own value.
 - **A `select` filter can express "no value"** (#106). New `filterNullText`
   field option (e.g. `"Unassigned"` on an assignee column) adds an option that
   sends `filterNullValue` (default `"null"`); client-side it matches rows whose

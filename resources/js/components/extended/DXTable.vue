@@ -1078,20 +1078,31 @@ const apiPaginationMeta = ref<PaginationData | null>(null);
  * shaping quietly lost its pager (#106). A custom provider now takes its
  * pagination from the `pagination` prop, and says so when it's missing.
  */
+// `pagination` carries a default from withDefaults, so props alone can't tell
+// whether the consumer actually passed one — ask the vnode. (Gating on
+// `total > 0` instead would treat a legitimately empty page as "no pagination".)
+const paginationWasProvided = 'pagination' in (instance?.vnode.props ?? {});
+
 const providerPagination = computed<PaginationData | null>(() => {
     if (apiPaginationMeta.value) return apiPaginationMeta.value;
-    if (props.provider && props.pagination && props.pagination.total > 0) {
+    if (props.provider && paginationWasProvided && props.pagination) {
         return props.pagination;
     }
     return null;
 });
 
-// Loud, once, rather than a silently pager-less table.
+/*
+ * Loud, once, rather than a silently pager-less table — but only AFTER the
+ * provider has actually run, and judged on `providerPagination` (not the raw
+ * apiPaginationMeta). Warning at setup would fire on every consumer whose
+ * `pagination` prop arrives with the response rather than before it.
+ */
+const providerHasRun = ref(false);
 let warnedAboutProviderPagination = false;
 watch(
-    () => [props.provider, props.showPagination, apiPaginationMeta.value] as const,
-    ([provider, showPagination, pagination]) => {
-        if (warnedAboutProviderPagination) return;
+    () => [props.provider, props.showPagination, providerPagination.value, providerHasRun.value] as const,
+    ([provider, showPagination, pagination, hasRun]) => {
+        if (warnedAboutProviderPagination || !hasRun) return;
         if (provider && showPagination && !pagination) {
             warnedAboutProviderPagination = true;
             // eslint-disable-next-line no-console
@@ -1101,7 +1112,6 @@ watch(
             );
         }
     },
-    { immediate: true },
 );
 
 // ============================================
@@ -1127,7 +1137,15 @@ const clientSideFilteredItems = computed<T[]>(() => {
             const filterValue = filters[key].trim().toLowerCase();
             // Resolve by the FILTER key, which may differ from the column's key.
             const field = props.fields.find(f => filterKeyFor(f) === key);
-            const itemValue = (item as any)[key];
+            // `filterKey` names the param the SERVER filters on; a local row may
+            // not carry it at all (a `customer_name` row filtered on
+            // `customer_id`). Match on the filter key when the row has it,
+            // otherwise fall back to the column's own value — which is also the
+            // one the user can actually see and type against.
+            const itemValue =
+                field && key in (item as any)
+                    ? (item as any)[key]
+                    : (item as any)[field?.key ?? key];
 
             // The "no value" option (e.g. Unassigned) is the one filter that
             // MATCHES an absent value rather than failing on it.
@@ -1288,8 +1306,10 @@ watch(() => props.pagination?.per_page, (newPerPage) => {
 
 // Watch for external filter changes (when filters prop is controlled by parent)
 watch(() => props.filters, (newFilters, oldFilters) => {
-    // Only trigger refresh if filters prop is being used (not internal state)
-    if (props.filters === undefined) return;
+    // Only when the consumer CONTROLS filters. Uncontrolled, the prop is just a
+    // seed: `effectiveFilters` stays internal, so refreshing on a later prop
+    // change would fetch with filters the table isn't actually showing (#110).
+    if (!isControlled.filters || props.filters === undefined) return;
 
     // Only refresh if filters actually changed
     if (JSON.stringify(newFilters) === JSON.stringify(oldFilters)) return;
@@ -1425,7 +1445,10 @@ const shouldShowPerPageSelector = computed(() => {
         ? clientSidePagination.value?.total || 0
         : isInertiaMode.value
             ? props.pagination?.total || 0
-            : apiPaginationMeta.value?.total || 0;
+            // Same source as the pager itself — reading apiPaginationMeta here
+            // hid the selector for a custom provider whose pagination comes
+            // from the `pagination` prop, while the page buttons still showed.
+            : providerPagination.value?.total || 0;
 
     return total >= smallestOption;
 });
@@ -1519,6 +1542,8 @@ const wrappedProvider: BTableProvider<T> = async (context: Readonly<BTableProvid
             error?.message ||
             'Failed to load data. Please try again.';
         return [];
+    } finally {
+        providerHasRun.value = true;
     }
 };
 
@@ -1779,6 +1804,20 @@ const submittableEditFields = computed(() =>
     (props.editFields ?? []).filter((field) => field.submit !== false),
 );
 
+// Enforced at SUBMIT, not just at seeding: the modal still renders every field,
+// so a `submit: false` control — or a `span` slot calling `update` — can write
+// its key back into the form data after seeding. Strip them on the way out.
+const nonSubmittedFieldKeys = computed(
+    () => new Set((props.editFields ?? []).filter((field) => field.submit === false).map((field) => field.key)),
+);
+
+const stripNonSubmittedFields = (data: Record<string, any>): Record<string, any> => {
+    if (nonSubmittedFieldKeys.value.size === 0) return data;
+    return Object.fromEntries(
+        Object.entries(data).filter(([key]) => !nonSubmittedFieldKeys.value.has(key)),
+    );
+};
+
 const tableSlots = useSlots();
 
 /*
@@ -2009,6 +2048,7 @@ const performSave = async () => {
     if (isCreateMode.value && props.createUrl) {
         try {
             await editForm.value.post(props.createUrl, {
+                transform: stripNonSubmittedFields,
                 onSuccess: (data: any) => {
                     createToast?.({
                         title: 'Success',
@@ -2061,6 +2101,7 @@ const performSave = async () => {
             const url = props.editUrl.replace(':id', itemId);
 
             await editForm.value.put(url, {
+                transform: stripNonSubmittedFields,
                 onSuccess: (data: any) => {
                     // Show success toast
                     createToast?.({

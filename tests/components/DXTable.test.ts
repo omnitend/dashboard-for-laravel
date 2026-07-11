@@ -1684,3 +1684,112 @@ describe('DXTable filter and provider gaps (#106)', () => {
     expect(actionsHeader.textContent).not.toContain('actions');
   });
 });
+
+/**
+ * Codex review of the #105/#106/#107/#110 batch. Three real defects, all of the
+ * same shape: a fix wired at ONE of the places that needed it.
+ */
+describe('DXTable review fixes (#106, #110)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows the per-page selector for a custom provider, not just the page buttons', async () => {
+    // The pager read `providerPagination` but the selector still read
+    // `apiPaginationMeta`, which only the built-in provider populates — so a
+    // custom provider got page buttons and no per-page selector.
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            provider: () => Promise.resolve([{ id: 1, name: 'A' }]),
+            fields: [{ key: 'name', label: 'Name' }],
+            pagination: { current_page: 1, per_page: 10, total: 45, from: 1, to: 10 },
+          }),
+        ),
+    });
+    await wait(150);
+
+    expect(screen.container.querySelector('.pagination')).not.toBeNull();
+    expect(screen.container.textContent).toContain('Per page');
+  });
+
+  it('filters client-side on the column a row actually has, when it lacks the filterKey', async () => {
+    // `filterKey` names the param the SERVER filters on. A local row may not
+    // carry it at all, and matching only on it made every row fail.
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: [{ id: 1, customer_name: 'Alpha Ltd' }, { id: 2, customer_name: 'Beta Ltd' }],
+            clientSide: true,
+            fields: [
+              { key: 'customer_name', label: 'Customer', filter: 'text', filterKey: 'customer_id' },
+            ],
+          }),
+        ),
+    });
+    await flush();
+
+    await userEvent.fill(
+      screen.container.querySelector('.filter-row input') as HTMLElement,
+      'Beta',
+    );
+    await wait(80);
+
+    const rows = screen.container.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(1);
+    expect(rows[0].textContent).toContain('Beta Ltd');
+  });
+
+  it('strips a submit:false field from the payload even after the form writes it back', async () => {
+    // submit:false only skipped SEEDING. The modal still renders the field, so
+    // a control (or a span slot calling `update`) wrote the key straight back
+    // into form.data, and the whole of form.data was submitted.
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({ data: {} }),
+        }) as any,
+    );
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: [{ id: 1, name: 'Row A', notice: '' }],
+            fields: [{ key: 'name', label: 'Name' }],
+            // A plain (non-span) field marked submit:false — it renders a real
+            // control, so the user can type into it.
+            editFields: [
+              { key: 'name', type: 'text', label: 'Name' },
+              { key: 'notice', type: 'text', label: 'Notice', submit: false },
+            ],
+            editUrl: '/api/things/:id',
+          }),
+        ),
+    });
+    await flush();
+
+    (screen.container.querySelector('tbody tr') as HTMLElement).click();
+    await wait(150);
+
+    // Type into the presentational field, so it definitely lands in form.data.
+    const inputs = [...document.querySelectorAll('.modal input[type="text"]')] as HTMLInputElement[];
+    await userEvent.fill(inputs[inputs.length - 1], 'typed into it');
+    await wait(60);
+
+    const saveButton = [...document.querySelectorAll('button')].find((button) =>
+      button.textContent?.match(/save changes/i),
+    ) as HTMLElement;
+    saveButton.click();
+    await wait(150);
+
+    const payload = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);
+    expect(payload).toHaveProperty('name');
+    expect(payload).not.toHaveProperty('notice');
+  });
+});
