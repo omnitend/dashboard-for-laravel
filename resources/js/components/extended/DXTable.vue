@@ -80,10 +80,10 @@
                                         v-else-if="field.filter === 'select'"
                                         :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :options="getFieldFilterOptions(field)"
-                                        :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
+                                        :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
                                         size="sm"
                                         open-on-focus
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), ($event ?? '') as string)"
+                                        @update:model-value="handleSelectFilterChange(field, $event)"
                                     />
 
                                     <!-- Number Filter -->
@@ -176,10 +176,10 @@
                                         v-else-if="field.filter === 'select'"
                                         :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :options="getFieldFilterOptions(field)"
-                                        :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
+                                        :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
                                         size="sm"
                                         open-on-focus
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), ($event ?? '') as string)"
+                                        @update:model-value="handleSelectFilterChange(field, $event)"
                                     />
 
                                     <!-- Number Filter -->
@@ -273,10 +273,10 @@
                                         v-else-if="field.filter === 'select'"
                                         :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :options="getFieldFilterOptions(field)"
-                                        :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
+                                        :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
                                         size="sm"
                                         open-on-focus
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), ($event ?? '') as string)"
+                                        @update:model-value="handleSelectFilterChange(field, $event)"
                                     />
 
                                     <!-- Number Filter -->
@@ -685,6 +685,14 @@ export interface TableField {
 
     /** The value sent when the `filterNullText` option is chosen. Default `"null"`. */
     filterNullValue?: string;
+
+    /**
+     * Text of the "clear this filter" option at the top of a `select` filter's
+     * list (default: the filter's placeholder, e.g. "All statuses"). The list
+     * otherwise offers no way back to *unfiltered* once a value is picked —
+     * only the ✕, which isn't discoverable from inside the open dropdown.
+     */
+    filterAllText?: string;
     sortable?: boolean;
     hint?: string;
     filter?: FilterType;
@@ -1228,6 +1236,20 @@ const filterKeyFor = (field: TableField): string => field.filterKey ?? field.key
 // The value that means "has no value" for a select filter (#106).
 const filterNullValueFor = (field: TableField): string => field.filterNullValue ?? 'null';
 
+// The filter's placeholder, and the label of its "no filter" option — the same
+// words, so picking the top option visibly returns the field to its resting state.
+// See getFieldFilterOptions: an empty-string option value makes bvn render no
+// options at all, so "no filter" needs a value that isn't empty.
+const FILTER_ALL_VALUE = '__dx_filter_all__';
+
+const handleSelectFilterChange = (field: TableField, value: unknown) => {
+    const selected = (value ?? '') as string;
+    handleFilterChange(filterKeyFor(field), selected === FILTER_ALL_VALUE ? '' : selected);
+};
+
+const filterAllLabelFor = (field: TableField): string =>
+    field.filterAllText ?? field.filterPlaceholder ?? `All ${field.label || field.key}`;
+
 /**
  * Column header text. An explicitly empty `label` means an EMPTY header — an
  * actions column headed `actions` (lowercase, as-keyed) is a leak, not a
@@ -1239,7 +1261,19 @@ const headerLabel = (field: TableField, slotLabel?: string): string =>
 const getFieldFilterOptions = (field: TableField): FilterOption[] => {
     const options: FilterOption[] = [];
 
-    // An "Unassigned"-style option, so a select filter can express "no value".
+    // The way back to *unfiltered*. Without it the dropdown lists only the
+    // values, so once a filter is picked the only way to clear it is the ✕ —
+    // which isn't discoverable from inside the open list.
+    //
+    // It carries a SENTINEL, not `''`. bvn drops the ENTIRE option list if any
+    // option's value is an empty string — not just that entry, the whole list —
+    // so the obvious encoding of "no filter" silently empties the dropdown.
+    // `handleSelectFilterChange` translates it back to `''`, which is already
+    // how the filter map represents unset.
+    options.push({ value: FILTER_ALL_VALUE, text: filterAllLabelFor(field) });
+
+    // An "Unassigned"-style option, so a select filter can express "has no value"
+    // — a different thing from "no filter" above.
     if (field.filterNullText) {
         options.push({ value: filterNullValueFor(field), text: field.filterNullText });
     }
@@ -1257,7 +1291,8 @@ const getFieldFilterOptions = (field: TableField): FilterOption[] => {
         return [...options, ...serverValues.map(value => ({ value, text: value }))];
     }
 
-    return options;
+    // No values to choose from — don't offer a lone "All x" that filters nothing.
+    return [];
 };
 
 // LocalStorage key for perPage preference

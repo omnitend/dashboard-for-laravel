@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **A select column filter now offers a way back to unfiltered** (#106 follow-up).
+  The dropdown listed only the values, so once a filter was picked the only way
+  to clear it was the ✕ — which isn't discoverable from inside the open list. The
+  list now leads with an "All {column}" option (wording follows the filter's
+  placeholder; override with `filterAllText`).
+
+  It carries a sentinel value, not `''`: **bvn drops the entire option list if any
+  option's value is an empty string** — not just that entry, all of them — so the
+  obvious encoding of "no filter" silently empties the dropdown. Pinned by a test.
+
+### Fixed
+- **The navbar's 64px budget has one owner, and breaking it is no longer silent**
+  (#102). The bar lines up with the sidebar's fixed-height header only while its
+  single-row content fits a budget that was arithmetic over magic numbers spread
+  across two files, with nothing enforcing it.
+
+  The numbers now derive from one source in `theme.scss`, and the budget is
+  published as `--dx-navbar-content-height` so consumers can size slot content to
+  it. **The budget was also wrong**: it's 47px, not the 48px the old comment
+  claimed — `.dashboard-navbar` is border-box, so its 64px has to contain the bar
+  *and* its own 1px `border-bottom`, and that uncounted pixel pushed the header to
+  65px. The avatar toggle is now sized *from* the budget, so an oversized
+  `user-icon` centres inside it instead of growing the bar.
+
+  Slot content still can't be capped without clipping it, so when something on the
+  bar's single row does blow the budget, the navbar now **says so** rather than
+  quietly misaligning the shell. It measures whether the row actually wrapped
+  rather than inferring it from a breakpoint, so a phone layout (where the bar is
+  *meant* to grow) doesn't cry wolf.
+
 ### Fixed
 - **The navbar's `md` breakpoint is now expressed once, not twice** (#101). The
   bar's responsive behaviour was split between Bootstrap utility classes

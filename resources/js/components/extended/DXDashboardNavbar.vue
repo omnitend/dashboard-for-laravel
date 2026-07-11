@@ -6,11 +6,11 @@
   with a `navbar-` prefix.
 -->
 <template>
-  <header class="dashboard-navbar border-bottom">
+  <header ref="headerRef" class="dashboard-navbar border-bottom">
     <DContainer fluid>
       <!-- Flex bar that wraps: below `md` the search drops to its own
            full-width row beneath the toggle/title/user-menu row. -->
-      <div class="dashboard-navbar__bar d-flex flex-wrap align-items-center gap-3">
+      <div ref="barRef" class="dashboard-navbar__bar d-flex flex-wrap align-items-center gap-3">
         <div class="dashboard-navbar__start d-flex align-items-center gap-3">
           <DButton
             variant="link"
@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import DContainer from "../base/DContainer.vue";
 import DButton from "../base/DButton.vue";
 import DDropdown from "../base/DDropdown.vue";
@@ -188,6 +188,72 @@ defineEmits<{
   toggleSidebar: [];
 }>();
 
+/*
+ * The 64px invariant, made loud instead of silent (#102).
+ *
+ * The bar aligns with the sidebar's fixed-height header only while its
+ * single-row content fits the budget (`--dx-navbar-content-height`). Our own
+ * chrome is sized FROM that budget so it can't break it — but slot content is
+ * the consumer's, and a `btn-lg` in `actions` or an oversized `user-icon` grows
+ * the bar and quietly misaligns the whole shell.
+ *
+ * We can't cap slot content without clipping it, which would be worse. So we
+ * detect the overflow and say so, rather than letting it pass unnoticed.
+ *
+ * "Single row" is measured (do all the bar's children share an offsetTop?),
+ * NOT inferred from a breakpoint — below `md` the bar is *supposed* to grow as
+ * the search and actions wrap (#93), and hardcoding a width here would
+ * reintroduce exactly the duplicate-breakpoint problem #101 removed.
+ */
+const headerRef = ref<HTMLElement | null>(null);
+const barRef = ref<HTMLElement | null>(null);
+let resizeObserver: ResizeObserver | null = null;
+let warnedAboutHeight = false;
+
+const checkContentBudget = () => {
+  const header = headerRef.value;
+  const bar = barRef.value;
+  if (warnedAboutHeight || !header || !bar) return;
+
+  const children = [...bar.children] as HTMLElement[];
+  if (children.length === 0) return;
+
+  // Compare vertical CENTRES, not `offsetTop`: the bar centres its items, so on
+  // a single row their tops differ by however much their heights differ. (An
+  // offsetTop comparison silently never fires — it was the first thing tried.)
+  const centres = children.map((child) => child.offsetTop + child.offsetHeight / 2);
+  const isSingleRow = centres.every((centre) => Math.abs(centre - centres[0]) < 1);
+  if (!isSingleRow) return; // wrapped: growing is correct here (#93).
+
+  const budget = parseFloat(
+    getComputedStyle(header).getPropertyValue("--dx-navbar-height"),
+  );
+  if (!budget) return;
+
+  // Sub-pixel tolerance: a fractional layout shouldn't trip this.
+  if (header.getBoundingClientRect().height > budget + 0.5) {
+    warnedAboutHeight = true;
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[DXDashboardNavbar] The bar is taller than ${budget}px, so it no longer lines up with the sidebar header. ` +
+        "Something on its single row exceeds the content budget — size tall slot content " +
+        "(actions, user-icon) against `var(--dx-navbar-content-height)`.",
+    );
+  }
+};
+
+onMounted(() => {
+  if (typeof window === "undefined" || typeof ResizeObserver === "undefined") return;
+  resizeObserver = new ResizeObserver(checkContentBudget);
+  if (headerRef.value) resizeObserver.observe(headerRef.value);
+  checkContentBudget();
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+});
+
 const getUserInitial = (user: { name: string } | null) => {
   if (!user?.name) return "";
   return user.name.charAt(0).toUpperCase();
@@ -201,9 +267,11 @@ const getUserInitial = (user: { name: string } | null) => {
   z-index: 1000;
 }
 
+/* The bar's vertical padding — and the single-row content budget derived from
+   it — is owned by theme.scss (`$dashboard-navbar-bar-padding-y`), so the
+   geometry has one source (#102). Only the floor lives here. */
 .dashboard-navbar__bar {
   min-height: 3.5rem;
-  padding: 0.5rem 0;
 }
 
 /*

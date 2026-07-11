@@ -1793,3 +1793,103 @@ describe('DXTable review fixes (#106, #110)', () => {
     expect(payload).not.toHaveProperty('notice');
   });
 });
+
+/**
+ * A select filter's dropdown listed only the values, so once a filter was
+ * picked the only way back to *unfiltered* was the ✕ — which isn't discoverable
+ * from inside the open list. Reported live: "All statuses is not actually shown
+ * in this dropdown".
+ */
+describe('DXTable select filter offers a way back to unfiltered', () => {
+  const items = [
+    { id: 1, status: 'pending' },
+    { id: 2, status: 'printed' },
+  ];
+  const fields = [
+    {
+      key: 'status',
+      label: 'statuses',
+      filter: 'select',
+      filterOptions: [
+        { value: 'pending', text: 'pending' },
+        { value: 'printed', text: 'printed' },
+      ],
+    },
+  ];
+
+  // bvn only mounts the option list once the user types into the control, so
+  // that's how the options are surfaced here.
+  const optionsMatching = async (screen: any, typed: string) => {
+    const input = screen.container.querySelector('.filter-row input') as HTMLElement;
+    await userEvent.click(input);
+    await userEvent.fill(input, typed);
+    await wait(150);
+    return [...document.querySelectorAll('[role="option"]')] as HTMLElement[];
+  };
+
+  it('offers an "All statuses" option, so the list has a way back to unfiltered', async () => {
+    const screen = render({
+      render: () => h(BApp, {}, () => h(DXTable, { items, fields, clientSide: true })),
+    });
+    await flush();
+
+    const options = await optionsMatching(screen, 'All');
+    expect(options.map((o) => o.textContent)).toContain('All statuses');
+  });
+
+  it('picking it clears the filter and shows every row again', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, { items, fields, clientSide: true, filters: { status: 'pending' } }),
+        ),
+    });
+    await flush();
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(1);
+
+    const options = await optionsMatching(screen, 'All');
+    const all = options.find((o) => o.textContent === 'All statuses') as HTMLElement;
+    expect(all).toBeTruthy();
+    all.click();
+    await wait(150);
+
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(2);
+  });
+
+  it('uses the filter placeholder wording, so the option and the resting state match', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items,
+            fields: [{ ...fields[0], filterPlaceholder: 'Any status' }],
+            clientSide: true,
+          }),
+        ),
+    });
+    await flush();
+
+    const input = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+    expect(input.placeholder).toBe('Any status');
+
+    const options = await optionsMatching(screen, 'Any');
+    expect(options.map((o) => o.textContent)).toContain('Any status');
+  });
+
+  it('offers no lone "All x" when the column has no values to filter by', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items,
+            fields: [{ key: 'status', label: 'statuses', filter: 'select' }],
+            clientSide: true,
+          }),
+        ),
+    });
+    await flush();
+
+    const options = await optionsMatching(screen, 'All');
+    expect(options.map((o) => o.textContent)).not.toContain('All statuses');
+  });
+});

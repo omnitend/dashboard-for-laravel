@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-vue';
+import { userEvent } from 'vitest/browser';
 import { h, ref } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import DAutocomplete from '../../resources/js/components/base/DAutocomplete.vue';
@@ -81,5 +82,48 @@ describe('DAutocomplete clear button (#108)', () => {
     await wait(80);
 
     expect(screen.container.querySelector('.b-autocomplete-clear')).toBeNull();
+  });
+});
+
+/**
+ * A trap worth a permanent guard: bvn drops the ENTIRE option list if any
+ * option's value is an empty string — not just that entry, all of them. So the
+ * obvious encoding of a "no filter" / "All x" option (`value: ''`) silently
+ * empties the dropdown. DXTable uses a sentinel value instead; this pins the
+ * upstream behaviour so we notice if it ever changes.
+ */
+describe('DAutocomplete: an empty-string option value empties the whole list (upstream)', () => {
+  const optionTexts = async (options: any[]) => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () => h(DAutocomplete, { options, modelValue: '', openOnFocus: true })),
+    });
+    await wait(80);
+    const input = screen.container.querySelector('input') as HTMLElement;
+    await userEvent.click(input);
+    await wait(250);
+    return [...document.querySelectorAll('[role="option"]')].map((option) => option.textContent);
+  };
+
+  // Asserted as a contrast in one test: the ONLY difference between the two
+  // lists is the first option's value.
+  it('drops every option when one value is "", and keeps them all when it is not', async () => {
+    const withEmptyValue = await optionTexts([
+      { value: '', text: 'All statuses' },
+      { value: 'pending', text: 'pending' },
+    ]);
+    const withSentinelValue = await optionTexts([
+      { value: '__all__', text: 'All statuses' },
+      { value: 'pending', text: 'pending' },
+    ]);
+
+    // Not just the '' entry — the WHOLE list vanishes. That's why DXTable's
+    // "All x" option carries a sentinel (FILTER_ALL_VALUE) rather than ''.
+    expect(withEmptyValue).toEqual([]);
+
+    // If the first assertion ever starts failing, bvn has fixed this upstream
+    // and the sentinel can go.
+    expect(withSentinelValue).toContain('All statuses');
+    expect(withSentinelValue).toContain('pending');
   });
 });

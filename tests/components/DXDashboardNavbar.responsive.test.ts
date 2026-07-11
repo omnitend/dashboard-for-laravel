@@ -15,7 +15,7 @@
  * after editing theme.scss, `npm run build` first or these tests exercise
  * stale CSS.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-vue';
 import { defineComponent, h } from 'vue';
@@ -197,5 +197,132 @@ describe('DXDashboardNavbar responsive layout (#93)', () => {
     expect(toggle.height).toBeGreaterThanOrEqual(44);
     expect(toggle.height).toBeLessThanOrEqual(48);
     expect(rect(screen.container, '.dashboard-navbar').height).toBe(64);
+  });
+});
+
+/**
+ * #102. The navbar lines up with the sidebar's fixed 64px header only while the
+ * bar's single-row content stays inside its budget. That budget was arithmetic
+ * over magic numbers spread across two files with nothing enforcing it, and the
+ * only test used the DEFAULT avatar — so non-default slot content broke the
+ * alignment silently. These use non-default content on purpose.
+ *
+ * The budget is published as `--dx-navbar-content-height`, and it is 47px, not
+ * the 48px the old comment claimed: `.dashboard-navbar` is border-box, so its
+ * 64px must contain the bar AND its own 1px `border-bottom`. That uncounted
+ * pixel is exactly what pushed the header to 65px.
+ */
+describe('DXDashboardNavbar 64px budget with non-default content (#102)', () => {
+  const renderNavbar = (slots: Record<string, any> = {}) =>
+    render(
+      defineComponent({
+        setup() {
+          return () =>
+            h('div', {}, [
+              h(DXDashboardNavbar, { pageTitle: 'Customers', user: sampleUser }, slots),
+            ]);
+        },
+      }),
+    );
+
+  const headerHeight = (screen: any) =>
+    (screen.container.querySelector('.dashboard-navbar') as HTMLElement).getBoundingClientRect()
+      .height;
+
+  it('publishes the content budget as a CSS variable', async () => {
+    await page.viewport(1280, 800);
+    const screen = renderNavbar();
+    await settled();
+
+    const header = screen.container.querySelector('.dashboard-navbar') as HTMLElement;
+    const budget = getComputedStyle(header).getPropertyValue('--dx-navbar-content-height').trim();
+
+    // Consumers size slot content against this rather than guessing at it.
+    expect(budget).not.toBe('');
+
+    // 47, not 48: `.dashboard-navbar` is border-box, so its 64px has to contain
+    // the bar AND its own 1px border-bottom. That uncounted pixel is exactly
+    // what used to push the header to 65.
+    const toggle = screen.container.querySelector(
+      '.dashboard-navbar__user-menu-toggle',
+    ) as HTMLElement;
+    expect(toggle.getBoundingClientRect().height).toBe(47);
+  });
+
+  it('holds the header at 64px with an oversized avatar in the user-icon slot', async () => {
+    await page.viewport(1280, 800);
+    // A 40px avatar used to make the toggle ~54px tall and push the bar past 64.
+    const screen = renderNavbar({
+      'user-icon': () =>
+        h('div', { style: 'width:40px;height:40px;border-radius:50%;background:#333' }),
+    });
+    await settled();
+
+    expect(headerHeight(screen)).toBe(64);
+
+    // The toggle stays on budget; the oversized content centres inside it.
+    const toggle = screen.container.querySelector(
+      '.dashboard-navbar__user-menu-toggle',
+    ) as HTMLElement;
+    expect(toggle.getBoundingClientRect().height).toBe(47);
+  });
+
+  // The library can't cap arbitrary slot content without clipping it, which
+  // would be worse than growing. What it CAN do is stop the breakage being
+  // silent — which was the actual complaint in #102.
+  it('warns (rather than silently misaligning) when slot content blows the budget', async () => {
+    await page.viewport(1280, 800);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const screen = renderNavbar({
+      actions: () => h('button', { class: 'btn btn-primary btn-lg' }, 'New customer'),
+    });
+    await settled();
+    // ResizeObserver fires after layout, asynchronously.
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    // It does still grow — that's the honest outcome, and it's now reported.
+    expect(headerHeight(screen)).toBeGreaterThan(64);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('no longer lines up with the sidebar header'),
+    );
+
+    warn.mockRestore();
+  });
+
+  it('does not warn when the bar legitimately grows on a wrapped phone layout', async () => {
+    // Below `md` the search and actions wrap onto their own rows and the bar is
+    // MEANT to grow (#93). Warning there would cry wolf on every phone.
+    await page.viewport(380, 800);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    renderNavbar({
+      actions: () => h('button', { class: 'btn btn-primary' }, 'New customer'),
+      search: () => h('input', { class: 'form-control' }),
+    });
+    await settled();
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('does not warn for a navbar that fits', async () => {
+    await page.viewport(1280, 800);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    renderNavbar();
+    await settled();
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('stays aligned with the sidebar header, which is a fixed 64px', async () => {
+    await page.viewport(1280, 800);
+    const screen = renderNavbar();
+    await settled();
+
+    // If these two ever disagree the shell is visibly misaligned — the invariant.
+    expect(headerHeight(screen)).toBe(64);
   });
 });
