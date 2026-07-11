@@ -101,6 +101,10 @@ const items = ref([
   { name: 'title', type: 'string', required: 'No', default: '-', description: 'Table title' },
   { name: 'itemName', type: 'string', required: 'No', default: 'item', description: 'Singular item name (auto-pluralized for display)' },
   { name: 'items', type: 'TItem[]', required: 'No', default: '-', description: 'Table data items (for Inertia or client-side mode)' },
+  { name: 'footClone', type: 'boolean', required: 'No', default: 'false', description: 'Render a <tfoot> mirroring the header, so #foot(<key>) slots can hold per-column totals' },
+  { name: 'showEmpty', type: 'boolean', required: 'No', default: 'true', description: 'Show a message row when there are no rows (an empty body otherwise looks broken)' },
+  { name: 'emptyText', type: 'string', required: 'No', default: 'No {items} found', description: 'Message shown when there are no rows. Becomes "No {items} match your filters" when a filter is active' },
+  { name: 'expandedItems', type: 'TItem[]', required: 'No', default: '[]', description: 'Rows currently expanded (v-model). Pair with the row-expansion slot' },
   { name: 'clientSide', type: 'boolean', required: 'No', default: 'false', description: 'Enable client-side filtering, sorting, and pagination' },
   { name: 'provider', type: 'BTableProvider<TItem>', required: 'No', default: '-', description: 'Provider function for API mode' },
   { name: 'apiUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint URL for auto-provider mode' },
@@ -158,9 +162,74 @@ const items = ref([
 
 ## Slots
 
+DXTable's own slots:
+
 <SlotsTable client:load slots={[
-  { name: 'header', description: 'Custom header content' },
+  { name: 'header', description: 'Custom card header content (overrides the title and the built-in New button)' },
+  { name: 'edit-value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s control in the edit modal' },
+  { name: 'edit-span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for an edit-modal field marked span: true' },
+  { name: 'tab-content(<key>) / tab-before(<key>) / tab-after(<key>)', props: 'tab, model', description: 'Edit-modal tab content slots (see DXForm)' },
 ]} />
+
+Every slot the **underlying table** supports is forwarded with its scope:
+
+<SlotsTable client:load slots={[
+  { name: 'cell(<key>)', props: 'item, value, index, field', description: 'Custom rendering for a column\'s cell' },
+  { name: 'foot(<key>)', props: 'label, field', description: 'A footer cell, under its own column — use for totals. Requires footClone' },
+  { name: 'custom-foot', props: 'items, fields', description: 'A fully custom <tfoot> (instead of footClone)' },
+  { name: 'empty', props: 'items, fields', description: 'Replaces the no-rows message entirely' },
+  { name: 'row-expansion', props: 'item, index, fields', description: 'Detail content rendered under an expanded row (pair with v-model:expanded-items)' },
+  { name: 'top-row / bottom-row', props: 'fields', description: 'An extra row pinned above / below the data rows' },
+  { name: 'thead-sub', props: 'items, fields', description: 'A second header row beneath the column headers' },
+  { name: 'table-caption / table-colgroup / table-busy', props: '-', description: 'Caption, colgroup and busy-state slots' },
+]} />
+
+Two table slots are **not** forwarded, because DXTable renders them itself:
+`head(<key>)` (it draws the column headers, with sort indicators and field
+hints) and `thead-top` (it renders the inline filter row there).
+
+## Totals row
+
+Set `foot-clone` to render a `<tfoot>` mirroring the header, then fill the
+columns you want with `#foot(<key>)`. The numbers line up under their data,
+which is the whole point of a footer over a summary bar above the table:
+
+```vue
+<DXTable :items="lines" :fields="fields" foot-clone>
+  <template #foot(amount)>
+    <strong>{{ total }}</strong>
+  </template>
+  <template #foot(name)>Total</template>
+</DXTable>
+```
+
+For a footer that isn't a per-column mirror, use `#custom-foot` instead.
+
+## Empty state
+
+When there are no rows, DXTable renders a message rather than a bare header —
+an empty body is otherwise indistinguishable from a broken one. It reads
+`No {items} found`, or `No {items} match your filters` when a column filter is
+active, pluralised from `item-name`.
+
+Override the wording with `empty-text`, replace the row entirely with the
+`empty` slot, or turn it off with `:show-empty="false"`.
+
+## Expandable rows
+
+Bind `v-model:expanded-items` and provide a `row-expansion` slot to open detail
+content **under** a row, instead of pushing every per-row detail into a modal:
+
+```vue
+<DXTable v-model:expanded-items="expanded" :items="entries" :fields="fields">
+  <template #cell(actions)="{ item }">
+    <DButton size="sm" @click="toggle(item)">Details</DButton>
+  </template>
+  <template #row-expansion="{ item }">
+    <pre>{{ item.payload }}</pre>
+  </template>
+</DXTable>
+```
 
 ## Sorting
 

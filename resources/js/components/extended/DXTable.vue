@@ -55,7 +55,9 @@
                         :hover="hover"
                         :responsive="responsive"
                         :busy="busy"
+                        v-bind="tablePassthroughProps"
                         @update:sort-by="handleSortChange"
+                        @update:expanded-items="emit('update:expandedItems', $event)"
                         @update:current-page="apiCurrentPage = $event"
                         @update:busy="handleBusyChange"
                         @row-clicked="handleRowClick"
@@ -123,23 +125,19 @@
                             </div>
                         </template>
 
-                        <!-- Pass through all cell slots -->
+                        <!-- Forward every slot the inner table understands: cell(<key>),
+                             foot(<key>), custom-foot, empty, empty-filtered, row-expansion,
+                             table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
+                             See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="(_, name) in $slots"
+                            v-for="name in forwardedTableSlotNames"
+                            :key="name"
                             #[name]="slotProps"
                         >
                             <!--
-                              @slot Custom rendering for a column's cell. Name it `cell(<fieldKey>)` to target a field; receives the underlying table cell scope.
-                              @binding {object} item The row data object for this cell.
-                              @binding {any} value The cell value for the field.
-                              @binding {number} index The zero-based row index.
-                              @binding {object} field The field definition for the column.
+                              @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot
-                                v-if="typeof name === 'string' && name.startsWith('cell')"
-                                :name="name"
-                                v-bind="slotProps"
-                            />
+                            <slot :name="name" v-bind="slotProps" />
                         </template>
                     </DTable>
 
@@ -155,7 +153,9 @@
                         :striped="striped"
                         :hover="hover"
                         :responsive="responsive"
+                        v-bind="tablePassthroughProps"
                         @update:sort-by="handleSortChange"
+                        @update:expanded-items="emit('update:expandedItems', $event)"
                         @row-clicked="handleRowClick"
                     >
                         <!-- Inline Filter Row -->
@@ -221,23 +221,19 @@
                             </div>
                         </template>
 
-                        <!-- Pass through all cell slots -->
+                        <!-- Forward every slot the inner table understands: cell(<key>),
+                             foot(<key>), custom-foot, empty, empty-filtered, row-expansion,
+                             table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
+                             See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="(_, name) in $slots"
+                            v-for="name in forwardedTableSlotNames"
+                            :key="name"
                             #[name]="slotProps"
                         >
                             <!--
-                              @slot Custom rendering for a column's cell. Name it `cell(<fieldKey>)` to target a field; receives the underlying table cell scope.
-                              @binding {object} item The row data object for this cell.
-                              @binding {any} value The cell value for the field.
-                              @binding {number} index The zero-based row index.
-                              @binding {object} field The field definition for the column.
+                              @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot
-                                v-if="typeof name === 'string' && name.startsWith('cell')"
-                                :name="name"
-                                v-bind="slotProps"
-                            />
+                            <slot :name="name" v-bind="slotProps" />
                         </template>
                     </DTable>
 
@@ -254,7 +250,9 @@
                         :hover="hover"
                         :responsive="responsive"
                         :busy="effectiveBusy"
+                        v-bind="tablePassthroughProps"
                         @update:sort-by="handleSortChange"
+                        @update:expanded-items="emit('update:expandedItems', $event)"
                         @row-clicked="handleRowClick"
                     >
                         <!-- Inline Filter Row -->
@@ -320,23 +318,19 @@
                             </div>
                         </template>
 
-                        <!-- Pass through all cell slots -->
+                        <!-- Forward every slot the inner table understands: cell(<key>),
+                             foot(<key>), custom-foot, empty, empty-filtered, row-expansion,
+                             table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
+                             See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="(_, name) in $slots"
+                            v-for="name in forwardedTableSlotNames"
+                            :key="name"
                             #[name]="slotProps"
                         >
                             <!--
-                              @slot Custom rendering for a column's cell. Name it `cell(<fieldKey>)` to target a field; receives the underlying table cell scope.
-                              @binding {object} item The row data object for this cell.
-                              @binding {any} value The cell value for the field.
-                              @binding {number} index The zero-based row index.
-                              @binding {object} field The field definition for the column.
+                              @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot
-                                v-if="typeof name === 'string' && name.startsWith('cell')"
-                                :name="name"
-                                v-bind="slotProps"
-                            />
+                            <slot :name="name" v-bind="slotProps" />
                         </template>
                     </DTable>
 
@@ -865,6 +859,35 @@ export interface Props<TItem = any> {
      */
     showCreateButton?: boolean;
 
+    /**
+     * Render a `<tfoot>` mirroring the header row, so `#foot(<key>)` slots can
+     * hold per-column totals that line up under their data (#99). Without it
+     * there is no footer to put them in. For a fully custom footer, use the
+     * `custom-foot` slot instead.
+     */
+    footClone?: boolean;
+
+    /**
+     * Show a message row when there are no rows (default `true`). An empty
+     * table body is indistinguishable from a broken one, so the message is on
+     * by default. Override the wording with `emptyText`, or the whole row with
+     * the `empty` slot.
+     */
+    showEmpty?: boolean;
+
+    /**
+     * Message shown when there are no rows. Defaults to "No {items} found", or
+     * "No {items} match your filters" when a column filter is active.
+     */
+    emptyText?: string;
+
+    /**
+     * Rows currently expanded, as a `v-model`. Pair with the `row-expansion`
+     * slot to render detail content under a row (#112) instead of forcing every
+     * per-row detail into a modal.
+     */
+    expandedItems?: TItem[];
+
     /** Enable client-side filtering, sorting, and pagination on items array */
     clientSide?: boolean;
 }
@@ -896,6 +919,8 @@ const props = withDefaults(defineProps<Props<T>>(), {
     card: true,
     editModalSize: "lg",
     showCreateButton: true,
+    footClone: false,
+    showEmpty: true,
 });
 
 const emit = defineEmits<{
@@ -923,6 +948,8 @@ const emit = defineEmits<{
     deleteError: [item: T, error: any];
     /** `v-model:sortBy` update, emitted with the normalized single-column sort array when sorting changes. */
     'update:sortBy': [sortBy: BTableSortBy[]];
+    /** `v-model:expandedItems` update, emitted with the rows currently expanded. */
+    'update:expandedItems': [items: T[]];
     /** `v-model:filters` update, emitted with the new filter map when a column filter changes. */
     'update:filters': [filters: Record<string, string>];
     /** `v-model:perPage` update, emitted with the new page size when the per-page selector changes. */
@@ -1609,6 +1636,53 @@ try {
 // DXForm doesn't mistake an always-present (but empty) wrapper for
 // a real custom-value override.
 const tableSlots = useSlots();
+
+/*
+ * Slot forwarding to the inner table.
+ *
+ * DXTable used to forward only slots whose name started with `cell`, which is
+ * why it had no footer/totals row (#99), no empty state (#111) and no
+ * expandable rows (#112): BTable supports all three, but the slots never
+ * reached it. Anything BTable understands is now forwarded, with two
+ * deliberate exceptions that DXTable renders itself:
+ *
+ * - `head(<key>)` — DXTable draws its own column headers (sort indicators,
+ *   field hints). Forwarding a consumer's would silently drop those.
+ * - `thead-top`   — DXTable renders the inline filter row there.
+ */
+const TABLE_SLOT_PREFIXES = ['cell(', 'foot('];
+const TABLE_SLOT_NAMES = new Set([
+    'custom-foot',
+    'empty',
+    'empty-filtered',
+    'row-expansion',
+    'table-busy',
+    'table-caption',
+    'table-colgroup',
+    'thead-sub',
+    'top-row',
+    'bottom-row',
+]);
+
+const isTableSlot = (name: string) =>
+    TABLE_SLOT_NAMES.has(name) || TABLE_SLOT_PREFIXES.some((prefix) => name.startsWith(prefix));
+
+const forwardedTableSlotNames = computed(() =>
+    Object.keys(tableSlots).filter((name) => isTableSlot(name)),
+);
+
+// Table-level features of the inner BTable, exposed verbatim and bound to all
+// three data modes from one place.
+const tablePassthroughProps = computed(() => ({
+    footClone: props.footClone,
+    showEmpty: props.showEmpty,
+    emptyText:
+        props.emptyText ??
+        (hasActiveFilters.value
+            ? `No ${pluralItemName.value} match your filters`
+            : `No ${pluralItemName.value} found`),
+    expandedItems: props.expandedItems,
+}));
 const editFieldKeys = computed<string[]>(() =>
     (props.editFields ?? []).map((field: any) => field.key),
 );

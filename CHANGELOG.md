@@ -47,7 +47,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   form is exactly where the toggle earns its keep, so it is opt-out rather than
   opt-in: set `revealable: false` on the field for the old bare input.
 
+### Added
+- **`DXTable` forwards every slot the inner table understands** (#99, #111,
+  #112). It previously forwarded only slots whose name started with `cell`, so
+  the footer, empty-state and row-expansion slots that the underlying table has
+  always supported were silently dropped on the way in — one guard, three
+  missing features:
+  - **Totals row** (#99). New `footClone` prop renders a `<tfoot>` mirroring the
+    header, and `#foot(<key>)` fills a column's footer cell, so a total sits
+    under the data it totals rather than in a summary bar above the table. Use
+    `#custom-foot` for a footer that isn't a per-column mirror.
+  - **Expandable rows** (#112). New `v-model:expanded-items` plus a
+    `row-expansion` slot open detail content under a row, instead of forcing
+    every per-row detail into a modal.
+  - Plus `top-row`, `bottom-row`, `thead-sub`, `table-caption`,
+    `table-colgroup`, `table-busy` and `empty` / `empty-filtered`.
+
+  Two table slots are deliberately **not** forwarded, because DXTable renders
+  them itself: `head(<key>)` (it draws the column headers, with sort indicators
+  and field hints) and `thead-top` (the inline filter row).
+
 ### Changed
+- **`DXTable` now shows an empty-state message instead of a bare header** (#111).
+  An empty result rendered a header row with nothing under it, which is
+  indistinguishable from a broken table — especially given #109, where a failed
+  fetch also rendered zero rows. It now reads "No {items} found", or "No {items}
+  match your filters" when a column filter is active, pluralised from
+  `itemName`. Override with `emptyText`, replace it with the `empty` slot, or
+  turn it off with `:show-empty="false"`.
 - **`DXTable` no longer sends a `created_at` sort when nothing is sorted**
   (#109). The header sort cycles asc → desc → *unsorted*, and in that third
   state — and on any initial load without a `sortBy` — the table fell back to

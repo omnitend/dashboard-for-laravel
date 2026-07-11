@@ -1121,3 +1121,160 @@ describe('DXTable sort params and failed fetches (#109)', () => {
     expect(screen.container.querySelector('.alert-danger')).toBeNull();
   });
 });
+
+/**
+ * #99 / #111 / #112 share one root cause: DXTable forwarded only slots whose
+ * name started with `cell`, so the footer, empty-state and row-expansion slots
+ * BTable already supports never reached it. These cover the whole surface.
+ */
+describe('DXTable forwards the inner table\'s slots (#99, #111, #112)', () => {
+  const rows = [
+    { id: 1, name: 'Row A', amount: 10 },
+    { id: 2, name: 'Row B', amount: 32 },
+  ];
+  const fields = [
+    { key: 'name', label: 'Name' },
+    { key: 'amount', label: 'Amount' },
+  ];
+
+  const renderTable = (props: Record<string, any> = {}, slots: Record<string, any> = {}) =>
+    render({
+      render: () =>
+        h(
+          BApp,
+          {},
+          () => h(DXTable, { items: rows, fields, clientSide: true, itemName: 'sale', ...props }, slots),
+        ),
+    });
+
+  describe('footer / totals row (#99)', () => {
+    it('renders a tfoot with footClone, and #foot(<key>) lands under its own column', async () => {
+      const screen = renderTable(
+        { footClone: true },
+        { 'foot(amount)': () => h('strong', { class: 'total' }, '42') },
+      );
+      await flush();
+
+      const tfoot = screen.container.querySelector('tfoot');
+      expect(tfoot).not.toBeNull();
+
+      const total = tfoot!.querySelector('.total');
+      expect(total?.textContent).toBe('42');
+
+      // The point of a footer over a summary bar: the number sits under its column.
+      const headerCells = [...screen.container.querySelectorAll('thead tr:last-child th')];
+      const footerCells = [...tfoot!.querySelectorAll('th, td')];
+      const amountColumn = headerCells.findIndex((th) => th.textContent?.includes('Amount'));
+      expect(amountColumn).toBeGreaterThanOrEqual(0);
+      expect(footerCells[amountColumn]?.textContent).toContain('42');
+    });
+
+    it('renders no footer by default', async () => {
+      const screen = renderTable();
+      await flush();
+
+      expect(screen.container.querySelector('tfoot')).toBeNull();
+    });
+
+    it('supports a fully custom footer via custom-foot', async () => {
+      const screen = renderTable(
+        {},
+        { 'custom-foot': () => h('tr', {}, [h('td', { class: 'custom-total' }, 'Total: 42')]) },
+      );
+      await flush();
+
+      expect(screen.container.querySelector('.custom-total')?.textContent).toBe('Total: 42');
+    });
+  });
+
+  describe('empty state (#111)', () => {
+    it('shows a default message instead of a bare header when there are no rows', async () => {
+      const screen = renderTable({ items: [] });
+      await flush();
+
+      // Pluralised from itemName.
+      expect(screen.container.textContent).toContain('No sales found');
+    });
+
+    it('tells the user the filters are why it is empty', async () => {
+      const screen = renderTable({
+        items: [],
+        fields: [{ key: 'name', label: 'Name', filter: 'text' }],
+        filters: { name: 'nothing-matches' },
+      });
+      await flush();
+
+      expect(screen.container.textContent).toContain('No sales match your filters');
+    });
+
+    it('honours a custom emptyText', async () => {
+      const screen = renderTable({ items: [], emptyText: 'There are no paid sales in this period.' });
+      await flush();
+
+      expect(screen.container.textContent).toContain('There are no paid sales in this period.');
+    });
+
+    it('forwards the empty slot for a fully custom empty state', async () => {
+      const screen = renderTable(
+        { items: [] },
+        { empty: () => h('div', { class: 'my-empty' }, 'Nothing here yet') },
+      );
+      await flush();
+
+      expect(screen.container.querySelector('.my-empty')?.textContent).toBe('Nothing here yet');
+    });
+
+    it('can be turned off with showEmpty: false', async () => {
+      const screen = renderTable({ items: [], showEmpty: false });
+      await flush();
+
+      expect(screen.container.textContent).not.toContain('No sales found');
+    });
+  });
+
+  describe('expandable rows (#112)', () => {
+    it('renders row-expansion content for an expanded row', async () => {
+      const screen = renderTable(
+        { expandedItems: [rows[0]] },
+        { 'row-expansion': ({ item }: any) => h('div', { class: 'detail' }, `Detail for ${item.name}`) },
+      );
+      await flush();
+
+      const detail = screen.container.querySelector('.detail');
+      expect(detail).not.toBeNull();
+      expect(detail?.textContent).toBe('Detail for Row A');
+      // Only the expanded row expands.
+      expect(screen.container.querySelectorAll('.detail').length).toBe(1);
+    });
+
+    it('renders no expansion content when nothing is expanded', async () => {
+      const screen = renderTable(
+        { expandedItems: [] },
+        { 'row-expansion': () => h('div', { class: 'detail' }, 'Detail') },
+      );
+      await flush();
+
+      expect(screen.container.querySelector('.detail')).toBeNull();
+    });
+  });
+
+  describe('the slots DXTable keeps for itself', () => {
+    it('still draws its own column headers (sort indicators are not lost)', async () => {
+      const screen = renderTable({
+        fields: [{ key: 'name', label: 'Name', sortable: true }],
+      });
+      await flush();
+
+      expect(screen.container.querySelector('.sort-indicator')).not.toBeNull();
+    });
+
+    it('does not leak DXTable\'s own header slot into the table', async () => {
+      const screen = renderTable({ title: 'Sales' }, { header: () => h('h4', { class: 'card-title' }, 'Sales') });
+      await flush();
+
+      // The card header renders, and nothing lands inside the table element.
+      expect(screen.container.querySelector('.card-title')?.textContent).toBe('Sales');
+      expect(screen.container.querySelector('table .card-title')).toBeNull();
+    });
+  });
+});
