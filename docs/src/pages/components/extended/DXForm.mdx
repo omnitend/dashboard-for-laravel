@@ -82,7 +82,7 @@ Each field is a `FieldDefinition`. Supported `type` values:
 | --- | --- |
 | `text`, `email`, `password`, `number`, `url`, `tel`, `date`, `datetime-local`, `datetime`, `time` | Native input |
 | `textarea` | Multi-line input |
-| `select` | Dropdown (sync `options` or async `optionsLoader`) |
+| `select` | Dropdown (sync `options` or async `optionsLoader`). Add `searchable: true` for a type-to-filter select that still models the option's `value` |
 | `autocomplete` | Free-text input with a `<datalist>` of suggestions (sync `options` or async `optionsLoader`); accepts values not in the list |
 | `radio` | Radio group |
 | `checkbox` | Single checkbox |
@@ -100,6 +100,7 @@ Common options beyond `key`/`type`/`label`:
   { name: 'plaintext', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Display the value as static text instead of a control (no border, no input box). Implies read-only for every type: anything backed by a real input (text family, textarea, currency, percentage, autocomplete) renders as static text; select/radio/checkbox/switch/file are disabled instead.' },
   { name: 'revealable', type: 'boolean', required: 'No', default: 'true', description: 'Only for type: "password" — show the reveal (eye) toggle that switches the input between masked and plain text. Set false for a bare password input.' },
   { name: 'disabled / disabledWhen', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Disable the field, statically or from the model.' },
+  { name: 'searchable', type: 'boolean', required: 'No', default: 'false', description: 'For a select field: type to filter a long option list while the model still holds option.value (an id). Use for hundreds of options — a plain select is unusable at that size, and the autocomplete type models the typed text, so it cannot back a foreign key' },
   { name: 'options / optionsLoader', type: 'FieldOption[] | (model) => Promise<FieldOption[]>', required: 'No', default: '-', description: 'Select/radio options, synchronous or async. Set reloadOptionsOnChange to refetch on model change.' },
   { name: 'submit', type: 'boolean', required: 'No', default: 'true', description: 'Include the field\'s value in the submitted payload. Set false for a PRESENTATIONAL field (a header, an alert, an explanatory block via span) that lays the form out but holds no data — DXTable\'s edit modal seeds its form from every editFields key, so those would otherwise be POSTed alongside the real ones' },
   { name: 'span', type: 'boolean', required: 'No', default: 'false', description: 'Render full-width, delegating content to the #span(<key>) slot. Also always bypasses horizontal layout\'s column split.' },

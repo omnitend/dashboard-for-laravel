@@ -118,6 +118,17 @@ export interface FieldDefinition {
     /** Re-run `optionsLoader` whenever the form model changes. */
     reloadOptionsOnChange?: boolean;
 
+    /**
+     * For `select` fields: render a **searchable** select — type to filter a
+     * long option list, while the model still holds `option.value` (an id).
+     *
+     * A plain `select` is fine for ten options and unusable for hundreds; the
+     * `autocomplete` type filters but models the *typed text*, so it can't back
+     * a foreign key (picking "Tesco" gives you `"Tesco"`, not `37`). This is the
+     * combination high-frequency data entry against a long list needs.
+     */
+    searchable?: boolean;
+
     /** Number of rows for textarea (default: 3) */
     rows?: number;
 

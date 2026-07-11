@@ -324,6 +324,30 @@
             v-bind="inputPropsWithGuards"
         />
 
+        <!-- Searchable select: type to filter a long option list, while the
+             model keeps the option's VALUE (an id), not the typed text. The
+             `autocomplete` type below models the text, so it can't back a
+             foreign key. -->
+        <template v-else-if="field.type === 'select' && field.searchable">
+            <DAutocomplete
+                v-if="searchableOptionsReady"
+                v-model="fieldValue"
+                :options="resolvedOptions"
+                :placeholder="field.placeholder"
+                :required="field.required"
+                :state="fieldState"
+                :disabled="isDisabled || isReadonly || isPlaintext"
+                open-on-focus
+                v-bind="controlPropsWithGuards"
+            />
+            <!-- BAutocomplete resolves the input's display text from the model
+                 AT MOUNT and doesn't re-derive it when `options` arrive later,
+                 so an async list would leave the raw id showing ("51" instead
+                 of "Waitrose") — and a long list is exactly the case that loads
+                 async. Hold the control until the options are in. -->
+            <DFormInput v-else placeholder="Loading…" disabled />
+        </template>
+
         <!-- Select (sync or async options) -->
         <DFormSelect
             v-else-if="field.type === 'select'"
@@ -535,6 +559,7 @@ import DXSwitch from "./DXSwitch.vue";
 import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
 import DFormText from "../base/DFormText.vue";
 import DInputGroup from "../base/DInputGroup.vue";
+import DAutocomplete from "../base/DAutocomplete.vue";
 import DButton from "../base/DButton.vue";
 import DXFieldLabel from "./DXFieldLabel.vue";
 import type { UseFormReturn } from "../../composables/useForm";
@@ -917,6 +942,12 @@ const isReadonly = computed(() => resolveMaybe(props.field.readonly) ?? false);
 const isPlaintext = computed(() => resolveMaybe(props.field.plaintext) ?? false);
 
 const passwordRevealed = ref(false);
+
+// See the template: the searchable select can't render before its options
+// resolve, or it shows the raw id instead of the option's label.
+const searchableOptionsReady = computed(
+    () => !props.field.optionsLoader || loadedOptions.value !== null,
+);
 
 const isRevealablePassword = computed(
     () =>

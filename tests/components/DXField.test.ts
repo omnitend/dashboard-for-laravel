@@ -1137,3 +1137,81 @@ describe('DXField password/plaintext invariants (#100 review)', () => {
     expect((screen.container.querySelector('select') as HTMLSelectElement).disabled).toBe(true);
   });
 });
+
+/**
+ * #105. A plain `select` is fine for ten options and unusable for hundreds; the
+ * `autocomplete` type filters but models the TYPED TEXT, so it can't back a
+ * foreign key (picking "Tesco" gives you "Tesco", not 37). Accounting pages had
+ * to drop type-to-filter on a long account list because of that gap.
+ */
+describe('DXField searchable select (#105)', () => {
+  const accounts = [
+    { value: 37, text: 'Tesco' },
+    { value: 42, text: 'Sainsbury' },
+    { value: 51, text: 'Waitrose' },
+  ];
+
+  const searchableField: FieldDefinition = {
+    key: 'account_id',
+    type: 'select',
+    label: 'Payee',
+    searchable: true,
+    options: accounts,
+  };
+
+  it('displays the option text for the id it is holding', async () => {
+    const { screen } = renderField(searchableField, { account_id: 37 });
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('Tesco');
+  });
+
+  it('filters as you type and models the option id, not the typed text', async () => {
+    const { screen, form } = renderField(searchableField, { account_id: null });
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    await userEvent.click(input);
+    await userEvent.fill(input, 'Sains');
+    await flush();
+
+    const option = [...document.querySelectorAll('[role="option"]')].find((element) =>
+      element.textContent?.includes('Sainsbury'),
+    ) as HTMLElement;
+    expect(option).toBeTruthy();
+    option.click();
+    await flush();
+
+    // The whole point: an id, not "Sainsbury".
+    expect(form.data.account_id).toBe(42);
+    expect(typeof form.data.account_id).toBe('number');
+  });
+
+  it('still renders a plain select when searchable is not set', async () => {
+    const { screen } = renderField(
+      { key: 'account_id', type: 'select', label: 'Payee', options: accounts },
+      { account_id: 37 },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('select')).not.toBeNull();
+    expect(screen.container.querySelector('.d-autocomplete')).toBeNull();
+  });
+
+  it('works with async options (optionsLoader)', async () => {
+    const { screen } = renderField(
+      {
+        key: 'account_id',
+        type: 'select',
+        label: 'Payee',
+        searchable: true,
+        optionsLoader: async () => accounts,
+      },
+      { account_id: 51 },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    expect((screen.container.querySelector('input') as HTMLInputElement).value).toBe('Waitrose');
+  });
+});

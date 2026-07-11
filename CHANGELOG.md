@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Searchable select** (#105). New `searchable: true` option on a `select`
+  field: type to filter a long option list, while the model still holds
+  `option.value` (an id). A plain `select` is fine for ten options and unusable
+  for hundreds, and the `autocomplete` type models the *typed text*, so it can't
+  back a foreign key — picking "Tesco" gave you `"Tesco"`, not `37`. That gap
+  cost high-frequency data-entry forms their type-to-filter. Works with
+  `optionsLoader`: the control waits for the options rather than showing the raw
+  id while they load.
 - **`submit: false` field option** (#110). Marks a field **presentational** — a
   header, an alert, an explanatory block rendered via `span` — that lays the
   form out but holds no data. `DXTable`'s edit modal seeds its form from every
