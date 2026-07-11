@@ -287,7 +287,11 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 }
 
 .dashboard-navbar {
-  height: $dashboard-navbar-height;
+  // Floor, not a fixed height: below `md` the search (and actions) drop to
+  // their own rows and the bar must grow to contain them (#93). Single-row
+  // content is shorter than this, so desktop stays exactly this height,
+  // aligned with the sidebar header.
+  min-height: $dashboard-navbar-height;
   // A light grey top bar over the white content panel (higher contrast than a
   // grey-everywhere layout). The navbar markup drops its `bg-white` class so
   // this wins without `!important`.

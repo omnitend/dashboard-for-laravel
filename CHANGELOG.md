@@ -27,6 +27,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `DDropdownItem`), as the docs example already shows.
 
 ### Fixed
+- **The navbar no longer overflows onto the page content on small screens**
+  (#93). Two compounding bugs: theme.scss pinned `.dashboard-navbar` to a fixed
+  64px `height` while the flex bar wrapped taller (below `md` the search row
+  alone exceeds it), so wrapped content — and, with the themed button padding,
+  even the desktop avatar dropdown — spilled over the bar's border onto the
+  page; and the `actions` slot sat inside the nowrap user-menu cluster, so a
+  group of buttons overflowed the viewport. Now: the header uses `min-height`
+  (the bar grows to contain its rows), the actions region is a direct bar child
+  that wraps to its own full-width row below `md` (its buttons wrap too), and
+  the avatar dropdown toggle drops its vertical padding so a standard
+  single-row bar genuinely fits the 64px sidebar-aligned height. To hide page
+  actions on phones instead (e.g. to relocate them into the page), add
+  `d-none d-md-flex` to the slot content. Guarded by viewport-geometry
+  regression tests.
 - **`DXDashboard` no longer hardcodes its background colours.** The layout and
   content-panel backgrounds (`#f8f9fa` / `#fff`) are now `var(--bs-light)` /
   `var(--bs-white)` — identical rendering with stock Bootstrap, but they now

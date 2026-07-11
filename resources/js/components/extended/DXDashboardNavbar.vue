@@ -47,19 +47,20 @@
           <slot name="search" />
         </div>
 
-        <div class="dashboard-navbar__end d-flex align-items-center gap-3">
-          <!-- Page-level primary actions, right-aligned next to the user menu -->
-          <div
-            v-if="$slots.actions"
-            class="dashboard-navbar__actions d-flex align-items-center gap-2"
-          >
-            <!--
-              @slot Page-level primary actions (e.g. a Create button), right-aligned next to the user menu.
-              @binding {string} pageTitle The current page title, for context.
-            -->
-            <slot name="actions" :pageTitle="pageTitle" />
-          </div>
+        <!-- Page-level primary actions: right-aligned next to the user menu
+             from `md` up; their own wrappable full-width row below (#93). -->
+        <div
+          v-if="$slots.actions"
+          class="dashboard-navbar__actions d-flex align-items-center gap-2"
+        >
+          <!--
+            @slot Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from `md` up; wraps to its own full-width row below. Add `d-none d-md-flex` to your slot content to hide it on phones instead (e.g. to relocate actions into the page).
+            @binding {string} pageTitle The current page title, for context.
+          -->
+          <slot name="actions" :pageTitle="pageTitle" />
+        </div>
 
+        <div class="dashboard-navbar__end d-flex align-items-center gap-3">
           <!--
             @slot Replaces the entire user menu (the default avatar dropdown).
             @binding {object} user The signed-in user.
@@ -70,6 +71,7 @@
               variant="link"
               class="text-dark"
               menu-class="dropdown-menu-end"
+              toggle-class="py-0"
               no-caret
             >
               <template #button-content>
@@ -170,11 +172,22 @@ const getUserInitial = (user: { name: string } | null) => {
 }
 
 /*
- * Mobile-first: the search sits on its own full-width row below the toggle /
- * title / user-menu row (order after both, flex-basis 100% forces the wrap).
- * From `md` up it moves inline between the title and the user menu and grows
- * to fill the middle; `searchAlign` controls where its content sits.
+ * Mobile-first: the actions and the search each sit on their own full-width
+ * row below the toggle / title / user-menu row (flex-basis 100% forces the
+ * wrap; the bar and the sticky header grow to contain them — #93). The
+ * actions row itself wraps so a wide button group stacks instead of
+ * overflowing the viewport.
+ * From `md` up everything moves inline: search between the title and the
+ * actions (grows to fill the middle; `searchAlign` controls where its content
+ * sits), actions right-aligned next to the user menu.
  */
+.dashboard-navbar__actions {
+  order: 2;
+  flex: 0 0 100%;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
 .dashboard-navbar__search {
   order: 3;
   flex: 0 0 100%;
@@ -188,8 +201,23 @@ const getUserInitial = (user: { name: string } | null) => {
     width: auto;
   }
 
-  .dashboard-navbar__end {
+  .dashboard-navbar__actions {
     order: 2;
+    flex: 0 1 auto;
+    width: auto;
+    flex-wrap: nowrap;
+    margin-left: auto;
+  }
+
+  .dashboard-navbar__end {
+    order: 3;
+  }
+
+  /* When the actions region is present it carries the push-right auto margin;
+     zero the user-menu cluster's so the two sit adjacent instead of having
+     the free space split between them. */
+  .dashboard-navbar__actions ~ .dashboard-navbar__end {
+    margin-left: 0;
   }
 }
 
