@@ -105,7 +105,7 @@ const items = ref([
   { name: 'provider', type: 'BTableProvider<TItem>', required: 'No', default: '-', description: 'Provider function for API mode' },
   { name: 'apiUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint URL for auto-provider mode' },
   { name: 'fields', type: 'TableField[]', required: 'Yes', default: '-', description: 'Table field definitions (see TableField interface)' },
-  { name: 'sortBy', type: 'BTableSortBy[]', required: 'No', default: '[]', description: 'Sort configuration (v-model support)' },
+  { name: 'sortBy', type: 'BTableSortBy[]', required: 'No', default: '[]', description: 'Sort configuration (v-model support). Also the table\'s INITIAL sort — when nothing is sorted, no sort params are sent at all (see Sorting below)' },
   { name: 'filters', type: 'Record<string, string>', required: 'No', default: '{}', description: 'Filter values (v-model support)' },
   { name: 'filterValues', type: 'Record<string, string[]>', required: 'No', default: '-', description: 'Dynamic filter options from server' },
   { name: 'inertiaUrl', type: 'string', required: 'No', default: '-', description: 'Inertia route URL (enables auto-navigation)' },
@@ -161,6 +161,40 @@ const items = ref([
 <SlotsTable client:load slots={[
   { name: 'header', description: 'Custom header content' },
 ]} />
+
+## Sorting
+
+Clicking a sortable header cycles **ascending → descending → unsorted**.
+
+In the unsorted state — and on an initial load with no `sortBy` — DXTable sends
+**no sort params at all**. It does not fall back to a column of its own choosing,
+so the server applies its own default ordering. Requesting a column the consumer
+never declared is a hard 400 on a strict endpoint (e.g. spatie's `QueryBuilder`),
+which turned a third header click into a broken page.
+
+Give the table an initial sort with `sortBy`:
+
+```vue
+<DXTable
+  api-url="/api/products"
+  :fields="fields"
+  :sort-by="[{ key: 'created_at', order: 'desc' }]"
+/>
+```
+
+Handle the no-sort case on the server with a default, as the controller example
+below does (`$request->input('sortBy', 'created_at')`).
+
+The `sortChange` event (Inertia mode) can only describe an *active* sort, so it
+is not emitted for the unsorted state. Listen to `update:sortBy` — which carries
+the empty array — if you need to observe it.
+
+## Failed requests
+
+A rejected request renders an error alert **above** the table (not instead of
+it, so the sort or filter that caused it can still be undone). This covers your
+own `provider` as well as the built-in `api-url` one: a provider that rejects
+never renders as an empty table.
 
 ## API Mode (Recommended)
 

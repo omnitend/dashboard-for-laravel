@@ -27,13 +27,17 @@
                         </slot>
                     </template>
 
+                    <!-- Rendered ABOVE the table, not instead of it: a failed
+                         request is usually caused by the sort or a filter, and
+                         replacing the table would take away the very controls
+                         needed to undo it, leaving a reload as the only way out. -->
+                    <div v-if="error || apiError" class="alert alert-danger">
+                        {{ error || apiError }}
+                    </div>
+
                     <div v-if="effectiveBusy && !isProviderMode" class="text-center py-5">
                         <DSpinner variant="primary" />
                         <p class="mt-2">{{ loadingText }}</p>
-                    </div>
-
-                    <div v-else-if="error || apiError" class="alert alert-danger">
-                        {{ error || apiError }}
                     </div>
 
                     <!-- Provider Mode: Use BTable's provider pattern -->
@@ -1131,15 +1135,13 @@ watch(() => props.filters, (newFilters, oldFilters) => {
         refresh();
     } else if (hasInertiaUrl.value && isInertiaMode.value && router) {
         // Inertia mode - trigger navigation with new filters
-        const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
         router.get(
             props.inertiaUrl!,
             {
                 page: 1, // Reset to first page when filters change
-                sortBy: currentSort.key,
-                sortOrder: currentSort.order,
                 filters: newFilters,
                 perPage: effectivePerPage.value,
+                ...sortParams(effectiveSortBy.value),
             },
             { preserveState: true }
         );
@@ -1273,73 +1275,106 @@ const fieldsNeedingFilterValues = computed(() => {
 // Error state for API mode
 const apiError = ref<string | null>(null);
 
-// Internal provider function when apiUrl is provided
+/**
+ * The active sort, or `null` when there is none.
+ *
+ * The header sort cycles asc → desc → *unsorted*, and in that third state
+ * BTable reports the column with no `order`. There is deliberately no fallback
+ * column here: sorting by a magic `created_at` when the user has asked for no
+ * sort means requesting a column the consumer never declared, which a strict
+ * endpoint (e.g. spatie's QueryBuilder, where an undeclared sort is a 400)
+ * rejects outright. No sort selected means no sort sent — the server applies
+ * its own default ordering. Pass `sortBy` to give the table an initial sort.
+ */
+const activeSort = (sortBy: readonly BTableSortBy[] | undefined) => {
+    const sort = sortBy?.[0];
+    if (!sort?.key || !sort.order) return null;
+    return { key: sort.key, order: sort.order };
+};
+
+// Sort params for a request — an empty object when nothing is sorted.
+const sortParams = (sortBy: readonly BTableSortBy[] | undefined) => {
+    const sort = activeSort(sortBy);
+    return sort ? { sortBy: sort.key, sortOrder: sort.order } : {};
+};
+
+// Internal provider function when apiUrl is provided. It deliberately does NOT
+// catch: `effectiveProvider` wraps every provider (including a consumer's own)
+// in one error handler, so no provider can fail silently.
 const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProviderContext>) => {
     if (!props.apiUrl) return [];
 
+    const params: any = {
+        page: context.currentPage,
+        perPage: effectivePerPage.value,
+        filters: effectiveFilters.value,
+        ...sortParams(context.sortBy),
+    };
+
+    // Request filter values on initial load
+    if (context.currentPage === 1 && fieldsNeedingFilterValues.value.length > 0 && Object.keys(apiFilterValues.value).length === 0) {
+        params.filterValues = fieldsNeedingFilterValues.value;
+    }
+
+    const response = await axios.get(props.apiUrl, { params });
+
+    // Extract and store pagination metadata for display
+    if (response.data.pagination) {
+        apiPaginationMeta.value = response.data.pagination;
+    }
+
+    // Extract and store filter values
+    if (response.data.filterValues) {
+        apiFilterValues.value = { ...apiFilterValues.value, ...response.data.filterValues };
+    }
+
+    return response.data.data;
+};
+
+/**
+ * Wraps whichever provider is in play — the built-in `apiUrl` one or a
+ * consumer's own `provider` — so a rejected fetch surfaces an error instead of
+ * rendering as zero rows. A failed query and a genuinely empty result look
+ * identical otherwise, which is how a broken table passes review and then shows
+ * a blank page to a user. A consumer's provider used to be the silent case: the
+ * error handling lived inside the internal one, so it never covered them.
+ */
+const wrappedProvider: BTableProvider<T> = async (context: Readonly<BTableProviderContext>) => {
+    const provider = props.provider || (props.apiUrl ? internalProvider : undefined);
+    if (!provider) return [];
+
+    apiError.value = null;
     try {
-        // Clear previous error
-        apiError.value = null;
-
-        const sort = context.sortBy && context.sortBy.length > 0
-            ? context.sortBy[0]
-            : { key: 'created_at', order: 'desc' };
-
-        // Build request parameters
-        const params: any = {
-            page: context.currentPage,
-            perPage: effectivePerPage.value,
-            sortBy: sort.key,
-            sortOrder: sort.order || 'desc',
-            filters: effectiveFilters.value,
-        };
-
-        // Request filter values on initial load
-        if (context.currentPage === 1 && fieldsNeedingFilterValues.value.length > 0 && Object.keys(apiFilterValues.value).length === 0) {
-            params.filterValues = fieldsNeedingFilterValues.value;
-        }
-
-        const response = await axios.get(props.apiUrl, { params });
-
-        // Extract and store pagination metadata for display
-        if (response.data.pagination) {
-            apiPaginationMeta.value = response.data.pagination;
-        }
-
-        // Extract and store filter values
-        if (response.data.filterValues) {
-            apiFilterValues.value = { ...apiFilterValues.value, ...response.data.filterValues };
-        }
-
-        return response.data.data;
+        return await provider(context);
     } catch (error: any) {
-        console.error('Failed to fetch data from API:', error);
-
-        // Surface error to user
-        const errorMessage = error?.response?.data?.message
-            || error?.message
-            || 'Failed to load data. Please try again.';
-        apiError.value = errorMessage;
-
+        // eslint-disable-next-line no-console
+        console.error('DXTable: the data provider failed', error);
+        apiError.value =
+            error?.response?.data?.message ||
+            error?.message ||
+            'Failed to load data. Please try again.';
         return [];
     }
 };
 
-// Computed effective provider (use external if provided, otherwise internal)
-const effectiveProvider = computed(() => props.provider || (props.apiUrl ? internalProvider : undefined));
+// `wrappedProvider` is resolved fresh on each call, so this computed's IDENTITY
+// must not change when `apiUrl` does — BTable refetches when the provider
+// function changes, which would double every request that the explicit apiUrl
+// watcher already refetches (#82).
+const effectiveProvider = computed<BTableProvider<T> | undefined>(() =>
+    props.provider || props.apiUrl ? wrappedProvider : undefined,
+);
 
 const handlePageChange = (page: number) => {
     // If inertiaUrl provided, handle navigation automatically
     if (hasInertiaUrl.value && isInertiaMode.value && router) {
-        const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
         router.get(
             props.inertiaUrl!,
             {
                 page,
-                sortBy: currentSort.key,
-                sortOrder: currentSort.order,
                 filters: effectiveFilters.value,
                 perPage: effectivePerPage.value,
+                ...sortParams(effectiveSortBy.value),
             },
             { preserveState: true }
         );
@@ -1383,28 +1418,26 @@ const handleSortChange = (sortBy: BTableSortBy[]) => {
 
     // Handle Inertia navigation automatically if URL provided
     if (hasInertiaUrl.value && isInertiaMode.value && router) {
-        // Build params based on whether sort is active
-        const params: any = {
-            page: props.pagination?.current_page || 1,
-            filters: effectiveFilters.value,
-            perPage: effectivePerPage.value,
-        };
-
-        // Add sort params only if sorting is active
-        if (normalizedSortBy && normalizedSortBy.length > 0 && normalizedSortBy[0].key) {
-            params.sortBy = normalizedSortBy[0].key;
-            params.sortOrder = normalizedSortBy[0].order || 'asc';
-        }
-
-        router.get(props.inertiaUrl!, params, { preserveState: true });
+        // The cleared state has a key but no order — `sortParams` sends nothing
+        // for it, rather than inventing an ascending sort the user didn't ask for.
+        router.get(
+            props.inertiaUrl!,
+            {
+                page: props.pagination?.current_page || 1,
+                filters: effectiveFilters.value,
+                perPage: effectivePerPage.value,
+                ...sortParams(normalizedSortBy),
+            },
+            { preserveState: true },
+        );
     }
 
-    // Emit simplified sortChange event for backward compatibility
-    if (isInertiaMode.value && normalizedSortBy && normalizedSortBy.length > 0 && normalizedSortBy[0].key) {
-        emit('sortChange', {
-            key: normalizedSortBy[0].key,
-            order: normalizedSortBy[0].order || 'asc'
-        });
+    // Emit simplified sortChange event for backward compatibility. Its payload
+    // can only express an ACTIVE sort, so the cleared state emits nothing here —
+    // listen to `update:sortBy` (which carries the empty array) to observe it.
+    const sort = activeSort(normalizedSortBy);
+    if (isInertiaMode.value && sort) {
+        emit('sortChange', sort);
     }
 };
 
@@ -1443,15 +1476,13 @@ const handlePerPageChange = (newPerPage: number | string | null | (number | stri
 
     // Handle navigation automatically
     if (hasInertiaUrl.value && isInertiaMode.value && router) {
-        const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
         router.get(
             props.inertiaUrl!,
             {
                 page: 1, // Reset to first page when changing perPage
-                sortBy: currentSort.key,
-                sortOrder: currentSort.order,
                 filters: effectiveFilters.value,
                 perPage: perPageNum,
+                ...sortParams(effectiveSortBy.value),
             },
             { preserveState: true }
         );
@@ -1498,14 +1529,12 @@ const handleFilterChange = (fieldKey: string, value: string) => {
     filterDebounceTimer = setTimeout(() => {
         // Handle Inertia navigation automatically if URL provided
         if (hasInertiaUrl.value && isInertiaMode.value && router) {
-            const currentSort = effectiveSortBy.value[0] || { key: 'created_at', order: 'desc' };
             router.get(
                 props.inertiaUrl!,
                 {
                     page: 1, // Reset to first page when filtering
-                    sortBy: currentSort.key,
-                    sortOrder: currentSort.order,
                     filters: newFilters,
+                    ...sortParams(effectiveSortBy.value),
                 },
                 { preserveState: true }
             );

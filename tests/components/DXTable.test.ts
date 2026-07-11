@@ -981,3 +981,143 @@ describe('DXTable', () => {
     });
   });
 });
+
+/**
+ * #109. Two bugs that compounded into a silent failure: the cleared-sort state
+ * requested a magic `created_at` column the consumer never declared (a 400 on a
+ * strict endpoint), and a failed fetch rendered as zero rows with no error — so
+ * the page looked healthy in review and went blank for a user who clicked the
+ * header one more time than the developer did.
+ */
+describe('DXTable sort params and failed fetches (#109)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const okResponse = (rows: any[]) => ({
+    data: {
+      data: rows,
+      pagination: { current_page: 1, per_page: 10, total: rows.length, from: 1, to: rows.length },
+    },
+  });
+
+  const renderApiTable = (extraProps: Record<string, any> = {}) =>
+    render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            apiUrl: '/api/things',
+            fields: [{ key: 'name', label: 'Name', sortable: true }],
+            ...extraProps,
+          }),
+        ),
+    });
+
+  it('sends no sort at all when nothing is sorted, rather than a magic column', async () => {
+    const params: any[] = [];
+    vi.spyOn(axios, 'get').mockImplementation((_url: string, config: any) => {
+      params.push(config?.params);
+      return Promise.resolve(okResponse([{ id: 1, name: 'A' }])) as any;
+    });
+
+    renderApiTable();
+    await wait(60);
+
+    expect(params).toHaveLength(1);
+    expect(params[0]).not.toHaveProperty('sortBy');
+    expect(params[0]).not.toHaveProperty('sortOrder');
+  });
+
+  it('stops sending a sort when the header cycles back to unsorted', async () => {
+    const params: any[] = [];
+    vi.spyOn(axios, 'get').mockImplementation((_url: string, config: any) => {
+      params.push(config?.params);
+      return Promise.resolve(okResponse([{ id: 1, name: 'A' }])) as any;
+    });
+
+    const screen = renderApiTable();
+    await wait(60);
+
+    const header = screen.container.querySelector('thead th') as HTMLElement;
+    header.click();
+    await wait(60);
+    header.click();
+    await wait(60);
+    header.click(); // asc -> desc -> unsorted
+    await wait(60);
+
+    const sorts = params.map((p) => (p.sortBy ? `${p.sortBy}:${p.sortOrder}` : 'none'));
+    expect(sorts).toEqual(['none', 'name:asc', 'name:desc', 'none']);
+    // Specifically: the third click must not resurrect an undeclared column.
+    expect(params.some((p) => p.sortBy === 'created_at')).toBe(false);
+  });
+
+  it('surfaces a failed api-url fetch as an error instead of an empty table', async () => {
+    vi.spyOn(axios, 'get').mockImplementation(
+      () =>
+        Promise.reject({
+          response: { status: 400, data: { message: 'Requested sort is not allowed' } },
+        }) as any,
+    );
+
+    const screen = renderApiTable();
+    await wait(120);
+
+    const alert = screen.container.querySelector('.alert-danger');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toContain('Requested sort is not allowed');
+  });
+
+  // The silent case: the error handling used to live INSIDE the built-in
+  // apiUrl provider, so a consumer's own provider could fail with no trace.
+  it('surfaces a failed CUSTOM provider too', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            provider: () => Promise.reject(new Error('provider exploded')),
+            fields: [{ key: 'name', label: 'Name', sortable: true }],
+          }),
+        ),
+    });
+    await wait(150);
+
+    const alert = screen.container.querySelector('.alert-danger');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toContain('provider exploded');
+  });
+
+  it('keeps the table on screen when a fetch fails, so the user can undo the sort/filter', async () => {
+    vi.spyOn(axios, 'get').mockImplementation(
+      () => Promise.reject({ response: { data: { message: 'nope' } } }) as any,
+    );
+
+    const screen = renderApiTable();
+    await wait(120);
+
+    // Replacing the table with the alert would strip the headers and filter row,
+    // leaving a page reload as the only way back.
+    expect(screen.container.querySelector('.alert-danger')).not.toBeNull();
+    expect(screen.container.querySelector('table')).not.toBeNull();
+  });
+
+  it('clears the error once a later request succeeds', async () => {
+    let shouldFail = true;
+    vi.spyOn(axios, 'get').mockImplementation(() =>
+      shouldFail
+        ? (Promise.reject({ response: { data: { message: 'transient' } } }) as any)
+        : (Promise.resolve(okResponse([{ id: 1, name: 'A' }])) as any),
+    );
+
+    const screen = renderApiTable();
+    await wait(120);
+    expect(screen.container.querySelector('.alert-danger')).not.toBeNull();
+
+    shouldFail = false;
+    const header = screen.container.querySelector('thead th') as HTMLElement;
+    header.click();
+    await wait(120);
+
+    expect(screen.container.querySelector('.alert-danger')).toBeNull();
+  });
+});

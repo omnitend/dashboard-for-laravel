@@ -47,7 +47,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   form is exactly where the toggle earns its keep, so it is opt-out rather than
   opt-in: set `revealable: false` on the field for the old bare input.
 
+### Changed
+- **`DXTable` no longer sends a `created_at` sort when nothing is sorted**
+  (#109). The header sort cycles asc → desc → *unsorted*, and in that third
+  state — and on any initial load without a `sortBy` — the table fell back to
+  requesting `sortBy=created_at&sortOrder=desc`: a column the consumer never
+  declared and that isn't derived from `fields`. Against a strict endpoint
+  (e.g. spatie's `QueryBuilder`, where an undeclared sort is a hard 400) a table
+  that sorted fine both ways broke the moment the user clicked the header a
+  third time. No sort selected now sends **no sort params at all**, and the
+  server applies its own default ordering.
+
+  **If you relied on the implicit newest-first default**, set it explicitly:
+  `:sort-by="[{ key: 'created_at', order: 'desc' }]"`. This applies to the
+  api-url, provider and Inertia modes alike. Relatedly, the `sortChange` event
+  (Inertia mode) can only describe an *active* sort, so the cleared state no
+  longer emits it with a fabricated `asc` — listen to `update:sortBy`, which
+  carries the empty array, to observe the cleared state.
+
 ### Fixed
+- **A failed `DXTable` fetch is now visible instead of looking like "no results"**
+  (#109). A rejected request rendered zero rows and no error, which is
+  indistinguishable from an empty dataset — so a broken query passed review and
+  then showed a blank table to a user. Worse, the error handling lived *inside*
+  the built-in `apiUrl` provider, so a consumer's own `provider` could fail with
+  no trace at all. Every provider is now wrapped in one error handler, and the
+  alert renders **above** the table rather than replacing it — a failed request
+  is usually caused by the sort or a filter, and removing the table would take
+  away the controls needed to undo it.
 - **`DXTable`'s edit modal no longer leaks per-field UI state between records**
   (#100). The modal creates its form object once and reseeds it in place for
   each row, so Vue reused the same `DXField` instances across records and any
