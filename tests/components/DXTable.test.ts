@@ -1526,3 +1526,161 @@ describe('DXTable clickable-row affordance (#107)', () => {
     expect(await cursorOf({})).toBe('default');
   });
 });
+
+/** #106. Four filter/provider gaps found rebuilding a list board. */
+describe('DXTable filter and provider gaps (#106)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('a column can filter on a different key (#106.1)', () => {
+    it('sends the filter under filterKey, not the column key', async () => {
+      const params: any[] = [];
+      vi.spyOn(axios, 'get').mockImplementation((_url: string, config: any) => {
+        params.push(config?.params);
+        return Promise.resolve({
+          data: { data: [], pagination: { current_page: 1, per_page: 10, total: 0, from: 0, to: 0 } },
+        }) as any;
+      });
+
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              apiUrl: '/api/orders',
+              // A display column showing a name, filtering on the server's id param.
+              fields: [
+                { key: 'customer_name', label: 'Customer', filter: 'text', filterKey: 'customer_id' },
+              ],
+            }),
+          ),
+      });
+      await wait(80);
+
+      await userEvent.fill(
+        screen.container.querySelector('.filter-row input') as HTMLElement,
+        '42',
+      );
+      await wait(400);
+
+      const withFilter = params.filter((p) => Object.keys(p.filters ?? {}).length > 0);
+      expect(withFilter.length).toBeGreaterThan(0);
+      expect(withFilter.at(-1).filters).toEqual({ customer_id: '42' });
+      expect(withFilter.at(-1).filters).not.toHaveProperty('customer_name');
+    });
+
+    it('filters client-side on the filterKey too', async () => {
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              items: [
+                { id: 1, customer_name: 'Alpha Ltd', customer_id: '10' },
+                { id: 2, customer_name: 'Beta Ltd', customer_id: '20' },
+              ],
+              clientSide: true,
+              fields: [
+                { key: 'customer_name', label: 'Customer', filter: 'text', filterKey: 'customer_id' },
+              ],
+            }),
+          ),
+      });
+      await flush();
+
+      await userEvent.fill(
+        screen.container.querySelector('.filter-row input') as HTMLElement,
+        '20',
+      );
+      await wait(80);
+
+      const rows = screen.container.querySelectorAll('tbody tr');
+      expect(rows.length).toBe(1);
+      expect(rows[0].textContent).toContain('Beta Ltd');
+    });
+  });
+
+  describe('a select filter can express "no value" (#106.2)', () => {
+    const fields = [
+      {
+        key: 'assignee',
+        label: 'Assignee',
+        filter: 'select',
+        filterOptions: [{ value: 'sam', text: 'Sam' }],
+        filterNullText: 'Unassigned',
+      },
+    ];
+    const items = [
+      { id: 1, assignee: 'sam' },
+      { id: 2, assignee: null },
+      { id: 3, assignee: '' },
+    ];
+
+    it('offers the null option in the filter', async () => {
+      const screen = render({
+        render: () => h(BApp, {}, () => h(DXTable, { items, clientSide: true, fields })),
+      });
+      await flush();
+
+      const input = screen.container.querySelector('.filter-row input') as HTMLElement;
+      await userEvent.click(input);
+      await wait(80);
+
+      expect(document.body.textContent).toContain('Unassigned');
+    });
+
+    it('matches rows with no value when it is chosen', async () => {
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, { items, clientSide: true, fields, filters: { assignee: 'null' } }),
+          ),
+      });
+      await flush();
+
+      // Both the null and the empty-string row count as "no value".
+      expect(screen.container.querySelectorAll('tbody tr').length).toBe(2);
+    });
+  });
+
+  it('gives a custom provider a pager from the pagination prop (#106.3)', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            provider: () => Promise.resolve([{ id: 1, name: 'A' }]),
+            fields: [{ key: 'name', label: 'Name' }],
+            pagination: { current_page: 1, per_page: 10, total: 45, from: 1, to: 10 },
+          }),
+        ),
+    });
+    await wait(150);
+
+    // Before: apiPaginationMeta was only populated by the built-in provider, so
+    // a custom one rendered a table with no pager and no warning.
+    expect(screen.container.querySelector('.pagination')).not.toBeNull();
+    expect(screen.container.textContent).toContain('out of 45');
+  });
+
+  it('renders an empty header for an explicitly empty label (#106.4)', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: [{ id: 1, name: 'A' }],
+            clientSide: true,
+            fields: [
+              { key: 'name', label: 'Name' },
+              { key: 'actions', label: '' },
+            ],
+          }),
+        ),
+    });
+    await flush();
+
+    const headers = [...screen.container.querySelectorAll('thead th')];
+    const actionsHeader = headers[headers.length - 1];
+    // The key used to leak through as the header text.
+    expect(actionsHeader.textContent?.trim()).toBe('');
+    expect(actionsHeader.textContent).not.toContain('actions');
+  });
+});

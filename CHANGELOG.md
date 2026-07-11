@@ -15,6 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty string, an empty array) purely because it was declared.
 
 ### Fixed
+- **A column can filter on a different key** (#106). The filter param was
+  hard-wired to the column's own key, forcing columns to be named after the
+  server's filter params (`customer_id`) and the human-facing value into a
+  `#cell` slot. New `filterKey` field option: a "Customer" column can render a
+  name and filter on `customer_id`.
+- **A `select` filter can express "no value"** (#106). New `filterNullText`
+  field option (e.g. `"Unassigned"` on an assignee column) adds an option that
+  sends `filterNullValue` (default `"null"`); client-side it matches rows whose
+  value is null, undefined or empty.
+- **A custom `provider` no longer silently loses its pager** (#106). Only the
+  built-in `apiUrl` provider knows to read `response.data.pagination`, so a
+  custom one rendered a table with no pagination and no warning. A custom
+  provider now takes its page metadata from the `pagination` prop — and warns
+  when it's missing, rather than quietly dropping the pager.
+- **`label: ""` renders an empty header** (#106). An explicitly empty label had
+  the key leak through, so an actions column came out headed `actions`
+  (lowercase, as-keyed). Only a field with *no* label declared falls back now.
 - **Clickable rows now look clickable** (#107). A row that opens something on
   click showed the default text cursor, so there was no affordance that it did
   anything — consumers had to reach into the table's internals with

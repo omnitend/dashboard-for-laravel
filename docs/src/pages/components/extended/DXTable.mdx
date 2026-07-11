@@ -231,6 +231,38 @@ content **under** a row, instead of pushing every per-row detail into a modal:
 </DXTable>
 ```
 
+## Column filters
+
+Set `filter` on a field (`'text' | 'select' | 'number' | 'date'`) to give the
+column an inline filter. Two options matter beyond that:
+
+- **`filterKey`** — the key the filter is *sent* under, when it differs from the
+  column's own key. A "Customer" column can render a name and filter on
+  `customer_id`, instead of the column having to be named after the server's
+  param with the human-facing value pushed into a `#cell` slot.
+- **`filterNullText`** — adds a "has no value" option to a `select` filter (e.g.
+  `Unassigned` on an assignee column). Choosing it sends `filterNullValue`
+  (default `"null"`); client-side it matches rows whose value is null, undefined
+  or empty.
+
+```js
+const fields = [
+  { key: 'customer_name', label: 'Customer', filter: 'text', filterKey: 'customer_id' },
+  { key: 'assignee', label: 'Assignee', filter: 'select', filterNullText: 'Unassigned' },
+];
+```
+
+A field with `label: ''` renders an **empty** header (for an actions column, say)
+— only a field with no label at all falls back to its key.
+
+## Custom providers and pagination
+
+Only the built-in `api-url` provider knows to read `response.data.pagination`.
+A custom `provider` returns rows and nothing else, so it cannot report its own
+page metadata: pass it via the `pagination` prop, or set
+`:show-pagination="false"` if the pager is deliberately absent. DXTable warns
+rather than quietly rendering a table with no pager.
+
 ## Initial values vs controlled state
 
 `per-page`, `sort-by` and `filters` mean different things depending on whether

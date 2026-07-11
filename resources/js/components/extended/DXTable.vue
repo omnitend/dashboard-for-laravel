@@ -69,40 +69,40 @@
                                     <!-- Text Filter -->
                                     <DFormInput
                                         v-if="field.filter === 'text'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
                                     <DAutocomplete
                                         v-else-if="field.filter === 'select'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :options="getFieldFilterOptions(field)"
                                         :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
                                         size="sm"
                                         open-on-focus
-                                        @update:model-value="handleFilterChange(field.key, ($event ?? '') as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), ($event ?? '') as string)"
                                     />
 
                                     <!-- Number Filter -->
                                     <DFormInput
                                         v-else-if="field.filter === 'number'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
                                         type="number"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- Date Filter -->
                                     <DFormInput
                                         v-else-if="field.filter === 'date'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         type="date"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- No filter for this column -->
@@ -115,7 +115,7 @@
                         <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
                             <div class="d-flex align-items-center justify-content-between gap-2">
                                 <div class="flex-grow-1">
-                                    <div class="fw-semibold">{{ label || field.key }}</div>
+                                    <div class="fw-semibold">{{ headerLabel(field, label) }}</div>
                                     <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
                                 </div>
                                 <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 1.1; display: flex; flex-direction: column; align-items: center;">
@@ -165,40 +165,40 @@
                                     <!-- Text Filter -->
                                     <DFormInput
                                         v-if="field.filter === 'text'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
                                     <DAutocomplete
                                         v-else-if="field.filter === 'select'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :options="getFieldFilterOptions(field)"
                                         :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
                                         size="sm"
                                         open-on-focus
-                                        @update:model-value="handleFilterChange(field.key, ($event ?? '') as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), ($event ?? '') as string)"
                                     />
 
                                     <!-- Number Filter -->
                                     <DFormInput
                                         v-else-if="field.filter === 'number'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
                                         type="number"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- Date Filter -->
                                     <DFormInput
                                         v-else-if="field.filter === 'date'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         type="date"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- No filter for this column -->
@@ -211,7 +211,7 @@
                         <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
                             <div class="d-flex align-items-center justify-content-between gap-2">
                                 <div class="flex-grow-1">
-                                    <div class="fw-semibold">{{ label || field.key }}</div>
+                                    <div class="fw-semibold">{{ headerLabel(field, label) }}</div>
                                     <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
                                 </div>
                                 <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 1.1; display: flex; flex-direction: column; align-items: center;">
@@ -262,40 +262,40 @@
                                     <!-- Text Filter -->
                                     <DFormInput
                                         v-if="field.filter === 'text'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
                                     <DAutocomplete
                                         v-else-if="field.filter === 'select'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :options="getFieldFilterOptions(field)"
                                         :placeholder="field.filterPlaceholder || `All ${field.label || field.key}`"
                                         size="sm"
                                         open-on-focus
-                                        @update:model-value="handleFilterChange(field.key, ($event ?? '') as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), ($event ?? '') as string)"
                                     />
 
                                     <!-- Number Filter -->
                                     <DFormInput
                                         v-else-if="field.filter === 'number'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
                                         type="number"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- Date Filter -->
                                     <DFormInput
                                         v-else-if="field.filter === 'date'"
-                                        :model-value="effectiveFilters[field.key] || ''"
+                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
                                         type="date"
                                         size="sm"
-                                        @update:model-value="handleFilterChange(field.key, $event as string)"
+                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
                                     <!-- No filter for this column -->
@@ -308,7 +308,7 @@
                         <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
                             <div class="d-flex align-items-center justify-content-between gap-2">
                                 <div class="flex-grow-1">
-                                    <div class="fw-semibold">{{ label || field.key }}</div>
+                                    <div class="fw-semibold">{{ headerLabel(field, label) }}</div>
                                     <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
                                 </div>
                                 <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 1.1; display: flex; flex-direction: column; align-items: center;">
@@ -431,15 +431,15 @@
                     </div>
 
                     <!-- Pagination and Controls (API mode) -->
-                    <div v-if="isProviderMode && apiPaginationMeta" class="mt-3">
+                    <div v-if="isProviderMode && providerPagination" class="mt-3">
                         <!-- Top row: Pagination and Per-page selector -->
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <!-- Pagination controls (only when multiple pages) -->
                             <DPagination
-                                v-if="showPagination && apiPaginationMeta.total > apiPaginationMeta.per_page"
-                                :model-value="apiPaginationMeta.current_page"
-                                :total-rows="apiPaginationMeta.total"
-                                :per-page="apiPaginationMeta.per_page"
+                                v-if="showPagination && providerPagination.total > providerPagination.per_page"
+                                :model-value="providerPagination.current_page"
+                                :total-rows="providerPagination.total"
+                                :per-page="providerPagination.per_page"
                                 size="sm"
                                 @update:model-value="handleApiPageChange"
                             />
@@ -462,18 +462,18 @@
                         <!-- Bottom row: Info text -->
                         <div class="small text-muted">
                             <div>
-                                <template v-if="apiPaginationMeta.total > apiPaginationMeta.per_page">
-                                    {{ apiPaginationMeta.from }} to {{ apiPaginationMeta.to }} out of {{ apiPaginationMeta.total }} {{ apiPaginationMeta.total === 1 ? singularItemName : pluralItemName }}.
+                                <template v-if="providerPagination.total > providerPagination.per_page">
+                                    {{ providerPagination.from }} to {{ providerPagination.to }} out of {{ providerPagination.total }} {{ providerPagination.total === 1 ? singularItemName : pluralItemName }}.
                                 </template>
-                                <template v-else-if="apiPaginationMeta.total === 1">
-                                    {{ apiPaginationMeta.total }} {{ singularItemName }}.
+                                <template v-else-if="providerPagination.total === 1">
+                                    {{ providerPagination.total }} {{ singularItemName }}.
                                 </template>
                                 <template v-else>
-                                    {{ apiPaginationMeta.total }} {{ pluralItemName }}.
+                                    {{ providerPagination.total }} {{ pluralItemName }}.
                                 </template>
                             </div>
-                            <div v-if="hasActiveFilters && apiPaginationMeta.total_unfiltered">
-                                <small>Filtered from {{ apiPaginationMeta.total_unfiltered }} {{ apiPaginationMeta.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
+                            <div v-if="hasActiveFilters && providerPagination.total_unfiltered">
+                                <small>Filtered from {{ providerPagination.total_unfiltered }} {{ providerPagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
                             </div>
                         </div>
                     </div>
@@ -664,6 +664,27 @@ export interface FilterOption {
 export interface TableField {
     key: string;
     label?: string;
+
+    /**
+     * The key this column's filter is sent under, when it differs from the
+     * column's own key (default: `key`). Lets a *display* column filter on a
+     * different server param — e.g. a "Customer" column rendering a name but
+     * filtering on `customer_id` — instead of forcing the column to be named
+     * after the server's filter param and the human-facing value into a
+     * `#cell` slot.
+     */
+    filterKey?: string;
+
+    /**
+     * For a `select` filter: adds an option meaning "has no value", e.g.
+     * `filterNullText: "Unassigned"` on an assignee column. Selecting it sends
+     * `filterNullValue` (default `"null"`) as the filter value; client-side, it
+     * matches rows whose value is null, undefined or empty.
+     */
+    filterNullText?: string;
+
+    /** The value sent when the `filterNullText` option is chosen. Default `"null"`. */
+    filterNullValue?: string;
     sortable?: boolean;
     hint?: string;
     filter?: FilterType;
@@ -1047,6 +1068,42 @@ const hasActiveFilters = computed(() => {
 // API mode pagination metadata (extracted from responses)
 const apiPaginationMeta = ref<PaginationData | null>(null);
 
+/**
+ * Pagination shown in provider mode.
+ *
+ * Only the built-in `apiUrl` provider can populate `apiPaginationMeta` — it's
+ * the one that knows to read `response.data.pagination`. A CUSTOM provider
+ * returns rows and nothing else, so the pager simply never rendered: a table
+ * with no pagination and no warning, which is why a page needing custom request
+ * shaping quietly lost its pager (#106). A custom provider now takes its
+ * pagination from the `pagination` prop, and says so when it's missing.
+ */
+const providerPagination = computed<PaginationData | null>(() => {
+    if (apiPaginationMeta.value) return apiPaginationMeta.value;
+    if (props.provider && props.pagination && props.pagination.total > 0) {
+        return props.pagination;
+    }
+    return null;
+});
+
+// Loud, once, rather than a silently pager-less table.
+let warnedAboutProviderPagination = false;
+watch(
+    () => [props.provider, props.showPagination, apiPaginationMeta.value] as const,
+    ([provider, showPagination, pagination]) => {
+        if (warnedAboutProviderPagination) return;
+        if (provider && showPagination && !pagination) {
+            warnedAboutProviderPagination = true;
+            // eslint-disable-next-line no-console
+            console.warn(
+                '[DXTable] A custom `provider` cannot report its own pagination, so no pager will render. ' +
+                    'Pass the page metadata via the `pagination` prop, or set `:show-pagination="false"` to hide the pager deliberately.',
+            );
+        }
+    },
+    { immediate: true },
+);
+
 // ============================================
 // Client-Side Mode: Filtering, Sorting, Pagination
 // ============================================
@@ -1068,8 +1125,15 @@ const clientSideFilteredItems = computed<T[]>(() => {
     return props.items.filter(item => {
         return filterKeys.every(key => {
             const filterValue = filters[key].trim().toLowerCase();
-            const field = props.fields.find(f => f.key === key);
+            // Resolve by the FILTER key, which may differ from the column's key.
+            const field = props.fields.find(f => filterKeyFor(f) === key);
             const itemValue = (item as any)[key];
+
+            // The "no value" option (e.g. Unassigned) is the one filter that
+            // MATCHES an absent value rather than failing on it.
+            if (field?.filterNullText && filters[key] === filterNullValueFor(field)) {
+                return itemValue === null || itemValue === undefined || itemValue === '';
+            }
 
             if (itemValue === null || itemValue === undefined) {
                 return false;
@@ -1139,21 +1203,43 @@ const clientSideSortedItems = computed<T[]>(() => {
 const apiFilterValues = ref<Record<string, string[]>>({});
 
 // Computed: Get effective filter options for a field
+// The key a column's filter is SENT under, which is not always the column's own
+// key: a display column can filter on a different server param via `filterKey`.
+const filterKeyFor = (field: TableField): string => field.filterKey ?? field.key;
+
+// The value that means "has no value" for a select filter (#106).
+const filterNullValueFor = (field: TableField): string => field.filterNullValue ?? 'null';
+
+/**
+ * Column header text. An explicitly empty `label` means an EMPTY header — an
+ * actions column headed `actions` (lowercase, as-keyed) is a leak, not a
+ * default. Only fall back when no label was declared at all.
+ */
+const headerLabel = (field: TableField, slotLabel?: string): string =>
+    field.label !== undefined ? field.label : (slotLabel || field.key);
+
 const getFieldFilterOptions = (field: TableField): FilterOption[] => {
+    const options: FilterOption[] = [];
+
+    // An "Unassigned"-style option, so a select filter can express "no value".
+    if (field.filterNullText) {
+        options.push({ value: filterNullValueFor(field), text: field.filterNullText });
+    }
+
     // If field has static filterOptions, use those
     if (field.filterOptions && field.filterOptions.length > 0) {
-        return field.filterOptions;
+        return [...options, ...field.filterOptions];
     }
 
-    // Otherwise, check for server-provided values
-    const serverValues = props.filterValues?.[field.key] || apiFilterValues.value[field.key];
+    // Otherwise, check for server-provided values (keyed by the filter key)
+    const serverValues =
+        props.filterValues?.[filterKeyFor(field)] ?? apiFilterValues.value[filterKeyFor(field)];
 
     if (serverValues && serverValues.length > 0) {
-        // Convert string array to FilterOption array
-        return serverValues.map(value => ({ value, text: value }));
+        return [...options, ...serverValues.map(value => ({ value, text: value }))];
     }
 
-    return [];
+    return options;
 };
 
 // LocalStorage key for perPage preference
@@ -1264,7 +1350,7 @@ const effectivePerPage = computed(() => {
     }
 
     // For API mode, use internal state (which gets updated immediately on change)
-    // Don't use apiPaginationMeta.per_page here because it's from the previous request
+    // Don't use providerPagination.per_page here because it's from the previous request
     // and causes the select to flicker when user changes it
     return internalPerPage.value;
 });
@@ -1348,7 +1434,7 @@ const shouldShowPerPageSelector = computed(() => {
 const fieldsNeedingFilterValues = computed(() => {
     return props.fields
         .filter(field => field.filter === 'select' && (!field.filterOptions || field.filterOptions.length === 0))
-        .map(field => field.key);
+        .map(field => filterKeyFor(field));
 });
 
 // Error state for API mode
