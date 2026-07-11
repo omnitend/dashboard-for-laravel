@@ -298,6 +298,17 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   background-color: var(--bs-light);
 }
 
+// The avatar dropdown trigger (DXDashboardNavbar sets this via toggle-class,
+// so it lands on the BVN-rendered button — global rule, scoped CSS can't
+// reach it). The themed $btn-padding-y (10px) would make it ~54px tall and
+// blow the navbar's single-row content budget: 64px header minus the bar's
+// 16px padding = 48px. 6px keeps a ~46px tap target (≥ the 44px WCAG
+// guideline) while still fitting the budget.
+.dashboard-navbar__user-menu-toggle {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
 // ----------------------------------------------------------------------------
 // Toasts
 // ----------------------------------------------------------------------------

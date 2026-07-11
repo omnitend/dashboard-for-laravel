@@ -36,11 +36,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   group of buttons overflowed the viewport. Now: the header uses `min-height`
   (the bar grows to contain its rows), the actions region is a direct bar child
   that wraps to its own full-width row below `md` (its buttons wrap too), and
-  the avatar dropdown toggle drops its vertical padding so a standard
-  single-row bar genuinely fits the 64px sidebar-aligned height. To hide page
-  actions on phones instead (e.g. to relocate them into the page), add
-  `d-none d-md-flex` to the slot content. Guarded by viewport-geometry
-  regression tests.
+  the avatar dropdown toggle's padding is trimmed (to a ~46px tap target —
+  still above the 44px WCAG guideline) so a standard single-row bar genuinely
+  fits the 64px sidebar-aligned height. A new `actionsOnMobile?: "wrap" |
+  "hide"` prop (on `DXDashboardNavbar`, forwarded from `DXDashboard`) chooses
+  what the actions do below `md`: `"wrap"` (default) or `"hide"` for apps that
+  relocate page actions into the page on phones — the wrapper itself hides, so
+  no phantom row-gap. The user-menu cluster is also no longer rendered when
+  empty (guest layouts: actions now sit flush right instead of one gap short).
+  Note: the bar's single-row content budget is 48px — taller content (e.g.
+  `btn-lg`, a tall custom `user-menu`) grows the bar past 64px and out of
+  alignment with the sidebar header. Guarded by viewport-geometry regression
+  tests.
 - **`DXDashboard` no longer hardcodes its background colours.** The layout and
   content-panel backgrounds (`#f8f9fa` / `#fff`) are now `var(--bs-light)` /
   `var(--bs-white)` — identical rendering with stock Bootstrap, but they now

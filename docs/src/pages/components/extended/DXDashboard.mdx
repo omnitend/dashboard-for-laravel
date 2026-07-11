@@ -33,6 +33,7 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
   { name: 'contentClass', type: 'string', default: '-', description: 'Extra class(es) applied to the content container/column' },
   { name: 'user', type: '{ name: string; email: string } | null', default: 'null', description: 'User object for navbar dropdown' },
   { name: 'searchAlign', type: "'start' | 'center'", default: "'start'", description: 'Horizontal alignment of the navbar search slot content (start = flush left, center = centred), forwarded to DXDashboardNavbar' },
+  { name: 'actionsOnMobile', type: "'wrap' | 'hide'", default: "'wrap'", description: 'What the navbar actions slot does below md: wrap moves it to its own full-width row, hide removes it (relocate actions into the page on phones). Forwarded to DXDashboardNavbar' },
   { name: 'storageKey', type: 'string', default: '\'dashboard-sidebar-hidden\'', description: 'LocalStorage key for sidebar state persistence' },
 ]} />
 
@@ -45,7 +46,7 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
   { name: 'sidebar-footer', props: '{ collapsed: boolean }', description: 'Utility links pinned to the bottom of the sidebar (help, changelog, sign-out, …)' },
   { name: 'navbar-menu-icon', props: '-', description: 'Custom hamburger menu icon for navbar' },
   { name: 'navbar-search', props: '-', description: 'Custom search component for navbar' },
-  { name: 'navbar-actions', props: '{ pageTitle: string }', description: 'Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from md up; wraps to its own full-width row below. Add d-none d-md-flex to the slot content to hide it on phones instead' },
+  { name: 'navbar-actions', props: '{ pageTitle: string }', description: 'Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from md up; below, wraps to its own full-width row or is hidden entirely per actionsOnMobile' },
   { name: 'navbar-user-icon', props: '{ initial: string }', description: 'Custom user icon/avatar in navbar dropdown' },
   { name: 'navbar-user-menu', props: '{ user: User }', description: 'Custom user dropdown menu content' },
 ]} />

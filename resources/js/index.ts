@@ -140,4 +140,5 @@ export type {
     NavigationGroup,
     Navigation,
     NavbarSearchAlign,
+    NavbarActionsOnMobile,
 } from "./types/navigation";

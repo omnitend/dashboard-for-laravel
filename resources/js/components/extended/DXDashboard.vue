@@ -37,6 +37,7 @@
         :page-title="pageTitle"
         :user="user"
         :search-align="searchAlign"
+        :actions-on-mobile="actionsOnMobile"
         @toggle-sidebar="toggleSidebar"
       >
         <!-- Dynamically forward all navbar-* slots by stripping the prefix -->
@@ -80,7 +81,7 @@ import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
 import DRow from '../base/DRow.vue';
 import DCol from '../base/DCol.vue';
-import type { Navigation, NavbarSearchAlign } from '../../types/navigation';
+import type { Navigation, NavbarActionsOnMobile, NavbarSearchAlign } from '../../types/navigation';
 
 const slots = useSlots();
 
@@ -123,6 +124,13 @@ interface Props {
   searchAlign?: NavbarSearchAlign;
 
   /**
+   * What the navbar actions slot does below `md`: `"wrap"` to its own
+   * full-width row, `"hide"` to remove it (relocate actions into the page on
+   * phones). Forwarded to DXDashboardNavbar.
+   */
+  actionsOnMobile?: NavbarActionsOnMobile;
+
+  /**
    * Turn sidebar group headers into accordion toggles that collapse/expand
    * their items. When off (default), every group is permanently expanded.
    */
@@ -156,6 +164,7 @@ const props = withDefaults(defineProps<Props>(), {
   dashboardId: '',
   contentMaxWidth: '1140px',
   searchAlign: 'start',
+  actionsOnMobile: 'wrap',
 });
 
 const collapsed = ref(false);

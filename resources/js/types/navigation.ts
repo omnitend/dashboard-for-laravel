@@ -37,3 +37,11 @@ export type Navigation = NavigationGroup[];
  * Shared by DXDashboard (which forwards it) and DXDashboardNavbar.
  */
 export type NavbarSearchAlign = "start" | "center";
+
+/**
+ * What the navbar actions slot does below the `md` breakpoint: `"wrap"` moves
+ * it to its own full-width row (the bar grows), `"hide"` removes it entirely
+ * (for apps that relocate page actions into the page on phones).
+ * Shared by DXDashboard (which forwards it) and DXDashboardNavbar.
+ */
+export type NavbarActionsOnMobile = "wrap" | "hide";

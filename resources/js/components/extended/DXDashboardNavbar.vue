@@ -48,19 +48,27 @@
         </div>
 
         <!-- Page-level primary actions: right-aligned next to the user menu
-             from `md` up; their own wrappable full-width row below (#93). -->
+             from `md` up; their own wrappable full-width row below (#93),
+             or hidden below `md` when `actionsOnMobile` is "hide". -->
         <div
           v-if="$slots.actions"
-          class="dashboard-navbar__actions d-flex align-items-center gap-2"
+          class="dashboard-navbar__actions align-items-center gap-2"
+          :class="actionsDisplayClass"
         >
           <!--
-            @slot Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from `md` up; wraps to its own full-width row below. Add `d-none d-md-flex` to your slot content to hide it on phones instead (e.g. to relocate actions into the page).
+            @slot Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from `md` up; below, wraps to its own full-width row or is hidden entirely per `actionsOnMobile`.
             @binding {string} pageTitle The current page title, for context.
           -->
           <slot name="actions" :pageTitle="pageTitle" />
         </div>
 
-        <div class="dashboard-navbar__end d-flex align-items-center gap-3">
+        <!-- Only render the user-menu cluster when it has content: an empty
+             flex item would still cost a bar gap, pushing actions off the
+             right edge in guest (user-less) layouts. -->
+        <div
+          v-if="$slots['user-menu'] || user"
+          class="dashboard-navbar__end d-flex align-items-center gap-3"
+        >
           <!--
             @slot Replaces the entire user menu (the default avatar dropdown).
             @binding {object} user The signed-in user.
@@ -71,7 +79,7 @@
               variant="link"
               class="text-dark"
               menu-class="dropdown-menu-end"
-              toggle-class="py-0"
+              toggle-class="dashboard-navbar__user-menu-toggle"
               no-caret
             >
               <template #button-content>
@@ -104,7 +112,7 @@ import { computed } from "vue";
 import DContainer from "../base/DContainer.vue";
 import DButton from "../base/DButton.vue";
 import DDropdown from "../base/DDropdown.vue";
-import type { NavbarSearchAlign } from "../../types/navigation";
+import type { NavbarActionsOnMobile, NavbarSearchAlign } from "../../types/navigation";
 
 const props = withDefaults(
   defineProps<{
@@ -123,11 +131,18 @@ const props = withDefaults(
      * full-width row below.
      */
     searchAlign?: NavbarSearchAlign;
+    /**
+     * What the actions slot does below the `md` breakpoint: `"wrap"` moves it
+     * to its own full-width row (the bar grows), `"hide"` removes it entirely
+     * (for apps that relocate page actions into the page on phones).
+     */
+    actionsOnMobile?: NavbarActionsOnMobile;
   }>(),
   {
     user: null,
     pageTitle: "",
     searchAlign: "start",
+    actionsOnMobile: "wrap",
   },
 );
 
@@ -141,6 +156,13 @@ const SEARCH_ALIGN_CLASSES: Record<NavbarSearchAlign, string> = {
 
 const searchAlignClass = computed(
   () => SEARCH_ALIGN_CLASSES[props.searchAlign] ?? SEARCH_ALIGN_CLASSES.start,
+);
+
+// "hide" swaps d-flex for d-none/d-md-flex on the WRAPPER — hiding only the
+// slot content would leave a zero-height full-width row still costing a flex
+// row-gap on phones.
+const actionsDisplayClass = computed(() =>
+  props.actionsOnMobile === "hide" ? "d-none d-md-flex" : "d-flex",
 );
 
 defineEmits<{
@@ -166,7 +188,8 @@ const getUserInitial = (user: { name: string } | null) => {
   padding: 0.5rem 0;
 }
 
-/* Push the user-menu / actions cluster to the right. */
+/* Push the user-menu cluster to the right. (The actions region carries its
+   own auto margin from `md` up — see the sibling rule below.) */
 .dashboard-navbar__end {
   margin-left: auto;
 }
@@ -181,30 +204,27 @@ const getUserInitial = (user: { name: string } | null) => {
  * actions (grows to fill the middle; `searchAlign` controls where its content
  * sits), actions right-aligned next to the user menu.
  */
+/* order 2 applies at every size: after the toggle/title/user-menu (order 0)
+   both below and above `md` (where search takes order 1). */
 .dashboard-navbar__actions {
   order: 2;
   flex: 0 0 100%;
-  width: 100%;
   flex-wrap: wrap;
 }
 
 .dashboard-navbar__search {
   order: 3;
   flex: 0 0 100%;
-  width: 100%;
 }
 
 @media (min-width: 768px) {
   .dashboard-navbar__search {
     order: 1;
     flex: 1 1 auto;
-    width: auto;
   }
 
   .dashboard-navbar__actions {
-    order: 2;
     flex: 0 1 auto;
-    width: auto;
     flex-wrap: nowrap;
     margin-left: auto;
   }
