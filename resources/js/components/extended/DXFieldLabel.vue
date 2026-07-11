@@ -6,7 +6,7 @@
 <template>
     <span class="dx-field-label">
         <span class="dx-field-label__text">{{ label }}</span>
-        <template v-if="info || $slots.popover">
+        <template v-if="info || $slots.popover || popoverRender">
             <button
                 :id="infoId"
                 type="button"
@@ -26,15 +26,20 @@
                   @slot Rich popover body. Overrides the plain `info` text — use
                   it for lists, bold, paragraphs. Falls back to `{{ info }}`.
                 -->
-                <slot name="popover">{{ info }}</slot>
+                <slot name="popover">
+                    <!-- DXField forwards its `info-popover` slot here via inject. -->
+                    <component v-if="popoverRender" :is="popoverRender" />
+                    <template v-else>{{ info }}</template>
+                </slot>
             </DPopover>
         </template>
     </span>
 </template>
 
 <script setup lang="ts">
-import { useId } from "vue";
+import { computed, inject, useId } from "vue";
 import DPopover from "../base/DPopover.vue";
+import { dxFieldInfoPopoverKey } from "./dxFieldContext";
 
 interface Props {
     /** Visible label text. */
@@ -45,6 +50,12 @@ interface Props {
 }
 
 defineProps<Props>();
+
+// A rich popover body forwarded by a DXField ancestor (its `info-popover`
+// slot), if any. The explicit `popover` slot still takes precedence for
+// standalone use. Null when there's no DXField ancestor / no such slot.
+const injectedPopover = inject(dxFieldInfoPopoverKey, null);
+const popoverRender = computed(() => injectedPopover?.value ?? null);
 
 // Stable, SSR-safe id so the popover can target the trigger button.
 const infoId = `dx-field-info-${useId()}`;

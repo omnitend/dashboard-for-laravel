@@ -73,3 +73,41 @@ describe('DXForm forwards #info-popover(key) to the field label (#91)', () => {
     expect(affordance(screen.container)).not.toBeNull();
   });
 });
+
+describe('DXForm #info-popover reaches every label-bearing field type (#91 guard)', () => {
+  // DXField forwards #info-popover to its DXFieldLabel via provide/inject, so
+  // ANY field type that renders a label supports it automatically. This guards
+  // against a future field-type branch (or a regression in the forward) leaving
+  // some types unable to show a rich label popover.
+  const cases: Array<{ name: string; field: any; data: Record<string, any> }> = [
+    { name: 'text', field: { key: 'f', type: 'text', label: 'F' }, data: { f: '' } },
+    { name: 'select', field: { key: 'f', type: 'select', label: 'F', options: [] }, data: { f: '' } },
+    { name: 'checkbox', field: { key: 'f', type: 'checkbox', label: 'F' }, data: { f: false } },
+    { name: 'switch', field: { key: 'f', type: 'switch', label: 'F' }, data: { f: false } },
+    {
+      name: 'repeater',
+      field: { key: 'f', type: 'repeater', label: 'F', fields: [{ key: 'x', type: 'text', label: 'X' }] },
+      data: { f: [] },
+    },
+  ];
+
+  for (const layout of ['vertical', 'horizontal'] as const) {
+    for (const c of cases) {
+      it(`${c.name} (${layout}) surfaces the affordance from #info-popover alone`, async () => {
+        const form = useForm(c.data);
+        const screen = render({
+          render: () =>
+            h(BApp, {}, () =>
+              h(
+                DXForm,
+                { form, fields: [c.field], showSubmit: false, layout },
+                { 'info-popover(f)': () => h('ul', [h('li', 'detail')]) },
+              ),
+            ),
+        });
+        await flush();
+        expect(screen.container.querySelector('.dx-field-label__info')).not.toBeNull();
+      });
+    }
+  }
+});

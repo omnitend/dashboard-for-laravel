@@ -40,11 +40,7 @@
              duplicate the row label. In horizontal layout the hint sits beneath
              the label here rather than below the control. -->
         <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
-                <template v-if="$slots['info-popover']" #popover>
-                    <slot name="info-popover" :field="field" :model="model" />
-                </template>
-            </DXFieldLabel>
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
             <small
                 v-if="isHorizontal && (resolvedHint || $slots.hint)"
                 class="form-text text-muted d-block dx-field-hint"
@@ -104,11 +100,7 @@
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
-                <template v-if="$slots['info-popover']" #popover>
-                    <slot name="info-popover" :field="field" :model="model" />
-                </template>
-            </DXFieldLabel>
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
         </DFormCheckbox>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
@@ -146,11 +138,7 @@
              layout the hint sits beneath the label here rather than below the
              control. -->
         <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
-                <template v-if="$slots['info-popover']" #popover>
-                    <slot name="info-popover" :field="field" :model="model" />
-                </template>
-            </DXFieldLabel>
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
             <small
                 v-if="isHorizontal && (resolvedHint || $slots.hint)"
                 class="form-text text-muted d-block dx-field-hint"
@@ -216,11 +204,7 @@
             :disabled="isDisabled || isReadonly"
             v-bind="field.inputProps"
         >
-            <DXFieldLabel :label="switchText" :info="resolvedInfo">
-                <template v-if="$slots['info-popover']" #popover>
-                    <slot name="info-popover" :field="field" :model="model" />
-                </template>
-            </DXFieldLabel>
+            <DXFieldLabel :label="switchText" :info="resolvedInfo" />
         </DXSwitch>
 
         <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
@@ -247,11 +231,7 @@
     <div v-else-if="field.type === 'repeater'" :class="field.class || 'mb-3'">
         <DFormGroup v-bind="repeaterHorizontalAttrs">
             <template v-if="!hideLabel" #label>
-                <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
-                    <template v-if="$slots['info-popover']" #popover>
-                        <slot name="info-popover" :field="field" :model="model" />
-                    </template>
-                </DXFieldLabel>
+                <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
             </template>
             <DXRepeater
                 :form="form"
@@ -291,11 +271,7 @@
              horizontal layout the hint sits beneath the label here rather than
              below the control. -->
         <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo">
-                <template v-if="$slots['info-popover']" #popover>
-                    <slot name="info-popover" :field="field" :model="model" />
-                </template>
-            </DXFieldLabel>
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
             <small
                 v-if="isHorizontal && (resolvedHint || $slots.hint)"
                 class="form-text text-muted d-block dx-field-hint"
@@ -512,10 +488,13 @@ import {
     defineAsyncComponent,
     onBeforeUnmount,
     onMounted,
+    provide,
     ref,
     useId,
+    useSlots,
     watch,
 } from "vue";
+import { dxFieldInfoPopoverKey } from "./dxFieldContext";
 import DFormGroup from "../base/DFormGroup.vue";
 import DFormInput from "../base/DFormInput.vue";
 import DFormTextarea from "../base/DFormTextarea.vue";
@@ -581,6 +560,24 @@ interface Props {
 const props = defineProps<Props>();
 
 const effectiveModel = computed(() => props.model ?? props.form.data);
+
+// Forward the `info-popover` slot to whichever DXFieldLabel this field renders,
+// once — so the label sites stay plain `<DXFieldLabel :label :info />` and can't
+// drift out of sync (each rendering its own copy of the forward). DXFieldLabel
+// injects this; standalone use ignores it.
+const slots = useSlots();
+provide(
+    dxFieldInfoPopoverKey,
+    computed(() =>
+        slots["info-popover"]
+            ? () =>
+                  slots["info-popover"]!({
+                      field: props.field,
+                      model: props.model,
+                  })
+            : null,
+    ),
+);
 
 // ————————————————— horizontal layout (#66)
 
@@ -702,7 +699,9 @@ function normaliseDateForInput(value: unknown, type: FieldType): string {
         return iso.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? "";
     }
     if (type === "time") {
-        return iso.match(/(\d{2}:\d{2})/)?.[1] ?? "";
+        // Anchor to the start or the time part of an ISO value, so a malformed
+        // string can't yield a stray HH:MM from the middle.
+        return iso.match(/(?:^|T)(\d{2}:\d{2})/)?.[1] ?? "";
     }
     // datetime → datetime-local
     return iso.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)?.[1] ?? "";
