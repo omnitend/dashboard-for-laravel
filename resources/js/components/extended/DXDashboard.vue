@@ -47,6 +47,7 @@
         :user="user"
         :search-align="searchAlign"
         :actions-on-mobile="actionsOnMobile"
+        :user-menu-label="userMenuLabel"
         @toggle-sidebar="toggleSidebar"
       >
         <!-- Dynamically forward all navbar-* slots by stripping the prefix -->
@@ -154,6 +155,9 @@ interface Props {
    */
   actionsOnMobile?: NavbarActionsOnMobile;
 
+  /** Accessible name for the navbar's user-menu trigger. Forwarded to DXDashboardNavbar. */
+  userMenuLabel?: string;
+
   /**
    * Turn sidebar group headers into accordion toggles that collapse/expand
    * their items. When off (default), every group is permanently expanded.
@@ -189,6 +193,7 @@ const props = withDefaults(defineProps<Props>(), {
   contentMaxWidth: '1140px',
   searchAlign: 'start',
   actionsOnMobile: 'wrap',
+  userMenuLabel: 'User menu',
 });
 
 const collapsed = ref(false);

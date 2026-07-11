@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **The navbar's user-menu trigger has an accessible name** (#113). Its name came
+  from its content — just the avatar disc — so a screen reader announced the
+  control as the user's initial ("J") rather than as a menu. It now carries a
+  visually-hidden label (`userMenuLabel`, default "User menu"), and the avatar's
+  initial is marked decorative.
+
+  Deliberately *not* an `aria-label`: that **replaces** an element's content for
+  assistive tech, which would have silenced the avatar's notification-badge text
+  — the one thing in there actually worth announcing.
 - **`DAutocomplete` no longer shows a clear (✕) when there is nothing to clear**
   (#108). bvn's `BAutocomplete` treats an **empty string** as a selection (its
   `hasSelection` excludes only `null`/`undefined`), so the ✕ rendered on an empty

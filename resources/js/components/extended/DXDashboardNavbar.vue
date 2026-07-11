@@ -83,6 +83,12 @@
               no-caret
             >
               <template #button-content>
+                <!-- Names the control. A visually-hidden label rather than an
+                     `aria-label`, because an aria-label REPLACES the element's
+                     content for assistive tech — it would silence the avatar's
+                     notification-badge text, which is the one thing in there
+                     worth announcing (#113). -->
+                <span class="visually-hidden">{{ userMenuLabel }}</span>
                 <!--
                   @slot Custom user avatar/icon in the dropdown trigger. To decorate the default avatar (e.g. add a notification dot) rather than replace it, render `DXUserAvatar` — the same component used here, so the styling comes with it.
                   @binding {string} initial The first letter of the user's name.
@@ -137,12 +143,18 @@ const props = withDefaults(
      * (for apps that relocate page actions into the page on phones).
      */
     actionsOnMobile?: NavbarActionsOnMobile;
+    /**
+     * Accessible name for the user-menu trigger. Without one, a screen reader
+     * announces the trigger as the avatar's initial ("J") rather than as a menu.
+     */
+    userMenuLabel?: string;
   }>(),
   {
     user: null,
     pageTitle: "",
     searchAlign: "start",
     actionsOnMobile: "wrap",
+    userMenuLabel: "User menu",
   },
 );
 

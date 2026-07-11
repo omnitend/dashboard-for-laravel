@@ -15,7 +15,11 @@
   <div class="dx-user-avatar">
     <!-- `.user-avatar` (not a `dx-`-prefixed name) because it's the documented
          theming hook consumers already override — see the theming guide. -->
-    <span class="user-avatar">
+    <!-- The initial is decorative: it tells a screen-reader user nothing they
+         don't know, and it would otherwise leak into the accessible name of
+         whatever contains the avatar (the navbar's user-menu trigger). The
+         badge's label below stays announced. -->
+    <span class="user-avatar" aria-hidden="true">
       <!-- @slot Replaces the initial inside the disc (e.g. a photo or an icon). -->
       <slot>{{ resolvedInitial }}</slot>
     </span>

@@ -201,3 +201,80 @@ describe('DXDashboardNavbar', () => {
     });
   });
 });
+
+/**
+ * #113. The user-menu trigger had no accessible name: its name came from its
+ * content, which is just the avatar disc, so a screen reader announced the
+ * control as the user's initial ("J") rather than as a menu.
+ *
+ * Deliberately NOT an `aria-label` — that REPLACES an element's content for
+ * assistive tech, which would silence the avatar's notification-badge text.
+ */
+describe('User menu accessible name (#113)', () => {
+  const toggle = (screen: any) =>
+    screen.container.querySelector('.dashboard-navbar__user-menu-toggle') as HTMLElement;
+
+  // The accessible name of a button is its content, minus aria-hidden subtrees.
+  const accessibleName = (element: HTMLElement) =>
+    element.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+
+  const visibleName = (element: HTMLElement) =>
+    [...element.querySelectorAll('*')]
+      .filter((node) => !node.classList.contains('visually-hidden'))
+      .map((node) => node.textContent)
+      .join('');
+
+  it('names the trigger, rather than announcing the user initial', async () => {
+    const screen = render(DXDashboardNavbar, { props: { user: sampleUser } });
+
+    expect(accessibleName(toggle(screen))).toContain('User menu');
+  });
+
+  it('does not announce the decorative initial', async () => {
+    const screen = render(DXDashboardNavbar, { props: { user: sampleUser } });
+
+    const disc = screen.container.querySelector('.user-avatar') as HTMLElement;
+    expect(disc.getAttribute('aria-hidden')).toBe('true');
+    // The letter is still there for sighted users.
+    expect(disc.textContent?.trim()).toBe('J');
+  });
+
+  it('honours a custom userMenuLabel', async () => {
+    const screen = render(DXDashboardNavbar, {
+      props: { user: sampleUser, userMenuLabel: 'Account and settings' },
+    });
+
+    expect(accessibleName(toggle(screen))).toContain('Account and settings');
+  });
+
+  it('keeps the notification badge announced alongside the name', async () => {
+    // The reason this is a visually-hidden span and not an aria-label: an
+    // aria-label would have silenced the badge entirely.
+    const screen = render(DXDashboardNavbar, {
+      props: { user: sampleUser },
+      slots: {
+        'user-icon': `
+          <template #default="{ user }">
+            <DXUserAvatar :user="user" badge badge-label="3 unread updates" />
+          </template>
+        `,
+      },
+      global: {
+        components: {
+          DXUserAvatar: (await import('../../resources/js/components/extended/DXUserAvatar.vue'))
+            .default,
+        },
+      },
+    });
+
+    const name = accessibleName(toggle(screen));
+    expect(name).toContain('User menu');
+    expect(name).toContain('3 unread updates');
+  });
+
+  it('adds nothing visible to the bar', async () => {
+    const screen = render(DXDashboardNavbar, { props: { user: sampleUser } });
+
+    expect(visibleName(toggle(screen))).not.toContain('User menu');
+  });
+});

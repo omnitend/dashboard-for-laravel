@@ -79,6 +79,7 @@ const handleLogout = () => {
   { name: 'pageTitle', type: 'string', required: 'No', default: 'Dashboard', description: 'Page title displayed in the navbar' },
   { name: 'searchAlign', type: "'start' | 'center'", required: 'No', default: "'start'", description: 'Horizontal alignment of the search slot content within its region: flush left (start) or centred (center). The region is inline in the bar from md up, its own full-width row below' },
   { name: 'actionsOnMobile', type: "'wrap' | 'hide'", required: 'No', default: "'wrap'", description: 'What the actions slot does below md: wrap moves it to its own full-width row (the bar grows), hide removes it entirely (for apps that relocate page actions into the page on phones)' },
+  { name: 'userMenuLabel', type: 'string', required: 'No', default: "'User menu'", description: "Accessible name for the user-menu trigger. Without one, a screen reader announces it as the avatar's initial rather than as a menu" },
 ]} />
 
 **Height note:** on desktop the bar is exactly 64px (aligned with the sidebar
