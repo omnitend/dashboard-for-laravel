@@ -61,7 +61,7 @@ function ancestorHasScopeId(el: Element, scopeAttr: string): boolean {
 // Component -> the plain CSS class/selector each :deep() rule targets.
 // ---------------------------------------------------------------------------
 const KNOWN_DEEP_TARGETS: Record<string, string[]> = {
-  'DAutocomplete.vue': ['.input-group', '.b-autocomplete-input-wrapper', '.b-autocomplete-trigger'],
+  'DAutocomplete.vue': ['.input-group', '.b-autocomplete-input-wrapper', '.b-autocomplete-trigger', '.b-autocomplete-clear.btn-close', '.input-group:focus-within', '.form-control', '.btn'],
   'DXSwitch.vue': ['.form-check', '.form-check-label', '.form-check-input'],
   'DXTable.vue': ['tbody tr', '.pagination', '.pagination-sm .page-link', '.pagination .page-item.disabled .page-link'],
   'DXStatCard.vue': ['.dx-stat-card__body'],

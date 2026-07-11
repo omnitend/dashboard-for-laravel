@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`DAutocomplete` no longer shows a clear (✕) when there is nothing to clear**
+  (#108). bvn's `BAutocomplete` treats an **empty string** as a selection (its
+  `hasSelection` excludes only `null`/`undefined`), so the ✕ rendered on an empty
+  field. Very visible through `DXTable`, which uses the control for every
+  `select` column filter: a freshly loaded table with four filters showed four ✕
+  buttons before the user had touched anything, and each was an inert button in
+  the tab order. An explicit `no-clear-button` still wins. Recorded in
+  [DIVERGENCES.md](./DIVERGENCES.md).
+- **`DAutocomplete`'s focus ring frames the whole control** (#108). The input and
+  the dropdown chevron are siblings inside an `.input-group`, so Bootstrap's
+  `.form-control:focus` ring wrapped the input only and stopped dead where the
+  chevron began — the outline read as clipped rather than framing the control.
+  The ring now moves to the group on `:focus-within`.
+
 ### Changed
 - **Default per-page options are now `[10, 20, 50, 100]`** (was `[10, 25, 50, 100]`).
   Consumers who want the old steps can pass them: `:per-page-options="[10, 25, 50, 100]"`.

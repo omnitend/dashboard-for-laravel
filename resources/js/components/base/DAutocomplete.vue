@@ -6,11 +6,40 @@
  * `filterFunction`.
  */
 <script setup lang="ts">
+import { computed, useAttrs } from "vue";
 import { BAutocomplete } from "bootstrap-vue-next";
 
 defineOptions({
   inheritAttrs: false,
 });
+
+const attrs = useAttrs();
+
+/*
+ * Diverges from bvn: the clear (✕) is hidden when there is nothing to clear.
+ *
+ * BAutocomplete's own `hasSelection` excludes only `null` and `undefined`, so an
+ * EMPTY STRING counts as a selection and the ✕ renders on an empty field. That's
+ * very visible through DXTable, which uses this control for every `select`
+ * column filter: a freshly loaded table with four filters showed four ✕ buttons
+ * before the user had done anything, reading as "these have a value to clear"
+ * when they don't (#108). An inert button also shouldn't sit in the tab order.
+ *
+ * A consumer's explicit `no-clear-button` still wins; this only ever hides the
+ * button, never forces it on.
+ */
+const attr = (name: string, hyphenated: string) =>
+  (attrs as Record<string, unknown>)[name] ?? (attrs as Record<string, unknown>)[hyphenated];
+
+const hasValue = computed(() => {
+  const value = attr("modelValue", "model-value");
+  if (Array.isArray(value)) return value.length > 0;
+  return value !== null && value !== undefined && value !== "";
+});
+
+const noClearButton = computed(
+  () => attr("noClearButton", "no-clear-button") === true || !hasValue.value,
+);
 </script>
 
 <template>
@@ -23,7 +52,7 @@ defineOptions({
     (#53). A plain element root makes it deterministic.
   -->
   <div class="d-autocomplete">
-    <BAutocomplete v-bind="$attrs">
+    <BAutocomplete v-bind="$attrs" :no-clear-button="noClearButton">
       <!-- Dynamically pass through all named slots with their props -->
       <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
         <slot :name="name" v-bind="slotProps" />
@@ -47,6 +76,30 @@ defineOptions({
 .d-autocomplete :deep(.b-autocomplete-input-wrapper) {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/*
+  The control is an `.input-group` whose input and trigger chevron are SIBLINGS,
+  so Bootstrap's `.form-control:focus` ring wraps the input only and stops dead
+  where the chevron begins — the outline reads as clipped rather than framing the
+  control. Move the ring to the group on `:focus-within` so the whole thing is
+  outlined as one object, which is the standard input-group + button pattern
+  (#108).
+*/
+.d-autocomplete :deep(.input-group:focus-within) {
+  border-radius: var(--bs-border-radius);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.d-autocomplete :deep(.input-group:focus-within .form-control:focus),
+.d-autocomplete :deep(.input-group:focus-within .btn:focus) {
+  box-shadow: none;
+}
+
+/* Keep the seam between input and chevron coloured like the focused control. */
+.d-autocomplete :deep(.input-group:focus-within .form-control),
+.d-autocomplete :deep(.input-group:focus-within .b-autocomplete-trigger) {
+  border-color: var(--bs-primary);
 }
 
 /*

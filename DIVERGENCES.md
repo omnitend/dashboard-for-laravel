@@ -189,3 +189,25 @@ guarantee** — a bvn change to them flows straight through to consumers.
   guardrails — convergence is mechanical with clear instructions.
 - On convergence, remove the converged entry from this file and document the
   break in `CHANGELOG.md`.
+
+---
+
+## `DAutocomplete` — the clear (✕) is hidden when there is nothing to clear
+
+**bvn:** `BAutocomplete`'s `hasSelection` excludes only `null` and `undefined`,
+so an **empty string counts as a selection** and the clear button renders on an
+empty field.
+
+**Ours:** `DAutocomplete` treats `''` (and an empty array, for `multiple`) as *no
+value* and forces `no-clear-button` in that state.
+
+**Why:** `DXTable` renders this control for every `select` column filter, so a
+freshly loaded table showed a ✕ on every empty filter — reading as "these have a
+value you should clear" when they don't, and putting an inert button in the tab
+order (#108). A consumer's explicit `no-clear-button` still wins; the shield only
+ever *hides* the button, never forces it on.
+
+**Convergence:** drop the shield if bvn tightens `hasSelection` to exclude the
+empty string.
+
+---
