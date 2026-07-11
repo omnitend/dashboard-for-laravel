@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-07-11
+
 ### Added
 - **A select column filter now offers a way back to unfiltered** (#106 follow-up).
   The dropdown listed only the values, so once a filter was picked the only way
@@ -17,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   It carries a sentinel value, not `''`: **bvn drops the entire option list if any
   option's value is an empty string** — not just that entry, all of them — so the
   obvious encoding of "no filter" silently empties the dropdown. Pinned by a test.
+
+### Changed
+- **Default per-page options are now `[10, 20, 50, 100]`** (was `[10, 25, 50, 100]`).
+  Consumers who want the old steps can pass them: `:per-page-options="[10, 25, 50, 100]"`.
+  Note a per-page value persisted in localStorage is validated against this list,
+  so a stored `25` is now ignored and the table falls back to its default.
 
 ### Fixed
 - **The navbar's 64px budget has one owner, and breaking it is no longer silent**
@@ -38,7 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than inferring it from a breakpoint, so a phone layout (where the bar is
   *meant* to grow) doesn't cry wolf.
 
-### Fixed
 - **The navbar's `md` breakpoint is now expressed once, not twice** (#101). The
   bar's responsive behaviour was split between Bootstrap utility classes
   (`d-none d-md-block`, `d-md-flex`), which resolve from `$grid-breakpoints`, and
@@ -71,12 +78,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.form-control:focus` ring wrapped the input only and stopped dead where the
   chevron began — the outline read as clipped rather than framing the control.
   The ring now moves to the group on `:focus-within`.
-
-### Changed
-- **Default per-page options are now `[10, 20, 50, 100]`** (was `[10, 25, 50, 100]`).
-  Consumers who want the old steps can pass them: `:per-page-options="[10, 25, 50, 100]"`.
-  Note a per-page value persisted in localStorage is validated against this list,
-  so a stored `25` is now ignored and the table falls back to its default.
 
 ## [0.24.0] - 2026-07-11
 
