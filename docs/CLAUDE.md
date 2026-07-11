@@ -36,7 +36,7 @@ When using Vue components in MDX files, you must use **JSX syntax**, not Vue tem
 
 ### Coverage
 - **55 Base Components** (D* prefix) documented with live examples
-- **6 Extended Components** (DX* prefix) documented with live examples
+- **7 Extended Components** (DX* prefix) documented with live examples
 - Helper/child components are surfaced within their parent pages (e.g., DTab within DTabs)
 
 ### Key Features

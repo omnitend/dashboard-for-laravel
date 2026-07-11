@@ -19,7 +19,7 @@ This library provides:
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 70 components** (57 base + 13 extended)
+**Total: 71 components** (57 base + 14 extended)
 
 ## Project Structure
 
@@ -918,6 +918,33 @@ a consistent set and the conflict looks inexplicable.
    at the **same** version. The uninstall breaks the cyclic pin; the fresh
    install resolves cleanly. (`vitest-browser-vue` has a loose `^4.0.0-0` peer
    and rides along.)
+
+### Bumping a dev dep that raises the Node floor (learned on Astro 5→7, #7)
+
+A major dev-tooling bump can break CI in two non-obvious ways at once — the
+Astro 5→7 bump did both, going red on `npm ci` before any test ran:
+
+1. **Node floor.** Astro 7 requires **Node ≥ 22.12**, but the workflows ran Node
+   18/20 → `npm ci` fails to even install. Bump every workflow's Node:
+   `.github/workflows/test.yml` matrix to `[22.x, 24.x]`, `docs.yml` to `24`.
+   (`docs.yml` runs `astro build`, so it *must* satisfy the floor or the Pages
+   deploy fails after merge.)
+2. **npm-version lockfile mismatch.** This Mac's `~/.npmrc` has a
+   `min-release-age` cutoff, and the local **npm 11** (Node 24) writes a
+   `lockfileVersion 3` lock that CI's **npm 10** (Node ≤22 default) rejects as
+   out of sync (`npm error Missing: esbuild@… from lock file`) even though the
+   entries are present — npm 10 and 11 disagree on how optional platform deps
+   are recorded. Fixes: (a) add `- run: npm install -g npm@11` before `npm ci`
+   in CI so every leg reads the lock the same way (no-op on Node 24), and
+   (b) **regenerate the lock without the cutoff** — `npm install --userconfig
+   <~/.npmrc minus the min-release-age line>` — so the full optional-deps tree
+   is recorded. To keep the cooldown while regenerating, **pin the dep exact**
+   (e.g. `"astro": "7.0.5"`, not `^`) so the clean install doesn't drift to a
+   too-fresh version.
+
+Verify with a real `npm ci` (not just `npm install`) using a clean, cutoff-free
+config before pushing — `npm install` reports "in sync" locally while CI's
+`npm ci` still fails.
 
 ## MCP Server - AI-Agent-Friendly Documentation
 

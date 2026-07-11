@@ -1,5 +1,8 @@
 # DXSwitch primitive + switch colour consistency
 
+**Status:** ✅ Shipped in **v0.20.0** (PR #89). Follow-up (contextual text,
+provide/inject de-dup of the label popover forward) shipped in v0.21.0.
+
 **Date:** 2026-07-10
 **Branch:** `feat/dxswitch-primitive` (stacked on `chore/7-audit-sweep` / PR #86)
 
