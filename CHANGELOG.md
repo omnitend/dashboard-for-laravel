@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Default per-page options are now `[10, 20, 50, 100]`** (was `[10, 25, 50, 100]`).
+  Consumers who want the old steps can pass them: `:per-page-options="[10, 25, 50, 100]"`.
+  Note a per-page value persisted in localStorage is validated against this list,
+  so a stored `25` is now ignored and the table falls back to its default.
+
 ## [0.24.0] - 2026-07-11
 
 ### Added

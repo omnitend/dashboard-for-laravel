@@ -928,7 +928,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     }),
     showPagination: true,
     showPerPageSelector: true,
-    perPageOptions: () => [10, 25, 50, 100],
+    perPageOptions: () => [10, 20, 50, 100],
     currentPage: 1,
     // perPage: 10,  // Don't set default - let internalPerPage handle it
     striped: false,

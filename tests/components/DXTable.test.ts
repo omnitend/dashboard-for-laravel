@@ -1302,12 +1302,12 @@ describe('DXTable initial-value vs controlled props (#110)', () => {
     const screen = render({
       render: () =>
         h(BApp, {}, () =>
-          h(DXTable, { items: manyRows, fields: nameField, clientSide: true, perPage: 25 }),
+          h(DXTable, { items: manyRows, fields: nameField, clientSide: true, perPage: 20 }),
         ),
     });
     await flush();
 
-    expect(screen.container.querySelectorAll('tbody tr').length).toBe(25);
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(20);
 
     await pickPerPage(screen, '10');
 
@@ -1316,7 +1316,7 @@ describe('DXTable initial-value vs controlled props (#110)', () => {
   });
 
   it('keeps a v-model:per-page fully controlled — the parent decides', async () => {
-    const perPage = ref(25);
+    const perPage = ref(20);
     const screen = render({
       render: () =>
         h(BApp, {}, () =>
@@ -1332,7 +1332,7 @@ describe('DXTable initial-value vs controlled props (#110)', () => {
         ),
     });
     await flush();
-    expect(screen.container.querySelectorAll('tbody tr').length).toBe(25);
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(20);
 
     await pickPerPage(screen, '10');
 
@@ -1350,7 +1350,7 @@ describe('DXTable initial-value vs controlled props (#110)', () => {
             items: manyRows,
             fields: nameField,
             clientSide: true,
-            perPage: 25,
+            perPage: 20,
             'onUpdate:perPage': () => {
               /* parent ignores it */
             },
@@ -1361,7 +1361,7 @@ describe('DXTable initial-value vs controlled props (#110)', () => {
 
     await pickPerPage(screen, '10');
 
-    expect(screen.container.querySelectorAll('tbody tr').length).toBe(25);
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(20);
   });
 
   it('treats a bare :sort-by as an INITIAL sort — the header still sorts', async () => {
