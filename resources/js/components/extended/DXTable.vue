@@ -499,9 +499,18 @@
                 <span>Loading…</span>
             </div>
 
-            <!-- Edit/create form (tabbed when editTabs provided, flat otherwise) -->
+            <!-- Edit/create form (tabbed when editTabs provided, flat otherwise).
+
+                 Keyed per modal open: the form OBJECT is created once and then
+                 reseeded in place for each row, so without a key Vue reuses the
+                 same DXField instances across records — and any per-field UI
+                 state rides along with them. That leaked a revealed password
+                 from one row into the next. The key gives each record a fresh
+                 field subtree; the data still lives in `editForm`, so nothing
+                 is lost by remounting. -->
             <DXForm
                 v-if="editForm"
+                :key="editFormInstanceKey"
                 v-model:active-tab="activeTabIndex"
                 :form="editForm"
                 :fields="editFields"
@@ -1530,6 +1539,12 @@ const refresh = () => {
 
 // Edit Modal State
 const showEditModal = ref(false);
+
+// Bumped on every modal open (edit or create) to key the DXForm subtree, so
+// each record gets fresh DXField instances. NOT bumped by the showUrl fetch,
+// which reseeds the SAME record — remounting there would discard edits the
+// user has already made while the fetch was in flight.
+const editFormInstanceKey = ref(0);
 const selectedItem = ref<T | null>(null);
 const editForm = ref<any>(null);
 const activeTabIndex = ref(0);
@@ -1649,6 +1664,7 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
         }
 
         // Open modal
+        editFormInstanceKey.value++;
         showEditModal.value = true;
 
         // Optionally replace the row-seeded data with the full record.
@@ -1723,6 +1739,7 @@ const handleCreateNew = () => {
         });
         editForm.value.clearErrors();
     }
+    editFormInstanceKey.value++;
     showEditModal.value = true;
 };
 

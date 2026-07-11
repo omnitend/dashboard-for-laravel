@@ -32,6 +32,87 @@ describe('DXTable', () => {
     });
   });
 
+  /**
+   * DXTable creates `editForm` ONCE and reseeds it in place for each row, so
+   * without a key on DXForm, Vue reuses the same DXField instances across
+   * records and any per-field UI state rides along. A revealed password from
+   * row A was still revealed when row B opened — and on the create form.
+   */
+  describe('Edit modal does not leak per-field UI state between records (#100)', () => {
+    const passwordFields = [{ key: 'name', type: 'text', label: 'Name' }, { key: 'password', type: 'password', label: 'Password' }];
+
+    const renderTable = () => {
+      const tableRef = ref<any>(null);
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              ref: tableRef,
+              items: [
+                { id: 1, name: 'Row A', password: 'row-a-secret' },
+                { id: 2, name: 'Row B', password: 'row-b-secret' },
+              ],
+              fields: [{ key: 'name', label: 'Name' }],
+              itemName: 'customer',
+              editFields: passwordFields,
+              editUrl: '/api/customers/:id',
+              createUrl: '/api/customers',
+            }),
+          ),
+      });
+      return { screen, tableRef };
+    };
+
+    // The modal teleports out of the table's container, so query the document.
+    const revealToggle = () =>
+      document.querySelector('button[aria-label="Show password"]') as HTMLElement | null;
+    const maskedInput = () =>
+      document.querySelector('input[type="password"]') as HTMLInputElement | null;
+
+    const openRow = async (screen: any, index: number) => {
+      const rows = screen.container.querySelectorAll('tbody tr');
+      (rows[index] as HTMLElement).click();
+      await wait(120);
+    };
+
+    it('re-masks the password when a different row is opened', async () => {
+      const { screen } = renderTable();
+      await flush();
+
+      await openRow(screen, 0);
+      expect(maskedInput()?.value).toBe('row-a-secret');
+
+      revealToggle()!.click();
+      await wait(120);
+      // Row A is now in clear text.
+      expect(maskedInput()).toBeNull();
+
+      // Open row B on the same table — the modal reuses one form object.
+      await openRow(screen, 1);
+
+      const masked = maskedInput();
+      expect(masked).not.toBeNull();
+      expect(masked!.value).toBe('row-b-secret');
+      expect(revealToggle()).not.toBeNull();
+    });
+
+    it('re-masks the password when the create form is opened after a reveal', async () => {
+      const { screen, tableRef } = renderTable();
+      await flush();
+
+      await openRow(screen, 0);
+      revealToggle()!.click();
+      await wait(120);
+      expect(maskedInput()).toBeNull();
+
+      tableRef.value.openCreate();
+      await wait(120);
+
+      expect(maskedInput()).not.toBeNull();
+      expect(revealToggle()).not.toBeNull();
+    });
+  });
+
   describe('showCreateButton (#96)', () => {
     const renderTable = (extraProps: Record<string, any> = {}) =>
       render({

@@ -48,12 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   opt-in: set `revealable: false` on the field for the old bare input.
 
 ### Fixed
-- **A revealed password no longer carries over to the next record** (#100).
-  `DXTable` reuses one `DXField` instance per field key across edit-modal opens
-  (the field list is keyed on `field.key`, which is stable across rows) and
-  swaps in a fresh form per record — so revealing row A's password left row B's,
-  and the create form's, showing in clear text. The field now re-masks whenever
-  it is reseeded.
+- **`DXTable`'s edit modal no longer leaks per-field UI state between records**
+  (#100). The modal creates its form object once and reseeds it in place for
+  each row, so Vue reused the same `DXField` instances across records and any
+  per-field UI state rode along with them — revealing row A's password left row
+  B's, and the create form's, showing in clear text. The form subtree is now
+  keyed per open, giving each record fresh fields. The form data still lives in
+  the table, so nothing is lost by remounting.
 - **Test suite no longer runs every file twice** (#104). `playground/vendor/…`
   is a symlink back to the repo root, and vitest's default glob followed it, so
   every test file was collected twice (48 files / 606 tests for 24 / 303) —

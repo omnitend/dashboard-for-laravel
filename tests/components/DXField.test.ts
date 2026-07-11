@@ -1000,10 +1000,10 @@ describe('DXField plaintext (#100)', () => {
  * an escape hatch or a reused component instance could silently defeat.
  */
 describe('DXField password/plaintext invariants (#100 review)', () => {
-  it('re-masks a revealed password when the form is reseeded with another record', async () => {
-    // DXTable reuses one DXField instance per field key across modal opens and
-    // swaps in a fresh useForm per row. Without a reset, revealing row A's
-    // password leaves row B's showing in clear text.
+  it('re-masks a revealed password when the form instance is swapped', async () => {
+    // Covers a consumer driving DXForm/DXField directly and swapping forms.
+    // The DXTable path is different (it mutates one form in place) and is
+    // covered by its own regression test in DXTable.test.ts.
     const field: FieldDefinition = { key: 'password', type: 'password', label: 'Password' };
     const formA = useForm({ password: 'row-a-secret' });
     const formB = useForm({ password: 'row-b-secret' });
@@ -1031,6 +1031,57 @@ describe('DXField password/plaintext invariants (#100 review)', () => {
     expect(
       screen.container.querySelector('button[aria-label="Show password"]'),
     ).not.toBeNull();
+  });
+
+  it('keeps a plaintext select disabled, even against inputProps', async () => {
+    // inputProps is an escape hatch that wins over the field's own bindings —
+    // but not over the guarantee that a plaintext field is not editable.
+    const { screen } = renderField(
+      {
+        key: 'plan',
+        type: 'select',
+        label: 'Plan',
+        plaintext: true,
+        options: [{ value: 'pro', text: 'Pro' }],
+        inputProps: { disabled: false },
+      },
+      { plan: 'pro' },
+    );
+    await flush();
+
+    expect((screen.container.querySelector('select') as HTMLSelectElement).disabled).toBe(true);
+  });
+
+  it('still lets inputProps make a plain field readonly (the escape hatch is intact)', async () => {
+    const { screen } = renderField(
+      { key: 'name', type: 'text', label: 'Name', inputProps: { readonly: true } },
+      { name: 'Sarah' },
+    );
+    await flush();
+
+    expect((screen.container.querySelector('input') as HTMLInputElement).readOnly).toBe(true);
+  });
+
+  it('applies plaintext to currency and autocomplete, so the contract holds for every type', async () => {
+    const currency = renderField(
+      { key: 'price', type: 'currency', label: 'Price', plaintext: true },
+      { price: 12.5 },
+    );
+    await flush();
+    const currencyInput = currency.screen.container.querySelector('input') as HTMLInputElement;
+    expect(currencyInput.readOnly).toBe(true);
+    expect(currencyInput.classList.contains('form-control-plaintext')).toBe(true);
+
+    const autocomplete = renderField(
+      { key: 'branch', type: 'autocomplete', label: 'Branch', plaintext: true, options: [] },
+      { branch: 'main' },
+    );
+    await flush();
+    const autocompleteInput = autocomplete.screen.container.querySelector(
+      'input',
+    ) as HTMLInputElement;
+    expect(autocompleteInput.readOnly).toBe(true);
+    expect(autocompleteInput.classList.contains('form-control-plaintext')).toBe(true);
   });
 
   it('keeps the reveal toggle in charge of the password type, even against inputProps', async () => {

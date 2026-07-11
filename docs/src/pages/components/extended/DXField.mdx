@@ -58,7 +58,7 @@ it holds (the full schema lives on the
 [DXForm](/components/extended/DXForm#field-definitions) page):
 
 <PropsTable client:load props={[
-  { name: 'plaintext', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Display the value as static text instead of a control — no border, no input box (Bootstrap’s .form-control-plaintext). Implies read-only for every field type: the text-family inputs (text/email/password/number/url/tel/date/time/datetime) and textarea render as static text, while control types with no native readonly state (select/radio/checkbox/switch/file) are disabled instead.' },
+  { name: 'plaintext', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Display the value as static text instead of a control — no border, no input box (Bootstrap’s .form-control-plaintext). Implies read-only for every field type: anything backed by a real input (the text family, textarea, currency, percentage, autocomplete) renders as static text, while control types with no native readonly state (select/radio/checkbox/switch/file) are disabled instead.' },
   { name: 'revealable', type: 'boolean', required: 'No', default: 'true', description: 'Only for type: "password". Shows the reveal (eye) toggle that switches the input between masked and plain text. Set false for a bare password input.' },
 ]} />
 
@@ -69,11 +69,15 @@ profile/settings page shows but never lets you edit.
 `revealable` is on by default, so every password field gets the eye toggle
 unless you opt out.
 
-`inputProps` generally wins over the field's own bindings, but not over the
-password input's `type`: the reveal toggle owns it, so an `inputProps` `type`
-cannot unmask a field whose toggle still reads "Show password". A revealed
-password is also re-masked whenever the field is reseeded with another record
-(as `DXTable`'s edit modal does between rows).
+`inputProps` remains an escape hatch that wins over the field's own bindings —
+`inputProps: { readonly: true }` works as before — but it cannot override the
+guarantees these two options make. A `plaintext` field cannot be made editable
+through it, and the reveal toggle owns the password input's `type`, so an
+`inputProps` `type` cannot unmask a field whose toggle still reads "Show
+password".
+
+A revealed password is also re-masked whenever the field is reseeded with a
+different record, which is what `DXTable`'s edit modal does between rows.
 
 ```typescript
 const fields = [

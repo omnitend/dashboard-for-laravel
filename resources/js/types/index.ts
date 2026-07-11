@@ -299,11 +299,15 @@ export interface FieldDefinition {
      * profile/settings page shows but never lets you edit, where a `readonly`
      * input still reads as "you could edit this, but can't".
      *
-     * Implies read-only, for every field type. The text-family inputs
-     * (text/email/password/number/url/tel/date/time/datetime) and textarea
-     * render as static text; control types with no native readonly state
-     * (select/radio/checkbox/switch/file) are disabled instead, exactly as
-     * they are for `readonly`.
+     * Implies read-only, for every field type. Anything backed by a real input
+     * — the text family, textarea, currency, percentage, autocomplete — renders
+     * as static text; control types with no native readonly state
+     * (select/radio/checkbox/switch/file) are disabled instead, exactly as they
+     * are for `readonly`.
+     *
+     * Enforced over `inputProps`: unlike the field's other bindings, which
+     * `inputProps` may override, a plaintext field cannot be made editable
+     * again through it.
      */
     plaintext?: MaybeFn<boolean>;
 

@@ -62,7 +62,7 @@
             v-else
             v-model="fieldValue"
             :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="controlPropsWithGuards"
         >
             <DXFieldLabel :label="resolvedLabel" class="visually-hidden" />
         </DFormCheckbox>
@@ -98,7 +98,7 @@
             v-else
             v-model="fieldValue"
             :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="controlPropsWithGuards"
         >
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
         </DFormCheckbox>
@@ -160,7 +160,7 @@
             v-else
             v-model="switchModel"
             :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="controlPropsWithGuards"
         >
             <DXFieldLabel
                 :label="switchText"
@@ -202,7 +202,7 @@
             v-else
             v-model="switchModel"
             :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="controlPropsWithGuards"
         >
             <DXFieldLabel :label="switchText" :info="resolvedInfo" />
         </DXSwitch>
@@ -307,7 +307,7 @@
             :field="field"
             :model="model"
             :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="controlPropsWithGuards"
         />
 
         <!-- Textarea. Error clearing happens in the v-model setter. -->
@@ -321,7 +321,7 @@
             :disabled="isDisabled"
             :readonly="isReadonly || isPlaintext"
             :plaintext="isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="inputPropsWithGuards"
         />
 
         <!-- Select (sync or async options) -->
@@ -332,7 +332,7 @@
             :options="resolvedOptions"
             :state="fieldState"
             :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="controlPropsWithGuards"
         />
 
         <!-- Radio group -->
@@ -343,7 +343,7 @@
             :required="field.required"
             :state="fieldState"
             :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="controlPropsWithGuards"
         />
 
         <!-- File / image upload -->
@@ -354,7 +354,7 @@
                 :required="field.required"
                 :state="fieldState"
                 :disabled="isDisabled || isReadonly || isPlaintext"
-                v-bind="field.inputProps"
+                v-bind="controlPropsWithGuards"
                 @change="handleFileChange"
             />
             <img
@@ -385,8 +385,9 @@
                 :max="field.max"
                 :state="fieldState"
                 :disabled="isDisabled"
-                :readonly="isReadonly"
-                v-bind="field.inputProps"
+                :readonly="isReadonly || isPlaintext"
+                :plaintext="isPlaintext"
+                v-bind="inputPropsWithGuards"
                 @input="handleCurrencyInput"
                 @focus="handleCurrencyFocus"
                 @blur="handleCurrencyBlur"
@@ -402,8 +403,9 @@
                 :max="field.max"
                 :state="fieldState"
                 :disabled="isDisabled"
-                :readonly="isReadonly"
-                v-bind="field.inputProps"
+                :readonly="isReadonly || isPlaintext"
+                :plaintext="isPlaintext"
+                v-bind="inputPropsWithGuards"
             />
 
             <template v-if="field.type === 'percentage'" #append>
@@ -423,9 +425,10 @@
                 :placeholder="field.placeholder"
                 :state="fieldState"
                 :disabled="isDisabled"
-                :readonly="isReadonly"
+                :readonly="isReadonly || isPlaintext"
+                :plaintext="isPlaintext"
                 autocomplete="off"
-                v-bind="field.inputProps"
+                v-bind="inputPropsWithGuards"
             />
             <datalist :id="datalistId">
                 <option
@@ -477,7 +480,7 @@
             :disabled="isDisabled"
             :readonly="isReadonly || isPlaintext"
             :plaintext="isPlaintext"
-            v-bind="field.inputProps"
+            v-bind="inputPropsWithGuards"
         />
 
         <!-- Validation error -->
@@ -933,11 +936,43 @@ watch(
     },
 );
 
-// `inputProps` is an escape hatch that deliberately wins over our defaults —
-// but not over `type`, which the reveal toggle owns. Otherwise an inputProps
-// `type` silently unmasks a field whose toggle still reads "Show password".
+/*
+ * `inputProps` is an escape hatch that deliberately wins over the field's own
+ * bindings — it is spread last. But it must not win over the guarantees the
+ * field makes, or those guarantees are only documentation: a `plaintext` field
+ * that `inputProps: { readonly: false }` re-opens for editing isn't read-only,
+ * and a password whose `type` `inputProps` sets to "text" is unmasked under a
+ * toggle still reading "Show password". So the guards are re-applied ON TOP of
+ * inputProps. Everything else in inputProps still passes through, and a field
+ * that isn't plaintext/readonly is untouched — `inputProps: { readonly: true }`
+ * still works as before.
+ */
+
+// For controls with a native readonly state (the text family + textarea).
+const inputPropsWithGuards = computed(() => {
+    const merged: Record<string, any> = { ...props.field.inputProps };
+    if (isPlaintext.value) {
+        merged.plaintext = true;
+        merged.readonly = true;
+    } else if (isReadonly.value) {
+        merged.readonly = true;
+    }
+    return merged;
+});
+
+// For controls with NO native readonly state (select/radio/checkbox/switch/
+// file/component), where read-only is expressed as `disabled`.
+const controlPropsWithGuards = computed(() => {
+    const merged: Record<string, any> = { ...props.field.inputProps };
+    if (isDisabled.value || isReadonly.value || isPlaintext.value) {
+        merged.disabled = true;
+    }
+    return merged;
+});
+
+// The reveal toggle owns the password input's `type`.
 const passwordInputProps = computed(() => ({
-    ...props.field.inputProps,
+    ...inputPropsWithGuards.value,
     type: passwordRevealed.value ? "text" : "password",
 }));
 
