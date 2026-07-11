@@ -32,6 +32,80 @@ describe('DXTable', () => {
     });
   });
 
+  describe('showCreateButton (#96)', () => {
+    const renderTable = (extraProps: Record<string, any> = {}) =>
+      render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              items: customerData,
+              fields: customerFields,
+              itemName: 'customer',
+              editFields: [{ key: 'name', type: 'text', label: 'Name' }],
+              createUrl: '/api/customers',
+              ...extraProps,
+            }),
+          ),
+      });
+
+    it('renders the built-in New button by default when createUrl is set', async () => {
+      const screen = renderTable();
+      await flush();
+
+      expect(screen.container.textContent).toContain('New customer');
+    });
+
+    it('drops the New button when showCreateButton is false', async () => {
+      const screen = renderTable({ showCreateButton: false });
+      await flush();
+
+      expect(screen.container.textContent).not.toContain('New customer');
+    });
+
+    // greendragon drives the modal from a navbar button and hides the header
+    // with CSS today, which also nukes any header content. With no title and no
+    // header slot, the header should simply not render.
+    it('drops the card header entirely when it would be left empty', async () => {
+      const screen = renderTable({ showCreateButton: false });
+      await flush();
+
+      expect(screen.container.querySelector('.card-header')).toBeNull();
+    });
+
+    it('keeps the header when a title is set, even with no New button', async () => {
+      const screen = renderTable({ showCreateButton: false, title: 'Customers' });
+      await flush();
+
+      expect(screen.container.querySelector('.card-header')).not.toBeNull();
+      expect(screen.container.textContent).toContain('Customers');
+      expect(screen.container.textContent).not.toContain('New customer');
+    });
+
+    it('still opens the create modal via openCreate() with the button suppressed', async () => {
+      const tableRef = ref<any>(null);
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              ref: tableRef,
+              items: customerData,
+              fields: customerFields,
+              itemName: 'customer',
+              editFields: [{ key: 'name', type: 'text', label: 'Name' }],
+              createUrl: '/api/customers',
+              showCreateButton: false,
+            }),
+          ),
+      });
+      await flush();
+
+      tableRef.value.openCreate();
+      await wait(50);
+
+      expect(document.body.textContent).toContain('New customer');
+    });
+  });
+
   describe('Select filter (DAutocomplete typeahead)', () => {
     const statusFields = [
       { key: 'name', label: 'Name' },

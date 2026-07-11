@@ -1,0 +1,73 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXUserAvatar
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXUserAvatarExample from '../../../examples/DXUserAvatarExample.vue';
+import DXUserAvatarExampleRaw from '../../../examples/DXUserAvatarExample.vue?raw';
+
+# DXUserAvatar
+
+The circular user avatar shown in the dashboard navbar's user menu: a single
+initial on a solid disc, with an optional notification dot. It is the default
+content of `DXDashboardNavbar`'s `user-icon` slot.
+
+It exists as its own component because that slot is one consumers *decorate*
+(adding an unread badge, wrapping it in a link) rather than replace. The
+navbar's styles are scoped, so slot content compiled in the consumer's scope
+cannot reuse them — without `DXUserAvatar` every override starts by
+re-implementing the avatar's CSS, which then drifts from the theme. Rendering
+the same component in the slot keeps an override to one line and on theme.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXUserAvatarExampleRaw}
+>
+  <DXUserAvatarExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'user', type: '{ name: string } | null', required: 'No', default: 'null', description: 'The user whose initial is shown — the first letter of name.' },
+  { name: 'initial', type: 'string', required: 'No', default: "''", description: 'Overrides the initial derived from user.name (e.g. two-letter initials).' },
+  { name: 'badge', type: 'boolean', required: 'No', default: 'false', description: 'Show a notification dot on the avatar (e.g. unread updates).' },
+  { name: 'badgeVariant', type: 'ColorVariant', required: 'No', default: "'danger'", description: 'Colour of the notification dot.' },
+  { name: 'badgeLabel', type: 'string', required: 'No', default: "'Unread notifications'", description: 'Screen-reader text for the dot, which is otherwise a colour-only signal. Ignored unless badge is set.' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'default', props: '-', description: 'Replaces the initial inside the disc (e.g. a photo or an icon). The disc, and the badge, still render.' },
+]} />
+
+## Decorating the navbar avatar
+
+Render `DXUserAvatar` in `DXDashboardNavbar`'s `user-icon` slot (or
+`DXDashboard`'s `navbar-user-icon` slot) to keep the default avatar and add to
+it:
+
+```vue
+<template>
+  <DXDashboardNavbar :user="user" page-title="Dashboard">
+    <template #user-icon="{ user }">
+      <DXUserAvatar :user="user" :badge="hasUnread" badge-label="Unread notifications" />
+    </template>
+  </DXDashboardNavbar>
+</template>
+
+<script setup lang="ts">
+import { DXDashboardNavbar, DXUserAvatar } from '@omnitend/dashboard-for-laravel';
+</script>
+```
+
+## Extended Component
+
+This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
+providing additional functionality specific to Laravel dashboards.

@@ -134,6 +134,8 @@ const items = ref([
   { name: 'deleteUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for deletions (e.g., "/api/products/:id")' },
   { name: 'showUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern to fetch the FULL record for the edit modal (e.g., "/api/products/:id"). Seeds the form from this fetch (with a loading state) instead of the thin list row. Unwraps data.data or uses the response as-is' },
   { name: 'deleteGuard', type: '(item) => string | null', required: 'No', default: '-', description: 'Run when Delete is clicked, before the confirm and request. Return a message to block the delete and show it immediately (skips confirm + request); return null to proceed normally' },
+  { name: 'createUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint for creating new items (e.g. "/api/products"). Enables the create modal and the built-in "New {item}" button' },
+  { name: 'showCreateButton', type: 'boolean', required: 'No', default: 'true', description: 'Render the built-in "New {item}" button in the card header (only relevant when createUrl is set). Set false to drive the create modal from your own trigger elsewhere via the exposed openCreate(). With no title and no header slot, the card header is then dropped entirely rather than left empty' },
 ]} />
 
 ## Events
@@ -417,6 +419,11 @@ Via a template `ref`, the table exposes:
   page header, the dashboard navbar actions slot, etc. No-op unless `editFields`
   are set.
 
+Pair `openCreate()` with `:show-create-button="false"` to move the create action
+somewhere else entirely: the table stops rendering its own `New {item}` button
+and your trigger drives the same modal. When the table also has no `title` and
+no `header` slot, the card header is dropped rather than left empty.
+
 ```vue
 <script setup>
 import { ref } from 'vue';
@@ -433,6 +440,7 @@ const tableRef = ref(null);
     :fields="fields"
     :edit-fields="editFields"
     create-url="/api/products"
+    :show-create-button="false"
   />
 </template>
 ```

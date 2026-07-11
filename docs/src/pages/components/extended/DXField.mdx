@@ -51,6 +51,37 @@ path (`keyPath`), so it also works for nested values such as repeater rows
   { name: 'hint', props: 'field, model', description: 'Override the hint text rendered below the field.' },
 ]} />
 
+## Display-only and password field options
+
+Two `FieldDefinition` options change how a control is rendered rather than what
+it holds (the full schema lives on the
+[DXForm](/components/extended/DXForm#field-definitions) page):
+
+<PropsTable client:load props={[
+  { name: 'plaintext', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Display the value as static text instead of a control — no border, no input box (Bootstrap’s .form-control-plaintext). Implies read-only. Applies to the text-family inputs (text/email/password/number/url/tel/date/time/datetime) and textarea; other control types ignore it and fall back to their readonly handling.' },
+  { name: 'revealable', type: 'boolean', required: 'No', default: 'true', description: 'Only for type: "password". Shows the reveal (eye) toggle that switches the input between masked and plain text. Set false for a bare password input.' },
+]} />
+
+`readonly` is unchanged: it still renders a bordered, non-editable control, which
+reads as "you could edit this, but can't". Use `plaintext` for values a
+profile/settings page shows but never lets you edit.
+
+`revealable` is on by default, so every password field gets the eye toggle
+unless you opt out.
+
+```typescript
+const fields = [
+  // Static text, no input box.
+  { key: 'email', label: 'Email', type: 'text', plaintext: true },
+
+  // Editable until the record is verified, then display-only.
+  { key: 'vat_number', label: 'VAT number', type: 'text', plaintext: (model) => model.verified },
+
+  // A bare password input, without the reveal toggle.
+  { key: 'password', label: 'Password', type: 'password', revealable: false },
+];
+```
+
 ## Extended Component
 
 This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,

@@ -24,6 +24,7 @@ export { default as DXBasicForm } from "./components/extended/DXBasicForm.vue";
 export { default as DXTable } from "./components/extended/DXTable.vue";
 export { default as DXDashboardSidebar } from "./components/extended/DXDashboardSidebar.vue";
 export { default as DXDashboardNavbar } from "./components/extended/DXDashboardNavbar.vue";
+export { default as DXUserAvatar } from "./components/extended/DXUserAvatar.vue";
 
 // Base components (wrapped Bootstrap with theming)
 export { default as DAccordion } from "./components/base/DAccordion.vue";

@@ -29,6 +29,12 @@
       </template>
     </DXField>
 
+    <!-- Password: the reveal (eye) toggle is on by default -->
+    <DXField :field="passwordField" :form="form" />
+
+    <!-- Display-only: the value as static text, not a control you can't use -->
+    <DXField :field="usernameField" :form="form" />
+
     <!-- Fully custom control via the #value slot -->
     <DXField :field="ratingField" :form="form">
       <template #value="{ value, update }">
@@ -56,7 +62,31 @@ import {
   type FieldDefinition,
 } from '@omnitend/dashboard-for-laravel';
 
-const form = useForm({ price: 12.5, is_default: true, is_featured: false, plan: 'pro', branch: 'main', rating: 3 });
+const form = useForm({
+  price: 12.5,
+  is_default: true,
+  is_featured: false,
+  plan: 'pro',
+  branch: 'main',
+  rating: 3,
+  password: 'correct-horse-battery',
+  username: 'sarah.johnson',
+});
+
+const passwordField: FieldDefinition = {
+  key: 'password',
+  type: 'password',
+  label: 'Password',
+  hint: 'The reveal toggle is on by default — set revealable: false for a bare input.',
+};
+
+const usernameField: FieldDefinition = {
+  key: 'username',
+  type: 'text',
+  label: 'Username',
+  plaintext: true,
+  hint: 'plaintext renders the value as static text rather than a control you cannot use.',
+};
 
 const priceField: FieldDefinition = {
   key: 'price',

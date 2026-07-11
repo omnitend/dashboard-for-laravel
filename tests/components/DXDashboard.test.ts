@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
+import { h, ref } from 'vue';
 import DXDashboard from '../../resources/js/components/extended/DXDashboard.vue';
 import { sampleNavigation, sampleUser } from '../fixtures/navigationData';
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('DXDashboard', () => {
   describe('Basic Rendering', () => {
@@ -93,6 +96,100 @@ describe('DXDashboard', () => {
       // Check sidebar is visible by default for scoped instances
       const sidebar = screen.container.querySelector('.dashboard-sidebar');
       expect(sidebar?.classList.contains('sidebar-hidden')).toBe(false);
+    });
+  });
+
+  /**
+   * DXDashboard owns the sidebar visibility state, so before #97 the only way
+   * for consumer content to close the sidebar was to synthesise a click on the
+   * navbar's toggle button. Both the imperative handle and the slot binding
+   * exist so that hack is never needed.
+   */
+  describe('Sidebar toggle API (#97)', () => {
+    // Toggling persists to localStorage, so these tests need their own key —
+    // on the shared default key the first toggle would decide the next test's
+    // starting state, making the suite order-dependent.
+    const STORAGE_KEY = 'test-toggle-api';
+
+    const dashboardProps = {
+      navigation: sampleNavigation,
+      currentUrl: '/dashboard',
+      title: 'My App',
+      dashboardId: 'test-toggle-api',
+      storageKey: STORAGE_KEY,
+    };
+
+    beforeEach(() => localStorage.removeItem(STORAGE_KEY));
+    afterEach(() => localStorage.removeItem(STORAGE_KEY));
+
+    it('exposes toggleSidebar() and sidebarHidden', async () => {
+      const dashboardRef = ref<any>(null);
+      const screen = render({
+        render: () => h(DXDashboard, { ref: dashboardRef, ...dashboardProps }),
+      });
+      await flush();
+
+      const sidebar = screen.container.querySelector('.dashboard-sidebar');
+      expect(typeof dashboardRef.value.toggleSidebar).toBe('function');
+      expect(dashboardRef.value.sidebarHidden).toBe(false);
+
+      dashboardRef.value.toggleSidebar();
+      await flush();
+
+      expect(sidebar?.classList.contains('sidebar-hidden')).toBe(true);
+      expect(dashboardRef.value.sidebarHidden).toBe(true);
+
+      dashboardRef.value.toggleSidebar();
+      await flush();
+
+      expect(sidebar?.classList.contains('sidebar-hidden')).toBe(false);
+      expect(dashboardRef.value.sidebarHidden).toBe(false);
+    });
+
+    it('binds toggleSidebar and sidebarHidden into forwarded sidebar-* slots', async () => {
+      const screen = render(DXDashboard, {
+        props: dashboardProps,
+        slots: {
+          'sidebar-brand': `
+            <template #default="{ toggleSidebar, sidebarHidden }">
+              <button class="brand-close" :data-hidden="sidebarHidden" @click="toggleSidebar">Close</button>
+            </template>
+          `,
+        },
+      });
+      await flush();
+
+      const closeButton = screen.container.querySelector('.brand-close') as HTMLElement;
+      expect(closeButton).toBeTruthy();
+      expect(closeButton.dataset.hidden).toBe('false');
+
+      closeButton.click();
+      await flush();
+
+      expect(
+        screen.container.querySelector('.dashboard-sidebar')?.classList.contains('sidebar-hidden'),
+      ).toBe(true);
+    });
+
+    it('binds toggleSidebar into forwarded navbar-* slots', async () => {
+      const screen = render(DXDashboard, {
+        props: dashboardProps,
+        slots: {
+          'navbar-actions': `
+            <template #default="{ toggleSidebar }">
+              <button class="action-close" @click="toggleSidebar">Close</button>
+            </template>
+          `,
+        },
+      });
+      await flush();
+
+      (screen.container.querySelector('.action-close') as HTMLElement).click();
+      await flush();
+
+      expect(
+        screen.container.querySelector('.dashboard-sidebar')?.classList.contains('sidebar-hidden'),
+      ).toBe(true);
     });
   });
 

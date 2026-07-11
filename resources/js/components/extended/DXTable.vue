@@ -10,13 +10,13 @@
         <DRow class="justify-content-center">
             <DCol :md="columnSize">
                 <DXTableShell :card="card">
-                    <template v-if="title || createUrl || $slots.header" #header>
+                    <template v-if="title || showsCreateButton || $slots.header" #header>
                         <!-- @slot Card header content; overrides the default title heading and the "New {item}" button. -->
                         <slot name="header">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h4 class="mb-0">{{ title }}</h4>
                                 <DButton
-                                    v-if="createUrl"
+                                    v-if="showsCreateButton"
                                     variant="primary"
                                     size="sm"
                                     @click="handleCreateNew"
@@ -842,6 +842,16 @@ export interface Props<TItem = any> {
     /** API endpoint for creating new items (e.g., "/api/products") — enables "New" button */
     createUrl?: string;
 
+    /**
+     * Render the built-in "New {item}" button in the card header (default
+     * `true` whenever `createUrl` is set). Set `false` to drive the create
+     * modal from your own trigger elsewhere — e.g. a button in the dashboard
+     * navbar's actions slot calling the exposed `openCreate()`. With no
+     * `title` and no `header` slot, the header is then dropped entirely
+     * rather than left empty.
+     */
+    showCreateButton?: boolean;
+
     /** Enable client-side filtering, sorting, and pagination on items array */
     clientSide?: boolean;
 }
@@ -872,6 +882,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     columnSize: "12",
     card: true,
     editModalSize: "lg",
+    showCreateButton: true,
 });
 
 const emit = defineEmits<{
@@ -1579,6 +1590,11 @@ const tabAfterSlotKeys = computed(() =>
 // Computed: Singular and plural item names
 const singularItemName = computed(() => props.itemName);
 const pluralItemName = computed(() => pluralize(props.itemName));
+
+// The built-in "New {item}" button needs both a create endpoint and consent.
+// Gating the header's own v-if on this (not on `createUrl`) means a table that
+// only had a header to host the button loses the empty header too.
+const showsCreateButton = computed(() => Boolean(props.createUrl) && props.showCreateButton);
 
 // Computed: Modal title (supports function)
 const computedModalTitle = computed(() => {

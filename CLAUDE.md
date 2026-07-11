@@ -13,13 +13,13 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
 2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (57 base components)
-3. **DX* Extended Components** - Complex dashboard layouts, forms, stat cards, and charts (13 components)
+3. **DX* Extended Components** - Complex dashboard layouts, forms, stat cards, and charts (15 components)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 71 components** (57 base + 14 extended)
+**Total: 72 components** (57 base + 15 extended)
 
 ## Project Structure
 
@@ -338,26 +338,29 @@ interface Props {
 ```
 
 **Slots:**
-- `#user-icon="{ initial }"` - Custom user icon/avatar
+- `#user-icon="{ initial, user }"` - Custom user icon/avatar; defaults to `DXUserAvatar`
 - `#user-menu-items="{ user }"` - Dropdown items (consumers pass DDropdownItem, incl. their own log-out link)
 
-**Avatar Styling:**
-```vue
-<style scoped>
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: var(--bs-dark);
-  color: var(--bs-white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-}
-</style>
-```
+### DXUserAvatar
+
+**Purpose**: The circular avatar (initial on a disc) in the navbar's user menu,
+with an optional notification dot. Props: `user`, `initial`, `badge`,
+`badgeVariant`, `badgeLabel`.
+
+It is a *separate component* rather than markup inside `DXDashboardNavbar`
+because the `user-icon` slot is one consumers **decorate** (add an unread dot,
+wrap it in a link) rather than replace — and the navbar's styles are scoped, so
+slot content compiled in the consumer's scope can never reuse them. Without the
+component, every override starts by re-implementing the avatar's CSS, which then
+drifts from the theme (#98).
+
+**Generalise from this**: any slot whose default content consumers are expected
+to decorate should have that default available as an exported component. A
+scoped style block plus a slot is a trap — the slot content can't see the styles.
+
+Its disc keeps the class **`.user-avatar`** (not a `dx-`-prefixed name) because
+that is the documented theming hook in `docs/src/pages/guide/theming.md` —
+renaming it would silently break consumer overrides.
 
 ### DXBasicForm
 

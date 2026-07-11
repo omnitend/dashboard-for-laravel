@@ -845,3 +845,151 @@ describe('DXField date/datetime seeding (#85)', () => {
     expect(form.data.requested_at).toBe('2026-09-15T14:00');
   });
 });
+
+describe('DXField password reveal (#100)', () => {
+  it('renders a reveal toggle by default and starts masked', async () => {
+    const { screen } = renderField(
+      { key: 'password', type: 'password', label: 'Password' },
+      { password: '' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    expect(input.type).toBe('password');
+
+    const toggle = screen.container.querySelector('button[aria-label="Show password"]');
+    expect(toggle).not.toBeNull();
+    expect(toggle?.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('unmasks the input when the toggle is clicked, and re-masks on a second click', async () => {
+    const { screen } = renderField(
+      { key: 'password', type: 'password', label: 'Password' },
+      { password: 'hunter2' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+
+    await userEvent.click(
+      screen.container.querySelector('button[aria-label="Show password"]') as HTMLElement,
+    );
+    await flush();
+    expect(input.type).toBe('text');
+    expect(input.value).toBe('hunter2');
+
+    const hideToggle = screen.container.querySelector('button[aria-label="Hide password"]');
+    expect(hideToggle).not.toBeNull();
+    expect(hideToggle?.getAttribute('aria-pressed')).toBe('true');
+
+    await userEvent.click(hideToggle as HTMLElement);
+    await flush();
+    expect(input.type).toBe('password');
+  });
+
+  it('keeps editing the model while revealed', async () => {
+    const { screen, form } = renderField(
+      { key: 'password', type: 'password', label: 'Password' },
+      { password: '' },
+    );
+    await flush();
+
+    await userEvent.click(
+      screen.container.querySelector('button[aria-label="Show password"]') as HTMLElement,
+    );
+    await flush();
+
+    await userEvent.fill(screen.container.querySelector('input') as HTMLElement, 'correct-horse');
+    await flush();
+
+    expect(form.data.password).toBe('correct-horse');
+  });
+
+  it('renders a bare password input when revealable is false', async () => {
+    const { screen } = renderField(
+      { key: 'password', type: 'password', label: 'Password', revealable: false },
+      { password: '' },
+    );
+    await flush();
+
+    expect((screen.container.querySelector('input') as HTMLInputElement).type).toBe('password');
+    expect(screen.container.querySelector('button[aria-label="Show password"]')).toBeNull();
+  });
+
+  it('only applies to password fields', async () => {
+    const { screen } = renderField(
+      { key: 'email', type: 'email', label: 'Email' },
+      { email: '' },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('button[aria-label="Show password"]')).toBeNull();
+  });
+});
+
+describe('DXField plaintext (#100)', () => {
+  it('renders the value as static text rather than an input box', async () => {
+    const { screen } = renderField(
+      { key: 'username', type: 'text', label: 'Username', plaintext: true },
+      { username: 'jpickard' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    expect(input.classList.contains('form-control-plaintext')).toBe(true);
+    expect(input.classList.contains('form-control')).toBe(false);
+    expect(input.value).toBe('jpickard');
+  });
+
+  it('implies readonly — bvn only swaps the class, so the value must not stay editable', async () => {
+    const { screen } = renderField(
+      { key: 'username', type: 'text', label: 'Username', plaintext: true },
+      { username: 'jpickard' },
+    );
+    await flush();
+
+    expect((screen.container.querySelector('input') as HTMLInputElement).readOnly).toBe(true);
+  });
+
+  it('is computable from the model', async () => {
+    const { screen } = renderField(
+      {
+        key: 'username',
+        type: 'text',
+        label: 'Username',
+        plaintext: (model: any) => model.locked === true,
+      },
+      { username: 'jpickard', locked: false },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    expect(input.classList.contains('form-control-plaintext')).toBe(false);
+    expect(input.readOnly).toBe(false);
+  });
+
+  it('applies to a textarea too', async () => {
+    const { screen } = renderField(
+      { key: 'bio', type: 'textarea', label: 'Bio', plaintext: true },
+      { bio: 'Hello' },
+    );
+    await flush();
+
+    const textarea = screen.container.querySelector('textarea') as HTMLTextAreaElement;
+    expect(textarea.classList.contains('form-control-plaintext')).toBe(true);
+    expect(textarea.readOnly).toBe(true);
+  });
+
+  it('a readonly field still renders a bordered control (plaintext is the opt-in)', async () => {
+    const { screen } = renderField(
+      { key: 'username', type: 'text', label: 'Username', readonly: true },
+      { username: 'jpickard' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    expect(input.classList.contains('form-control')).toBe(true);
+    expect(input.classList.contains('form-control-plaintext')).toBe(false);
+    expect(input.readOnly).toBe(true);
+  });
+});

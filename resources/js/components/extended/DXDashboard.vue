@@ -25,8 +25,17 @@
         :key="strippedName"
         #[strippedName]="slotProps"
       >
-        <!-- @slot Forwards any `sidebar-*` slot to DXDashboardSidebar with the `sidebar-` prefix stripped (e.g. `sidebar-brand` becomes the sidebar's `brand` slot). -->
-        <slot :name="originalName" v-bind="slotProps" />
+        <!--
+          @slot Forwards any `sidebar-*` slot to DXDashboardSidebar with the `sidebar-` prefix stripped (e.g. `sidebar-brand` becomes the sidebar's `brand` slot).
+          @binding {function} toggleSidebar Shows/hides the sidebar — so slot content (e.g. a close affordance in the brand row) can drive it.
+          @binding {boolean} sidebarHidden Whether the sidebar is currently hidden.
+        -->
+        <slot
+          :name="originalName"
+          v-bind="slotProps"
+          :toggleSidebar="toggleSidebar"
+          :sidebarHidden="hidden"
+        />
       </template>
     </DXDashboardSidebar>
 
@@ -46,8 +55,17 @@
           :key="strippedName"
           #[strippedName]="slotProps"
         >
-          <!-- @slot Forwards any `navbar-*` slot to DXDashboardNavbar with the `navbar-` prefix stripped (e.g. `navbar-actions` becomes the navbar's `actions` slot). -->
-          <slot :name="originalName" v-bind="slotProps" />
+          <!--
+            @slot Forwards any `navbar-*` slot to DXDashboardNavbar with the `navbar-` prefix stripped (e.g. `navbar-actions` becomes the navbar's `actions` slot).
+            @binding {function} toggleSidebar Shows/hides the sidebar.
+            @binding {boolean} sidebarHidden Whether the sidebar is currently hidden.
+          -->
+          <slot
+            :name="originalName"
+            v-bind="slotProps"
+            :toggleSidebar="toggleSidebar"
+            :sidebarHidden="hidden"
+          />
         </template>
       </DXDashboardNavbar>
 
@@ -252,6 +270,20 @@ const toggleSidebar = () => {
     console.error('Error saving sidebar state:', error);
   }
 };
+
+defineExpose({
+  /**
+   * Show/hide the sidebar (same as clicking the navbar's hamburger). The
+   * dashboard owns the visibility state, so this is the supported way to drive
+   * it from outside — page content, a custom brand row, a keyboard shortcut.
+   * Also available as a slot binding on every forwarded `sidebar-*`/`navbar-*`
+   * slot, which is usually more convenient.
+   */
+  toggleSidebar,
+
+  /** Whether the sidebar is currently hidden. */
+  sidebarHidden: computed(() => hidden.value),
+});
 </script>
 
 <style scoped>

@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`DXUserAvatar` component** (#98). The navbar's circular avatar is now an
+  exported component, and is the default content of `DXDashboardNavbar`'s
+  `user-icon` slot. That slot is one consumers *decorate* (adding an unread
+  dot) rather than replace — but the navbar's styles are scoped, so slot
+  content compiled in the consumer's scope could never reuse them, and every
+  override began by re-implementing the avatar's CSS, which then drifted from
+  the theme. Rendering `DXUserAvatar` in the slot keeps an override to one line
+  and on theme. It also supports the notification dot first-class (`badge`,
+  `badgeVariant`, `badgeLabel`). The `.user-avatar` class is unchanged, so
+  existing theme overrides keep working.
+- **`DXDashboard` sidebar toggle API** (#97). The dashboard owns sidebar
+  visibility but exposed no way to drive it, so consumers were reduced to
+  synthesising a click on the navbar's hamburger
+  (`document.querySelector('[aria-label="Toggle sidebar"]').click()`). It now
+  exposes `toggleSidebar()` and `sidebarHidden` via a template ref, and binds
+  both into every forwarded `sidebar-*` / `navbar-*` slot — so a close
+  affordance in the sidebar's own brand row is a slot binding, not a DOM hack.
+- **`DXTable` `showCreateButton` prop** (#96). `openCreate()` was already
+  exposed for driving the create modal from your own trigger, but the built-in
+  "New {item}" button rendered unconditionally whenever `createUrl` was set —
+  so apps that host page actions elsewhere (e.g. the navbar actions slot) had
+  to hide it with CSS, which also nuked any header content. Set
+  `:show-create-button="false"` to drop it; with no `title` and no `header`
+  slot the card header is then dropped entirely rather than left empty.
+- **`DXField` `plaintext` field option** (#100). Displays the value as static
+  text rather than a control (no border, no input box), for the values a
+  profile/settings page shows but never lets you edit — where a `readonly`
+  input still reads as "you could edit this, but can't". Accepts a function of
+  the model, and implies read-only. `readonly` itself is unchanged.
+
+### Changed
+- **Password fields now render a reveal (eye) toggle by default** (#100).
+  `DXField`'s `type: "password"` previously rendered a bare masked input.
+  Typing a long generated password blind into three boxes on a change-password
+  form is exactly where the toggle earns its keep, so it is opt-out rather than
+  opt-in: set `revealable: false` on the field for the old bare input.
+
+### Fixed
+- **Test suite no longer runs every file twice** (#104). `playground/vendor/…`
+  is a symlink back to the repo root, and vitest's default glob followed it, so
+  every test file was collected twice (48 files / 606 tests for 24 / 303) —
+  doubling local and CI test time. Collection is now scoped to `tests/`.
+
 ## [0.22.0] - 2026-07-11
 
 ### Added

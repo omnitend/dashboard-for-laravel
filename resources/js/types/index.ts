@@ -294,6 +294,25 @@ export interface FieldDefinition {
     readonly?: MaybeFn<boolean>;
 
     /**
+     * Display the value as static text instead of a control — no border, no
+     * input box (Bootstrap's `.form-control-plaintext`). For values a
+     * profile/settings page shows but never lets you edit, where a `readonly`
+     * input still reads as "you could edit this, but can't".
+     *
+     * Implies read-only. Applies to the text-family inputs (text/email/
+     * password/number/url/tel/date/time/datetime) and textarea; other control
+     * types ignore it and fall back to their `readonly` handling.
+     */
+    plaintext?: MaybeFn<boolean>;
+
+    /**
+     * Only for `type: "password"`. Show the reveal (eye) toggle that switches
+     * the input between masked and plain text. Defaults to `true` — set
+     * `false` to render a bare password input.
+     */
+    revealable?: boolean;
+
+    /**
      * Conditionally show or hide this field. When omitted the field is
      * always visible. Boolean or a function of the form model; evaluated
      * reactively for cross-field conditional fields.

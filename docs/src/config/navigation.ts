@@ -38,6 +38,7 @@ export const navigationConfig: Navigation = [
       { label: 'DXRepeater', url: '/components/extended/DXRepeater' },
       { label: 'DXStatCard', url: '/components/extended/DXStatCard' },
       { label: 'DXSwitch', url: '/components/extended/DXSwitch' },
+      { label: 'DXUserAvatar', url: '/components/extended/DXUserAvatar' },
       { label: 'Charts (DXBarChart, …)', url: '/components/extended/DXChart' },
       { label: 'DXTable', url: '/components/extended/DXTable' },
     ],

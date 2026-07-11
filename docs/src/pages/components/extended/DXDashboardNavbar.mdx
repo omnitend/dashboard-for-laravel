@@ -100,7 +100,7 @@ it no longer lines up with the sidebar header.
   { name: 'search', description: 'Search input or component. Aligned per searchAlign within its region; drops to its own full-width row below the md breakpoint' },
   { name: 'actions', props: 'pageTitle', description: 'Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from md up; below, wraps to its own full-width row or is hidden entirely per actionsOnMobile. Receives pageTitle as slot prop' },
   { name: 'user-menu', description: 'Complete custom user menu (replaces default dropdown). Receives user as slot prop' },
-  { name: 'user-icon', description: 'Custom user avatar/icon. Receives initial (first letter of name) as slot prop' },
+  { name: 'user-icon', description: 'Custom user avatar/icon (defaults to DXUserAvatar). Receives initial (first letter of name) and user as slot props. To decorate the default avatar rather than replace it — e.g. add an unread dot — render DXUserAvatar in the slot so the styling comes with it' },
   { name: 'user-menu-items', description: 'Custom dropdown menu items for the user dropdown. Receives user as slot prop' },
 ]} />
 

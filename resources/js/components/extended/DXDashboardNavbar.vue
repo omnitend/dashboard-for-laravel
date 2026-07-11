@@ -84,13 +84,12 @@
             >
               <template #button-content>
                 <!--
-                  @slot Custom user avatar/icon in the dropdown trigger.
+                  @slot Custom user avatar/icon in the dropdown trigger. To decorate the default avatar (e.g. add a notification dot) rather than replace it, render `DXUserAvatar` — the same component used here, so the styling comes with it.
                   @binding {string} initial The first letter of the user's name.
+                  @binding {object} user The signed-in user.
                 -->
-                <slot name="user-icon" :initial="getUserInitial(user)">
-                  <div class="user-avatar">
-                    {{ getUserInitial(user) }}
-                  </div>
+                <slot name="user-icon" :initial="getUserInitial(user)" :user="user">
+                  <DXUserAvatar :user="user" />
                 </slot>
               </template>
 
@@ -112,6 +111,7 @@ import { computed } from "vue";
 import DContainer from "../base/DContainer.vue";
 import DButton from "../base/DButton.vue";
 import DDropdown from "../base/DDropdown.vue";
+import DXUserAvatar from "./DXUserAvatar.vue";
 import type { NavbarActionsOnMobile, NavbarSearchAlign } from "../../types/navigation";
 
 const props = withDefaults(
@@ -245,18 +245,5 @@ const getUserInitial = (user: { name: string } | null) => {
   .dashboard-navbar__actions ~ .dashboard-navbar__end {
     margin-left: 0;
   }
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: var(--bs-dark);
-  color: var(--bs-white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
 }
 </style>

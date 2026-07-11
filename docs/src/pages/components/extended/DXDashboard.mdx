@@ -41,15 +41,19 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
 
 <SlotsTable client:load slots={[
   { name: 'default', props: '-', description: 'Main page content rendered in the content area' },
-  { name: 'sidebar-brand', props: '{ collapsed: boolean, title: string }', description: 'Custom brand/logo content for sidebar header' },
-  { name: 'sidebar-link', props: '{ item: NavigationItem, isActive: boolean, collapsed: boolean }', description: 'Custom link rendering in sidebar navigation' },
-  { name: 'sidebar-footer', props: '{ collapsed: boolean }', description: 'Utility links pinned to the bottom of the sidebar (help, changelog, sign-out, …)' },
-  { name: 'navbar-menu-icon', props: '-', description: 'Custom hamburger menu icon for navbar' },
-  { name: 'navbar-search', props: '-', description: 'Custom search component for navbar' },
-  { name: 'navbar-actions', props: '{ pageTitle: string }', description: 'Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from md up; below, wraps to its own full-width row or is hidden entirely per actionsOnMobile' },
-  { name: 'navbar-user-icon', props: '{ initial: string }', description: 'Custom user icon/avatar in navbar dropdown' },
-  { name: 'navbar-user-menu', props: '{ user: User }', description: 'Custom user dropdown menu content' },
+  { name: 'sidebar-brand', props: '{ collapsed: boolean, title: string, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom brand/logo content for sidebar header' },
+  { name: 'sidebar-link', props: '{ item: NavigationItem, isActive: boolean, collapsed: boolean, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom link rendering in sidebar navigation' },
+  { name: 'sidebar-footer', props: '{ collapsed: boolean, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Utility links pinned to the bottom of the sidebar (help, changelog, sign-out, …)' },
+  { name: 'navbar-menu-icon', props: '{ toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom hamburger menu icon for navbar' },
+  { name: 'navbar-search', props: '{ toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom search component for navbar' },
+  { name: 'navbar-actions', props: '{ pageTitle: string, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from md up; below, wraps to its own full-width row or is hidden entirely per actionsOnMobile' },
+  { name: 'navbar-user-icon', props: '{ initial: string, user: User, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom user icon/avatar in navbar dropdown (defaults to DXUserAvatar)' },
+  { name: 'navbar-user-menu', props: '{ user: User, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom user dropdown menu content' },
 ]} />
+
+Every forwarded `sidebar-*` and `navbar-*` slot also receives `toggleSidebar`
+and `sidebarHidden` on top of the underlying slot's own bindings — see
+[Controlling the sidebar](#controlling-the-sidebar).
 
 ## Features
 
@@ -161,6 +165,66 @@ import IconName from '~icons/lucide/icon-name';
 
   <!-- content -->
 </DXDashboard>
+```
+
+## Controlling the sidebar
+
+DXDashboard owns the sidebar's visibility state (and persists it to
+localStorage), so it exposes that state rather than leaving you to click the
+navbar's hamburger from script.
+
+Every forwarded `sidebar-*` and `navbar-*` slot receives two extra bindings:
+
+- **`toggleSidebar`** — shows/hides the sidebar (the same action as the navbar's
+  hamburger).
+- **`sidebarHidden`** — whether the sidebar is currently hidden.
+
+Use them to put a close affordance in the sidebar itself, or a toggle among the
+navbar actions:
+
+```vue
+<DXDashboard :navigation="navigation" current-url="/dashboard">
+  <template #sidebar-brand="{ collapsed, toggleSidebar }">
+    <div class="d-flex align-items-center justify-content-between w-100">
+      <img v-if="!collapsed" src="/logo.svg" alt="Logo" />
+      <DButton
+        variant="link"
+        aria-label="Close sidebar"
+        @click="toggleSidebar"
+      >
+        &times;
+      </DButton>
+    </div>
+  </template>
+
+  <template #navbar-actions="{ toggleSidebar, sidebarHidden }">
+    <DButton size="sm" variant="outline-secondary" @click="toggleSidebar">
+      {{ sidebarHidden ? 'Show menu' : 'Hide menu' }}
+    </DButton>
+  </template>
+</DXDashboard>
+```
+
+The same API is available on a template `ref`, for page content or a keyboard
+shortcut that sits outside those slots:
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { DButton, DXDashboard } from '@omnitend/dashboard-for-laravel';
+
+const dashboard = ref(null);
+
+const toggle = () => dashboard.value?.toggleSidebar();
+</script>
+
+<template>
+  <DXDashboard ref="dashboard" :navigation="navigation" current-url="/dashboard">
+    <DButton @click="toggle">
+      {{ dashboard?.sidebarHidden ? 'Show menu' : 'Hide menu' }}
+    </DButton>
+  </DXDashboard>
+</template>
 ```
 
 ## Notes

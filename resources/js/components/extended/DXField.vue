@@ -319,7 +319,8 @@
             :rows="field.rows || 3"
             :state="fieldState"
             :disabled="isDisabled"
-            :readonly="isReadonly"
+            :readonly="isReadonly || isPlaintext"
+            :plaintext="isPlaintext"
             v-bind="field.inputProps"
         />
 
@@ -437,6 +438,32 @@
             </datalist>
         </template>
 
+        <!-- Password with a reveal toggle (the default for `type: "password"`).
+             Typing a long password blind is the one place the eye really earns
+             its keep, so it's opt-out (`revealable: false`) rather than opt-in. -->
+        <DInputGroup v-else-if="isRevealablePassword">
+            <DFormInput
+                v-model="textFieldModel"
+                :type="passwordRevealed ? 'text' : 'password'"
+                :required="field.required"
+                :placeholder="field.placeholder"
+                :state="fieldState"
+                :disabled="isDisabled"
+                :readonly="isReadonly"
+                v-bind="field.inputProps"
+            />
+            <template #append>
+                <DButton
+                    variant="outline-secondary"
+                    :icon="passwordRevealed ? 'eye-slash' : 'eye'"
+                    :aria-label="passwordRevealed ? 'Hide password' : 'Show password'"
+                    :aria-pressed="passwordRevealed"
+                    :disabled="isDisabled"
+                    @click="passwordRevealed = !passwordRevealed"
+                />
+            </template>
+        </DInputGroup>
+
         <!-- Text-based inputs (text/email/password/number/url/tel/date/time/datetime) -->
         <DFormInput
             v-else
@@ -449,7 +476,8 @@
             :max="field.max"
             :state="fieldState"
             :disabled="isDisabled"
-            :readonly="isReadonly"
+            :readonly="isReadonly || isPlaintext"
+            :plaintext="isPlaintext"
             v-bind="field.inputProps"
         />
 
@@ -505,6 +533,7 @@ import DXSwitch from "./DXSwitch.vue";
 import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
 import DFormText from "../base/DFormText.vue";
 import DInputGroup from "../base/DInputGroup.vue";
+import DButton from "../base/DButton.vue";
 import DXFieldLabel from "./DXFieldLabel.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { FieldDefinition, FieldOption, FieldType, LabelCols } from "../../types";
@@ -879,6 +908,20 @@ const isDisabled = computed(() => {
 });
 
 const isReadonly = computed(() => resolveMaybe(props.field.readonly) ?? false);
+
+// Display-only: the value as static text rather than a control. bvn's
+// `plaintext` only swaps the class, so pair it with `readonly` at every call
+// site — otherwise the "static text" is still editable.
+const isPlaintext = computed(() => resolveMaybe(props.field.plaintext) ?? false);
+
+const passwordRevealed = ref(false);
+
+const isRevealablePassword = computed(
+    () =>
+        props.field.type === "password" &&
+        (props.field.revealable ?? true) &&
+        !isPlaintext.value,
+);
 
 const inputType = computed<string>(() => {
     const type: FieldType = props.field.type;
