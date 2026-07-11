@@ -160,9 +160,15 @@ const searchAlignClass = computed(
 
 // "hide" swaps d-flex for d-none/d-md-flex on the WRAPPER — hiding only the
 // slot content would leave a zero-height full-width row still costing a flex
-// row-gap on phones.
-const actionsDisplayClass = computed(() =>
-  props.actionsOnMobile === "hide" ? "d-none d-md-flex" : "d-flex",
+// row-gap on phones. Explicit map + fallback, same rationale as
+// SEARCH_ALIGN_CLASSES above.
+const ACTIONS_DISPLAY_CLASSES: Record<NavbarActionsOnMobile, string> = {
+  wrap: "d-flex",
+  hide: "d-none d-md-flex",
+};
+
+const actionsDisplayClass = computed(
+  () => ACTIONS_DISPLAY_CLASSES[props.actionsOnMobile] ?? ACTIONS_DISPLAY_CLASSES.wrap,
 );
 
 defineEmits<{
@@ -202,10 +208,10 @@ const getUserInitial = (user: { name: string } | null) => {
  * overflowing the viewport.
  * From `md` up everything moves inline: search between the title and the
  * actions (grows to fill the middle; `searchAlign` controls where its content
- * sits), actions right-aligned next to the user menu.
+ * sits), actions right-aligned next to the user menu. The actions' order 2
+ * holds at every size — only search and end change order across the
+ * breakpoint.
  */
-/* order 2 applies at every size: after the toggle/title/user-menu (order 0)
-   both below and above `md` (where search takes order 1). */
 .dashboard-navbar__actions {
   order: 2;
   flex: 0 0 100%;

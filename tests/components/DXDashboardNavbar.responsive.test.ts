@@ -21,16 +21,20 @@ import { render } from 'vitest-browser-vue';
 import { defineComponent, h } from 'vue';
 import DXDashboardNavbar from '../../resources/js/components/extended/DXDashboardNavbar.vue';
 import { sampleUser } from '../fixtures/navigationData';
+import type { NavbarActionsOnMobile } from '../../resources/js/types/navigation';
 
 interface PageOptions {
   actions?: boolean;
   search?: boolean;
   user?: typeof sampleUser | null;
-  actionsOnMobile?: 'wrap' | 'hide';
+  actionsOnMobile?: NavbarActionsOnMobile;
 }
 
-const makePage = (options: PageOptions) =>
-  defineComponent({
+const makePage = (options: PageOptions) => {
+  // Destructure default: applies only when `user` is omitted (undefined), so
+  // the guest-layout test's explicit `null` passes through.
+  const { user = sampleUser } = options;
+  return defineComponent({
     setup() {
       return () =>
         h('div', {}, [
@@ -38,7 +42,7 @@ const makePage = (options: PageOptions) =>
             DXDashboardNavbar,
             {
               pageTitle: 'Customers',
-              user: options.user === undefined ? sampleUser : options.user,
+              user,
               actionsOnMobile: options.actionsOnMobile,
             },
             {
@@ -58,6 +62,7 @@ const makePage = (options: PageOptions) =>
         ]);
     },
   });
+};
 
 const rect = (root: Element, selector: string) => {
   const el = root.querySelector(selector);
@@ -65,7 +70,7 @@ const rect = (root: Element, selector: string) => {
   return el!.getBoundingClientRect();
 };
 
-const verticalCentre = (r: DOMRect) => (r.top + r.bottom) / 2;
+const verticalCentre = (rectangle: DOMRect) => (rectangle.top + rectangle.bottom) / 2;
 
 // Two animation frames: deterministic "style applied + layout done" without an
 // arbitrary sleep.

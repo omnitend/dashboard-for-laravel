@@ -331,7 +331,9 @@ interface NavigationItem {
 ```typescript
 interface Props {
   user?: { name: string; email: string } | null;
-  searchAlign?: 'start' | 'center';  // Default: 'start'
+  pageTitle?: string;                       // Default: ''
+  searchAlign?: 'start' | 'center';         // Default: 'start'
+  actionsOnMobile?: 'wrap' | 'hide';        // Default: 'wrap' — what the actions slot does below `md`
 }
 ```
 
