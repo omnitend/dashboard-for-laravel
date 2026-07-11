@@ -21,6 +21,9 @@ export default defineConfig({
     }),
   ],
   test: {
+    // Scope collection to tests/ — playground/vendor/omnitend/dashboard-for-laravel
+    // is a symlink back to the repo root, so a broader glob collects every test twice.
+    include: ['tests/**/*.{test,spec}.ts'],
     browser: {
       enabled: true,
       instances: [
