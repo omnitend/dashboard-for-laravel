@@ -36,7 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   text rather than a control (no border, no input box), for the values a
   profile/settings page shows but never lets you edit — where a `readonly`
   input still reads as "you could edit this, but can't". Accepts a function of
-  the model, and implies read-only. `readonly` itself is unchanged.
+  the model, and implies read-only for every field type (control types with no
+  native readonly state are disabled, as they already are for `readonly`).
+  `readonly` itself is unchanged.
 
 ### Changed
 - **Password fields now render a reveal (eye) toggle by default** (#100).
@@ -46,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   opt-in: set `revealable: false` on the field for the old bare input.
 
 ### Fixed
+- **A revealed password no longer carries over to the next record** (#100).
+  `DXTable` reuses one `DXField` instance per field key across edit-modal opens
+  (the field list is keyed on `field.key`, which is stable across rows) and
+  swaps in a fresh form per record — so revealing row A's password left row B's,
+  and the create form's, showing in clear text. The field now re-masks whenever
+  it is reseeded.
 - **Test suite no longer runs every file twice** (#104). `playground/vendor/…`
   is a symlink back to the repo root, and vitest's default glob followed it, so
   every test file was collected twice (48 files / 606 tests for 24 / 303) —

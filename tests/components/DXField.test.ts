@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
-import { h } from 'vue';
+import { h, ref } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import DXField from '../../resources/js/components/extended/DXField.vue';
 import { useForm } from '../../resources/js/composables/useForm';
@@ -991,5 +991,98 @@ describe('DXField plaintext (#100)', () => {
     expect(input.classList.contains('form-control')).toBe(true);
     expect(input.classList.contains('form-control-plaintext')).toBe(false);
     expect(input.readOnly).toBe(true);
+  });
+});
+
+/**
+ * Codex review of the #100 work found these three. Each is the same shape: a
+ * guarantee the field makes (masked by default, plaintext is not editable) that
+ * an escape hatch or a reused component instance could silently defeat.
+ */
+describe('DXField password/plaintext invariants (#100 review)', () => {
+  it('re-masks a revealed password when the form is reseeded with another record', async () => {
+    // DXTable reuses one DXField instance per field key across modal opens and
+    // swaps in a fresh useForm per row. Without a reset, revealing row A's
+    // password leaves row B's showing in clear text.
+    const field: FieldDefinition = { key: 'password', type: 'password', label: 'Password' };
+    const formA = useForm({ password: 'row-a-secret' });
+    const formB = useForm({ password: 'row-b-secret' });
+    const activeForm = ref(formA);
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () => h(DXField, { field, form: activeForm.value })),
+    });
+    await flush();
+
+    await userEvent.click(
+      screen.container.querySelector('button[aria-label="Show password"]') as HTMLElement,
+    );
+    await flush();
+    expect((screen.container.querySelector('input') as HTMLInputElement).type).toBe('text');
+
+    // Same DXField instance, different record.
+    activeForm.value = formB;
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('row-b-secret');
+    expect(input.type).toBe('password');
+    expect(
+      screen.container.querySelector('button[aria-label="Show password"]'),
+    ).not.toBeNull();
+  });
+
+  it('keeps the reveal toggle in charge of the password type, even against inputProps', async () => {
+    const { screen } = renderField(
+      {
+        key: 'password',
+        type: 'password',
+        label: 'Password',
+        inputProps: { type: 'text', autocomplete: 'new-password' },
+      },
+      { password: 'hunter2' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    // The toggle owns `type`; inputProps must not silently unmask the field.
+    expect(input.type).toBe('password');
+    // Unrelated inputProps still pass through.
+    expect(input.getAttribute('autocomplete')).toBe('new-password');
+  });
+
+  it('keeps a plaintext field non-editable, even against inputProps', async () => {
+    const { screen } = renderField(
+      {
+        key: 'username',
+        type: 'text',
+        label: 'Username',
+        plaintext: true,
+        inputProps: { readonly: false },
+      },
+      { username: 'jpickard' },
+    );
+    await flush();
+
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    expect(input.readOnly).toBe(true);
+    expect(input.classList.contains('form-control-plaintext')).toBe(true);
+  });
+
+  it('disables a select/radio marked plaintext, so "implies read-only" holds for every type', async () => {
+    const { screen } = renderField(
+      {
+        key: 'plan',
+        type: 'select',
+        label: 'Plan',
+        plaintext: true,
+        options: [{ value: 'pro', text: 'Pro' }],
+      },
+      { plan: 'pro' },
+    );
+    await flush();
+
+    expect((screen.container.querySelector('select') as HTMLSelectElement).disabled).toBe(true);
   });
 });

@@ -103,6 +103,12 @@ import type { Navigation, NavbarActionsOnMobile, NavbarSearchAlign } from '../..
 
 const slots = useSlots();
 
+// Slot-binding precedence: the forwarded slots bind the child's own slot props
+// FIRST and `toggleSidebar`/`sidebarHidden` after, so ours win a name clash.
+// That's deliberate — the dashboard guarantees those two bindings on every
+// forwarded slot, and a child that later grew a same-named prop must not be
+// able to silently take the guarantee away. No child uses those names today.
+
 interface Props {
   /** Navigation structure for sidebar */
   navigation: Navigation;

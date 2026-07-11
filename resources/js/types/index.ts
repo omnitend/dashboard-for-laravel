@@ -299,9 +299,11 @@ export interface FieldDefinition {
      * profile/settings page shows but never lets you edit, where a `readonly`
      * input still reads as "you could edit this, but can't".
      *
-     * Implies read-only. Applies to the text-family inputs (text/email/
-     * password/number/url/tel/date/time/datetime) and textarea; other control
-     * types ignore it and fall back to their `readonly` handling.
+     * Implies read-only, for every field type. The text-family inputs
+     * (text/email/password/number/url/tel/date/time/datetime) and textarea
+     * render as static text; control types with no native readonly state
+     * (select/radio/checkbox/switch/file) are disabled instead, exactly as
+     * they are for `readonly`.
      */
     plaintext?: MaybeFn<boolean>;
 

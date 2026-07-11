@@ -61,7 +61,7 @@
         <DFormCheckbox
             v-else
             v-model="fieldValue"
-            :disabled="isDisabled || isReadonly"
+            :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="field.inputProps"
         >
             <DXFieldLabel :label="resolvedLabel" class="visually-hidden" />
@@ -97,7 +97,7 @@
         <DFormCheckbox
             v-else
             v-model="fieldValue"
-            :disabled="isDisabled || isReadonly"
+            :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="field.inputProps"
         >
             <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
@@ -159,7 +159,7 @@
         <DXSwitch
             v-else
             v-model="switchModel"
-            :disabled="isDisabled || isReadonly"
+            :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="field.inputProps"
         >
             <DXFieldLabel
@@ -201,7 +201,7 @@
         <DXSwitch
             v-else
             v-model="switchModel"
-            :disabled="isDisabled || isReadonly"
+            :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="field.inputProps"
         >
             <DXFieldLabel :label="switchText" :info="resolvedInfo" />
@@ -306,7 +306,7 @@
             v-model="fieldValue"
             :field="field"
             :model="model"
-            :disabled="isDisabled || isReadonly"
+            :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="field.inputProps"
         />
 
@@ -331,7 +331,7 @@
             :required="field.required"
             :options="resolvedOptions"
             :state="fieldState"
-            :disabled="isDisabled || isReadonly"
+            :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="field.inputProps"
         />
 
@@ -342,7 +342,7 @@
             :options="resolvedOptions"
             :required="field.required"
             :state="fieldState"
-            :disabled="isDisabled || isReadonly"
+            :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="field.inputProps"
         />
 
@@ -353,7 +353,7 @@
                 :accept="field.accept || (field.type === 'image' ? 'image/*' : undefined)"
                 :required="field.required"
                 :state="fieldState"
-                :disabled="isDisabled || isReadonly"
+                :disabled="isDisabled || isReadonly || isPlaintext"
                 v-bind="field.inputProps"
                 @change="handleFileChange"
             />
@@ -444,13 +444,12 @@
         <DInputGroup v-else-if="isRevealablePassword">
             <DFormInput
                 v-model="textFieldModel"
-                :type="passwordRevealed ? 'text' : 'password'"
                 :required="field.required"
                 :placeholder="field.placeholder"
                 :state="fieldState"
                 :disabled="isDisabled"
                 :readonly="isReadonly"
-                v-bind="field.inputProps"
+                v-bind="passwordInputProps"
             />
             <template #append>
                 <DButton
@@ -922,6 +921,25 @@ const isRevealablePassword = computed(
         (props.field.revealable ?? true) &&
         !isPlaintext.value,
 );
+
+// DXTable reuses ONE DXField instance per field key across modal opens (the
+// v-for is keyed on `field.key`, which is stable across rows) and swaps in a
+// fresh form per record. Without this, revealing row A's password leaves row
+// B's — and the create form's — showing in clear text.
+watch(
+    () => [props.form, props.field.key],
+    () => {
+        passwordRevealed.value = false;
+    },
+);
+
+// `inputProps` is an escape hatch that deliberately wins over our defaults —
+// but not over `type`, which the reveal toggle owns. Otherwise an inputProps
+// `type` silently unmasks a field whose toggle still reads "Show password".
+const passwordInputProps = computed(() => ({
+    ...props.field.inputProps,
+    type: passwordRevealed.value ? "text" : "password",
+}));
 
 const inputType = computed<string>(() => {
     const type: FieldType = props.field.type;
