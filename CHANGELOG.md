@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **The navbar's `md` breakpoint is now expressed once, not twice** (#101). The
+  bar's responsive behaviour was split between Bootstrap utility classes
+  (`d-none d-md-block`, `d-md-flex`), which resolve from `$grid-breakpoints`, and
+  a hardcoded `@media (min-width: 768px)` in the component's scoped styles. A
+  scoped media query is compiled at *our* build and baked into `dist/`, so a
+  consumer who overrides `$grid-breakpoints` and compiles `theme.scss` from
+  source moved the utilities and not the media query — leaving a band of viewport
+  widths where the two disagreed (actions hidden while the layout had already
+  gone inline). The layout rules now live in `theme.scss` and compile from
+  `media-breakpoint-up(md)`, so both derive from the same variable in any build.
 - **The navbar's user-menu trigger has an accessible name** (#113). Its name came
   from its content — just the avatar disc — so a screen reader announced the
   control as the user's initial ("J") rather than as a menu. It now carries a

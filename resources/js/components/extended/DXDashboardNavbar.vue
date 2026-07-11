@@ -206,56 +206,18 @@ const getUserInitial = (user: { name: string } | null) => {
   padding: 0.5rem 0;
 }
 
-/* Push the user-menu cluster to the right. (The actions region carries its
-   own auto margin from `md` up — see the sibling rule below.) */
-.dashboard-navbar__end {
-  margin-left: auto;
-}
-
 /*
- * Mobile-first: the actions and the search each sit on their own full-width
- * row below the toggle / title / user-menu row (flex-basis 100% forces the
- * wrap; the bar and the sticky header grow to contain them — #93). The
- * actions row itself wraps so a wide button group stacks instead of
- * overflowing the viewport.
- * From `md` up everything moves inline: search between the title and the
- * actions (grows to fill the middle; `searchAlign` controls where its content
- * sits), actions right-aligned next to the user menu. The actions' order 2
- * holds at every size — only search and end change order across the
- * breakpoint.
+ * The bar's responsive LAYOUT (the order/flex rules and the `md` switch) lives
+ * in theme.scss, not here — see "Dashboard navbar layout" there.
+ *
+ * It has to: the `md` breakpoint is expressed twice in this component, once as
+ * Bootstrap utility classes (`d-none d-md-block` on the title, `d-md-flex` from
+ * `actionsOnMobile: "hide"`) and once as a media query. A media query in a
+ * scoped SFC block is compiled at OUR build with OUR `$grid-breakpoints` and
+ * baked into `dist/`, so a consumer who overrides `$grid-breakpoints` and
+ * compiles `theme.scss` from source would move the utilities and NOT the media
+ * query — leaving a band of viewport widths where the two disagree (#101).
+ * Compiling the layout from `media-breakpoint-up(md)` in theme.scss keeps both
+ * derived from the same variable in any build.
  */
-.dashboard-navbar__actions {
-  order: 2;
-  flex: 0 0 100%;
-  flex-wrap: wrap;
-}
-
-.dashboard-navbar__search {
-  order: 3;
-  flex: 0 0 100%;
-}
-
-@media (min-width: 768px) {
-  .dashboard-navbar__search {
-    order: 1;
-    flex: 1 1 auto;
-  }
-
-  .dashboard-navbar__actions {
-    flex: 0 1 auto;
-    flex-wrap: nowrap;
-    margin-left: auto;
-  }
-
-  .dashboard-navbar__end {
-    order: 3;
-  }
-
-  /* When the actions region is present it carries the push-right auto margin;
-     zero the user-menu cluster's so the two sit adjacent instead of having
-     the free space split between them. */
-  .dashboard-navbar__actions ~ .dashboard-navbar__end {
-    margin-left: 0;
-  }
-}
 </style>

@@ -411,3 +411,63 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
+
+// ----------------------------------------------------------------------------
+// Dashboard navbar layout
+// ----------------------------------------------------------------------------
+// These rules live here rather than in DXDashboardNavbar's scoped block so the
+// `md` switch compiles from Bootstrap's own `$grid-breakpoints`, exactly as the
+// `d-md-*` utilities the same component uses do. A media query hardcoded in the
+// SFC is baked into `dist/` at OUR build, so a consumer overriding
+// `$grid-breakpoints` and compiling this file from source would move the
+// utilities and not the media query, leaving a band of widths where the two
+// disagree (#101).
+//
+// Mobile-first: the actions and the search each take their own full-width row
+// below the toggle / title / user-menu row (flex-basis 100% forces the wrap; the
+// bar and the sticky header grow to contain them — #93). The actions row itself
+// wraps, so a wide button group stacks instead of overflowing the viewport.
+//
+// From `md` up everything goes inline: search between the title and the actions
+// (filling the middle; `searchAlign` places its content), actions right-aligned
+// next to the user menu. The actions' `order: 2` holds at every size — only the
+// search and the user-menu cluster swap order across the breakpoint.
+
+.dashboard-navbar__end {
+  margin-left: auto;
+}
+
+.dashboard-navbar__actions {
+  order: 2;
+  flex: 0 0 100%;
+  flex-wrap: wrap;
+}
+
+.dashboard-navbar__search {
+  order: 3;
+  flex: 0 0 100%;
+}
+
+@include media-breakpoint-up(md) {
+  .dashboard-navbar__search {
+    order: 1;
+    flex: 1 1 auto;
+  }
+
+  .dashboard-navbar__actions {
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    margin-left: auto;
+  }
+
+  .dashboard-navbar__end {
+    order: 3;
+  }
+
+  // When the actions region is present it carries the push-right auto margin;
+  // zero the user-menu cluster's so the two sit adjacent instead of splitting
+  // the free space between them.
+  .dashboard-navbar__actions ~ .dashboard-navbar__end {
+    margin-left: 0;
+  }
+}
