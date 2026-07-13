@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **The icon webfont ships as a real file instead of being inlined — `style.css`
+  drops from ~191 KB to ~53 KB gzip** (#77, −72%). The Bootstrap Icons woff2 was
+  embedded in the stylesheet as a base64 data URI, and **the font alone was 137 KB
+  of the 191 KB** — 72% of the CSS, carried by every consumer whether or not they
+  ever rendered a glyph. Base64-inlining a woff2 is pathological: it's already
+  Brotli-compressed, base64 inflates it by a third, and gzip recovers none of it.
+  (Vite always inlines CSS assets in library mode; `assetsInlineLimit` is ignored
+  there, so this is done post-build.)
+
+  The font is now fetched **only when a `.bi-*` glyph actually renders**, so an
+  app that never uses `DButton`'s `icon` prop pays nothing for it. No API change,
+  and nothing to do in consuming apps: a bundler resolves the relative `url()`
+  out of `node_modules`, a plain `<link>` resolves it next to the stylesheet. The
+  2078 `.bi-*` glyph classes stay — they cost ~14 KB gzip for the whole set, so
+  they were never the problem.
+
 ## [0.25.0] - 2026-07-11
 
 ### Added

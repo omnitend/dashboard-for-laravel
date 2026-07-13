@@ -834,6 +834,31 @@ When releasing a new version:
 
 ## Known Issues and Solutions
 
+### The icon webfont must never be inlined again (#77)
+
+`dist/style.css` used to be ~191 KB gzip, and **137 KB of that was one base64
+font** — 72% of the stylesheet, carried by every consumer whether or not they
+ever rendered a glyph.
+
+The trap: **Vite ALWAYS inlines CSS-referenced assets as data URIs in library
+mode.** `build.assetsInlineLimit` is documented as *ignored* when `build.lib` is
+set, so setting it to `0` does nothing (this was tried). And base64-inlining a
+woff2 is pathological — the format is already Brotli-compressed, base64 inflates
+it by a third, and gzip recovers none of it.
+
+`scripts/extract-icon-font.mjs` runs after `vite build`, writes the font out to
+`dist/assets/bootstrap-icons-<hash>.woff2`, and rewrites the `url()`. Stylesheet
+drops to **~53 KB gzip**, and the browser fetches the font **only when a `.bi-*`
+glyph actually renders** — verified against the built docs: a page with icons
+fetches it, pages without icons don't.
+
+Nothing changes for consumers: a bundler resolves the relative `url()` out of
+`node_modules`, a plain `<link>` resolves it next to the stylesheet.
+
+Guarded by `tests/bundle/icon-font.test.ts`, because the failure mode is
+**silent** — re-inlining still works, it just quietly triples the CSS again.
+Don't "simplify" the build script away.
+
 ### Tree-Shaking Icons
 
 **Issue**: Dynamic icon imports get tree-shaken by Vite

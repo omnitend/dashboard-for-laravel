@@ -29,7 +29,7 @@
   ],
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
+    "build": "vite build && node scripts/extract-icon-font.mjs && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
     "typecheck": "vue-tsc --noEmit",
     "pretest": "vite build",
     "test": "vitest",

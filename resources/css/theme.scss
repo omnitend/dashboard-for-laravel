@@ -210,12 +210,18 @@ $dashboard-navbar-content-height: calc(
 // bi-*">`) renders without the consumer wiring up their own icon set.
 //
 // Imported as SCSS (not the prebuilt CSS) so we can override the font `src` to
-// woff2 ONLY — dropping bootstrap-icons' legacy `woff` fallback. In the library
-// build Vite inlines CSS `url()` assets as data URIs, so shipping both formats
-// doubled the embedded font bytes in `dist/style.css` for no benefit (every
-// browser we target reads woff2). The override must come BEFORE the import so
+// woff2 ONLY — dropping bootstrap-icons' legacy `woff` fallback, which no
+// browser we target needs. The override must come BEFORE the import so
 // bootstrap-icons' own `!default` src doesn't re-add the woff. The bare
 // `bootstrap-icons/...` specifier resolves through Vite's module resolver.
+//
+// The font itself does NOT ship inside `dist/style.css`. Vite always inlines
+// CSS-referenced assets as base64 data URIs in library mode, which is
+// pathological for a woff2 (already Brotli-compressed; base64 inflates it a
+// third; gzip recovers none of it) — inlined, the font alone was 137 KB of the
+// stylesheet's 191 KB gzip. `scripts/extract-icon-font.mjs` writes it back out
+// as a real file post-build, so the browser fetches it only when a `.bi-*`
+// glyph actually renders. See #77.
 $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2")
   format("woff2");
 @import "bootstrap-icons/font/bootstrap-icons";
