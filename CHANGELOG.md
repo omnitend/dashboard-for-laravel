@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The first tab is activated on mount again** (#119). No pane got `active`/`show`:
+  the tab nav rendered and **every body was invisible** until the user clicked a
+  tab. Two consumer pages had already papered over it with an explicit `active`
+  on the first tab.
+
+  Cause: `BTabs` picks the tab to activate by scanning its slot vnodes for the
+  `BTab` component type, and our `DTab` wrapper hid it. Bisected —
+  `BTabs`+`BTab` and `DTabs`+`BTab` both work, `BTabs`+`DTab` does not — so
+  **`DTab` is now a raw re-export of `BTab`**, the same exception `DCarouselSlide`
+  already carries. `DTabs` stays a wrapper. The API is identical (`DTab` was a
+  pure passthrough), so nothing changes for consumers beyond it working.
+  Recorded in [DIVERGENCES.md](./DIVERGENCES.md).
+- **A consumer's `thead-top` is composed above the filter row instead of being
+  dropped** (#120). DXTable renders its inline filter row in `thead-top`, so a
+  consumer's own content there was silently discarded: a grouped column-header
+  banner (a `<th colspan>` spanning several columns) had nowhere to go, and a
+  pinned totals row had to settle for `top-row` — the first *body* row, below the
+  header. Both now render, banner above filter row.
+
 ### Added
 - **`DXTable` `rowClass` and `rowClickable`** (#115). `rowClass` (a string, or a
   function of the row) applies classes to each `<tr>`, so conditional row styling

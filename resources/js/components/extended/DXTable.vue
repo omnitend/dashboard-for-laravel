@@ -64,9 +64,19 @@
                         @update:busy="handleBusyChange"
                         @row-clicked="handleRowClick"
                     >
-                        <!-- Inline Filter Row -->
-                        <template v-if="hasFilters" #thead-top>
-                            <tr class="filter-row">
+                        <!-- DXTable owns `thead-top` (its filter row lives there), so a
+                             consumer's own thead-top content is COMPOSED above it rather
+                             than being dropped: a grouped column-header banner or a pinned
+                             totals row sits above the headers where it belongs (#120). -->
+                        <template v-if="hasFilters || $slots['thead-top']" #thead-top="theadScope">
+                            <!--
+                              @slot A row rendered ABOVE the column headers — a grouped-column banner (a `<th colspan>` spanning several columns), or a pinned totals row. Renders above DXTable's own filter row. Give it `<tr>`s.
+                              @binding {object} columns The number of columns in the table.
+                              @binding {object} fields The table's fields.
+                            -->
+                            <slot name="thead-top" v-bind="theadScope" />
+
+                            <tr v-if="hasFilters" class="filter-row">
                                 <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
                                     <!-- Text Filter -->
                                     <DFormInput
@@ -132,18 +142,14 @@
                              table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
                              See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="(_, name) in $slots"
+                            v-for="name in forwardableSlotNames($slots)"
                             :key="name"
                             #[name]="slotProps"
                         >
                             <!--
                               @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot
-                                v-if="typeof name === 'string' && isTableSlot(name)"
-                                :name="name"
-                                v-bind="slotProps"
-                            />
+                            <slot :name="name" v-bind="slotProps" />
                         </template>
                     </DTable>
 
@@ -166,9 +172,19 @@
                         @update:expanded-items="emit('update:expandedItems', $event)"
                         @row-clicked="handleRowClick"
                     >
-                        <!-- Inline Filter Row -->
-                        <template v-if="hasFilters" #thead-top>
-                            <tr class="filter-row">
+                        <!-- DXTable owns `thead-top` (its filter row lives there), so a
+                             consumer's own thead-top content is COMPOSED above it rather
+                             than being dropped: a grouped column-header banner or a pinned
+                             totals row sits above the headers where it belongs (#120). -->
+                        <template v-if="hasFilters || $slots['thead-top']" #thead-top="theadScope">
+                            <!--
+                              @slot A row rendered ABOVE the column headers — a grouped-column banner (a `<th colspan>` spanning several columns), or a pinned totals row. Renders above DXTable's own filter row. Give it `<tr>`s.
+                              @binding {object} columns The number of columns in the table.
+                              @binding {object} fields The table's fields.
+                            -->
+                            <slot name="thead-top" v-bind="theadScope" />
+
+                            <tr v-if="hasFilters" class="filter-row">
                                 <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
                                     <!-- Text Filter -->
                                     <DFormInput
@@ -234,18 +250,14 @@
                              table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
                              See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="(_, name) in $slots"
+                            v-for="name in forwardableSlotNames($slots)"
                             :key="name"
                             #[name]="slotProps"
                         >
                             <!--
                               @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot
-                                v-if="typeof name === 'string' && isTableSlot(name)"
-                                :name="name"
-                                v-bind="slotProps"
-                            />
+                            <slot :name="name" v-bind="slotProps" />
                         </template>
                     </DTable>
 
@@ -269,9 +281,19 @@
                         @update:expanded-items="emit('update:expandedItems', $event)"
                         @row-clicked="handleRowClick"
                     >
-                        <!-- Inline Filter Row -->
-                        <template v-if="hasFilters" #thead-top>
-                            <tr class="filter-row">
+                        <!-- DXTable owns `thead-top` (its filter row lives there), so a
+                             consumer's own thead-top content is COMPOSED above it rather
+                             than being dropped: a grouped column-header banner or a pinned
+                             totals row sits above the headers where it belongs (#120). -->
+                        <template v-if="hasFilters || $slots['thead-top']" #thead-top="theadScope">
+                            <!--
+                              @slot A row rendered ABOVE the column headers — a grouped-column banner (a `<th colspan>` spanning several columns), or a pinned totals row. Renders above DXTable's own filter row. Give it `<tr>`s.
+                              @binding {object} columns The number of columns in the table.
+                              @binding {object} fields The table's fields.
+                            -->
+                            <slot name="thead-top" v-bind="theadScope" />
+
+                            <tr v-if="hasFilters" class="filter-row">
                                 <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
                                     <!-- Text Filter -->
                                     <DFormInput
@@ -337,18 +359,14 @@
                              table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
                              See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="(_, name) in $slots"
+                            v-for="name in forwardableSlotNames($slots)"
                             :key="name"
                             #[name]="slotProps"
                         >
                             <!--
                               @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot
-                                v-if="typeof name === 'string' && isTableSlot(name)"
-                                :name="name"
-                                v-bind="slotProps"
-                            />
+                            <slot :name="name" v-bind="slotProps" />
                         </template>
                     </DTable>
 
@@ -2032,6 +2050,19 @@ const isTableSlot = (name: string) =>
  * In provider mode a remount refetches; that only happens when the column set
  * itself changes, which is already a refetch in practice.
  */
+/*
+ * A FUNCTION, not a computed: `useSlots()` returns an object Vue mutates in
+ * place with nothing to track, so a computed over its keys is captured on the
+ * first render and never updates — which is what made late `cell(...)` slots
+ * invisible (#114). Called from the template, it re-evaluates every render.
+ *
+ * It also has to EXCLUDE the slots DXTable renders itself: declaring `#thead-top`
+ * here (even rendering nothing into it) would override DXTable's own thead-top
+ * template, silently dropping the filter row and the consumer's banner (#120).
+ */
+const forwardableSlotNames = (slots: Record<string, unknown>): string[] =>
+    Object.keys(slots).filter((name) => isTableSlot(name));
+
 const tableSlotSignature = (slots: Record<string, unknown>): string =>
     Object.keys(slots).filter(isTableSlot).sort().join('|');
 

@@ -211,3 +211,27 @@ ever *hides* the button, never forces it on.
 empty string.
 
 ---
+
+---
+
+## `DTab` is a raw re-export of `BTab`, not a wrapper
+
+**bvn:** `BTabs` decides which tab to activate on mount by scanning its slot
+vnodes for the `BTab` component type (its initial-selection branch is gated on
+`tabElementsArray.length > 0`).
+
+**Ours:** `DTab` re-exports `BTab` directly — the same exception `DCarousel` /
+`DCarouselSlide` already carry, and for the same reason.
+
+**Why:** a wrapper component in between hides `BTab` from that scan, so `BTabs`
+found no tabs to select and **no pane got `active`/`show`**: the tab nav rendered
+and every body was invisible until the user clicked one (#119). Bisected —
+`BTabs`+`BTab` and `DTabs`+`BTab` both activate the first tab; `BTabs`+`DTab`
+does not, so it is the *child* wrapper, and only the child, that has to go.
+`DTabs` stays a wrapper.
+
+**Known upstream limitation** (not caused by this): an explicit `active` on a
+NON-first tab is not honoured — raw `BTabs`+`BTab` also lands on index 0.
+
+**Convergence:** none needed — the API is identical, since `DTab` was a pure
+passthrough.

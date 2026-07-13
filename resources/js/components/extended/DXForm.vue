@@ -172,7 +172,7 @@ import DAlert from "../base/DAlert.vue";
 import DButton from "../base/DButton.vue";
 import DCard from "../base/DCard.vue";
 import DTabs from "../base/DTabs.vue";
-import DTab from "../base/DTab.vue";
+import { BTab as DTab } from "bootstrap-vue-next"; // raw BTab: BTabs scans slot vnodes for it (#119)
 import DXFormField from "./DXFormField.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { DefineFormReturn } from "../../composables/defineForm";

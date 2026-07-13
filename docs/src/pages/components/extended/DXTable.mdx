@@ -186,9 +186,15 @@ Every slot the **underlying table** supports is forwarded with its scope:
   { name: 'table-caption / table-colgroup / table-busy', props: '-', description: 'Caption, colgroup and busy-state slots' },
 ]} />
 
-Two table slots are **not** forwarded, because DXTable renders them itself:
-`head(<key>)` (it draws the column headers, with sort indicators and field
-hints) and `thead-top` (it renders the inline filter row there).
+`thead-top` is **composed**, not forwarded: DXTable renders its filter row there,
+and a consumer's `thead-top` content is placed **above** it — so a grouped
+column-header banner (a `<th colspan>` spanning several columns) or a pinned
+totals row sits above the headers where it belongs, with the filter row beneath.
+Give it `<tr>`s.
+
+One table slot is **not** available at all, because DXTable renders it itself:
+`head(<key>)` — it draws the column headers, with sort indicators and field
+hints, and a forwarded one would silently drop those.
 
 ## Totals row
 

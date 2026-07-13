@@ -85,7 +85,20 @@ export { default as DProgress } from "./components/base/DProgress.vue";
 export { default as DRow } from "./components/base/DRow.vue";
 export { default as DSpinner } from "./components/base/DSpinner.vue";
 export { default as DTable } from "./components/base/DTable.vue";
-export { default as DTab } from "./components/base/DTab.vue";
+/*
+ * DTab is a RAW RE-EXPORT of BTab, not a wrapper — same exception as
+ * DCarouselSlide above, and for the same reason.
+ *
+ * BTabs decides which tab to activate on mount by scanning its slot vnodes for
+ * the BTab component type (its initial-selection branch is gated on
+ * `tabElementsArray.length > 0`). A wrapper component in between hides that, so
+ * BTabs found no tabs to select and NO pane got `active`/`show`: the nav
+ * rendered and every body was invisible until the user clicked (#119).
+ *
+ * Bisected — BTabs+BTab and DTabs+BTab both activate the first tab; BTabs+DTab
+ * does not. So it is the child wrapper, and only the child, that has to go.
+ */
+export { BTab as DTab } from "bootstrap-vue-next";
 export { default as DTabs } from "./components/base/DTabs.vue";
 export { default as DToast } from "./components/base/DToast.vue";
 export { default as DToaster } from "./components/base/DToaster.vue";

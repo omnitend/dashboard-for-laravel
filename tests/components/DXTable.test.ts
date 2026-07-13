@@ -2266,3 +2266,78 @@ describe('DXTable row class and non-actionable rows (#115)', () => {
     expect(clicked).toHaveLength(1);
   });
 });
+
+/**
+ * #120. DXTable reserves the above-header position for its filter row, so a
+ * consumer's `thead-top` was dropped: a grouped "Payment method" banner spanning
+ * three columns had nowhere to go, and a pinned totals row had to settle for
+ * `top-row` (the first BODY row, below the header) — a visible downgrade. The
+ * two are now composed rather than one excluding the other.
+ */
+describe('DXTable composes a consumer thead-top above its filter row (#120)', () => {
+  const items = [{ id: 1, card: 10, cash: 20 }];
+  const fields = [
+    { key: 'id', label: 'ID' },
+    { key: 'card', label: 'Card' },
+    { key: 'cash', label: 'Cash' },
+  ];
+
+  const banner = () => h('tr', { class: 'banner' }, [h('th', { colspan: 3 }, 'Payment method')]);
+
+  const renderTable = (extraFields: any[] = []) =>
+    render({
+      render: () =>
+        h(
+          BApp,
+          {},
+          () =>
+            h(
+              DXTable,
+              { items, clientSide: true, fields: [...fields, ...extraFields] },
+              { 'thead-top': banner },
+            ),
+        ),
+    });
+
+  it('renders the consumer banner above the column headers', async () => {
+    const screen = renderTable();
+    await flush();
+
+    const bannerRow = screen.container.querySelector('thead .banner');
+    expect(bannerRow).not.toBeNull();
+    expect(bannerRow?.textContent).toContain('Payment method');
+    // Spanning its columns, which is the whole point of a grouped banner.
+    expect(bannerRow?.querySelector('th')?.getAttribute('colspan')).toBe('3');
+  });
+
+  it('puts it above the filter row, not instead of it', async () => {
+    const screen = renderTable([{ key: 'note', label: 'Note', filter: 'text' }]);
+    await flush();
+
+    const headRows = [...screen.container.querySelectorAll('thead tr')];
+    const bannerIndex = headRows.findIndex((row) => row.classList.contains('banner'));
+    const filterIndex = headRows.findIndex((row) => row.classList.contains('filter-row'));
+
+    expect(bannerIndex).toBeGreaterThanOrEqual(0);
+    expect(filterIndex).toBeGreaterThanOrEqual(0);
+    // Both present, banner first — DXTable's filter row used to exclude it entirely.
+    expect(bannerIndex).toBeLessThan(filterIndex);
+  });
+
+  it('still renders the filter row when there is no thead-top slot', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items,
+            clientSide: true,
+            fields: [...fields, { key: 'note', label: 'Note', filter: 'text' }],
+          }),
+        ),
+    });
+    await flush();
+
+    expect(screen.container.querySelector('thead .filter-row')).not.toBeNull();
+    expect(screen.container.querySelector('thead .banner')).toBeNull();
+  });
+});
