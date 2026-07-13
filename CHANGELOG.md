@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The edit modal no longer writes fields the user can't see** (#117). It seeded
+  every field with `row[key] ?? default ?? ''` and submitted the lot — *including*
+  fields their `when:` predicate currently hides. Editing an amount-type discount
+  whose hidden `discount_percentage` was null silently wrote the field's default
+  (`10`): the user changed the name, and an invisible column gained a value they
+  never chose. Any consumer combining `default` with `when` on the same field was
+  exposed.
+
+  Two fixes, because there were two ways in. Fields hidden by `when` at submit
+  time are now **omitted from the payload**, so the stored value is left alone.
+  And seeding decides on **presence, not nullishness** — `row[key] ?? default`
+  can't tell "the row has no such key" from "the row's value *is* null", so an
+  explicitly-null column was being overwritten by the default. A row that
+  genuinely lacks the key still gets it.
+- **A client-side table no longer renders blank when its data shrinks** (#118).
+  `clientSideCurrentPage` was only reset on filter/per-page changes, so a
+  shrinking `items` prop (a report refetching a narrower date range) left it
+  pointing past the end. The pagination metadata clamped for *display* but the
+  **slice used the raw page**, so the pager read "page 2 of 2" while the table
+  sliced page 6 and rendered zero rows on data that plainly had rows. Both now
+  read one clamped value, and the page is clamped to the **last valid page**
+  rather than reset to the first, so the user stays near where they were.
+
 ### Changed
 - **The icon webfont ships as a real file instead of being inlined — `style.css`
   drops from ~191 KB to ~53 KB gzip** (#77, −72%). The Bootstrap Icons woff2 was

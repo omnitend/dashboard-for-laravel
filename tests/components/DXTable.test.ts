@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
 import { h, ref } from 'vue';
@@ -1891,5 +1891,206 @@ describe('DXTable select filter offers a way back to unfiltered', () => {
 
     const options = await optionsMatching(screen, 'All');
     expect(options.map((o) => o.textContent)).not.toContain('All statuses');
+  });
+});
+
+/**
+ * #117. The edit modal seeded every field with `row[key] ?? default ?? ''` and
+ * submitted the lot — including fields whose `when:` predicate currently hides
+ * them. Editing an amount-type discount whose hidden `discount_percentage` was
+ * null silently wrote the field's default (10): the user changed the name, and
+ * an invisible column gained a value they never chose.
+ */
+describe('DXTable edit modal does not write hidden fields (#117)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // An amount-type discount: the percentage field is hidden, and null in the row.
+  const discountFields = [
+    { key: 'name', type: 'text', label: 'Name' },
+    { key: 'kind', type: 'text', label: 'Kind' },
+    {
+      key: 'discount_percentage',
+      type: 'number',
+      label: 'Percentage',
+      default: 10,
+      when: (model: any) => model.kind === 'percentage',
+    },
+  ];
+
+  const editAndSave = async (row: Record<string, any>, editFields: any[] = discountFields) => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({ data: {} }),
+        }) as any,
+    );
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: [row],
+            fields: [{ key: 'name', label: 'Name' }],
+            editFields,
+            editUrl: '/api/discounts/:id',
+          }),
+        ),
+    });
+    await flush();
+    (screen.container.querySelector('tbody tr') as HTMLElement).click();
+    await wait(150);
+
+    const save = [...document.querySelectorAll('button')].find((button) =>
+      button.textContent?.match(/save changes/i),
+    ) as HTMLElement;
+    save.click();
+    await wait(150);
+
+    return JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);
+  };
+
+  it('omits a field hidden by `when` from the payload', async () => {
+    const payload = await editAndSave({
+      id: 1,
+      name: 'Ten pounds off',
+      kind: 'amount',
+      discount_percentage: null,
+    });
+
+    expect(payload).toHaveProperty('name');
+    // The whole bug: this used to arrive as 10, from the field's `default`.
+    expect(payload).not.toHaveProperty('discount_percentage');
+  });
+
+  it('submits the field once its `when` makes it visible', async () => {
+    const payload = await editAndSave({
+      id: 1,
+      name: 'Ten percent off',
+      kind: 'percentage',
+      discount_percentage: 15,
+    });
+
+    expect(payload.discount_percentage).toBe(15);
+  });
+
+  it('never seeds a default over an explicitly null row value', async () => {
+    // Presence, not nullishness, decides: `row[key] ?? default` can't tell "no
+    // such key" from "the value IS null", so a null column got the default.
+    const visibleWhenNull = [
+      { key: 'name', type: 'text', label: 'Name' },
+      { key: 'rounding', type: 'number', label: 'Rounding', default: 10 },
+    ];
+
+    const payload = await editAndSave({ id: 1, name: 'A', rounding: null }, visibleWhenNull);
+
+    expect(payload.rounding).toBeNull();
+  });
+
+  it('still applies the default when the row genuinely lacks the key', async () => {
+    const fields = [
+      { key: 'name', type: 'text', label: 'Name' },
+      { key: 'rounding', type: 'number', label: 'Rounding', default: 10 },
+    ];
+
+    const payload = await editAndSave({ id: 1, name: 'A' }, fields);
+
+    expect(payload.rounding).toBe(10);
+  });
+});
+
+/**
+ * #118. `clientSideCurrentPage` was only reset on filter/per-page changes, so a
+ * shrinking `items` prop (a report refetching a narrower date range) left it
+ * pointing past the end. The pagination metadata clamped for display, but the
+ * SLICE used the raw value — the pager said "page 2 of 2" while the table
+ * sliced page 6 and rendered zero rows.
+ */
+describe('DXTable client-side page is clamped when items shrink (#118)', () => {
+  // A per-page preference persisted by an earlier test would win over the
+  // `perPage` prop (getInitialPerPage prefers localStorage), making these
+  // order-dependent.
+  beforeEach(() => localStorage.removeItem('dxtable-perpage-table'));
+  afterEach(() => localStorage.removeItem('dxtable-perpage-table'));
+
+  const rowsOf = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ id: i + 1, name: `Row ${i + 1}` }));
+
+  const renderTable = (items: any[]) => {
+    const data = ref(items);
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: data.value,
+            fields: [{ key: 'name', label: 'Name' }],
+            clientSide: true,
+            perPage: 20,
+          }),
+        ),
+    });
+    return { screen, data };
+  };
+
+  const goToPage = async (screen: any, page: number) => {
+    const link = [...screen.container.querySelectorAll('.pagination .page-link')].find(
+      (element) => element.textContent?.trim() === String(page),
+    ) as HTMLElement;
+    expect(link, `no page-${page} link in the pager`).toBeTruthy();
+    link.click();
+    await wait(100);
+  };
+
+  const activePage = (screen: any) =>
+    screen.container.querySelector('.pagination .page-item.active')?.textContent?.trim();
+
+  it('renders rows instead of a blank table when the data shrinks under the current page', async () => {
+    // 60 rows @ 20 = 3 pages.
+    const { screen, data } = renderTable(rowsOf(60));
+    await flush();
+
+    await goToPage(screen, 3);
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(20);
+
+    // The consumer refetches a narrower dataset — page 3 no longer exists.
+    data.value = rowsOf(40);
+    await wait(150);
+
+    // Before: the pager clamped for DISPLAY while the slice used the raw page,
+    // so the table rendered zero rows on data that plainly has rows.
+    const rows = screen.container.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(20);
+
+    // Clamped to the LAST valid page, not reset to the first — keeps the user
+    // near where they were.
+    expect(activePage(screen)).toBe('2');
+    expect(rows[0].textContent).toContain('Row 21');
+  });
+
+  it('leaves an in-range page alone', async () => {
+    const { screen, data } = renderTable(rowsOf(60));
+    await flush();
+    await goToPage(screen, 2);
+
+    data.value = rowsOf(40); // still 2 pages
+    await wait(150);
+
+    expect(activePage(screen)).toBe('2');
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(20);
+  });
+
+  it('recovers when the data shrinks to a single page', async () => {
+    const { screen, data } = renderTable(rowsOf(60));
+    await flush();
+    await goToPage(screen, 3);
+
+    data.value = rowsOf(5);
+    await wait(150);
+
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(5);
   });
 });

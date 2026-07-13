@@ -1414,12 +1414,37 @@ const effectivePerPage = computed(() => {
 // Client-Side Mode: Pagination (requires effectivePerPage)
 // ============================================
 
+/*
+ * The page the client-side view actually renders (#118).
+ *
+ * `clientSideCurrentPage` is only reset on a filter or per-page change, so when
+ * the `items` prop SHRINKS — a consumer refetching a narrower dataset — it can
+ * point past the end of the new set. The pagination metadata below already
+ * clamped for display, but the slice used the raw value, so the pager said
+ * "page 2 of 2" while the table sliced page 6 and rendered zero rows. Both read
+ * from this now, so the view and its pager can't disagree.
+ */
+const clientSideLastPage = computed(() =>
+    Math.max(1, Math.ceil(clientSideFilteredItems.value.length / effectivePerPage.value)),
+);
+
+const clientSidePage = computed(() =>
+    Math.min(Math.max(1, clientSideCurrentPage.value), clientSideLastPage.value),
+);
+
+// Write the clamp back, so the NEXT interaction starts from a real page rather
+// than a stale one. Clamping to the last page (not resetting to 1) keeps the
+// user near where they were.
+watch(clientSideLastPage, (lastPage) => {
+    if (clientSideCurrentPage.value > lastPage) clientSideCurrentPage.value = lastPage;
+});
+
 // Client-side paginated items (final output)
 const clientSidePaginatedItems = computed<T[]>(() => {
     if (!isClientSideMode.value) return [];
 
     const perPage = effectivePerPage.value;
-    const start = (clientSideCurrentPage.value - 1) * perPage;
+    const start = (clientSidePage.value - 1) * perPage;
     const end = start + perPage;
 
     return clientSideSortedItems.value.slice(start, end);
@@ -1430,11 +1455,10 @@ const clientSidePagination = computed<PaginationData>(() => {
     const total = clientSideFilteredItems.value.length;
     const totalUnfiltered = props.items?.length || 0;
     const perPage = effectivePerPage.value;
-    const currentPage = clientSideCurrentPage.value;
-    const lastPage = Math.max(1, Math.ceil(total / perPage));
+    const lastPage = clientSideLastPage.value;
 
-    // Ensure current page is valid
-    const validPage = Math.min(Math.max(1, currentPage), lastPage);
+    // Same clamped page the slice uses — see `clientSidePage` (#118).
+    const validPage = clientSidePage.value;
 
     const from = total > 0 ? (validPage - 1) * perPage + 1 : 0;
     const to = Math.min(validPage * perPage, total);
@@ -1833,6 +1857,43 @@ try {
 // Forward only the keyed edit slots the consumer actually provided, so
 // DXForm doesn't mistake an always-present (but empty) wrapper for
 // a real custom-value override.
+/*
+ * Seeding an EDIT form from a row (#117).
+ *
+ * `row[key] ?? field.default` is wrong: it can't tell "the row has no such key"
+ * from "the row's value IS null", so an explicitly-null column gets overwritten
+ * by the field's default — a value the user never saw, on a field they may not
+ * even be able to see. Presence, not nullishness, decides.
+ */
+const seedValueFor = (field: any, row: T): any => {
+    if (Object.prototype.hasOwnProperty.call(row as any, field.key)) {
+        return (row as any)[field.key];
+    }
+    return field.default ?? '';
+};
+
+/*
+ * Whether a field is currently VISIBLE, by the same rule DXForm renders by
+ * (`when` + the legacy `show`), against the same model (context + live data).
+ * Kept in step with DXForm.isFieldVisible.
+ */
+const editPredicateModel = computed(() => ({
+    ...((selectedItem.value as any) ?? {}),
+    ...(editForm.value?.data ?? {}),
+}));
+
+const isEditFieldVisible = (field: any): boolean => {
+    const when = field.when;
+    const whenOk =
+        when === undefined
+            ? true
+            : typeof when === 'function'
+              ? when(editPredicateModel.value)
+              : when;
+    const showOk = field.show ? field.show() : true;
+    return whenOk && showOk;
+};
+
 // Fields whose value actually belongs in the payload. A presentational field
 // (submit: false) renders but holds no data — see FieldDefinition.submit.
 const submittableEditFields = computed(() =>
@@ -1843,7 +1904,21 @@ const submittableEditFields = computed(() =>
 // so a `submit: false` control — or a `span` slot calling `update` — can write
 // its key back into the form data after seeding. Strip them on the way out.
 const nonSubmittedFieldKeys = computed(
-    () => new Set((props.editFields ?? []).filter((field) => field.submit === false).map((field) => field.key)),
+    () =>
+        new Set(
+            (props.editFields ?? [])
+                .filter(
+                    (field) =>
+                        // Presentational: lays the form out, holds no data (#110).
+                        field.submit === false ||
+                        // Hidden by `when` at submit time (#117). Submitting a field
+                        // the user cannot see is a silent write — and with `default`
+                        // set it writes a value they never chose. Omitting the key
+                        // leaves the stored value alone.
+                        !isEditFieldVisible(field),
+                )
+                .map((field) => field.key),
+        ),
 );
 
 const stripNonSubmittedFields = (data: Record<string, any>): Record<string, any> => {
@@ -1975,13 +2050,13 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
             // Presentational fields (submit: false) lay the form out; they hold
             // no data and must not be POSTed just because they were declared.
             submittableEditFields.value.forEach(field => {
-                formData[field.key] = (item as any)[field.key] ?? field.default ?? '';
+                formData[field.key] = seedValueFor(field, item);
             });
             editForm.value = useForm(formData);
         } else {
             // Update existing form
             submittableEditFields.value.forEach(field => {
-                editForm.value.data[field.key] = (item as any)[field.key] ?? field.default ?? '';
+                editForm.value.data[field.key] = seedValueFor(field, item);
             });
             editForm.value.clearErrors();
         }
