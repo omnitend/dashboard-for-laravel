@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-07-13
+
+### Added
+- **`DXTable` `rowClass` and `rowClickable`** (#115). `rowClass` (a string, or a
+  function of the row) applies classes to each `<tr>`, so conditional row styling
+  no longer means reaching into the table's internal DOM from global CSS — a
+  consumer was resorting to `tbody tr:has(.marker) { cursor: default }`, which
+  couples to our markup and can collide across pages.
+
+  `rowClickable` marks a row non-actionable: it gets no pointer cursor, no hover
+  highlight, and **does not fire `row-clicked` or open the edit modal**. A row
+  that doesn't look clickable mustn't *be* clickable, or a click that looks dead
+  quietly navigates. The clickable affordance now hangs off a marker class rather
+  than a blanket `tbody tr` rule, which is what makes the per-row opt-out possible.
+
+### Changed
+- **The icon webfont ships as a real file instead of being inlined — `style.css`
+  drops from ~191 KB to ~53 KB gzip** (#77, −72%). The Bootstrap Icons woff2 was
+  embedded in the stylesheet as a base64 data URI, and **the font alone was 137 KB
+  of the 191 KB** — 72% of the CSS, carried by every consumer whether or not they
+  ever rendered a glyph. Base64-inlining a woff2 is pathological: it's already
+  Brotli-compressed, base64 inflates it by a third, and gzip recovers none of it.
+  (Vite always inlines CSS assets in library mode; `assetsInlineLimit` is ignored
+  there, so this is done post-build.)
+
+  The font is now fetched **only when a `.bi-*` glyph actually renders**, so an
+  app that never uses `DButton`'s `icon` prop pays nothing for it. No API change,
+  and nothing to do in consuming apps: a bundler resolves the relative `url()`
+  out of `node_modules`, a plain `<link>` resolves it next to the stylesheet. The
+  2078 `.bi-*` glyph classes stay — they cost ~14 KB gzip for the whole set, so
+  they were never the problem.
+
 ### Fixed
 - **The first tab is activated on mount again** (#119). No pane got `active`/`show`:
   the tab nav rendered and **every body was invisible** until the user clicked a
@@ -27,20 +59,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pinned totals row had to settle for `top-row` — the first *body* row, below the
   header. Both now render, banner above filter row.
 
-### Added
-- **`DXTable` `rowClass` and `rowClickable`** (#115). `rowClass` (a string, or a
-  function of the row) applies classes to each `<tr>`, so conditional row styling
-  no longer means reaching into the table's internal DOM from global CSS — a
-  consumer was resorting to `tbody tr:has(.marker) { cursor: default }`, which
-  couples to our markup and can collide across pages.
-
-  `rowClickable` marks a row non-actionable: it gets no pointer cursor, no hover
-  highlight, and **does not fire `row-clicked` or open the edit modal**. A row
-  that doesn't look clickable mustn't *be* clickable, or a click that looks dead
-  quietly navigates. The clickable affordance now hangs off a marker class rather
-  than a blanket `tbody tr` rule, which is what makes the per-row opt-out possible.
-
-### Fixed
 - **`#cell` slots created after the first render now reach their cells** (#114).
   A consumer whose columns are data-driven — known only once a fetch resolves —
   got columns that rendered raw values, as though no cell slot existed. The cause
@@ -54,7 +72,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   outside the inner table and now survive. The key is names-only, so a slot's
   *content* changing (the common case) doesn't remount anything.
 
-### Fixed
 - **The edit modal no longer writes fields the user can't see** (#117). It seeded
   every field with `row[key] ?? default ?? ''` and submitted the lot — *including*
   fields their `when:` predicate currently hides. Editing an amount-type discount
@@ -77,23 +94,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sliced page 6 and rendered zero rows on data that plainly had rows. Both now
   read one clamped value, and the page is clamped to the **last valid page**
   rather than reset to the first, so the user stays near where they were.
-
-### Changed
-- **The icon webfont ships as a real file instead of being inlined — `style.css`
-  drops from ~191 KB to ~53 KB gzip** (#77, −72%). The Bootstrap Icons woff2 was
-  embedded in the stylesheet as a base64 data URI, and **the font alone was 137 KB
-  of the 191 KB** — 72% of the CSS, carried by every consumer whether or not they
-  ever rendered a glyph. Base64-inlining a woff2 is pathological: it's already
-  Brotli-compressed, base64 inflates it by a third, and gzip recovers none of it.
-  (Vite always inlines CSS assets in library mode; `assetsInlineLimit` is ignored
-  there, so this is done post-build.)
-
-  The font is now fetched **only when a `.bi-*` glyph actually renders**, so an
-  app that never uses `DButton`'s `icon` prop pays nothing for it. No API change,
-  and nothing to do in consuming apps: a bundler resolves the relative `url()`
-  out of `node_modules`, a plain `<link>` resolves it next to the stylesheet. The
-  2078 `.bi-*` glyph classes stay — they cost ~14 KB gzip for the whole set, so
-  they were never the problem.
 
 ## [0.25.0] - 2026-07-11
 
