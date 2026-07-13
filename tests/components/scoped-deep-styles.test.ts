@@ -63,7 +63,7 @@ function ancestorHasScopeId(el: Element, scopeAttr: string): boolean {
 const KNOWN_DEEP_TARGETS: Record<string, string[]> = {
   'DAutocomplete.vue': ['.input-group', '.b-autocomplete-input-wrapper', '.b-autocomplete-trigger', '.b-autocomplete-clear.btn-close', '.input-group:focus-within', '.form-control', '.btn'],
   'DXSwitch.vue': ['.form-check', '.form-check-label', '.form-check-input'],
-  'DXTable.vue': ['tbody tr', '.pagination', '.pagination-sm .page-link', '.pagination .page-item.disabled .page-link'],
+  'DXTable.vue': ['tbody tr.dx-row-actionable', '.pagination', '.pagination-sm .page-link', '.pagination .page-item.disabled .page-link'],
   'DXStatCard.vue': ['.dx-stat-card__body'],
   'DXDashboardSidebar.vue': ['.nav-link', '.nav-icon', '.nav-label'],
   'DXRepeater.vue': ['.mb-3'],
@@ -122,6 +122,8 @@ describe('scoped :deep() DOM-level audit (#58)', () => {
         items: [{ id: 1, name: 'A' }],
         fields: [{ key: 'name', label: 'Name' }],
         pagination: { current_page: 1, per_page: 10, total: 25, from: 1, to: 10 },
+        // Interactive, so the row actually carries the marker class the rule targets.
+        onRowClicked: () => {},
       },
     });
     await flush();
@@ -130,9 +132,14 @@ describe('scoped :deep() DOM-level audit (#58)', () => {
     expect(pagination).not.toBeNull();
     expect(ancestorHasScopeId(pagination!, scopeIdForSelector('.pagination'))).toBe(true);
 
+    // The clickable affordance hangs off a marker class now (#115), so the row
+    // must both carry the class and sit under the scope-id for the rule to bite.
     const row = screen.container.querySelector('tbody tr');
     expect(row).not.toBeNull();
-    expect(ancestorHasScopeId(row!, scopeIdForSelector('tbody tr'))).toBe(true);
+    expect(row!.classList.contains('dx-row-actionable')).toBe(true);
+    expect(
+      ancestorHasScopeId(row!, scopeIdForSelector('tbody tr.dx-row-actionable')),
+    ).toBe(true);
   });
 
   it('DXStatCard: .dx-stat-card :deep(.dx-stat-card__body)', async () => {

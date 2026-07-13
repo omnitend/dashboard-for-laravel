@@ -1523,7 +1523,10 @@ describe('DXTable clickable-row affordance (#107)', () => {
   });
 
   it('leaves a plain, non-interactive table alone', async () => {
-    expect(await cursorOf({})).toBe('default');
+    // The affordance now hangs off a marker class rather than a blanket
+    // `tbody tr` rule, so an unstyled row simply has no cursor rule ('auto').
+    // What matters is that it doesn't look clickable.
+    expect(await cursorOf({})).not.toBe('pointer');
   });
 });
 
@@ -2092,5 +2095,174 @@ describe('DXTable client-side page is clamped when items shrink (#118)', () => {
     await wait(150);
 
     expect(screen.container.querySelectorAll('tbody tr').length).toBe(5);
+  });
+});
+
+/**
+ * #114. bootstrap-vue-next's BTable captures its slot set at mount, so a
+ * `cell(...)` slot that comes into existence later — data-driven columns, known
+ * only once a fetch resolves — never reaches the cells and the column renders
+ * raw values. Verified against raw BTable, so it isn't our forwarding dropping
+ * it; the inner table is keyed on the slot-name set instead.
+ */
+describe('DXTable forwards cell slots created after the first render (#114)', () => {
+  const renderWithLateColumns = () => {
+    const columns = ref<string[]>([]);
+    const screen = render({
+      render: () => {
+        const slots: Record<string, any> = {};
+        for (const column of columns.value) {
+          slots[`cell(${column})`] = ({ value }: any) =>
+            h('strong', { class: 'slotted' }, `£${value}`);
+        }
+        return h(BApp, {}, () =>
+          h(
+            DXTable,
+            {
+              items: [{ id: 1, food: 10, drink: 20 }],
+              clientSide: true,
+              fields: [
+                { key: 'id', label: 'ID' },
+                ...columns.value.map((column) => ({ key: column, label: column })),
+              ],
+            },
+            slots,
+          ),
+        );
+      },
+    });
+    return { screen, columns };
+  };
+
+  it('renders through a cell slot that only exists after the columns arrive', async () => {
+    const { screen, columns } = renderWithLateColumns();
+    await flush();
+    expect(screen.container.querySelectorAll('.slotted').length).toBe(0);
+
+    // The report fetch resolves and the column set appears.
+    columns.value = ['food', 'drink'];
+    await wait(200);
+
+    // Before: the columns appeared but rendered raw values, as if no cell slot
+    // existed — and the only fix was remounting the whole table.
+    expect(screen.container.querySelectorAll('.slotted').length).toBe(2);
+    expect(screen.container.querySelector('tbody tr')?.textContent).toContain('£10');
+  });
+
+  it('keeps table state across a column-set change (that is the point)', async () => {
+    // Consumers were remounting DXTable itself, which threw away per-page,
+    // filters, sort and page. Only the inner table remounts now.
+    const columns = ref<string[]>([]);
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(
+            DXTable,
+            {
+              items: Array.from({ length: 40 }, (_, i) => ({ id: i + 1, food: i })),
+              clientSide: true,
+              perPage: 20,
+              fields: [
+                { key: 'id', label: 'ID' },
+                ...columns.value.map((column) => ({ key: column, label: column })),
+              ],
+            },
+            Object.fromEntries(
+              columns.value.map((column) => [
+                `cell(${column})`,
+                ({ value }: any) => h('strong', { class: 'slotted' }, String(value)),
+              ]),
+            ),
+          ),
+        ),
+    });
+    await flush();
+
+    const page2 = [...screen.container.querySelectorAll('.pagination .page-link')].find(
+      (element) => element.textContent?.trim() === '2',
+    ) as HTMLElement;
+    page2.click();
+    await wait(100);
+
+    columns.value = ['food'];
+    await wait(200);
+
+    // Still on page 2, and the late slot rendered.
+    expect(
+      screen.container.querySelector('.pagination .page-item.active')?.textContent?.trim(),
+    ).toBe('2');
+    expect(screen.container.querySelectorAll('.slotted').length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * #115. A row-clicked table can have rows that aren't navigable. With no hook,
+ * the consumer resorted to a global `tbody tr:has(.marker) { cursor: default }`
+ * that coupled to DXTable's internal DOM and could collide across pages.
+ */
+describe('DXTable row class and non-actionable rows (#115)', () => {
+  const items = [
+    { id: 1, name: 'Has rota', rota: true },
+    { id: 2, name: 'No rota', rota: false },
+  ];
+
+  const renderTable = (props: Record<string, any> = {}) => {
+    const clicked: any[] = [];
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items,
+            fields: [{ key: 'name', label: 'Name' }],
+            clientSide: true,
+            onRowClicked: (item: any) => clicked.push(item),
+            ...props,
+          }),
+        ),
+    });
+    return { screen, clicked };
+  };
+
+  const rows = (screen: any) => [...screen.container.querySelectorAll('tbody tr')] as HTMLElement[];
+
+  it('applies a rowClass function to the <tr>', async () => {
+    const { screen } = renderTable({
+      rowClass: (item: any) => (item.rota ? 'has-rota' : 'no-rota'),
+    });
+    await flush();
+
+    expect(rows(screen)[0].classList.contains('has-rota')).toBe(true);
+    expect(rows(screen)[1].classList.contains('no-rota')).toBe(true);
+  });
+
+  it('applies a plain string rowClass to every row', async () => {
+    const { screen } = renderTable({ rowClass: 'compact' });
+    await flush();
+
+    expect(rows(screen).every((row) => row.classList.contains('compact'))).toBe(true);
+  });
+
+  it('does not make a non-actionable row look clickable', async () => {
+    const { screen } = renderTable({ rowClickable: (item: any) => item.rota });
+    await flush();
+
+    expect(getComputedStyle(rows(screen)[0]).cursor).toBe('pointer');
+    // The whole point: no pointer on the row that goes nowhere.
+    expect(getComputedStyle(rows(screen)[1]).cursor).not.toBe('pointer');
+  });
+
+  it('does not fire row-clicked for a non-actionable row', async () => {
+    // A row that doesn't look clickable must not BE clickable, or a click that
+    // looks dead quietly navigates.
+    const { screen, clicked } = renderTable({ rowClickable: (item: any) => item.rota });
+    await flush();
+
+    rows(screen)[1].click();
+    await wait(80);
+    expect(clicked).toHaveLength(0);
+
+    rows(screen)[0].click();
+    await wait(80);
+    expect(clicked).toHaveLength(1);
   });
 });

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`DXTable` `rowClass` and `rowClickable`** (#115). `rowClass` (a string, or a
+  function of the row) applies classes to each `<tr>`, so conditional row styling
+  no longer means reaching into the table's internal DOM from global CSS — a
+  consumer was resorting to `tbody tr:has(.marker) { cursor: default }`, which
+  couples to our markup and can collide across pages.
+
+  `rowClickable` marks a row non-actionable: it gets no pointer cursor, no hover
+  highlight, and **does not fire `row-clicked` or open the edit modal**. A row
+  that doesn't look clickable mustn't *be* clickable, or a click that looks dead
+  quietly navigates. The clickable affordance now hangs off a marker class rather
+  than a blanket `tbody tr` rule, which is what makes the per-row opt-out possible.
+
+### Fixed
+- **`#cell` slots created after the first render now reach their cells** (#114).
+  A consumer whose columns are data-driven — known only once a fetch resolves —
+  got columns that rendered raw values, as though no cell slot existed. The cause
+  is upstream: **bootstrap-vue-next's `BTable` captures its slot set at mount**
+  (verified against raw `BTable`, so it isn't our forwarding dropping it), and no
+  amount of forwarding can fix that. The inner table is now keyed on the set of
+  forwarded slot names, so it remounts when the column set changes.
+
+  Consumers were already remounting to work around this — but at the `DXTable`
+  level, which throws away per-page, filters, sort and page. Those all live
+  outside the inner table and now survive. The key is names-only, so a slot's
+  *content* changing (the common case) doesn't remount anything.
+
 ### Fixed
 - **The edit modal no longer writes fields the user can't see** (#117). It seeded
   every field with `row[key] ?? default ?? ''` and submitted the lot — *including*

@@ -105,6 +105,8 @@ const items = ref([
   { name: 'showEmpty', type: 'boolean', required: 'No', default: 'true', description: 'Show a message row when there are no rows (an empty body otherwise looks broken)' },
   { name: 'emptyText', type: 'string', required: 'No', default: 'No {items} found', description: 'Message shown when there are no rows. Becomes "No {items} match your filters" when a filter is active' },
   { name: 'expandedItems', type: 'TItem[]', required: 'No', default: '[]', description: 'Rows currently expanded (v-model). Pair with the row-expansion slot' },
+  { name: 'rowClass', type: 'string | (item, index) => string | string[] | object', required: 'No', default: '-', description: "Class(es) applied to each row's <tr>. Use for conditional row styling instead of reaching into the table's DOM from global CSS" },
+  { name: 'rowClickable', type: '(item, index) => boolean', required: 'No', default: '-', description: 'Whether a row is actionable. A row this returns false for gets no pointer cursor, no hover highlight, and does not fire row-clicked or open the edit modal — so a row that is not clickable does not look clickable' },
   { name: 'clientSide', type: 'boolean', required: 'No', default: 'false', description: 'Enable client-side filtering, sorting, and pagination' },
   { name: 'provider', type: 'BTableProvider<TItem>', required: 'No', default: '-', description: 'Provider function for API mode' },
   { name: 'apiUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint URL for auto-provider mode' },

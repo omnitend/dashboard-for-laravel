@@ -44,6 +44,7 @@
                     <DTable
                         v-else-if="isProviderMode"
                         ref="tableRef"
+                        :key="tableSlotSignature($slots)"
                         :provider="effectiveProvider"
                         :fields="fields"
                         :sort-by="effectiveSortBy"
@@ -55,6 +56,7 @@
                         :hover="hover"
                         :responsive="responsive"
                         :busy="busy"
+                        :tbody-tr-class="composeRowClass"
                         v-bind="tablePassthroughProps"
                         @update:sort-by="handleSortChange"
                         @update:expanded-items="emit('update:expandedItems', $event)"
@@ -130,20 +132,25 @@
                              table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
                              See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="name in forwardedTableSlotNames"
+                            v-for="(_, name) in $slots"
                             :key="name"
                             #[name]="slotProps"
                         >
                             <!--
                               @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot :name="name" v-bind="slotProps" />
+                            <slot
+                                v-if="typeof name === 'string' && isTableSlot(name)"
+                                :name="name"
+                                v-bind="slotProps"
+                            />
                         </template>
                     </DTable>
 
                     <!-- Client-Side Mode: Local filtering, sorting, pagination -->
                     <DTable
                         v-else-if="isClientSideMode"
+                        :key="tableSlotSignature($slots)"
                         :items="clientSidePaginatedItems"
                         :fields="fields"
                         :sort-by="effectiveSortBy"
@@ -153,6 +160,7 @@
                         :striped="striped"
                         :hover="hover"
                         :responsive="responsive"
+                        :tbody-tr-class="composeRowClass"
                         v-bind="tablePassthroughProps"
                         @update:sort-by="handleSortChange"
                         @update:expanded-items="emit('update:expandedItems', $event)"
@@ -226,20 +234,25 @@
                              table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
                              See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="name in forwardedTableSlotNames"
+                            v-for="(_, name) in $slots"
                             :key="name"
                             #[name]="slotProps"
                         >
                             <!--
                               @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot :name="name" v-bind="slotProps" />
+                            <slot
+                                v-if="typeof name === 'string' && isTableSlot(name)"
+                                :name="name"
+                                v-bind="slotProps"
+                            />
                         </template>
                     </DTable>
 
                     <!-- Inertia Mode: Use items prop -->
                     <DTable
                         v-else-if="isInertiaMode"
+                        :key="tableSlotSignature($slots)"
                         :items="items"
                         :fields="fields"
                         :sort-by="effectiveSortBy"
@@ -250,6 +263,7 @@
                         :hover="hover"
                         :responsive="responsive"
                         :busy="effectiveBusy"
+                        :tbody-tr-class="composeRowClass"
                         v-bind="tablePassthroughProps"
                         @update:sort-by="handleSortChange"
                         @update:expanded-items="emit('update:expandedItems', $event)"
@@ -323,14 +337,18 @@
                              table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
                              See `isTableSlot` for the two DXTable renders itself. -->
                         <template
-                            v-for="name in forwardedTableSlotNames"
+                            v-for="(_, name) in $slots"
                             :key="name"
                             #[name]="slotProps"
                         >
                             <!--
                               @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot :name="name" v-bind="slotProps" />
+                            <slot
+                                v-if="typeof name === 'string' && isTableSlot(name)"
+                                :name="name"
+                                v-bind="slotProps"
+                            />
                         </template>
                     </DTable>
 
@@ -917,6 +935,22 @@ export interface Props<TItem = any> {
      */
     expandedItems?: TItem[];
 
+    /**
+     * Class(es) applied to each row's `<tr>` — a string, or a function of the
+     * row. Use for conditional row styling (a variant, a muted/disabled look)
+     * without reaching into the table's internal DOM from global CSS.
+     */
+    rowClass?: string | ((item: TItem, index: number) => string | string[] | Record<string, boolean>);
+
+    /**
+     * Whether a given row is actionable. Only relevant when rows are clickable
+     * (an `editFields` modal or a `row-clicked` listener). A row this returns
+     * `false` for gets no pointer cursor, no hover highlight, and does not fire
+     * `row-clicked` or open the edit modal — so a row that isn't clickable
+     * doesn't *look* clickable, and a click on it can't quietly do something.
+     */
+    rowClickable?: (item: TItem, index: number) => boolean;
+
     /** Enable client-side filtering, sorting, and pagination on items array */
     clientSide?: boolean;
 }
@@ -1045,10 +1079,30 @@ const rowsAreInteractive = computed(
     () => (props.editFields?.length ?? 0) > 0 || hasListener('rowClicked'),
 );
 
-const rowCursor = computed(() => (rowsAreInteractive.value ? 'pointer' : 'default'));
-const rowHoverBackground = computed(() =>
-    rowsAreInteractive.value ? 'var(--bs-table-hover-bg)' : 'inherit',
-);
+/**
+ * A row is actionable when the table is interactive AND the consumer's
+ * `rowClickable` predicate (if any) says so — a row-clicked table can have rows
+ * that aren't navigable (#115).
+ */
+const isRowActionable = (item: T, index: number): boolean =>
+    rowsAreInteractive.value && (props.rowClickable?.(item, index) ?? true);
+
+/**
+ * The `<tr>` class, composed from the consumer's `rowClass` and our own
+ * actionable marker. The pointer/hover affordance hangs off the marker class
+ * rather than a blanket `tbody tr` rule, so a non-actionable row simply doesn't
+ * get it — which is what let consumers drop their global
+ * `tbody tr:has(.marker)` CSS hack.
+ */
+const composeRowClass = (item: T, index: number) => {
+    const consumerClass =
+        typeof props.rowClass === 'function' ? props.rowClass(item, index) : props.rowClass;
+
+    const classes: any[] = [];
+    if (consumerClass) classes.push(consumerClass);
+    if (isRowActionable(item, index)) classes.push('dx-row-actionable');
+    return classes;
+};
 
 // Internal sortBy state, seeded from the prop when it's an initial value.
 const internalSortBy = ref<BTableSortBy[]>(props.sortBy ? [...props.sortBy] : []);
@@ -1960,9 +2014,37 @@ const TABLE_SLOT_NAMES = new Set([
 const isTableSlot = (name: string) =>
     TABLE_SLOT_NAMES.has(name) || TABLE_SLOT_PREFIXES.some((prefix) => name.startsWith(prefix));
 
-const forwardedTableSlotNames = computed(() =>
-    Object.keys(tableSlots).filter((name) => isTableSlot(name)),
-);
+/*
+ * The inner table is KEYED on the set of forwarded slot names (#114).
+ *
+ * bootstrap-vue-next's BTable captures its slot set at mount: a `cell(...)` slot
+ * that comes into existence LATER — a consumer whose columns are data-driven and
+ * only known once a fetch resolves — never reaches the cells, and the column
+ * renders raw values as though no cell slot existed. Verified against raw BTable,
+ * so it isn't something our forwarding chain drops.
+ *
+ * Nothing in the forwarding can fix that, so the inner table remounts when the
+ * slot SET changes. Consumers were already remounting to work around it, but at
+ * the DXTable level, which throws away per-page, filters, sort and page — all of
+ * which live out here and now survive. The signature is names-only, so a slot's
+ * CONTENT changing (the common case) doesn't remount anything.
+ *
+ * In provider mode a remount refetches; that only happens when the column set
+ * itself changes, which is already a refetch in practice.
+ */
+const tableSlotSignature = (slots: Record<string, unknown>): string =>
+    Object.keys(slots).filter(isTableSlot).sort().join('|');
+
+/*
+ * The template iterates `$slots` DIRECTLY rather than a computed over
+ * `useSlots()`. It has to: `useSlots()` returns an object that Vue MUTATES in
+ * place, with no reactive dependency to track — so a computed over its keys is
+ * captured on first render and never recomputes. A consumer whose `cell(...)`
+ * slots come into existence after a fetch resolves (data-driven columns) got
+ * columns with raw values and no cell templates, and had to remount the whole
+ * table to fix it (#114). Reading `$slots` inside the render function re-reads
+ * the current slot set on every update.
+ */
 
 // Table-level features of the inner BTable, exposed verbatim and bound to all
 // three data modes from one place.
@@ -2031,6 +2113,11 @@ const getFieldSortState = (fieldKey: string) => {
 
 // Handle row click for editing
 const handleRowClick = (item: T, index: number, event: MouseEvent) => {
+    // A row the consumer marked non-actionable doesn't look clickable, so it
+    // must not BE clickable either — otherwise a click that looks dead quietly
+    // navigates or opens the modal (#115).
+    if (props.rowClickable && !props.rowClickable(item, index)) return;
+
     // Always emit rowClicked for custom handling
     emit('rowClicked', item, index, event);
 
@@ -2359,13 +2446,15 @@ defineExpose({
 </script>
 
 <style scoped>
-/* Rows that do something on click look like it — see `rowsAreInteractive`. */
-:deep(tbody tr) {
-    cursor: v-bind(rowCursor);
+/* Rows that do something on click look like it. Hung off a marker class rather
+   than a blanket `tbody tr` rule, so a row the consumer's `rowClickable` says is
+   not actionable simply doesn't get the affordance (#107, #115). */
+:deep(tbody tr.dx-row-actionable) {
+    cursor: pointer;
 }
 
-:deep(tbody tr:hover) {
-    background-color: v-bind(rowHoverBackground);
+:deep(tbody tr.dx-row-actionable:hover) {
+    background-color: var(--bs-table-hover-bg);
 }
 
 /* Improve pagination button sizing to match form controls */
