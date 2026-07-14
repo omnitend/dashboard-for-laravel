@@ -834,6 +834,31 @@ When releasing a new version:
 
 ## Known Issues and Solutions
 
+### Testing gotchas (vitest browser mode)
+
+Three things that cost real time and aren't derivable from the code:
+
+- **Tests run in a real browser, so `node:fs` doesn't exist.** A test that reads
+  a build artefact must import it through Vite — `import css from '../../dist/style.css?raw'`
+  (see `scoped-deep-styles.test.ts`, `bundle/icon-font.test.ts`). Using `node:fs`
+  doesn't error usefully; vitest just reports **"no tests"**, which reads like a
+  glob problem and isn't.
+- **bvn's option list only mounts once the user *types*.** Querying
+  `[role="option"]` after `.focus()` or a click on the chevron returns `[]` even
+  though `aria-expanded="true"` and the menu is visibly open in a screenshot.
+  Drive it with `userEvent.click(input)` + `userEvent.fill(input, '…')`.
+- **A localStorage per-page preference makes DXTable tests order-dependent.**
+  `getInitialPerPage` prefers a stored value over the `perPage` prop, so a test
+  that changes per-page silently breaks a *later* test's `:per-page="20"`. Clear
+  `dxtable-perpage-<url>` (default key: `dxtable-perpage-table`) in a
+  `beforeEach`. This is a real product wart too — see #124.
+
+And the rule that matters most: **watch a new test fail against the unfixed code
+before trusting it.** Two tests in the 0.24 run passed for the wrong reason and
+certified live bugs as fixed — one swapped the form object where DXTable actually
+mutates one in place, the other gave fixture rows both keys where real rows carry
+one. Revert the fix, confirm red, then restore.
+
 ### The icon webfont must never be inlined again (#77)
 
 `dist/style.css` used to be ~191 KB gzip, and **137 KB of that was one base64
