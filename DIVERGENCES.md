@@ -235,3 +235,57 @@ NON-first tab is not honoured — raw `BTabs`+`BTab` also lands on index 0.
 
 **Convergence:** none needed — the API is identical, since `DTab` was a pure
 passthrough.
+
+---
+
+# Upstream bootstrap-vue-next defects (to triage / report)
+
+Found while porting during the 0.24–0.26 run. We carry a shield or a workaround
+for each; **reporting them upstream is how we eventually drop those shields.**
+Not yet reported — captured here so the evidence isn't lost.
+
+### 1. An empty-string option value blanks the ENTIRE option list
+
+`BAutocomplete` (and anything built on the same combobox) renders **no options at
+all** if *any* option's `value` is `''` — not just that entry, the whole list.
+
+```text
+options [{value: '',       text: 'All statuses'}, {value: 'pending', …}]  ->  []
+options [{value: '__all__', text: 'All statuses'}, {value: 'pending', …}]  ->  ['All statuses', 'pending']
+```
+
+The obvious encoding of a "no filter" / "All x" option therefore silently empties
+the dropdown. **Our shield:** `DXTable`'s `FILTER_ALL_VALUE` sentinel, translated
+back to `''` on the way out. Pinned by a contrast test in
+`tests/components/DAutocomplete.test.ts`.
+
+### 2. `BTable` captures its slot set at mount
+
+A `cell(<key>)` slot that comes into existence *after* mount never reaches the
+cells — the column renders raw values as though no slot existed. Verified against
+**raw `BTable`**, so it isn't a wrapper artefact. Breaks data-driven columns
+(column set known only once a fetch resolves).
+
+**Our shield:** the inner table is keyed on the forwarded slot-name set, so it
+remounts when the column set changes (#114).
+
+### 3. `BAutocomplete` doesn't re-derive its display text when async options arrive
+
+It resolves the input's display text from `modelValue` **at mount** and never
+re-derives it when `options` change. With an `optionsLoader` the field sits there
+showing the raw id (`51` instead of `Waitrose`) — and a long list is precisely the
+case that loads async.
+
+**Our shield:** `DXField` holds a `searchable` select until its options resolve
+(#105).
+
+### 4. `BTabs` identifies its tabs by scanning slot vnodes (wrapper-hostile)
+
+`BTabs` decides which tab to activate by scanning its slot vnodes for the `BTab`
+component type (gated on `tabElementsArray.length > 0`), so **any wrapper between
+them hides the tabs** and no pane gets `active`/`show`. Same shape as
+`BCarousel`/`BCarouselSlide`.
+
+**Our shield:** `DTab` is a raw re-export of `BTab` (see above). Related upstream
+limitation found alongside it: an explicit `active` on a **non-first** tab is not
+honoured — raw `BTabs`+`BTab` also lands on index 0.
