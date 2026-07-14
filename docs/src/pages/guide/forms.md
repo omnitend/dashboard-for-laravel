@@ -278,7 +278,11 @@ interface FieldDefinition {
   minItems?: number
   maxItems?: number
 
-  default?: any                     // Initial value (used by defineForm and repeater rows)
+  default?: any                     // Initial value (defineForm, repeater rows, and
+                                    // DXTable's create modal). Seeded on PRESENCE, so
+                                    // `default: null` seeds null — which is what a select
+                                    // whose "none" option is `value: null` needs. A field
+                                    // with no `default` at all starts as ''
   rows?: number                     // Textarea rows (default: 3)
   span?: boolean                    // Full-width; render via the #span(<key>) slot
 }

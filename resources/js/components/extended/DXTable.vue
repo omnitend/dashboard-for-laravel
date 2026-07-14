@@ -1930,6 +1930,18 @@ try {
 // DXForm doesn't mistake an always-present (but empty) wrapper for
 // a real custom-value override.
 /*
+ * A field's own starting value, used to seed a CREATE form and as the fallback
+ * when a row lacks the key (#122).
+ *
+ * `field.default ?? ''` can't express a NULL default: a select whose "none"
+ * option is `value: null` — which is what the column stores — seeds '' instead,
+ * matches no option, and renders blank. Presence, not nullishness, decides here
+ * too, so the create and edit paths agree about the same field.
+ */
+const defaultValueFor = (field: any): any =>
+    Object.prototype.hasOwnProperty.call(field, 'default') ? field.default : '';
+
+/*
  * Seeding an EDIT form from a row (#117).
  *
  * `row[key] ?? field.default` is wrong: it can't tell "the row has no such key"
@@ -1941,7 +1953,7 @@ const seedValueFor = (field: any, row: T): any => {
     if (Object.prototype.hasOwnProperty.call(row as any, field.key)) {
         return (row as any)[field.key];
     }
-    return field.default ?? '';
+    return defaultValueFor(field);
 };
 
 /*
@@ -2245,13 +2257,13 @@ const handleCreateNew = () => {
     if (!editForm.value) {
         const formData: Record<string, any> = {};
         submittableEditFields.value.forEach(field => {
-            formData[field.key] = field.default ?? '';
+            formData[field.key] = defaultValueFor(field);
         });
         editForm.value = useForm(formData);
     } else {
         // Reset existing form to defaults
         submittableEditFields.value.forEach(field => {
-            editForm.value.data[field.key] = field.default ?? '';
+            editForm.value.data[field.key] = defaultValueFor(field);
         });
         editForm.value.clearErrors();
     }

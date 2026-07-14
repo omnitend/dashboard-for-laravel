@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`DXTable` create modal: a `null` field default is no longer coerced to `''`**
+  (#122). 0.26.0 taught the *edit* paths to seed on presence rather than
+  nullishness (#117), but the *create* path still ran `field.default ?? ''`, so
+  the two disagreed about the same field and **a field could not express a null
+  default on create**. A select whose "none" option is `value: null` — which is
+  what the column stores, and what the edit modal now correctly seeds and matches
+  — seeded `''` on create, matched no option, and rendered blank. Both paths now
+  seed by presence (`'default' in field`), so `default: null` seeds `null`.
+
 ## [0.26.0] - 2026-07-13
 
 ### Added

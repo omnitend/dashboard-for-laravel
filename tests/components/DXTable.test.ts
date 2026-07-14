@@ -2007,6 +2007,116 @@ describe('DXTable edit modal does not write hidden fields (#117)', () => {
 });
 
 /**
+ * #122. The #117 presence rule reached the EDIT paths but not CREATE, so the
+ * two disagreed about the same field: `field.default ?? ''` cannot express a
+ * null default, and a select whose "none" option is `value: null` (which is
+ * what the column stores) rendered blank on create and matched no option.
+ */
+describe('DXTable create modal seeds a null default as null (#122)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const roundingFields = [
+    { key: 'name', type: 'text', label: 'Name' },
+    {
+      key: 'rounding',
+      type: 'select',
+      label: 'Rounding',
+      default: null,
+      options: [
+        { value: null, text: 'No rounding' },
+        { value: 5, text: 'Nearest 5p' },
+      ],
+    },
+  ];
+
+  const createAndSave = async (editFields: any[] = roundingFields, openTwice = false) => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({ data: {} }),
+        }) as any,
+    );
+
+    const tableRef = ref<any>(null);
+    render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            ref: tableRef,
+            items: [{ id: 1, name: 'A', rounding: 5 }],
+            fields: [{ key: 'name', label: 'Name' }],
+            editFields,
+            editUrl: '/api/discounts/:id',
+            createUrl: '/api/discounts',
+          }),
+        ),
+    });
+    await flush();
+
+    if (openTwice) {
+      // The reseed-in-place branch: the form object already exists, so a second
+      // openCreate() takes the `else` arm of handleCreateNew.
+      tableRef.value.openCreate();
+      await wait(100);
+      const cancel = [...document.querySelectorAll('button')].find((button) =>
+        button.textContent?.match(/cancel/i),
+      ) as HTMLElement;
+      cancel.click();
+      await wait(100);
+    }
+
+    tableRef.value.openCreate();
+    await wait(150);
+
+    const create = [...document.querySelectorAll('button')].find((button) =>
+      button.textContent?.trim().match(/^create$/i),
+    ) as HTMLElement;
+    create.click();
+    await wait(150);
+
+    return {
+      payload: JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string),
+    };
+  };
+
+  it('seeds a null default as null, not an empty string', async () => {
+    const { payload } = await createAndSave();
+
+    // The whole bug: `field.default ?? ''` sent '' here, which matches no option.
+    expect(payload.rounding).toBeNull();
+  });
+
+  it('seeds a null default as null when the form is reopened, too', async () => {
+    const { payload } = await createAndSave(roundingFields, true);
+
+    expect(payload.rounding).toBeNull();
+  });
+
+  it('still falls back to an empty string for a field with no default at all', async () => {
+    const { payload } = await createAndSave([
+      { key: 'name', type: 'text', label: 'Name' },
+      { key: 'note', type: 'text', label: 'Note' },
+    ]);
+
+    expect(payload.note).toBe('');
+  });
+
+  it('still applies a non-null default', async () => {
+    const { payload } = await createAndSave([
+      { key: 'name', type: 'text', label: 'Name' },
+      { key: 'rounding', type: 'number', label: 'Rounding', default: 10 },
+    ]);
+
+    expect(payload.rounding).toBe(10);
+  });
+});
+
+/**
  * #118. `clientSideCurrentPage` was only reset on filter/per-page changes, so a
  * shrinking `items` prop (a report refetching a narrower date range) left it
  * pointing past the end. The pagination metadata clamped for display, but the
