@@ -24,6 +24,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `null` survives while an absent (or explicitly `undefined`) default still falls
   back to the type default. This matches `DXRepeater`'s rule, so all seeding
   sites agree.
+- **`DXTable` Inertia mode: changing a filter no longer resets the selected page
+  size.** The Inertia request was assembled in five places, and the debounced
+  filter-change navigation was the one that omitted `perPage` — so a user who
+  picked a non-default page size and then typed in a column filter silently lost
+  it, and Laravel fell back to its default size. The filter navigation now sends
+  `perPage` like the other four. (Found in a whole-repo review.)
+- **`HasTableFilters`: the allowed per-page list now matches the Vue table and is
+  configurable.** The PHP helper hard-coded `[10, 25, 50, 100]` and silently reset
+  anything else to 10, while the Vue `DXTable` offers `[10, 20, 50, 100]` by
+  default — so selecting **20** against the supplied helper reset to 10, and **25**
+  was never offered. The default now aligns to `[10, 20, 50, 100]`, and a
+  controller can override the `$allowedPerPage` property to match a customised
+  `perPageOptions`. Adds the first PHP test suite (Testbench). (Found in a
+  whole-repo review.)
 
 ## [0.26.0] - 2026-07-13
 

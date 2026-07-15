@@ -1855,6 +1855,7 @@ const handleFilterChange = (fieldKey: string, value: string) => {
                 {
                     page: 1, // Reset to first page when filtering
                     filters: newFilters,
+                    perPage: effectivePerPage.value,
                     ...sortParams(effectiveSortBy.value),
                 },
                 { preserveState: true }

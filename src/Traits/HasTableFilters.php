@@ -38,6 +38,17 @@ trait HasTableFilters
      */
 
     /**
+     * Allowed per-page sizes (optional)
+     *
+     * Defaults to [10, 20, 50, 100] — the Vue DXTable's default perPageOptions.
+     * Override to match a customised perPageOptions so the client and server
+     * agree on which page sizes are honoured (anything else resets to 10).
+     *
+     * Define this in your controller:
+     * protected array $allowedPerPage = [10, 20, 50, 100];
+     */
+
+    /**
      * Apply filters, sorting to a query
      *
      * @deprecated Since 0.4.8. Do NOT call this before tableResponse() - it now handles filtering internally.
@@ -164,9 +175,15 @@ trait HasTableFilters
         string $componentName,
         string $dataKey = 'items'
     ) {
-        // Validate and get perPage
+        // Validate and get perPage.
+        //
+        // The allowed list defaults to the Vue DXTable's default perPageOptions
+        // ([10, 20, 50, 100]) so the two halves of the library agree out of the
+        // box — it previously hard-coded [10, 25, 50, 100], which silently reset
+        // a table-selected 20 to 10. Override `$allowedPerPage` in the controller
+        // to match a customised perPageOptions.
         $perPage = $request->input('perPage', 10);
-        $allowedPerPage = [10, 25, 50, 100];
+        $allowedPerPage = $this->allowedPerPage ?? [10, 20, 50, 100];
         if (!in_array($perPage, $allowedPerPage)) {
             $perPage = 10;
         }

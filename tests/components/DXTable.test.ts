@@ -4,6 +4,7 @@ import { userEvent } from 'vitest/browser';
 import { h, ref } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import axios from 'axios';
+import { router } from '@inertiajs/vue3';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
 import { customerData, customerFields, paginationData, largePaginationData } from '../fixtures/tableData';
 
@@ -2449,5 +2450,65 @@ describe('DXTable composes a consumer thead-top above its filter row (#120)', ()
 
     expect(screen.container.querySelector('thead .filter-row')).not.toBeNull();
     expect(screen.container.querySelector('thead .banner')).toBeNull();
+  });
+});
+
+/**
+ * A confirmed drift found in the whole-repo review: Inertia navigations are
+ * assembled in five places, and the debounced filter-change handler was the one
+ * that omitted `perPage`. So a user who picked a non-default page size, then
+ * changed a filter, silently lost their page size — the request dropped `perPage`
+ * and Laravel fell back to its default. Same "quietly does nothing" family as
+ * #110/#124. The controlled-`filters` watch already sent `perPage`; only the
+ * local handler disagreed.
+ */
+describe('DXTable Inertia filter-change keeps the selected perPage', () => {
+  const rows = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, name: `Row ${i + 1}` }));
+  const fields = [{ key: 'name', label: 'Name', filter: 'text' as const }];
+
+  // Inertia mode reads perPage from pagination.per_page, not localStorage, so a
+  // stored preference can't affect this test today — but the dxtable-perpage-*
+  // key is a documented source of order-dependent flakiness (see CLAUDE.md), so
+  // clear it defensively in case that precedence ever changes.
+  beforeEach(() => localStorage.removeItem('dxtable-perpage--customers'));
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.removeItem('dxtable-perpage--customers');
+  });
+
+  it('sends perPage on the debounced filter navigation, not just page/filters/sort', async () => {
+    const getSpy = vi.spyOn(router, 'get').mockImplementation(() => {});
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: rows,
+            fields,
+            inertiaUrl: '/customers',
+            // In Inertia mode effectivePerPage prefers the server's per_page.
+            pagination: { current_page: 1, per_page: 50, total: 100, from: 1, to: 50 },
+          }),
+        ),
+    });
+    await flush();
+
+    const filterInput = screen.container.querySelector(
+      '.filter-row input',
+    ) as HTMLInputElement;
+    expect(filterInput).toBeTruthy();
+
+    filterInput.value = 'ro';
+    filterInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Past the 300ms filter debounce.
+    await wait(400);
+
+    expect(getSpy).toHaveBeenCalled();
+    const [url, data] = getSpy.mock.calls[getSpy.mock.calls.length - 1];
+    expect(url).toBe('/customers');
+    // The whole bug: this navigation dropped perPage, so Laravel re-defaulted it.
+    expect((data as Record<string, unknown>).perPage).toBe(50);
+    expect(data).toHaveProperty('filters');
   });
 });
