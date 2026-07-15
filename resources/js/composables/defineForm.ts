@@ -65,10 +65,22 @@ export function defineForm<const TFields extends readonly FormFieldDefinition[]>
 ): DefineFormReturn<InferFormData<TFields>> {
     type FormData = InferFormData<TFields>;
 
-    // Extract initial data from field definitions
+    // Extract initial data from field definitions.
+    //
+    // #125: `field.default ?? getDefaultValueForType(type)` cannot express a
+    // *null* default — a select whose "none" option is `value: null` (which is
+    // what the column stores) seeded '' (the type default), matched no option,
+    // and rendered blank. This is the same bug #122 fixed in DXTable. Decide on
+    // definedness, not nullishness, so null survives; an absent (or explicitly
+    // `undefined`) default still falls back to the type default rather than
+    // seeding `undefined`, which would drop the key from the JSON payload. This
+    // matches DXRepeater's `!== undefined` rule, so all seeding sites agree.
     const initialData = fieldDefinitions.reduce(
         (acc, field) => {
-            acc[field.key] = field.default ?? getDefaultValueForType(field.type);
+            acc[field.key] =
+                field.default !== undefined
+                    ? field.default
+                    : getDefaultValueForType(field.type);
             return acc;
         },
         {} as Record<string, any>,

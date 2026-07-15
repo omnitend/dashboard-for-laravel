@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   what the column stores, and what the edit modal now correctly seeds and matches
   — seeded `''` on create, matched no option, and rendered blank. Both paths now
   seed by presence (`'default' in field`), so `default: null` seeds `null`.
+- **`defineForm`: a `null` field default is no longer coerced to the type
+  default** (#125). The initial-data seed ran `field.default ?? getDefaultValueForType(type)`,
+  the same nullishness bug as #122 in a different composable — `default: null`
+  on a select became `''`, matching no option when the "none" option is
+  `value: null`. It now seeds on definedness (`field.default !== undefined`), so
+  `null` survives while an absent (or explicitly `undefined`) default still falls
+  back to the type default. This matches `DXRepeater`'s rule, so all seeding
+  sites agree.
 
 ## [0.26.0] - 2026-07-13
 

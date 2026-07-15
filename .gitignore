@@ -56,6 +56,7 @@ tests/components/__screenshots__/
 .claude/
 CLAUDE_CONTEXT.md
 **/CLAUDE_CONTEXT.md
+NEXT_SESSION.md
 
 # Git backup
 .git.backup/
