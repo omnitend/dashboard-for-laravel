@@ -137,6 +137,17 @@
                             </div>
                         </template>
 
+                        <!-- A dotted field key (`paid_by.card`) renders as an EMPTY cell in
+                             bootstrap-vue-next, in every payload shape, so DXTable resolves
+                             those columns itself (#121). A consumer's own cell(<key>) slot
+                             wins — `dottedCellFields` excludes it, and the forwarding below
+                             would otherwise declare the same slot name twice. -->
+                        <template
+                            v-for="field in dottedCellFields($slots)"
+                            :key="`dotted-cell-${field.key}`"
+                            #[`cell(${field.key})`]="{ item }"
+                        >{{ fieldValueOf(item, field.key) }}</template>
+
                         <!-- Forward every slot the inner table understands: cell(<key>),
                              foot(<key>), custom-foot, empty, empty-filtered, row-expansion,
                              table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
@@ -244,6 +255,17 @@
                                 </div>
                             </div>
                         </template>
+
+                        <!-- A dotted field key (`paid_by.card`) renders as an EMPTY cell in
+                             bootstrap-vue-next, in every payload shape, so DXTable resolves
+                             those columns itself (#121). A consumer's own cell(<key>) slot
+                             wins — `dottedCellFields` excludes it, and the forwarding below
+                             would otherwise declare the same slot name twice. -->
+                        <template
+                            v-for="field in dottedCellFields($slots)"
+                            :key="`dotted-cell-${field.key}`"
+                            #[`cell(${field.key})`]="{ item }"
+                        >{{ fieldValueOf(item, field.key) }}</template>
 
                         <!-- Forward every slot the inner table understands: cell(<key>),
                              foot(<key>), custom-foot, empty, empty-filtered, row-expansion,
@@ -353,6 +375,17 @@
                                 </div>
                             </div>
                         </template>
+
+                        <!-- A dotted field key (`paid_by.card`) renders as an EMPTY cell in
+                             bootstrap-vue-next, in every payload shape, so DXTable resolves
+                             those columns itself (#121). A consumer's own cell(<key>) slot
+                             wins — `dottedCellFields` excludes it, and the forwarding below
+                             would otherwise declare the same slot name twice. -->
+                        <template
+                            v-for="field in dottedCellFields($slots)"
+                            :key="`dotted-cell-${field.key}`"
+                            #[`cell(${field.key})`]="{ item }"
+                        >{{ fieldValueOf(item, field.key) }}</template>
 
                         <!-- Forward every slot the inner table understands: cell(<key>),
                              foot(<key>), custom-foot, empty, empty-filtered, row-expansion,
@@ -677,6 +710,7 @@ import axios from "axios";
 import pluralize from "pluralize";
 import { useToast } from "../../composables/useToast";
 import { useForm } from "../../composables/useForm";
+import { getByPath } from "../../utils/objectPath";
 import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
 import DCol from "../base/DCol.vue";
@@ -1222,10 +1256,11 @@ const clientSideFilteredItems = computed<T[]>(() => {
             // `customer_id`). Match on the filter key when the row has it,
             // otherwise fall back to the column's own value — which is also the
             // one the user can actually see and type against.
+            // Both lookups are dot-path aware, so a nested payload filters (#121).
             const itemValue =
-                field && key in (item as any)
-                    ? (item as any)[key]
-                    : (item as any)[field?.key ?? key];
+                field && hasFieldValue(item, key)
+                    ? fieldValueOf(item, key)
+                    : fieldValueOf(item, field?.key ?? key);
 
             // The "no value" option (e.g. Unassigned) is the one filter that
             // MATCHES an absent value rather than failing on it.
@@ -1279,13 +1314,16 @@ const clientSideSortedItems = computed<T[]>(() => {
     const direction = order === 'desc' ? -1 : 1;
 
     return items.sort((a, b) => {
-        const aVal = (a as any)[key];
-        const bVal = (b as any)[key];
+        // Dot-path aware, so `paid_by.card` sorts a nested payload (#121).
+        const aVal = fieldValueOf(a, key);
+        const bVal = fieldValueOf(b, key);
 
         // Handle null/undefined
-        if (aVal == null && bVal == null) return 0;
-        if (aVal == null) return direction;
-        if (bVal == null) return -direction;
+        const aEmpty = aVal === null || aVal === undefined;
+        const bEmpty = bVal === null || bVal === undefined;
+        if (aEmpty && bEmpty) return 0;
+        if (aEmpty) return direction;
+        if (bEmpty) return -direction;
 
         // Numeric comparison
         if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -1299,6 +1337,54 @@ const clientSideSortedItems = computed<T[]>(() => {
 
 // API mode filter values (extracted from responses)
 const apiFilterValues = ref<Record<string, string[]>>({});
+
+/*
+ * Resolving a field's value from a row, dot-path aware (#121).
+ *
+ * A key containing a dot (`paid_by.card`) was unusable. Two layers disagreed:
+ * bootstrap-vue-next's `mapItem` UN-flattens any item key containing a dot
+ * (`{'paid_by.card': v}` becomes `{paid_by: {card: v}}`) and then its cell reads
+ * `item['paid_by.card']` FLAT and gets undefined — so bvn renders a dotted key
+ * as an empty cell in BOTH payload shapes. Meanwhile our own client-side sort
+ * and filter also read flat, which a NESTED payload (what Laravel serialises for
+ * a relation) never satisfies. Consumers worked around it by flattening every
+ * nested key to an `_x` alias in each client-side port.
+ *
+ * LITERAL key first, then dot-path. That single order covers every shape:
+ * an ordinary key (`name`), a dots-flat payload (the literal `paid_by.card`
+ * key), and a nested payload (walk `paid_by` -> `card`). It also means bvn's
+ * un-flattening is harmless rather than hostile — mapItem normalises flat to
+ * nested, and the path read finds it either way.
+ */
+const fieldValueOf = (item: unknown, key: string): any => {
+    if (item === null || item === undefined) return undefined;
+    if (Object.prototype.hasOwnProperty.call(item, key)) {
+        return (item as Record<string, any>)[key];
+    }
+    return getByPath(item as Record<string, any>, key);
+};
+
+/*
+ * Whether a row carries a value for `key` at all — presence, not truthiness.
+ * Mirrors the `key in item` check this replaced, extended to dot paths.
+ */
+const hasFieldValue = (item: unknown, key: string): boolean => {
+    if (item === null || item === undefined) return false;
+    if (Object.prototype.hasOwnProperty.call(item, key)) return true;
+    return getByPath(item as Record<string, any>, key) !== undefined;
+};
+
+/*
+ * Dotted-key columns DXTable must render itself, because bvn renders them empty
+ * (see `fieldValueOf`). A consumer's own `cell(<key>)` slot always wins — it is
+ * forwarded separately, and declaring the same slot name twice would clobber it.
+ *
+ * A FUNCTION, not a computed, for the same reason as `forwardableSlotNames`:
+ * `useSlots()` returns an object Vue mutates in place with nothing to track, so
+ * a computed over its keys is captured on first render and never updates (#114).
+ */
+const dottedCellFields = (slots: Record<string, unknown>): TableField[] =>
+    props.fields.filter((field) => field.key.includes('.') && !slots[`cell(${field.key})`]);
 
 // Computed: Get effective filter options for a field
 // The key a column's filter is SENT under, which is not always the column's own

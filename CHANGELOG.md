@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`DXTable`: dot-path field keys (`key: 'paid_by.card'`) are now first-class**
+  (#121). A field key containing a dot was unusable, because two layers
+  disagreed: bootstrap-vue-next's `mapItem` un-flattens any item key containing a
+  dot (`{'paid_by.card': v}` → `{paid_by: {card: v}}`) and then reads
+  `item['paid_by.card']` **flat** — so bvn renders a dotted key as an **empty
+  cell in both payload shapes**, breaking even the one it looks designed for.
+  Meanwhile `DXTable`'s own client-side sort and filter also read flat, which a
+  *nested* payload (what Laravel serialises for a relation) never satisfies. The
+  result was that every client-side port hand-rolled a "flatten nested keys to
+  `_x` aliases" step.
+
+  `DXTable` now resolves a field's value itself — **literal key first, then dot
+  path** — for cells, client-side sorting and client-side filtering. That one
+  order covers an ordinary key, a dots-flat payload, and a nested payload, and it
+  turns bvn's un-flattening from hostile into harmless. A missing or null link
+  along the path renders an empty cell instead of throwing. A consumer's own
+  `#cell()` slot still wins. In server modes the value renders and the dotted key
+  is sent as-is for the server to whitelist. Consumers can delete the alias
+  workaround.
+
 ### Fixed
 - **`DXTable` create modal: a `null` field default is no longer coerced to `''`**
   (#122). 0.26.0 taught the *edit* paths to seed on presence rather than

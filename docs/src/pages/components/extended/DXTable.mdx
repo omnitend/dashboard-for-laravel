@@ -263,6 +263,38 @@ const fields = [
 A field with `label: ''` renders an **empty** header (for an actions column, say)
 — only a field with no label at all falls back to its key.
 
+## Nested values (dot-path keys)
+
+A field `key` may be a **dot path** into the row, so a relation can be rendered
+straight from the payload Laravel already serialises — no flattening step:
+
+```js
+// items: [{ id: 1, reference: 'INV-1', paid_by: { card: 'Visa' } }]
+const fields = [
+  { key: 'reference', label: 'Reference' },
+  { key: 'paid_by.card', label: 'Card', sortable: true, filter: 'text' },
+];
+```
+
+The path is resolved for the **cell, client-side sorting and client-side
+filtering** alike. A missing or null link along the path renders an empty cell
+rather than throwing, so a row with no `paid_by` is fine.
+
+Resolution takes the **literal key first, then the path**, so a flat row that
+really does have a `'paid_by.card'` key keeps working, and a nested one is
+walked. In server modes the value still renders, but sorting and filtering are
+the server's job — a dotted key is sent as-is (`sortBy=paid_by.card`), so
+whitelist or map it there.
+
+To override the rendering, give the column its own `#cell()` slot as usual — it
+takes precedence over the built-in path resolution:
+
+```vue
+<template #cell(paid_by.card)="{ item }">
+  <DBadge>{{ item.paid_by?.card ?? '—' }}</DBadge>
+</template>
+```
+
 ## Custom providers and pagination
 
 Only the built-in `api-url` provider knows to read `response.data.pagination`.
