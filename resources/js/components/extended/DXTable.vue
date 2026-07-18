@@ -165,149 +165,24 @@
                         </template>
                     </DTable>
 
-                    <!-- Pagination and Controls (Client-Side mode) -->
-                    <div v-if="isClientSideMode" class="mt-3">
-                        <!-- Top row: Pagination and Per-page selector -->
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <!-- Pagination controls (only when multiple pages) -->
-                            <DPagination
-                                v-if="showPagination && clientSidePagination.total > clientSidePagination.per_page"
-                                :model-value="clientSidePagination.current_page"
-                                :total-rows="clientSidePagination.total"
-                                :per-page="clientSidePagination.per_page"
-                                size="sm"
-                                @update:model-value="handleClientSidePageChange"
-                            />
-                            <div v-else></div>
-
-                            <!-- Per-page selector -->
-                            <div v-if="shouldShowPerPageSelector" class="d-flex align-items-center gap-2">
-                                <label for="perPageSelectClientSide" class="mb-0 small text-muted">Per page</label>
-                                <DFormSelect
-                                    id="perPageSelectClientSide"
-                                    :model-value="effectivePerPage"
-                                    :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
-                                    size="sm"
-                                    style="width: 85px;"
-                                    @update:model-value="handlePerPageChange"
-                                />
-                            </div>
-                        </div>
-
-                        <!-- Bottom row: Info text -->
-                        <div class="small text-muted">
-                            <div>
-                                <template v-if="clientSidePagination.total > clientSidePagination.per_page">
-                                    {{ clientSidePagination.from }} to {{ clientSidePagination.to }} out of {{ clientSidePagination.total }} {{ clientSidePagination.total === 1 ? singularItemName : pluralItemName }}.
-                                </template>
-                                <template v-else-if="clientSidePagination.total === 1">
-                                    {{ clientSidePagination.total }} {{ singularItemName }}.
-                                </template>
-                                <template v-else>
-                                    {{ clientSidePagination.total }} {{ pluralItemName }}.
-                                </template>
-                            </div>
-                            <div v-if="hasActiveFilters && clientSidePagination.total_unfiltered">
-                                <small>Filtered from {{ clientSidePagination.total_unfiltered }} {{ clientSidePagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pagination and Controls (Inertia mode) -->
-                    <div v-if="isInertiaMode && pagination" class="mt-3">
-                        <!-- Top row: Pagination and Per-page selector -->
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <!-- Pagination controls (only when multiple pages) -->
-                            <DPagination
-                                v-if="showPagination && pagination.total > pagination.per_page"
-                                :model-value="pagination.current_page"
-                                :total-rows="pagination.total"
-                                :per-page="pagination.per_page"
-                                size="sm"
-                                @update:model-value="handlePageChange"
-                            />
-                            <div v-else></div>
-
-                            <!-- Per-page selector -->
-                            <div v-if="shouldShowPerPageSelector" class="d-flex align-items-center gap-2">
-                                <label for="perPageSelect" class="mb-0 small text-muted">Per page</label>
-                                <DFormSelect
-                                    id="perPageSelect"
-                                    :model-value="effectivePerPage"
-                                    :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
-                                    size="sm"
-                                    style="width: 85px;"
-                                    @update:model-value="handlePerPageChange"
-                                />
-                            </div>
-                        </div>
-
-                        <!-- Bottom row: Info text -->
-                        <div class="small text-muted">
-                            <div>
-                                <template v-if="pagination.total > pagination.per_page">
-                                    {{ pagination.from }} to {{ pagination.to }} out of {{ pagination.total }} {{ pagination.total === 1 ? singularItemName : pluralItemName }}.
-                                </template>
-                                <template v-else-if="pagination.total === 1">
-                                    {{ pagination.total }} {{ singularItemName }}.
-                                </template>
-                                <template v-else>
-                                    {{ pagination.total }} {{ pluralItemName }}.
-                                </template>
-                            </div>
-                            <div v-if="hasActiveFilters && pagination.total_unfiltered">
-                                <small>Filtered from {{ pagination.total_unfiltered }} {{ pagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pagination and Controls (API mode) -->
-                    <div v-if="isProviderMode && providerPagination" class="mt-3">
-                        <!-- Top row: Pagination and Per-page selector -->
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <!-- Pagination controls (only when multiple pages) -->
-                            <DPagination
-                                v-if="showPagination && providerPagination.total > providerPagination.per_page"
-                                :model-value="providerPagination.current_page"
-                                :total-rows="providerPagination.total"
-                                :per-page="providerPagination.per_page"
-                                size="sm"
-                                @update:model-value="handleApiPageChange"
-                            />
-                            <div v-else></div>
-
-                            <!-- Per-page selector -->
-                            <div v-if="shouldShowPerPageSelector" class="d-flex align-items-center gap-2">
-                                <label for="perPageSelectApi" class="mb-0 small text-muted">Per page</label>
-                                <DFormSelect
-                                    id="perPageSelectApi"
-                                    :model-value="effectivePerPage"
-                                    :options="perPageOptions.map(n => ({ value: n, text: n.toString() }))"
-                                    size="sm"
-                                    style="width: 85px;"
-                                    @update:model-value="handlePerPageChange"
-                                />
-                            </div>
-                        </div>
-
-                        <!-- Bottom row: Info text -->
-                        <div class="small text-muted">
-                            <div>
-                                <template v-if="providerPagination.total > providerPagination.per_page">
-                                    {{ providerPagination.from }} to {{ providerPagination.to }} out of {{ providerPagination.total }} {{ providerPagination.total === 1 ? singularItemName : pluralItemName }}.
-                                </template>
-                                <template v-else-if="providerPagination.total === 1">
-                                    {{ providerPagination.total }} {{ singularItemName }}.
-                                </template>
-                                <template v-else>
-                                    {{ providerPagination.total }} {{ pluralItemName }}.
-                                </template>
-                            </div>
-                            <div v-if="hasActiveFilters && providerPagination.total_unfiltered">
-                                <small>Filtered from {{ providerPagination.total_unfiltered }} {{ providerPagination.total_unfiltered === 1 ? singularItemName : pluralItemName }}.</small>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Pagination + per-page footer, rendered ONCE for all three
+                         data modes (#123). `activePagination` picks the mode's
+                         PaginationData; `handleActivePageChange` routes the page
+                         event to the right per-mode handler. Previously three
+                         byte-identical copies, one per mode. -->
+                    <DXTablePagination
+                        v-if="activePagination"
+                        :pagination="activePagination"
+                        :per-page="effectivePerPage"
+                        :per-page-options="perPageOptions"
+                        :show-pagination="showPagination"
+                        :show-per-page-selector="shouldShowPerPageSelector"
+                        :singular-item-name="singularItemName"
+                        :plural-item-name="pluralItemName"
+                        :has-active-filters="hasActiveFilters"
+                        @page-change="handleActivePageChange"
+                        @per-page-change="handlePerPageChange"
+                    />
                 </DXTableShell>
             </DCol>
         </DRow>
@@ -479,13 +354,12 @@ import DCol from "../base/DCol.vue";
 import DXTableShell from "./DXTableShell.vue";
 import DSpinner from "../base/DSpinner.vue";
 import DTable from "../base/DTable.vue";
-import DPagination from "../base/DPagination.vue";
 import DFormInput from "../base/DFormInput.vue";
-import DFormSelect from "../base/DFormSelect.vue";
 import DAutocomplete from "../base/DAutocomplete.vue";
 import DModal from "../base/DModal.vue";
 import DButton from "../base/DButton.vue";
 import DXForm from "./DXForm.vue";
+import DXTablePagination from "./DXTablePagination.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
 export interface FilterOption {
@@ -1596,6 +1470,27 @@ const tableModeBindings = computed<Record<string, unknown>>(() => {
     return { items: props.items, noLocalSorting: true, busy: effectiveBusy.value };
 });
 
+/*
+ * The pagination metadata the single footer renders, by mode (#123). Null means
+ * no footer: only provider mode has that case (a custom provider with no
+ * `pagination` prop). Client-side always has a computed object; inertia's
+ * `pagination` prop carries a default object, so both always render a footer —
+ * matching the three original per-mode `v-if`s exactly.
+ */
+const activePagination = computed<PaginationData | null>(() => {
+    if (isClientSideMode.value) return clientSidePagination.value;
+    if (isInertiaMode.value) return props.pagination;
+    if (isProviderMode.value) return providerPagination.value;
+    return null;
+});
+
+// Route the footer's page-change to the right per-mode handler.
+const handleActivePageChange = (page: number) => {
+    if (isClientSideMode.value) return handleClientSidePageChange(page);
+    if (isProviderMode.value) return handleApiPageChange(page);
+    return handlePageChange(page); // inertia
+};
+
 const handleSortChange = (sortBy: BTableSortBy[]) => {
     // ENFORCE single-column sorting: keep only the last clicked column
     // BTable may send multiple columns despite multisort: false
@@ -2391,22 +2286,5 @@ defineExpose({
 
 :deep(tbody tr.dx-row-actionable:hover) {
     background-color: var(--bs-table-hover-bg);
-}
-
-/* Improve pagination button sizing to match form controls */
-:deep(.pagination) {
-    margin-bottom: 0;
-}
-
-:deep(.pagination-sm .page-link) {
-    min-width: 2.25rem;
-    height: auto;
-}
-
-/* Make disabled pagination buttons more subtle */
-:deep(.pagination .page-item.disabled .page-link) {
-    background-color: transparent;
-    border-color: transparent;
-    opacity: 0.3;
 }
 </style>

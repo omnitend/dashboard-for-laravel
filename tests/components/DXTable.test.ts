@@ -653,7 +653,7 @@ describe('DXTable', () => {
         },
       });
 
-      expect(screen.container.querySelector('#perPageSelectClientSide')).toBeNull();
+      expect(screen.container.querySelector('#perPageSelect')).toBeNull();
       expect(screen.container.textContent).not.toContain('Per page');
     });
 
@@ -673,7 +673,7 @@ describe('DXTable', () => {
         },
       });
 
-      expect(screen.container.querySelector('#perPageSelectClientSide')).toBeTruthy();
+      expect(screen.container.querySelector('#perPageSelect')).toBeTruthy();
     });
 
     it('updates table content when items prop changes', async () => {

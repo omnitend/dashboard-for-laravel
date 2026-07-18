@@ -63,7 +63,14 @@ function ancestorHasScopeId(el: Element, scopeAttr: string): boolean {
 const KNOWN_DEEP_TARGETS: Record<string, string[]> = {
   'DAutocomplete.vue': ['.input-group', '.b-autocomplete-input-wrapper', '.b-autocomplete-trigger', '.b-autocomplete-clear.btn-close', '.input-group:focus-within', '.form-control', '.btn'],
   'DXSwitch.vue': ['.form-check', '.form-check-label', '.form-check-input'],
-  'DXTable.vue': ['tbody tr.dx-row-actionable', '.pagination', '.pagination-sm .page-link', '.pagination .page-item.disabled .page-link'],
+  'DXTable.vue': ['tbody tr.dx-row-actionable'],
+  // The pagination :deep() rules moved out of DXTable into DXTablePagination
+  // (#123). They target the pager rendered by DPagination, anchored on the
+  // component's own `.dx-table-pagination` root so the scope-id has a host. The
+  // DXTable DOM audit below still exercises them — DXTablePagination renders as
+  // a child of DXTable, so `.pagination`'s ancestor carries this component's
+  // scope-id.
+  'DXTablePagination.vue': ['.pagination', '.pagination-sm .page-link', '.pagination .page-item.disabled .page-link'],
   'DXStatCard.vue': ['.dx-stat-card__body'],
   'DXDashboardSidebar.vue': ['.nav-link', '.nav-icon', '.nav-label'],
   'DXRepeater.vue': ['.mb-3'],
