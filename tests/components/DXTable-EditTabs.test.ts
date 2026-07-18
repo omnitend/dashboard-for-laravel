@@ -154,7 +154,12 @@ describe('DXTable Edit Tabs', () => {
           editTabs: editTabs,
         },
         slots: {
-          'edit-span(products)': () => h('div', { class: 'custom-products-content' }, 'Products go here'),
+          // Also exercises the `close` callback across both hops (#129).
+          'edit-span(products)': (sp: any) =>
+            h('div', { class: 'custom-products-content' }, [
+              'Products go here',
+              h('button', { class: 'slot-close-btn', onClick: () => sp.close() }, 'Close'),
+            ]),
         },
       });
       await flush();
@@ -170,10 +175,20 @@ describe('DXTable Edit Tabs', () => {
         await wait(50);
       }
 
-      // Check custom content is rendered
-      const customContent = document.querySelector('.custom-products-content');
+      // Check custom content is rendered and visible
+      const customContent = document.querySelector('.custom-products-content') as HTMLElement;
       expect(customContent).toBeTruthy();
-      expect(customContent?.textContent).toContain('Products go here');
+      expect(customContent.textContent).toContain('Products go here');
+      expect(customContent.checkVisibility()).toBe(true);
+
+      // The `close` binding must reach the consumer across both hops: clicking
+      // it closes the modal (editor.cancel). A mis-forwarded close would render
+      // the button but do nothing. BModal keeps the hidden content in the DOM,
+      // so assert it is no longer *visible* (an ancestor gets display:none), not
+      // that it was removed.
+      (document.querySelector('.slot-close-btn') as HTMLElement).click();
+      await wait(100);
+      expect(customContent.checkVisibility()).toBe(false);
     });
 
     // The edit-modal slots reach the form forwarded across TWO component hops
@@ -194,6 +209,8 @@ describe('DXTable Edit Tabs', () => {
               h('span', { class: 'bound-value' }, String(sp.value)),
               h('span', { class: 'bound-field-key' }, String(sp.field?.key)),
               h('span', { class: 'bound-item-id' }, String(sp.item?.id)),
+              // Exercises the `update` callback across both hops (#129).
+              h('button', { class: 'slot-update-btn', onClick: () => sp.update('Changed') }, 'Set'),
             ]),
         },
       });
@@ -209,6 +226,12 @@ describe('DXTable Edit Tabs', () => {
       expect(document.querySelector('.bound-value')?.textContent).toBe('Electronics');
       expect(document.querySelector('.bound-field-key')?.textContent).toBe('name');
       expect(document.querySelector('.bound-item-id')?.textContent).toBe('1');
+
+      // The `update` binding must reach the consumer across both hops: calling it
+      // writes the form field, which re-renders the slot with the new value.
+      (document.querySelector('.slot-update-btn') as HTMLElement).click();
+      await wait(60);
+      expect(document.querySelector('.bound-value')?.textContent).toBe('Changed');
     });
 
     it('forwards a custom tab-content slot with its tab binding across both hops', async () => {

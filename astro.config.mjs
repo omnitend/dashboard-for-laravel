@@ -15,31 +15,35 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 const base = '/dashboard-for-laravel';
 
 /**
- * rehype plugin: prefix root-relative internal links with the site `base` (#146).
+ * rehype plugin: prefix root-relative internal URLs with the site `base` (#146).
  *
- * Astro prepends `base` to links rendered through its layout components (nav,
- * sidebar) but NOT to root-relative links authored in markdown/MDX *content*
- * (`[Style guide](/showcase)`). On GitHub Pages those resolve to
- * `omnitend.github.io/showcase` → 404. This normalises every authored
- * root-relative href at build time, in one place, for both .md and .mdx (MDX
- * extends the markdown config, so it runs this processor too). Local previews
- * mask the bug because they can be browsed from the base path.
+ * Astro prepends `base` to URLs rendered through its layout components (nav,
+ * sidebar) but NOT to root-relative URLs authored in markdown/MDX *content* —
+ * a link `[Style guide](/showcase)` or an image `![logo](/logo.png)`. On GitHub
+ * Pages those resolve to `omnitend.github.io/showcase` → 404. This normalises
+ * every authored root-relative `<a href>` and `<img src>` at build time, in one
+ * place, for both .md and .mdx (MDX extends the markdown config, so it runs this
+ * processor too). Local previews mask the bug because they can be browsed from
+ * the base path.
  *
- * Only bare root-relative links are rewritten — external (`http(s):`,
+ * Only bare root-relative URLs are rewritten — external (`http(s):`,
  * protocol-relative `//`), in-page fragments (`#…`), `mailto:`, relative
- * (`./…`), and already-prefixed links are left untouched, so it is idempotent.
+ * (`./…`), and already-prefixed URLs are left untouched, so it is idempotent.
  */
 function rehypeBasePrefix() {
-  const shouldPrefix = (href) => {
-    if (typeof href !== 'string') return false;
-    if (!href.startsWith('/')) return false; // http(s), #frag, mailto:, ./relative
-    if (href.startsWith('//')) return false; // protocol-relative
+  // Element tag → the attribute holding a URL to prefix.
+  const URL_ATTR_BY_TAG = { a: 'href', img: 'src' };
+
+  const shouldPrefix = (url) => {
+    if (typeof url !== 'string') return false;
+    if (!url.startsWith('/')) return false; // http(s), #frag, mailto:, ./relative
+    if (url.startsWith('//')) return false; // protocol-relative
     // Already carries the base (exact, or as a path/fragment/query boundary).
     if (
-      href === base ||
-      href.startsWith(`${base}/`) ||
-      href.startsWith(`${base}#`) ||
-      href.startsWith(`${base}?`)
+      url === base ||
+      url.startsWith(`${base}/`) ||
+      url.startsWith(`${base}#`) ||
+      url.startsWith(`${base}?`)
     ) {
       return false;
     }
@@ -47,9 +51,10 @@ function rehypeBasePrefix() {
   };
 
   const visit = (node) => {
-    if (node.type === 'element' && node.tagName === 'a' && node.properties) {
-      if (shouldPrefix(node.properties.href)) {
-        node.properties.href = base + node.properties.href;
+    if (node.type === 'element' && node.properties) {
+      const attr = URL_ATTR_BY_TAG[node.tagName];
+      if (attr && shouldPrefix(node.properties[attr])) {
+        node.properties[attr] = base + node.properties[attr];
       }
     }
     if (Array.isArray(node.children)) {

@@ -48,30 +48,33 @@ function isUnprefixed(href) {
   return !ALLOWLIST.has(href);
 }
 
-const hrefRe = /href="([^"]*)"/g;
+// Both `<a href>` and `<img src>` (and any src-bearing element) 404 the same way
+// if a root-relative URL misses the base — the rehype plugin prefixes both, so
+// the guard checks both.
+const urlAttrRe = /(?:href|src)="([^"]*)"/g;
 const offenders = [];
 
 for (const file of walk(DIST)) {
   const html = readFileSync(file, 'utf8');
-  for (const [, href] of html.matchAll(hrefRe)) {
-    if (isUnprefixed(href)) {
-      offenders.push({ file: file.slice(DIST.length + 1), href });
+  for (const [, url] of html.matchAll(urlAttrRe)) {
+    if (isUnprefixed(url)) {
+      offenders.push({ file: file.slice(DIST.length + 1), url });
     }
   }
 }
 
 if (offenders.length > 0) {
   console.error(
-    `\n✗ ${offenders.length} root-relative link(s) missing the "${BASE}" base ` +
+    `\n✗ ${offenders.length} root-relative URL(s) missing the "${BASE}" base ` +
       `prefix — these 404 on GitHub Pages (#146):\n`,
   );
-  for (const { file, href } of offenders) {
-    console.error(`  ${file}  →  ${href}`);
+  for (const { file, url } of offenders) {
+    console.error(`  ${file}  →  ${url}`);
   }
   console.error(
     `\nFix at build level (the rehypeBasePrefix plugin in astro.config.mjs), ` +
-      `not per-link. If a new href is a deliberate demo placeholder, add it to ` +
-      `ALLOWLIST in scripts/check-docs-base-links.mjs.\n`,
+      `not per-URL. If a new href/src is a deliberate demo placeholder, add it ` +
+      `to ALLOWLIST in scripts/check-docs-base-links.mjs.\n`,
   );
   process.exit(1);
 }
