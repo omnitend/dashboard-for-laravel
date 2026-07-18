@@ -99,9 +99,12 @@ $secondary: #your-color;
 The library's theme is located in `resources/css/theme.scss`:
 
 ```scss
-// Override Bootstrap variables
-$primary: #4f46e5;
-$secondary: #64748b;
+// Override Bootstrap variables. The base colours carry each hue's
+// readable-on-light "emphasis" shade; a $dx-variants map after the import
+// applies the soft-first system (solid brand buttons, soft badges/alerts).
+// See plans/2026-07-18-semantic-colour-system.md.
+$primary: #151e2d;   // Omni Tend brand navy
+$secondary: #475569; // Slate
 
 // Import Bootstrap
 @import 'bootstrap/scss/bootstrap';

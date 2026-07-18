@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **New semantic colour system — the Omni Tend brand, soft-first.** The biggest
+  visual change the library has shipped: every consumer's buttons, badges,
+  alerts, and links change appearance (no API change). Emphasis now comes from
+  weight and place, not loud fills.
+  - **Primary is the Omni Tend brand** — a dark navy `#151e2d` fill with
+    light-brand text, replacing the indigo. It's the one bold, emphatic button.
+  - **Soft-first buttons:** only `primary` and `danger` are solid fills;
+    `secondary`/`success`/`warning`/`info` buttons are soft tints (light same-hue
+    background, dark same-hue label). Tertiary actions use a `link`-variant
+    **ghost** (body colour, no underline). Solid-button labels are a same-hue
+    tint, not pure black/white (danger keeps white).
+  - **Badges, alerts, toasts, status** all use the soft tint per variant.
+  - **Outline buttons** use a per-variant "emphasis" shade so success/warning
+    outlines read as green/amber instead of a muddy near-black.
+  - **Links** are info-blue `#2563eb` (independent of the near-black brand), and
+    the sidebar/`$dark` aligns to the brand navy.
+  - Every colour pair is WCAG AA verified. Driven from one `$dx-variants` Sass
+    map in `theme.scss`; see `plans/2026-07-18-semantic-colour-system.md`.
+  - **Migration note:** if you used `success` to mean "save/confirm" on buttons,
+    move that to `primary` and let green mean an actual positive *outcome* (e.g.
+    a "Saved" toast). Consumers overriding `--bs-primary` / brand colours in
+    their own CSS should re-check against the new navy.
+
 ### Added
 - **`DXTable`: dot-path field keys (`key: 'paid_by.card'`) are now first-class**
   (#121). A field key containing a dot was unusable, because two layers

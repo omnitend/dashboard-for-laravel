@@ -7,19 +7,31 @@
 // The Sass module for `color.mix()` etc. `@use` must precede all other
 // statements (variable overrides, `@import`), so it stays at the very top.
 @use "sass:color";
+@use "sass:map";
 
 // ----------------------------------------------------------------------------
 // Colors
 // ----------------------------------------------------------------------------
 
-$primary: #4f46e5; // Indigo-600 (8.6:1 with white)
-$secondary: #475569; // Slate-600 (7.0:1 with white) - darkened for better contrast
-$success: #10b981; // Emerald-500 (6.7:1 with white)
-$danger: #dc2626; // Red-600 (7.2:1 with white) - darkened for better contrast
-$warning: #f59e0b; // Amber-500 (7.7:1 with white)
-$info: #2563eb; // Blue-600 (7.3:1 with white)
+// Base $theme-colors carry each hue's READABLE-ON-LIGHT identity (its "emphasis"
+// shade) — this is what `.text-*`, `.link-*`, `.border-*` and outline buttons
+// use, so every one must clear AA on white. Bold solid FILLS (primary/danger
+// buttons) and SOFT tints (soft buttons, badges, alerts) are applied as explicit
+// overrides after the Bootstrap import, from the $dx-variants map. See
+// plans/2026-07-18-semantic-colour-system.md.
+$primary: #151e2d; // Omni Tend brand navy (16.73:1 on white)
+$secondary: #475569; // Slate-600 (7.58:1 on white)
+$success: #4d7c0f; // Lime-700 emphasis (4.99:1 on white); soft/vivid tints in $dx-variants
+$danger: #dc2626; // Red-600 (4.83:1 on white)
+$warning: #b45309; // Amber-700 emphasis (5.02:1 on white)
+$info: #2563eb; // Blue-600 (5.17:1 on white)
 $light: #f8fafc; // Slate-50 (uses dark text)
-$dark: #0f172a; // Slate-900 (uses white text)
+$dark: #151e2d; // Brand navy — sidebar/high-contrast surfaces (was Slate-900 #0f172a)
+
+// Links are the info-blue, independent of the near-black brand primary (a navy
+// link would read as bold text, not a link).
+$link-color: #2563eb;
+$link-shade-percentage: 15%;
 
 // ----------------------------------------------------------------------------
 // Contrast Settings
@@ -153,6 +165,21 @@ $badge-border-radius: $border-radius-sm;
 $badge-padding-y: 0.25rem;
 $badge-padding-x: 0.625rem;
 $badge-font-weight: 500;
+
+// The ONE source of truth for the semantic colour system. Each variant carries
+// its SOLID fill + same-hue text (primary/danger buttons, solid fills), its SOFT
+// tint pair (soft buttons, badges, alerts, status), its EMPHASIS shade (outline
+// buttons, coloured links, .text-*), and whether its button is solid or soft.
+// The overrides after the Bootstrap import loop over this map. All pairs are
+// WCAG AA verified. See plans/2026-07-18-semantic-colour-system.md.
+$dx-variants: (
+  "primary": (solid-bg: #151e2d, solid-text: #e9f0f8, soft-bg: #e9f0f8, soft-text: #151e2d, emphasis: #151e2d, button: "solid"),
+  "secondary": (solid-bg: #475569, solid-text: #e6ebf2, soft-bg: #e6ebf2, soft-text: #29374a, emphasis: #475569, button: "soft"),
+  "success": (solid-bg: #84cc16, solid-text: #203b0e, soft-bg: #cdf9b2, soft-text: #203b0e, emphasis: #4d7c0f, button: "soft"),
+  "danger": (solid-bg: #dc2626, solid-text: #ffffff, soft-bg: #f5dff1, soft-text: #59194a, emphasis: #dc2626, button: "solid"),
+  "warning": (solid-bg: #f59e0b, solid-text: #512d05, soft-bg: #fce5c4, soft-text: #512d05, emphasis: #b45309, button: "soft"),
+  "info": (solid-bg: #2563eb, solid-text: #eef4ff, soft-bg: #deebff, soft-text: #12376c, emphasis: #2563eb, button: "soft"),
+);
 
 // ----------------------------------------------------------------------------
 // Dashboard
@@ -417,6 +444,112 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     &.toast-#{$name} {
       --bs-toast-bg: #{color.mix($color, $white, 8%)};
     }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Semantic colour system (soft-first)
+// ----------------------------------------------------------------------------
+// One loop over $dx-variants applies the whole system on top of Bootstrap:
+//
+//   - Buttons: primary/danger are SOLID (fill from the base colour; we only
+//     override the label to the same-hue tint, letting Bootstrap shade hover/
+//     active). secondary/success/warning/info are SOFT (light tint bg + dark
+//     text, fully overridden incl. hover/active).
+//   - Outline buttons: the emphasis shade for border/label, the soft tint on hover.
+//   - Badges: `.badge.text-bg-*` re-tinted soft — needs `!important` because
+//     Bootstrap's `.text-bg-*` helper sets its colours `!important` by design.
+//   - Alerts: the soft tint.
+//   - Links/text: `.link-*` and `.text-*` take the emphasis shade so they read
+//     on white (the base colours already carry emphasis for most variants; this
+//     pins the two — success/warning — whose base differs).
+@each $name, $v in $dx-variants {
+  $solid-bg: map.get($v, "solid-bg");
+  $solid-text: map.get($v, "solid-text");
+  $soft-bg: map.get($v, "soft-bg");
+  $soft-text: map.get($v, "soft-text");
+  $emphasis: map.get($v, "emphasis");
+  $is-solid: map.get($v, "button") == "solid";
+
+  @if $is-solid {
+    // Solid button: keep Bootstrap's fill + hover/active shading (from the base
+    // colour), override only the LABEL to the same-hue tint.
+    .btn-#{$name} {
+      --bs-btn-color: #{$solid-text};
+      --bs-btn-hover-color: #{$solid-text};
+      --bs-btn-active-color: #{$solid-text};
+      --bs-btn-disabled-color: #{$solid-text};
+    }
+  } @else {
+    // Soft button: light tint bg + dark same-hue label; darken the tint slightly
+    // on hover/active for feedback.
+    .btn-#{$name} {
+      --bs-btn-color: #{$soft-text};
+      --bs-btn-bg: #{$soft-bg};
+      --bs-btn-border-color: #{$soft-bg};
+      --bs-btn-hover-color: #{$soft-text};
+      --bs-btn-hover-bg: #{color.scale($soft-bg, $lightness: -6%)};
+      --bs-btn-hover-border-color: #{color.scale($soft-bg, $lightness: -6%)};
+      --bs-btn-active-color: #{$soft-text};
+      --bs-btn-active-bg: #{color.scale($soft-bg, $lightness: -10%)};
+      --bs-btn-active-border-color: #{color.scale($soft-bg, $lightness: -10%)};
+      --bs-btn-disabled-color: #{$soft-text};
+      --bs-btn-disabled-bg: #{$soft-bg};
+      --bs-btn-disabled-border-color: #{$soft-bg};
+    }
+  }
+
+  // Outline button: emphasis border/label, fills to the soft tint on hover so it
+  // stays calm (not a sudden saturated block).
+  .btn-outline-#{$name} {
+    --bs-btn-color: #{$emphasis};
+    --bs-btn-border-color: #{$emphasis};
+    --bs-btn-hover-color: #{$soft-text};
+    --bs-btn-hover-bg: #{$soft-bg};
+    --bs-btn-hover-border-color: #{$emphasis};
+    --bs-btn-active-color: #{$soft-text};
+    --bs-btn-active-bg: #{$soft-bg};
+    --bs-btn-active-border-color: #{$emphasis};
+  }
+
+  // Badge — soft tint. `!important` beats Bootstrap's `.text-bg-*` helper.
+  .badge.text-bg-#{$name} {
+    background-color: #{$soft-bg} !important;
+    color: #{$soft-text} !important;
+  }
+
+  // Alert — soft tint, with the emphasis shade as the accent border.
+  .alert-#{$name} {
+    --bs-alert-bg: #{$soft-bg};
+    --bs-alert-color: #{$soft-text};
+    --bs-alert-border-color: #{color.scale($soft-bg, $lightness: -8%)};
+    --bs-alert-link-color: #{$emphasis};
+  }
+
+  // `.text-#{$name}` and `.link-#{$name}` need no override: each variant's base
+  // colour IS its emphasis shade, so Bootstrap already renders them legible.
+}
+
+// primary is near-black navy, so Bootstrap's darken-on-hover is imperceptible —
+// the main action button would have no visible hover feedback. Lighten instead.
+// (danger's red darkens visibly, so the generic solid path is fine for it.)
+.btn-primary {
+  --bs-btn-hover-bg: #{color.scale($primary, $lightness: 20%)};
+  --bs-btn-hover-border-color: #{color.scale($primary, $lightness: 20%)};
+  --bs-btn-active-bg: #{color.scale($primary, $lightness: 12%)};
+  --bs-btn-active-border-color: #{color.scale($primary, $lightness: 12%)};
+}
+
+// Tertiary "ghost" button: a `link`-variant button restyled to read as a quiet
+// action, not a hyperlink — body colour, no underline, faint hover surface.
+.btn-link {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-active-color: var(--bs-body-color);
+  text-decoration: none;
+
+  &:hover {
+    background-color: var(--bs-light);
   }
 }
 
