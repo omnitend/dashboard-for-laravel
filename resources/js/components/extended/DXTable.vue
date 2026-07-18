@@ -40,267 +40,29 @@
                         <p class="mt-2">{{ loadingText }}</p>
                     </div>
 
-                    <!-- Provider Mode: Use BTable's provider pattern -->
+                    <!-- One table for all three data modes. The modes differ only
+                         in a few bound props, supplied by `tableModeBindings`, so
+                         the filter row, headers, dotted-cell rendering and slot
+                         forwarding live ONCE here instead of being copied per mode
+                         (#123). The `v-else-if` guard keeps "render nothing when
+                         there is no data source" — none of the three modes true. -->
                     <DTable
-                        v-else-if="isProviderMode"
+                        v-else-if="isProviderMode || isClientSideMode || isInertiaMode"
                         ref="tableRef"
                         :key="tableSlotSignature($slots)"
-                        :provider="effectiveProvider"
                         :fields="fields"
                         :sort-by="effectiveSortBy"
-                        :per-page="effectivePerPage"
-                        :current-page="apiCurrentPage"
                         :multisort="false"
                         :no-sortable-icon="true"
                         :striped="striped"
                         :hover="hover"
                         :responsive="responsive"
-                        :busy="busy"
                         :tbody-tr-class="composeRowClass"
-                        v-bind="tablePassthroughProps"
+                        v-bind="{ ...tableModeBindings, ...tablePassthroughProps }"
                         @update:sort-by="handleSortChange"
                         @update:expanded-items="emit('update:expandedItems', $event)"
                         @update:current-page="apiCurrentPage = $event"
                         @update:busy="handleBusyChange"
-                        @row-clicked="handleRowClick"
-                    >
-                        <!-- DXTable owns `thead-top` (its filter row lives there), so a
-                             consumer's own thead-top content is COMPOSED above it rather
-                             than being dropped: a grouped column-header banner or a pinned
-                             totals row sits above the headers where it belongs (#120). -->
-                        <template v-if="hasFilters || $slots['thead-top']" #thead-top="theadScope">
-                            <!--
-                              @slot A row rendered ABOVE the column headers — a grouped-column banner (a `<th colspan>` spanning several columns), or a pinned totals row. Renders above DXTable's own filter row. Give it `<tr>`s.
-                              @binding {object} columns The number of columns in the table.
-                              @binding {object} fields The table's fields.
-                            -->
-                            <slot name="thead-top" v-bind="theadScope" />
-
-                            <tr v-if="hasFilters" class="filter-row">
-                                <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
-                                    <!-- Text Filter -->
-                                    <DFormInput
-                                        v-if="field.filter === 'text'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
-
-                                    <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
-                                    <DAutocomplete
-                                        v-else-if="field.filter === 'select'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        :options="getFieldFilterOptions(field)"
-                                        :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
-                                        size="sm"
-                                        open-on-focus
-                                        @update:model-value="handleSelectFilterChange(field, $event)"
-                                    />
-
-                                    <!-- Number Filter -->
-                                    <DFormInput
-                                        v-else-if="field.filter === 'number'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
-                                        type="number"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
-
-                                    <!-- Date Filter -->
-                                    <DFormInput
-                                        v-else-if="field.filter === 'date'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        type="date"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
-
-                                    <!-- No filter for this column -->
-                                    <div v-else></div>
-                                </th>
-                            </tr>
-                        </template>
-
-                        <!-- Custom headers for all fields -->
-                        <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
-                            <div class="d-flex align-items-center justify-content-between gap-2">
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold">{{ headerLabel(field, label) }}</div>
-                                    <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
-                                </div>
-                                <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 1.1; display: flex; flex-direction: column; align-items: center;">
-                                    <span :style="{ opacity: getFieldSortState(field.key) === 'asc' ? 1 : 0.3 }">▲</span>
-                                    <span :style="{ opacity: getFieldSortState(field.key) === 'desc' ? 1 : 0.3 }">▼</span>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- A dotted field key (`paid_by.card`) renders as an EMPTY cell in
-                             bootstrap-vue-next, in every payload shape, so DXTable resolves
-                             those columns itself (#121). A consumer's own cell(<key>) slot
-                             wins — `dottedCellFields` excludes it, and the forwarding below
-                             would otherwise declare the same slot name twice. -->
-                        <template
-                            v-for="field in dottedCellFields($slots)"
-                            :key="`dotted-cell-${field.key}`"
-                            #[`cell(${field.key})`]="{ item }"
-                        >{{ fieldValueOf(item, field.key) }}</template>
-
-                        <!-- Forward every slot the inner table understands: cell(<key>),
-                             foot(<key>), custom-foot, empty, empty-filtered, row-expansion,
-                             table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
-                             See `isTableSlot` for the two DXTable renders itself. -->
-                        <template
-                            v-for="name in forwardableSlotNames($slots)"
-                            :key="name"
-                            #[name]="slotProps"
-                        >
-                            <!--
-                              @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
-                            -->
-                            <slot :name="name" v-bind="slotProps" />
-                        </template>
-                    </DTable>
-
-                    <!-- Client-Side Mode: Local filtering, sorting, pagination -->
-                    <DTable
-                        v-else-if="isClientSideMode"
-                        :key="tableSlotSignature($slots)"
-                        :items="clientSidePaginatedItems"
-                        :fields="fields"
-                        :sort-by="effectiveSortBy"
-                        :multisort="false"
-                        :no-local-sorting="true"
-                        :no-sortable-icon="true"
-                        :striped="striped"
-                        :hover="hover"
-                        :responsive="responsive"
-                        :tbody-tr-class="composeRowClass"
-                        v-bind="tablePassthroughProps"
-                        @update:sort-by="handleSortChange"
-                        @update:expanded-items="emit('update:expandedItems', $event)"
-                        @row-clicked="handleRowClick"
-                    >
-                        <!-- DXTable owns `thead-top` (its filter row lives there), so a
-                             consumer's own thead-top content is COMPOSED above it rather
-                             than being dropped: a grouped column-header banner or a pinned
-                             totals row sits above the headers where it belongs (#120). -->
-                        <template v-if="hasFilters || $slots['thead-top']" #thead-top="theadScope">
-                            <!--
-                              @slot A row rendered ABOVE the column headers — a grouped-column banner (a `<th colspan>` spanning several columns), or a pinned totals row. Renders above DXTable's own filter row. Give it `<tr>`s.
-                              @binding {object} columns The number of columns in the table.
-                              @binding {object} fields The table's fields.
-                            -->
-                            <slot name="thead-top" v-bind="theadScope" />
-
-                            <tr v-if="hasFilters" class="filter-row">
-                                <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
-                                    <!-- Text Filter -->
-                                    <DFormInput
-                                        v-if="field.filter === 'text'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
-
-                                    <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
-                                    <DAutocomplete
-                                        v-else-if="field.filter === 'select'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        :options="getFieldFilterOptions(field)"
-                                        :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
-                                        size="sm"
-                                        open-on-focus
-                                        @update:model-value="handleSelectFilterChange(field, $event)"
-                                    />
-
-                                    <!-- Number Filter -->
-                                    <DFormInput
-                                        v-else-if="field.filter === 'number'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
-                                        type="number"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
-
-                                    <!-- Date Filter -->
-                                    <DFormInput
-                                        v-else-if="field.filter === 'date'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        type="date"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
-
-                                    <!-- No filter for this column -->
-                                    <div v-else></div>
-                                </th>
-                            </tr>
-                        </template>
-
-                        <!-- Custom headers for all fields -->
-                        <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
-                            <div class="d-flex align-items-center justify-content-between gap-2">
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold">{{ headerLabel(field, label) }}</div>
-                                    <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
-                                </div>
-                                <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 1.1; display: flex; flex-direction: column; align-items: center;">
-                                    <span :style="{ opacity: getFieldSortState(field.key) === 'asc' ? 1 : 0.3 }">▲</span>
-                                    <span :style="{ opacity: getFieldSortState(field.key) === 'desc' ? 1 : 0.3 }">▼</span>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- A dotted field key (`paid_by.card`) renders as an EMPTY cell in
-                             bootstrap-vue-next, in every payload shape, so DXTable resolves
-                             those columns itself (#121). A consumer's own cell(<key>) slot
-                             wins — `dottedCellFields` excludes it, and the forwarding below
-                             would otherwise declare the same slot name twice. -->
-                        <template
-                            v-for="field in dottedCellFields($slots)"
-                            :key="`dotted-cell-${field.key}`"
-                            #[`cell(${field.key})`]="{ item }"
-                        >{{ fieldValueOf(item, field.key) }}</template>
-
-                        <!-- Forward every slot the inner table understands: cell(<key>),
-                             foot(<key>), custom-foot, empty, empty-filtered, row-expansion,
-                             table-busy/caption/colgroup, thead-sub, top-row, bottom-row.
-                             See `isTableSlot` for the two DXTable renders itself. -->
-                        <template
-                            v-for="name in forwardableSlotNames($slots)"
-                            :key="name"
-                            #[name]="slotProps"
-                        >
-                            <!--
-                              @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
-                            -->
-                            <slot :name="name" v-bind="slotProps" />
-                        </template>
-                    </DTable>
-
-                    <!-- Inertia Mode: Use items prop -->
-                    <DTable
-                        v-else-if="isInertiaMode"
-                        :key="tableSlotSignature($slots)"
-                        :items="items"
-                        :fields="fields"
-                        :sort-by="effectiveSortBy"
-                        :multisort="false"
-                        :no-local-sorting="true"
-                        :no-sortable-icon="true"
-                        :striped="striped"
-                        :hover="hover"
-                        :responsive="responsive"
-                        :busy="effectiveBusy"
-                        :tbody-tr-class="composeRowClass"
-                        v-bind="tablePassthroughProps"
-                        @update:sort-by="handleSortChange"
-                        @update:expanded-items="emit('update:expandedItems', $event)"
                         @row-clicked="handleRowClick"
                     >
                         <!-- DXTable owns `thead-top` (its filter row lives there), so a
@@ -1798,6 +1560,41 @@ const handleApiPageChange = (page: number) => {
     apiCurrentPage.value = page;
     // BTable should automatically call provider when currentPage prop changes
 };
+
+/*
+ * The per-mode props for the ONE inner `<DTable>` (#123). DXTable used to carry
+ * three near-identical `<DTable>` blocks — provider / client-side / inertia —
+ * differing only in these few bindings, so every table fix had to be written
+ * three times and could silently miss a mode. This reproduces each old block's
+ * bindings EXACTLY (a faithful collapse, not a behaviour change):
+ *
+ * - provider: BTable drives its own pagination, so it needs `provider`,
+ *   `currentPage` and `perPage`; `busy` is the raw prop (two-way with BTable's
+ *   provider loading via `@update:busy`).
+ * - client-side: rows are pre-sliced by `clientSidePaginatedItems`, and local
+ *   sorting is off (we sort in `clientSideSortedItems`).
+ * - inertia: server-paginated `items`, local sorting off, `busy` is
+ *   `effectiveBusy` (the `loading` prop in this mode).
+ *
+ * A key absent from the returned object is simply not bound, which is what the
+ * original blocks did (e.g. non-provider modes never set `provider`/`currentPage`,
+ * so BTable falls back to `items` and its own page defaults).
+ */
+const tableModeBindings = computed<Record<string, unknown>>(() => {
+    if (isProviderMode.value) {
+        return {
+            provider: effectiveProvider.value,
+            currentPage: apiCurrentPage.value,
+            perPage: effectivePerPage.value,
+            busy: props.busy,
+        };
+    }
+    if (isClientSideMode.value) {
+        return { items: clientSidePaginatedItems.value, noLocalSorting: true };
+    }
+    // inertia
+    return { items: props.items, noLocalSorting: true, busy: effectiveBusy.value };
+});
 
 const handleSortChange = (sortBy: BTableSortBy[]) => {
     // ENFORCE single-column sorting: keep only the last clicked column
