@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-07-18
+
 ### Changed
 - **New semantic colour system — the Omni Tend brand, soft-first.** The biggest
   visual change the library has shipped: every consumer's buttons, badges,
