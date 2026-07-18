@@ -145,7 +145,7 @@ describe('DXTable', () => {
       expect(screen.container.textContent).not.toContain('New customer');
     });
 
-    // greendragon drives the modal from a navbar button and hides the header
+    // A consumer drives the modal from a navbar button and hides the header
     // with CSS today, which also nukes any header content. With no title and no
     // header slot, the header should simply not render.
     it('drops the card header entirely when it would be left empty', async () => {
@@ -1426,7 +1426,7 @@ describe('DXTable initial-value vs controlled props (#110)', () => {
 /**
  * #110, second half. DXTable seeds the edit form from every `editFields` key,
  * so a presentational field smuggled in as a `span` (a header, an alert) was
- * POSTed alongside the real data — greendragon saw `bookings: []` and
+ * POSTed alongside the real data — a consumer saw `bookings: []` and
  * `no_places_left: ""` in the payload purely because they were declared.
  */
 describe('DXTable presentational edit fields (#110)', () => {

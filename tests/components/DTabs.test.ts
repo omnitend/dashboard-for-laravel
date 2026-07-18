@@ -10,7 +10,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * #119. No pane got `active`/`show` on mount: the tab nav rendered and every
- * body was invisible until the user clicked. Two greendragon pages had already
+ * body was invisible until the user clicked. Two consumer pages had already
  * papered over it with an explicit `active` on the first tab.
  *
  * Cause: BTabs picks the tab to activate by scanning its slot vnodes for the
