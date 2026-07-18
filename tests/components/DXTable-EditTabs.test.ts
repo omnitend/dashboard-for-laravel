@@ -175,5 +175,63 @@ describe('DXTable Edit Tabs', () => {
       expect(customContent).toBeTruthy();
       expect(customContent?.textContent).toContain('Products go here');
     });
+
+    // The edit-modal slots reach the form forwarded across TWO component hops
+    // (consumer → DXTable → DXTableEditorModal → DXForm, #129). Presence isn't
+    // enough — assert the scoped BINDINGS survive both hops, since a mis-threaded
+    // forward would render the slot but with the wrong (or undefined) value/field.
+    it('forwards a custom edit-value slot AND its bindings across both hops', async () => {
+      const screen = renderWithBApp(DXTable, {
+        props: {
+          items: categoryData,
+          fields: tableFields,
+          editFields: editFields,
+          editTabs: editTabs,
+        },
+        slots: {
+          'edit-value(name)': (sp: any) =>
+            h('div', { class: 'custom-name-editor' }, [
+              h('span', { class: 'bound-value' }, String(sp.value)),
+              h('span', { class: 'bound-field-key' }, String(sp.field?.key)),
+              h('span', { class: 'bound-item-id' }, String(sp.item?.id)),
+            ]),
+        },
+      });
+      await flush();
+
+      // Open the edit modal for row 1 (Electronics). `name` is on the first
+      // (active) tab, so its edit-value slot renders immediately.
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
+
+      expect(document.querySelector('.custom-name-editor')).toBeTruthy();
+      // value seeded from the row, field def, and the row itself all threaded through.
+      expect(document.querySelector('.bound-value')?.textContent).toBe('Electronics');
+      expect(document.querySelector('.bound-field-key')?.textContent).toBe('name');
+      expect(document.querySelector('.bound-item-id')?.textContent).toBe('1');
+    });
+
+    it('forwards a custom tab-content slot with its tab binding across both hops', async () => {
+      const screen = renderWithBApp(DXTable, {
+        props: {
+          items: categoryData,
+          fields: tableFields,
+          editFields: editFields,
+          editTabs: editTabs,
+        },
+        slots: {
+          'tab-content(details)': (sp: any) =>
+            h('div', { class: 'custom-details-tab' }, `tab:${sp.tab?.key}`),
+        },
+      });
+      await flush();
+
+      (screen.container.querySelector('tbody tr') as HTMLElement).click();
+      await wait(60);
+
+      const tabBody = document.querySelector('.custom-details-tab');
+      expect(tabBody).toBeTruthy();
+      expect(tabBody?.textContent).toContain('tab:details');
+    });
   });
 });

@@ -187,156 +187,42 @@
             </DCol>
         </DRow>
 
-        <!-- Edit Modal (if editFields provided) -->
-        <DModal
+        <!-- Edit/create modal (only when editFields provided). The consumer's
+             edit-value / edit-span / tab-* slots are forwarded through to it
+             generically; it maps them onto DXForm and provides the row context
+             + a close handle (#129). -->
+        <DXTableEditorModal
             v-if="editFields && editFields.length > 0"
-            v-model="showEditModal"
+            v-model:show="showEditModal"
+            v-model:active-tab="activeTabIndex"
             :title="computedModalTitle"
             :size="editModalSize"
+            :loading="editLoading"
+            :form="editForm"
+            :form-instance-key="editFormInstanceKey"
+            :fields="editFields"
+            :tabs="editTabs"
+            :item="selectedItem"
+            :is-create-mode="isCreateMode"
+            :pending-action="pendingAction"
+            :delete-url="deleteUrl"
+            @save="handleEditSave"
+            @cancel="handleEditCancel"
+            @delete="handleDelete"
         >
-            <!-- Loading the full record for edit (showUrl fetch) -->
-            <div
-                v-if="editLoading"
-                class="dx-edit-loading d-flex align-items-center gap-2 text-muted mb-3"
+            <!--
+              @slot edit-value(<fieldKey>) / edit-span(<fieldKey>) /
+              tab-content|tab-before|tab-after(<tabKey>) — forwarded to the edit
+              modal (see DXTableEditorModal for their bindings).
+            -->
+            <template
+                v-for="name in editModalSlotNames($slots)"
+                :key="name"
+                #[name]="slotProps"
             >
-                <DSpinner small />
-                <span>Loading…</span>
-            </div>
-
-            <!-- Edit/create form (tabbed when editTabs provided, flat otherwise).
-
-                 Keyed per modal open: the form OBJECT is created once and then
-                 reseeded in place for each row, so without a key Vue reuses the
-                 same DXField instances across records — and any per-field UI
-                 state rides along with them. That leaked a revealed password
-                 from one row into the next. The key gives each record a fresh
-                 field subtree; the data still lives in `editForm`, so nothing
-                 is lost by remounting. -->
-            <DXForm
-                v-if="editForm"
-                :key="editFormInstanceKey"
-                v-model:active-tab="activeTabIndex"
-                :form="editForm"
-                :fields="editFields"
-                :tabs="editTabs"
-                :context="selectedItem ?? undefined"
-                :show-submit="false"
-                @submit="handleEditSave"
-            >
-                <!-- Forward DXTable's edit-value(key) → DXForm value(key) -->
-                <template
-                    v-for="key in editValueSlotKeys"
-                    :key="`ev-${key}`"
-                    #[`value(${key})`]="sp"
-                >
-                    <!--
-                      @slot Custom input for field `<key>` in the edit/create modal, forwarded to DXForm. Name it `edit-value(<fieldKey>)`.
-                      @binding {object} item The row being edited (null in create mode).
-                      @binding {any} value The current field value.
-                      @binding {Function} update Call with a new value to update the field.
-                      @binding {object} field The field definition.
-                    -->
-                    <slot
-                        :name="`edit-value(${key})`"
-                        :item="selectedItem"
-                        :value="sp.value"
-                        :update="sp.update"
-                        :field="sp.field"
-                    />
-                </template>
-
-                <!-- Forward edit-span(key) → span(key) -->
-                <template
-                    v-for="key in editSpanSlotKeys"
-                    :key="`es-${key}`"
-                    #[`span(${key})`]="sp"
-                >
-                    <!--
-                      @slot Full-width custom content for field `<key>` in the edit/create modal, forwarded to DXForm's span slot. Name it `edit-span(<fieldKey>)`.
-                      @binding {object} item The row being edited (null in create mode).
-                      @binding {any} value The current field value.
-                      @binding {Function} update Call with a new value to update the field.
-                      @binding {Function} close Call to close the edit modal.
-                    -->
-                    <slot
-                        :name="`edit-span(${key})`"
-                        :item="selectedItem"
-                        :value="sp.value"
-                        :update="sp.update"
-                        :close="handleEditCancel"
-                    />
-                </template>
-
-                <!-- Forward tab-content / tab-before / tab-after slots -->
-                <template
-                    v-for="key in tabContentSlotKeys"
-                    :key="`tc-${key}`"
-                    #[`tab-content(${key})`]="sp"
-                >
-                    <!--
-                      @slot Replaces the auto-rendered fields of edit-modal tab `<key>` with custom content. Name it `tab-content(<tabKey>)`.
-                      @binding {object} item The row being edited (null in create mode).
-                      @binding {object} tab The tab definition.
-                    -->
-                    <slot :name="`tab-content(${key})`" :item="selectedItem" :tab="sp.tab" />
-                </template>
-                <template
-                    v-for="key in tabBeforeSlotKeys"
-                    :key="`tb-${key}`"
-                    #[`tab-before(${key})`]="sp"
-                >
-                    <!--
-                      @slot Custom content rendered before the fields of edit-modal tab `<key>`. Name it `tab-before(<tabKey>)`.
-                      @binding {object} item The row being edited (null in create mode).
-                      @binding {object} tab The tab definition.
-                    -->
-                    <slot :name="`tab-before(${key})`" :item="selectedItem" :tab="sp.tab" />
-                </template>
-                <template
-                    v-for="key in tabAfterSlotKeys"
-                    :key="`taf-${key}`"
-                    #[`tab-after(${key})`]="sp"
-                >
-                    <!--
-                      @slot Custom content rendered after the fields of edit-modal tab `<key>`. Name it `tab-after(<tabKey>)`.
-                      @binding {object} item The row being edited (null in create mode).
-                      @binding {object} tab The tab definition.
-                    -->
-                    <slot :name="`tab-after(${key})`" :item="selectedItem" :tab="sp.tab" />
-                </template>
-            </DXForm>
-
-            <template #footer>
-                <div class="d-flex justify-content-between w-100">
-                    <div>
-                        <DButton
-                            v-if="deleteUrl && !isCreateMode"
-                            variant="danger"
-                            :loading="pendingAction === 'delete'"
-                            loading-text="Deleting..."
-                            :disabled="editForm?.processing || editLoading"
-                            @click="handleDelete"
-                        >
-                            Delete
-                        </DButton>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <DButton variant="secondary" @click="handleEditCancel">
-                            Cancel
-                        </DButton>
-                        <DButton
-                            variant="primary"
-                            :loading="pendingAction === 'save'"
-                            :loading-text="isCreateMode ? 'Creating...' : 'Saving...'"
-                            :disabled="editForm?.processing || editLoading"
-                            @click="handleEditSave"
-                        >
-                            {{ isCreateMode ? 'Create' : 'Save Changes' }}
-                        </DButton>
-                    </div>
-                </div>
+                <slot :name="name" v-bind="slotProps" />
             </template>
-        </DModal>
+        </DXTableEditorModal>
     </DContainer>
 </template>
 
@@ -355,10 +241,9 @@ import DSpinner from "../base/DSpinner.vue";
 import DTable from "../base/DTable.vue";
 import DFormInput from "../base/DFormInput.vue";
 import DAutocomplete from "../base/DAutocomplete.vue";
-import DModal from "../base/DModal.vue";
 import DButton from "../base/DButton.vue";
-import DXForm from "./DXForm.vue";
 import DXTablePagination from "./DXTablePagination.vue";
+import DXTableEditorModal from "./DXTableEditorModal.vue";
 export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
 
 export interface FilterOption {
@@ -1790,18 +1675,29 @@ const {
     pendingAction,
     editLoading,
     computedModalTitle,
-    editValueSlotKeys,
-    editSpanSlotKeys,
-    tabContentSlotKeys,
-    tabBeforeSlotKeys,
-    tabAfterSlotKeys,
 } = editor;
 
-// Template-facing aliases so the modal footer/buttons keep their historic names.
+// Template-facing aliases so the modal buttons keep their historic names.
 const handleCreateNew = editor.openCreate;
 const handleEditSave = editor.save;
 const handleEditCancel = editor.cancel;
 const handleDelete = editor.remove;
+
+// The consumer's edit-modal slots, forwarded verbatim to DXTableEditorModal
+// (which maps them onto DXForm). A FUNCTION over `$slots`, not a computed, for
+// the same reason as `forwardableSlotNames` — `useSlots()` is mutated in place
+// with nothing to track, so a computed captures the first render's set (#114).
+const EDIT_MODAL_SLOT_PREFIXES = [
+    'edit-value(',
+    'edit-span(',
+    'tab-content(',
+    'tab-before(',
+    'tab-after(',
+];
+const editModalSlotNames = (slots: Record<string, unknown>): string[] =>
+    Object.keys(slots).filter((name) =>
+        EDIT_MODAL_SLOT_PREFIXES.some((prefix) => name.startsWith(prefix)),
+    );
 
 // Helper: Get current sort state for a field
 const getFieldSortState = (fieldKey: string) => {

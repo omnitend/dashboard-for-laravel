@@ -1,4 +1,4 @@
-import { computed, ref, useSlots, type Ref } from "vue";
+import { computed, ref, type Ref } from "vue";
 import axios from "axios";
 import { useForm } from "./useForm";
 import { useToast } from "./useToast";
@@ -67,7 +67,6 @@ export function useResourceEditor<T = any>(
     options: UseResourceEditorOptions,
 ) {
     const { refresh, singularItemName } = options;
-    const slots = useSlots();
 
     // Edit Modal State
     const showEditModal = ref(false);
@@ -190,31 +189,6 @@ export function useResourceEditor<T = any>(
             Object.entries(data).filter(([key]) => !nonSubmittedFieldKeys.value.has(key)),
         );
     };
-
-    const editFieldKeys = computed<string[]>(() =>
-        (props.editFields ?? []).map((field: any) => field.key),
-    );
-    const tabKeys = computed<string[]>(() =>
-        (props.editTabs ?? []).map((tab) => tab.key),
-    );
-    // Forward only the keyed edit slots the consumer actually provided, so
-    // DXForm doesn't mistake an always-present (but empty) wrapper for
-    // a real custom-value override.
-    const editValueSlotKeys = computed(() =>
-        editFieldKeys.value.filter((key) => !!slots[`edit-value(${key})`]),
-    );
-    const editSpanSlotKeys = computed(() =>
-        editFieldKeys.value.filter((key) => !!slots[`edit-span(${key})`]),
-    );
-    const tabContentSlotKeys = computed(() =>
-        tabKeys.value.filter((key) => !!slots[`tab-content(${key})`]),
-    );
-    const tabBeforeSlotKeys = computed(() =>
-        tabKeys.value.filter((key) => !!slots[`tab-before(${key})`]),
-    );
-    const tabAfterSlotKeys = computed(() =>
-        tabKeys.value.filter((key) => !!slots[`tab-after(${key})`]),
-    );
 
     // Modal title (supports function)
     const computedModalTitle = computed(() => {
@@ -558,12 +532,6 @@ export function useResourceEditor<T = any>(
         pendingAction,
         editLoading,
         computedModalTitle,
-        // Edit-modal slot-key computeds (which keyed slots the consumer provided)
-        editValueSlotKeys,
-        editSpanSlotKeys,
-        tabContentSlotKeys,
-        tabBeforeSlotKeys,
-        tabAfterSlotKeys,
         // Actions
         openEdit,
         openCreate,
