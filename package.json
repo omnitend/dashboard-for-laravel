@@ -38,7 +38,7 @@
     "pretest:headless": "vite build",
     "test:headless": "vitest --run --browser.headless",
     "docs:dev": "astro dev",
-    "docs:build": "npm run docs:generate:ai && astro build",
+    "docs:build": "npm run docs:generate:ai && astro build && node scripts/check-docs-base-links.mjs",
     "docs:preview": "astro preview",
     "docs:generate": "node scripts/generate-component-docs.mjs",
     "docs:generate:ai": "node scripts/generate-llms-txt.mjs && node scripts/generate-api-manifest.mjs && node scripts/generate-docs-map.mjs",
