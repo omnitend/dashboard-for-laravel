@@ -465,6 +465,36 @@ const handleSubmit = async () => {
 </template>
 ```
 
+### DXTable internal structure (façade)
+
+`DXTable.vue` was a ~2600-line god-component (table + CRUD + modal + request
+client). It is now a **thin façade** (~1740 lines: props/emits, mode detection,
+the single table render, and wiring) composing four internal pieces — none of
+which are exported; they exist only to keep `DXTable` factored (#123, #129):
+
+- **`DXTableShell.vue`** — the card/plain chrome wrapper.
+- **one `<DTable>` render** driven by a `tableModeBindings` computed — the
+  filter row, headers, dotted-cell rendering and slot forwarding live **once**
+  for all three data modes (provider / client-side / inertia), not copied per
+  mode. `activePagination` + `handleActivePageChange` likewise drive one footer.
+- **`DXTablePagination.vue`** — the pager + per-page selector + info line (one
+  footer for all modes). Owns its own `:deep(.pagination…)` styles (a `:deep()`
+  in DXTable would not cross the boundary — see the BVN-styling note above).
+- **`useResourceEditor.ts`** (composable) — the create/edit/delete concern:
+  modal state, form seeding + visibility rules, the `showUrl` fetch, submission,
+  toasts. Pure logic; it never touches the table's data/sort/filter/page state.
+- **`DXTableEditorModal.vue`** — the edit modal: `DModal` + `DXForm` + the
+  `edit-value`/`edit-span`/`tab-*` slot mapping. DXTable forwards the consumer's
+  edit slots to it generically; **these reach `DXForm` across two component
+  hops**, so any change there must be DOM-verified (the bindings must survive
+  both hops — guarded in `tests/components/DXTable-EditTabs.test.ts`, which
+  goes red when the forward is neutered).
+
+The three seams between the editor and the table: `editFields` presence →
+`rowsAreInteractive`; `handleRowClick` → `editor.openEdit` (the row→modal
+bridge, still emits `rowClicked` regardless); a `refresh()` callback the editor
+calls after a successful op. Plan: `plans/2026-07-18-dxtable-decomposition.md`.
+
 ## Composables
 
 ### useForm

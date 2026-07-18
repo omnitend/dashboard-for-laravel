@@ -190,3 +190,21 @@ isCreateMode, editLoading, pendingAction, deleteUrl, modalTitle, editModalSize
 ## Out of scope (candidate follow-ups)
 - Extracting a `useDataTable` composable (sorting/filtering/per-page/client-side pipeline/provider). Not triplicated, so lower leverage; note as a possible future issue.
 - Any behaviour change, new prop, or bvn-API convergence.
+
+---
+
+## Outcome (2026-07-18) — all five steps landed
+
+Executed in five commits, each behind the full suite (no public API change):
+
+1. **Step 1** — one `<DTable>` via `tableModeBindings` (#123). 2615 → 2412.
+2. **Step 2** — `DXTablePagination.vue`, one footer for all modes (#123). → 2290.
+3. **Step 3** — `useResourceEditor.ts` composable (#129). → 1846.
+4. **Step 4** — `DXTableEditorModal.vue`, façade complete (#129). → **1742**.
+5. **Step 5** — CLAUDE.md "DXTable internal structure" note; DIVERGENCES confirmed unchanged (façade preserves every shield); plan outcome recorded.
+
+`DXTable.vue`: **2615 → 1742 lines (−33%)**. New internal pieces:
+`DXTablePagination` (126), `useResourceEditor` (542), `DXTableEditorModal` (247).
+Full suite **458/458** green throughout (+2 DOM-level two-hop slot tests, each
+verified red when forwarding is neutered); typecheck + docs build clean.
+`useDataTable` remains the one candidate follow-up.
