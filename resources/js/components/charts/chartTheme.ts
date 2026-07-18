@@ -46,8 +46,9 @@ export function registerCharts(): void {
 // are dark AA "emphasis" shades (too muted for series), and status colours
 // shouldn't impersonate "series 2". Fallbacks mirror the shipped theme so
 // charts still render without the CSS (SSR / tests / a consumer who didn't
-// import it) — keep them in sync with theme.scss.
-const PALETTE_VARS: Array<[string, string]> = [
+// import it). Sync with theme.scss's $dx-chart-palette is enforced by a test
+// that parses the Sass source (charts.test.ts), which is why this is exported.
+export const PALETTE_VARS: Array<[string, string]> = [
     ["--dx-chart-1", "#2563eb"], // blue
     ["--dx-chart-2", "#65a30d"], // lime
     ["--dx-chart-3", "#7c3aed"], // violet

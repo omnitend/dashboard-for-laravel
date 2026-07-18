@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (min adjacent ΔE 13.8 under protan/deutan simulation; every hue ≥ 3:1 contrast
   on white). Charts with datasets that omit colours will change appearance;
   datasets with explicit colours are unaffected. Retheme by overriding the
-  `--dx-chart-*` CSS variables.
+  `--dx-chart-*` CSS variables. Note the palette cycles after **8** distinct
+  colours (previously 10), so charts with 9–10 uncoloured categories now repeat
+  colours — set explicit colours (or fold the tail into "Other") for >8 series.
 
 ## [0.27.0] - 2026-07-18
 

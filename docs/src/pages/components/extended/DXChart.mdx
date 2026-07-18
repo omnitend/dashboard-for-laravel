@@ -46,6 +46,11 @@ series under colour-vision-deficiency simulation, and every hue clears 3:1
 contrast on white. Assign series in palette order (the components do this
 automatically) rather than cherry-picking slots.
 
+The palette cycles after 8: a 9th uncoloured series repeats the first colour.
+Charts with more than 8 categories should set explicit dataset colours — or
+better, group the tail into an "Other" category; more than ~8 slices is rarely
+readable anyway.
+
 To retheme charts, override the variables in your own CSS:
 
 ```css

@@ -1,7 +1,7 @@
 <!--
   @component
   A themed bar chart. Thin wrapper around vue-chartjs (chart.js) with the
-  Bootstrap palette applied and dashboard-friendly defaults (no x gridlines,
+  theme's dedicated chart palette (--dx-chart-1..8) applied and dashboard-friendly defaults (no x gridlines,
   formatted value ticks, responsive, legend hidden for a single series). Pass
   `labels` + `datasets`; `options` deep-merges over the defaults.
 

@@ -7,7 +7,11 @@ import {
   mergeOptions,
   applyPalette,
   getPalette,
+  PALETTE_VARS,
 } from '../../resources/js/components/charts/chartTheme';
+// The Sass SOURCE (not the built CSS) — vitest runs in a browser, so read it
+// through Vite's ?raw import, never node:fs (see CLAUDE.md testing gotchas).
+import themeScssSource from '../../resources/css/theme.scss?raw';
 import DXBarChart from '../../resources/js/components/charts/DXBarChart.vue';
 import DXLineChart from '../../resources/js/components/charts/DXLineChart.vue';
 import DXDoughnutChart from '../../resources/js/components/charts/DXDoughnutChart.vue';
@@ -15,21 +19,43 @@ import DXDoughnutChart from '../../resources/js/components/charts/DXDoughnutChar
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('chartTheme helpers', () => {
-  it('getPalette resolves the dedicated --dx-chart-* palette from the built theme', () => {
-    // The fixed, CVD-validated order from theme.scss's $dx-chart-palette (#141).
-    // The values come through dist/style.css (imported in tests/setup.ts), so
-    // this fails if the :root variables are dropped, reordered, or drift from
-    // chartTheme.ts's fallbacks — not just if getPalette() returns "something".
-    expect(getPalette()).toEqual([
-      '#2563eb', // blue
-      '#65a30d', // lime
-      '#7c3aed', // violet
-      '#0d9488', // teal
-      '#ea580c', // orange
-      '#0891b2', // cyan
-      '#d97706', // amber
-      '#db2777', // pink
-    ]);
+  // The fixed, CVD-validated order from theme.scss's $dx-chart-palette (#141).
+  const EXPECTED_PALETTE = [
+    '#2563eb', // blue
+    '#65a30d', // lime
+    '#7c3aed', // violet
+    '#0d9488', // teal
+    '#ea580c', // orange
+    '#0891b2', // cyan
+    '#d97706', // amber
+    '#db2777', // pink
+  ];
+
+  it('getPalette resolves the dedicated --dx-chart-* palette', () => {
+    expect(getPalette()).toEqual(EXPECTED_PALETTE);
+  });
+
+  it('the built CSS publishes every --dx-chart-* variable', () => {
+    // Deliberately NOT via getPalette(): its `value || fallback` means a
+    // dropped :root variable silently falls back to the identical TS hex and
+    // the assertion above still passes. Reading the raw custom property has no
+    // fallback to hide behind — an absent variable resolves to '' and fails.
+    const styles = getComputedStyle(document.documentElement);
+    const published = EXPECTED_PALETTE.map(
+      (_, i) => styles.getPropertyValue(`--dx-chart-${i + 1}`).trim(),
+    );
+    expect(published).toEqual(EXPECTED_PALETTE);
+  });
+
+  it('chartTheme fallbacks match theme.scss $dx-chart-palette', () => {
+    // The TS fallbacks only ever run on the SSR/no-CSS path, which no browser
+    // test exercises — so drift there is invisible to the two tests above.
+    // Guard it by parsing the hexes straight out of the Sass source.
+    const paletteLine = themeScssSource.match(/\$dx-chart-palette:\s*\(([^)]*)\)/);
+    expect(paletteLine).not.toBeNull();
+    const scssHexes = paletteLine![1].match(/#[0-9a-fA-F]{3,8}/g);
+    expect(scssHexes).toEqual(PALETTE_VARS.map(([, fallback]) => fallback));
+    expect(scssHexes).toEqual(EXPECTED_PALETTE);
   });
 
   it('withAlpha converts hex and rgb to rgba', () => {

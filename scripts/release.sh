@@ -40,7 +40,7 @@ echo "This will:"
 echo "  1. Run tests (headless)"
 echo "  2. Run TypeScript checks"
 echo "  3. Update package.json version"
-echo "  4. Build package"
+echo "  4. Build package + regenerate AI docs"
 echo "  5. Commit changes"
 echo "  6. Create git tag with release notes"
 echo "  7. Push to GitHub"
@@ -69,6 +69,13 @@ npm version $VERSION --no-git-tag-version
 # Step 4: Build package
 print_step "Building package..."
 npm run build
+
+# Step 4b: Regenerate the AI docs. llms.txt / api-reference.json / docs-map.md
+# are gitignored but listed in package.json "files", so npm publish ships
+# whatever copy sits on disk — without this step a stale local copy (built from
+# old component docstrings) publishes silently.
+print_step "Regenerating AI docs..."
+npm run docs:generate:ai
 
 # Step 5: Commit version bump
 print_step "Committing version bump..."

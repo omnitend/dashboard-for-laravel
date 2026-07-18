@@ -43,7 +43,7 @@ that:
 
 ## The token model
 
-Each of the six variants carries four tokens, defined in one Sass map
+Each of the six variants carries three colour roles, defined in one Sass map
 (`$dx-variants` in `resources/css/theme.scss`):
 
 | Token | Drives |
@@ -51,7 +51,12 @@ Each of the six variants carries four tokens, defined in one Sass map
 | **solid** (bg + text) | `.btn-primary` / `.btn-danger` fill and label |
 | **soft** (bg + text) | Soft buttons (`.btn-secondary` etc.), all badges (`.text-bg-*`), alerts (`.alert-*`), toast tints |
 | **emphasis** | Outline buttons (`.btn-outline-*`), coloured links (`.link-*`), text utilities (`.text-*`) — the shade that reads on a white background |
-| **ghost** | Tertiary buttons (`variant="link"`, restyled) |
+
+The map also records whether each variant's button renders **solid** or
+**soft**. The fourth style in the system — the **ghost** (tertiary buttons,
+`variant="link"` restyled to body-colour text with a faint hover surface) — is
+a single global style, not a per-variant token: it has no entry in the map and
+no colour of its own.
 
 Two details make the system cohesive:
 
@@ -84,7 +89,7 @@ Data-viz gets its own palette — eight vivid hues published as `--dx-chart-1` �
 `--dx-chart-8`, separate from the semantic UI colours (whose emphasis shades are
 too muted for series, and whose status meanings shouldn't leak into "series 2").
 The chart components read these variables at runtime, so overriding them
-rethemes every chart. See the [Charts documentation](/components/extended/dxchart#chart-palette)
+rethemes every chart. See the [Charts documentation](/components/extended/DXChart#chart-palette)
 for the full palette and rationale.
 
 ## Customising the theme
