@@ -534,6 +534,20 @@ solid fill by reflex.
   `tests/components/soft-badges.test.ts`.
 - Design/review tooling: the **Style guide** (`docs /showcase`) and **Colour
   playground** (`docs /playground`).
+- **Charts do NOT use the semantic colours.** Data-viz has its own palette:
+  `$dx-chart-palette` in theme.scss → `--dx-chart-1..8`, read at runtime by
+  `chartTheme.ts` (#141). The base theme colours are dark *emphasis* shades
+  (too muted for series) and status colours shouldn't impersonate "series 2".
+  The **slot order is load-bearing** — derived by exhaustively permuting the
+  hues to maximise adjacent-pair CVD separation (min adjacent ΔE 13.8, all
+  ≥3:1 on white); don't reorder or swap a hue without re-running that
+  validation (dataviz-skill `validate_palette.js`). Sync between the Sass
+  list, the TS fallbacks, and the test expectation is enforced by
+  `tests/components/charts.test.ts` (it parses the Sass source). The palette
+  cycles after 8 series. Related: `release.sh` regenerates the AI docs
+  (`docs:generate:ai`) before publish because `api-reference.json`/`llms.txt`
+  are **gitignored but listed in package.json `files`** — without the regen,
+  publish ships whatever stale copy sits on disk.
 
 ### CSS Variables Only
 

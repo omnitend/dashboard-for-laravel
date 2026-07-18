@@ -6,8 +6,12 @@ of the locked palette + how each token maps to CSS._
 
 **Status: SHIPPED in v0.27.0** (commit `3453543`). Implemented via the
 `$dx-variants` map in `theme.scss`; guarded by `tests/components/soft-badges.test.ts`
-(all six badges + four button variants). Follow-ups tracked as GitHub issues
-(DAlert example, theming-guide rewrite, chart palette; switch off-state under #90).
+(all six badges + four button variants). Follow-ups from the ship: the DAlert
+example (#139), theming-guide rewrite (#140) and chart palette (#141) all
+landed 2026-07-18 — charts now use a dedicated CVD-validated palette
+(`$dx-chart-palette` → `--dx-chart-1..8`), NOT the semantic colours. Still
+open: toast tints outside `$dx-variants` (#143), DAlert/DToast visibility
+default (#144), dark-surface chart validation (#145), switch off-state (#90).
 
 ## The idea
 
