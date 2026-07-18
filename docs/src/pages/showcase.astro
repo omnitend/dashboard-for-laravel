@@ -1,0 +1,13 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Showcase from '../components/Showcase.vue';
+---
+
+<DashboardLayout title="Style guide">
+  <!--
+    client:only — the gallery imports every per-component example, some of which
+    touch browser-only APIs at setup. Rendering client-side only sidesteps having
+    to make all 69 examples SSR-safe for a page that is a live visual reference.
+  -->
+  <Showcase client:only="vue" />
+</DashboardLayout>

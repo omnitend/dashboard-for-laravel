@@ -1,0 +1,8 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import ColourPlayground from '../components/ColourPlayground.vue';
+---
+
+<DashboardLayout title="Colour playground">
+  <ColourPlayground client:only="vue" />
+</DashboardLayout>

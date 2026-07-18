@@ -25,6 +25,8 @@ export const navigationConfig: Navigation = [
     label: 'Components',
     items: [
       { label: 'Overview', url: '/components' },
+      { label: 'Style guide', url: '/showcase' },
+      { label: 'Colour playground', url: '/playground' },
     ],
   },
   {
