@@ -24,8 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   order covers an ordinary key, a dots-flat payload, and a nested payload, and it
   turns bvn's un-flattening from hostile into harmless. A missing or null link
   along the path renders an empty cell instead of throwing. A consumer's own
-  `#cell()` slot still wins. In server modes the value renders and the dotted key
-  is sent as-is for the server to whitelist. Consumers can delete the alias
+  `#cell()` slot still wins, including for a dotted column that only appears after
+  mount (data-driven columns). In server modes the value renders and the dotted
+  key is sent as-is for the server to whitelist. Consumers can delete the alias
   workaround.
 
 ### Fixed

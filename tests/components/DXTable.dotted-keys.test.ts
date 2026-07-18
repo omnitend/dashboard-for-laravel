@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
-import { h } from 'vue';
+import { h, ref, nextTick } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
 
@@ -151,5 +151,34 @@ describe('DXTable client-side dotted field keys (#121)', () => {
     await flush();
 
     expect(columnText(screen.container, 1)).toEqual(['Visa', '', '']);
+  });
+
+  // bvn captures its cell-slot set at mount (#114), so a dotted column that only
+  // appears AFTER mount (data-driven columns resolved by a fetch) would add a
+  // `cell(...)` slot bvn ignores and render empty — unless the inner table
+  // remounts. The dotted-cell field keys are folded into its remount signature
+  // for exactly this, mirroring how a consumer's late `cell(...)` slot is handled.
+  it('renders a dotted key that only appears after mount (data-driven columns)', async () => {
+    const rows = [
+      { id: 1, name: 'Beta', paid_by: { card: 'Visa' } },
+      { id: 2, name: 'Alpha', paid_by: { card: 'Amex' } },
+    ];
+    const lateFields = ref<any[]>([{ key: 'name', label: 'Name' }]);
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () => h(DXTable, { items: rows, fields: lateFields.value, clientSide: true })),
+    });
+    await flush();
+
+    // The dotted column arrives after a fetch would have resolved.
+    lateFields.value = [
+      { key: 'name', label: 'Name' },
+      { key: 'paid_by.card', label: 'Card' },
+    ];
+    await nextTick();
+    await wait(80);
+
+    expect(columnText(screen.container, 1)).toEqual(['Visa', 'Amex']);
   });
 });

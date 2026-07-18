@@ -2162,8 +2162,17 @@ const isTableSlot = (name: string) =>
 const forwardableSlotNames = (slots: Record<string, unknown>): string[] =>
     Object.keys(slots).filter((name) => isTableSlot(name));
 
-const tableSlotSignature = (slots: Record<string, unknown>): string =>
-    Object.keys(slots).filter(isTableSlot).sort().join('|');
+const tableSlotSignature = (slots: Record<string, unknown>): string => {
+    // DXTable's OWN dotted-cell slots count too (#121). bvn captures its cell
+    // slot set at mount (#114), so a dotted-key column that appears LATER —
+    // data-driven columns resolved after a fetch — adds a `cell(...)` slot bvn
+    // ignores, and the cell renders empty. Folding the dotted-cell field keys
+    // into the signature remounts the inner table when that set changes, exactly
+    // as it does for a consumer's late `cell(...)` slot.
+    const consumerSlots = Object.keys(slots).filter(isTableSlot);
+    const dottedCellSlots = dottedCellFields(slots).map((field) => `cell(${field.key})`);
+    return [...consumerSlots, ...dottedCellSlots].sort().join('|');
+};
 
 /*
  * The template iterates `$slots` DIRECTLY rather than a computed over
