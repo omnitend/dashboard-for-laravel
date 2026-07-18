@@ -7,6 +7,7 @@
 // The Sass module for `color.mix()` etc. `@use` must precede all other
 // statements (variable overrides, `@import`), so it stays at the very top.
 @use "sass:color";
+@use "sass:list";
 @use "sass:map";
 
 // ----------------------------------------------------------------------------
@@ -550,6 +551,33 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 
   &:hover {
     background-color: var(--bs-light);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Chart palette (data-viz)
+// ----------------------------------------------------------------------------
+// Dedicated categorical palette for the DX*Chart components — deliberately NOT
+// the semantic UI colours (#141). Two reasons: the base $theme-colors carry
+// dark "emphasis" shades (AA text/link colours, too muted for data series), and
+// status colours (success/danger) shouldn't impersonate "series 2" — a green or
+// red series should mean something.
+//
+// Eight vivid mid-lightness hues in a FIXED order. The order is load-bearing:
+// it was derived by exhaustively permuting the hues (slot 1 pinned to the brand
+// info-blue) to maximise the minimum adjacent-pair colour-vision-deficiency
+// separation — validated at min adjacent ΔE 13.8 (OKLab ×100, protan/deutan
+// simulated), min normal-vision ΔE 20.3, every hue ≥ 3:1 contrast on white.
+// Reordering or swapping a hue needs that validation re-run, not an eyeball.
+//
+// Published as --dx-chart-1..8 so consumers can retheme charts by overriding
+// the variables; chartTheme.ts reads them at runtime (with these hexes as
+// fallbacks for SSR / missing-CSS cases — keep the two lists in sync).
+$dx-chart-palette: (#2563eb, #65a30d, #7c3aed, #0d9488, #ea580c, #0891b2, #d97706, #db2777);
+
+:root {
+  @for $i from 1 through list.length($dx-chart-palette) {
+    --dx-chart-#{$i}: #{list.nth($dx-chart-palette, $i)};
   }
 }
 

@@ -78,6 +78,15 @@ All colour pairs are WCAG AA verified.
 
 Default link colour: `#2563eb` (info-blue).
 
+### Chart palette
+
+Data-viz gets its own palette — eight vivid hues published as `--dx-chart-1` …
+`--dx-chart-8`, separate from the semantic UI colours (whose emphasis shades are
+too muted for series, and whose status meanings shouldn't leak into "series 2").
+The chart components read these variables at runtime, so overriding them
+rethemes every chart. See the [Charts documentation](/components/extended/dxchart#chart-palette)
+for the full palette and rationale.
+
 ## Customising the theme
 
 ### Small tweaks: runtime CSS variables (recommended)

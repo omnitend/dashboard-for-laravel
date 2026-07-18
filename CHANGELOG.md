@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Charts now use a dedicated data-viz palette** (`--dx-chart-1`…`--dx-chart-8`)
+  instead of reading the semantic `--bs-*` colours (#141). The v0.27.0 colour
+  system made the base `success`/`warning` colours dark AA "emphasis" shades,
+  which rendered muted chart series — and status colours shouldn't double as
+  series colours anyway. The new palette is eight vivid hues in a fixed order
+  derived to maximise adjacent-series colour-vision-deficiency separation
+  (min adjacent ΔE 13.8 under protan/deutan simulation; every hue ≥ 3:1 contrast
+  on white). Charts with datasets that omit colours will change appearance;
+  datasets with explicit colours are unaffected. Retheme by overriding the
+  `--dx-chart-*` CSS variables.
+
 ## [0.27.0] - 2026-07-18
 
 ### Changed

@@ -1,6 +1,6 @@
 /**
- * Shared theming for the DX*Chart wrappers: a categorical palette pulled from
- * the live Bootstrap theme, dashboard-friendly default options (no gridlines /
+ * Shared theming for the DX*Chart wrappers: the dedicated categorical chart
+ * palette (--dx-chart-* from the live theme), dashboard-friendly default options (no gridlines /
  * legend clutter, responsive, formatted ticks), and a one-time Chart.js
  * registration. chart.js / vue-chartjs are OPTIONAL peer deps.
  */
@@ -40,20 +40,22 @@ export function registerCharts(): void {
     registered = true;
 }
 
-// Bootstrap CSS variables to read, in a sensible categorical order. Fallbacks
-// mirror Bootstrap 5 defaults so charts still render without the theme (SSR /
-// tests / a consumer who didn't import the CSS).
+// The dedicated data-viz palette (`$dx-chart-palette` in theme.scss) — eight
+// vivid hues in a fixed, CVD-validated order, published as --dx-chart-1..8.
+// Deliberately NOT the semantic --bs-* colours (#141): the base theme colours
+// are dark AA "emphasis" shades (too muted for series), and status colours
+// shouldn't impersonate "series 2". Fallbacks mirror the shipped theme so
+// charts still render without the CSS (SSR / tests / a consumer who didn't
+// import it) — keep them in sync with theme.scss.
 const PALETTE_VARS: Array<[string, string]> = [
-    ["--bs-primary", "#0d6efd"],
-    ["--bs-success", "#198754"],
-    ["--bs-info", "#0dcaf0"],
-    ["--bs-warning", "#ffc107"],
-    ["--bs-danger", "#dc3545"],
-    ["--bs-purple", "#6f42c1"],
-    ["--bs-teal", "#20c997"],
-    ["--bs-orange", "#fd7e14"],
-    ["--bs-pink", "#d63384"],
-    ["--bs-secondary", "#6c757d"],
+    ["--dx-chart-1", "#2563eb"], // blue
+    ["--dx-chart-2", "#65a30d"], // lime
+    ["--dx-chart-3", "#7c3aed"], // violet
+    ["--dx-chart-4", "#0d9488"], // teal
+    ["--dx-chart-5", "#ea580c"], // orange
+    ["--dx-chart-6", "#0891b2"], // cyan
+    ["--dx-chart-7", "#d97706"], // amber
+    ["--dx-chart-8", "#db2777"], // pink
 ];
 
 /** Resolve the themed categorical palette from the document root. */

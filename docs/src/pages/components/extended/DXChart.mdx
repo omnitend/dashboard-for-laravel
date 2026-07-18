@@ -12,10 +12,49 @@ import DXChartExampleRaw from '../../../examples/DXChartExample.vue?raw';
 
 Thin, themed wrappers around [Chart.js](https://www.chartjs.org/) via
 `vue-chartjs`: `DXBarChart`, `DXLineChart`, and `DXDoughnutChart`. They apply the
-Bootstrap palette (read from the live theme) and dashboard-friendly defaults
-(no x-axis gridlines, formatted value ticks and tooltips, responsive, legend
-hidden for a single series). Pass `labels` + `datasets`; `options` deep-merges
-over the defaults so you can override anything Chart.js supports.
+theme's dedicated chart palette (read from the live theme — see below) and
+dashboard-friendly defaults (no x-axis gridlines, formatted value ticks and
+tooltips, responsive, legend hidden for a single series). Pass `labels` +
+`datasets`; `options` deep-merges over the defaults so you can override anything
+Chart.js supports.
+
+## Chart palette
+
+Series colours come from a **dedicated data-viz palette**, not the semantic UI
+colours: eight vivid hues published as the CSS variables `--dx-chart-1` …
+`--dx-chart-8`, assigned to series in a **fixed order**:
+
+| Slot | Colour | Hue |
+|---|---|---|
+| `--dx-chart-1` | `#2563eb` | blue |
+| `--dx-chart-2` | `#65a30d` | lime |
+| `--dx-chart-3` | `#7c3aed` | violet |
+| `--dx-chart-4` | `#0d9488` | teal |
+| `--dx-chart-5` | `#ea580c` | orange |
+| `--dx-chart-6` | `#0891b2` | cyan |
+| `--dx-chart-7` | `#d97706` | amber |
+| `--dx-chart-8` | `#db2777` | pink |
+
+Why not `--bs-success` and friends? Two reasons. The theme's base colours are
+dark *emphasis* shades tuned for text and links, too muted for data series. And
+status colours carry reserved meaning — a green or red series should signal a
+good/bad measure, not "series 2". If a series *does* mean pass/fail, set its
+colours explicitly on the dataset.
+
+The order is deliberate: it was chosen to maximise the separation of adjacent
+series under colour-vision-deficiency simulation, and every hue clears 3:1
+contrast on white. Assign series in palette order (the components do this
+automatically) rather than cherry-picking slots.
+
+To retheme charts, override the variables in your own CSS:
+
+```css
+:root {
+  --dx-chart-1: #0e7490;
+  --dx-chart-2: #a21caf;
+  /* ... */
+}
+```
 
 ## Optional peer dependencies
 

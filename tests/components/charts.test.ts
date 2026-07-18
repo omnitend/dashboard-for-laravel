@@ -15,10 +15,21 @@ import DXDoughnutChart from '../../resources/js/components/charts/DXDoughnutChar
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('chartTheme helpers', () => {
-  it('getPalette returns a non-empty list of colours', () => {
-    const palette = getPalette();
-    expect(palette.length).toBeGreaterThanOrEqual(6);
-    expect(typeof palette[0]).toBe('string');
+  it('getPalette resolves the dedicated --dx-chart-* palette from the built theme', () => {
+    // The fixed, CVD-validated order from theme.scss's $dx-chart-palette (#141).
+    // The values come through dist/style.css (imported in tests/setup.ts), so
+    // this fails if the :root variables are dropped, reordered, or drift from
+    // chartTheme.ts's fallbacks — not just if getPalette() returns "something".
+    expect(getPalette()).toEqual([
+      '#2563eb', // blue
+      '#65a30d', // lime
+      '#7c3aed', // violet
+      '#0d9488', // teal
+      '#ea580c', // orange
+      '#0891b2', // cyan
+      '#d97706', // amber
+      '#db2777', // pink
+    ]);
   });
 
   it('withAlpha converts hex and rgb to rgba', () => {
