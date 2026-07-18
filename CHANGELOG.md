@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-07-18
+
+### Fixed
+- **Docs: in-content links and images now carry the `/dashboard-for-laravel`
+  base prefix** (#146). Root-relative links and images authored in markdown/MDX
+  content (`[Style guide](/showcase)`, `![logo](/logo.png)`) were emitted
+  without Astro's `base`, so they 404'd on GitHub Pages — local previews masked
+  it because they can be browsed from the base path. A rehype plugin now
+  prefixes `<a href>` and `<img src>` at build time, guarded by a check that
+  fails the docs build if any un-prefixed root-relative URL survives.
+
 ### Changed
+- **`DXTable` internals decomposed behind an unchanged façade** (#123, #129).
+  **No public API change** — every prop, event, slot and exposed method is
+  identical, so consumers need do nothing. The ~2600-line god-component is now
+  ~1740 lines composing four internal pieces: a single `<DTable>` render for all
+  three data modes (previously three near-identical copies), a
+  `DXTablePagination` footer (previously three copies), a `useResourceEditor`
+  composable (the create/edit/delete/modal logic), and a `DXTableEditorModal`
+  component. Purely structural; noted here for anyone bisecting a regression to
+  this range.
 - **Charts now use a dedicated data-viz palette** (`--dx-chart-1`…`--dx-chart-8`)
   instead of reading the semantic `--bs-*` colours (#141). The v0.27.0 colour
   system made the base `success`/`warning` colours dark AA "emphasis" shades,
