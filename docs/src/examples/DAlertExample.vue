@@ -3,22 +3,22 @@
     <div class="example-section">
       <h5>Alert Variants</h5>
       <div class="alert-group">
-        <DAlert variant="primary">
+        <DAlert :model-value="true" variant="primary">
           <strong>Primary Alert</strong> - This is a primary alert with important information.
         </DAlert>
-        <DAlert variant="secondary">
+        <DAlert :model-value="true" variant="secondary">
           <strong>Secondary Alert</strong> - This is a secondary alert with less critical information.
         </DAlert>
-        <DAlert variant="success">
+        <DAlert :model-value="true" variant="success">
           <strong>Success!</strong> Your changes have been saved successfully.
         </DAlert>
-        <DAlert variant="danger">
+        <DAlert :model-value="true" variant="danger">
           <strong>Error!</strong> There was a problem processing your request.
         </DAlert>
-        <DAlert variant="warning">
+        <DAlert :model-value="true" variant="warning">
           <strong>Warning!</strong> Please review the following information carefully.
         </DAlert>
-        <DAlert variant="info">
+        <DAlert :model-value="true" variant="info">
           <strong>Info:</strong> System maintenance scheduled for tonight at 2:00 AM.
         </DAlert>
       </div>
@@ -27,10 +27,10 @@
     <div class="example-section">
       <h5>Dismissible Alerts</h5>
       <div class="alert-group">
-        <DAlert v-if="showAlert1" variant="success" dismissible @close="showAlert1 = false">
+        <DAlert v-model="showAlert1" variant="success" dismissible>
           <strong>Dismissible Alert</strong> - Click the × button to dismiss this alert.
         </DAlert>
-        <DAlert v-if="showAlert2" variant="warning" dismissible @close="showAlert2 = false">
+        <DAlert v-model="showAlert2" variant="warning" dismissible>
           <strong>Another Dismissible Alert</strong> - This one can also be closed.
         </DAlert>
         <DButton v-if="!showAlert1 || !showAlert2" variant="outline-primary" size="sm" @click="resetAlerts">
@@ -42,7 +42,7 @@
     <div class="example-section">
       <h5>Alerts with Additional Content</h5>
       <div class="alert-group">
-        <DAlert variant="info">
+        <DAlert :model-value="true" variant="info">
           <h6 class="alert-heading">System Update Available</h6>
           <p>A new version of the system is available. This update includes security patches and new features.</p>
           <hr>
