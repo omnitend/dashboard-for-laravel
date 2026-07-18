@@ -5,16 +5,169 @@ title: Theming
 
 # Theming
 
-The library includes a custom Bootstrap 5 theme that can be easily customised using CSS variables and SCSS.
+The library ships a custom Bootstrap 5 theme built around a **soft-first
+semantic colour system**. This guide explains the system's rules, the tokens
+behind it, and how to customise it.
 
-## CSS Variables
+Two pages let you see the system live:
 
-Always use CSS variables from Bootstrap or the theme instead of hardcoding colour values for better maintainability and theme consistency.
+- **[Style guide](/showcase)** — every variant rendered on the real components
+- **[Colour playground](/playground)** — experiment with palette changes interactively
 
-### Good Practice
+## The soft-first idea
+
+Emphasis comes from **weight and place, not loudness**. Most dashboards drown
+their one important action in a sea of saturated buttons; this theme inverts
+that:
+
+- **Only two variants are bold solid buttons**: `primary` (the brand navy) and
+  `danger` (red, for destructive actions). Everything else stays quiet.
+- **`secondary` / `success` / `warning` / `info` buttons are _soft_** — a light
+  same-hue tint background with a dark same-hue label.
+- **Tertiary actions are ghosts** — the `link` variant is restyled as a quiet
+  button: body-colour text, no underline, a faint hover surface.
+- **All status colour is soft.** Badges, alerts, and toasts use light tints,
+  never saturated fills.
+
+### Semantic guidance
+
+- **`primary` is the main action** — including Save. There is one bold button
+  on a screen, and it's the thing the user came to do.
+- **`success` (green) means a positive _outcome_, not "save".** A save's green
+  reward belongs in a "Saved ✓" toast or badge after it succeeds, not on the
+  button itself.
+- **`danger` is for destructive actions** (delete, remove) and error states.
+  It keeps the solid red fill because the convention is load-bearing.
+- **Links are info-blue** (`#2563eb`), independent of the near-black brand
+  primary — a navy link would read as bold text, not a link.
+
+## The token model
+
+Each of the six variants carries four tokens, defined in one Sass map
+(`$dx-variants` in `resources/css/theme.scss`):
+
+| Token | Drives |
+|---|---|
+| **solid** (bg + text) | `.btn-primary` / `.btn-danger` fill and label |
+| **soft** (bg + text) | Soft buttons (`.btn-secondary` etc.), all badges (`.text-bg-*`), alerts (`.alert-*`), toast tints |
+| **emphasis** | Outline buttons (`.btn-outline-*`), coloured links (`.link-*`), text utilities (`.text-*`) — the shade that reads on a white background |
+| **ghost** | Tertiary buttons (`variant="link"`, restyled) |
+
+Two details make the system cohesive:
+
+- **Button text is a same-hue tint**, not plain black or white — light-hue text
+  on dark fills, dark-hue text on light tints. (`danger` is the one exception:
+  white, because a delete-red can't carry a same-hue tint at AA contrast.)
+- **The base `$theme-colors` carry each hue's _emphasis_ shade** — so
+  `.text-success`, `.link-warning`, `.border-info` and outline buttons are
+  legible on white without any extra overrides. The solid fills and soft tints
+  are applied after the Bootstrap import, from the map.
+
+All colour pairs are WCAG AA verified.
+
+## The palette
+
+| Variant | Solid fill | Solid text | Soft bg | Soft text | Emphasis | Button style |
+|---|---|---|---|---|---|---|
+| `primary` | `#151e2d` | `#e9f0f8` | `#e9f0f8` | `#151e2d` | `#151e2d` | **solid** |
+| `secondary` | `#475569` | `#e6ebf2` | `#e6ebf2` | `#29374a` | `#475569` | soft |
+| `success` | `#84cc16` | `#203b0e` | `#cdf9b2` | `#203b0e` | `#4d7c0f` | soft |
+| `danger` | `#dc2626` | `#ffffff` | `#f5dff1` | `#59194a` | `#dc2626` | **solid** |
+| `warning` | `#f59e0b` | `#512d05` | `#fce5c4` | `#512d05` | `#b45309` | soft |
+| `info` | `#2563eb` | `#eef4ff` | `#deebff` | `#12376c` | `#2563eb` | soft |
+
+Default link colour: `#2563eb` (info-blue).
+
+## Customising the theme
+
+### Small tweaks: runtime CSS variables (recommended)
+
+The theme drives components through Bootstrap's CSS variables, so most
+customisation needs no Sass at all — just override the variables in your own
+stylesheet, loaded **after** `theme.css`:
+
+```css
+/* Rebrand the primary button */
+.btn-primary {
+  --bs-btn-bg: #1a2a45;
+  --bs-btn-border-color: #1a2a45;
+  --bs-btn-color: #eaf1fb;
+  --bs-btn-hover-bg: #2c4066;
+  --bs-btn-hover-border-color: #2c4066;
+}
+
+/* Adjust a soft button's tint */
+.btn-info {
+  --bs-btn-bg: #e3f0ff;
+  --bs-btn-border-color: #e3f0ff;
+}
+
+/* Adjust an alert's tint */
+.alert-success {
+  --bs-alert-bg: #d8f7c4;
+  --bs-alert-color: #203b0e;
+}
+```
+
+**Badges are the exception**: Bootstrap's `.text-bg-*` helper sets its colours
+with `!important` by design (and the theme's soft re-tint does too), so a badge
+override must also use `!important`:
+
+```css
+.badge.text-bg-info {
+  background-color: #e3f0ff !important;
+  color: #12376c !important;
+}
+```
+
+### Full rebrand: compiling from source
+
+For a wholesale palette change, compile the theme from its SCSS source. The
+package exports it:
+
+```scss
+@import '@omnitend/dashboard-for-laravel/theme.scss';
+```
+
+The source defines everything in **one map — `$dx-variants`** — plus the base
+`$theme-colors`. To rebrand, copy `theme.scss` into your project and edit:
+
+1. **The base colours** (`$primary`, `$secondary`, …) — remember these carry
+   each hue's _emphasis_ shade (readable on white, ≥ 4.5:1), not the fill.
+2. **The `$dx-variants` map** — each variant's `solid-bg` / `solid-text` /
+   `soft-bg` / `soft-text` / `emphasis`, and whether its `button` is `"solid"`
+   or `"soft"`.
+
+```scss
+$dx-variants: (
+  "primary": (solid-bg: #151e2d, solid-text: #e9f0f8, soft-bg: #e9f0f8,
+              soft-text: #151e2d, emphasis: #151e2d, button: "solid"),
+  // ... one entry per variant
+);
+```
+
+A single loop after the Bootstrap import applies the whole system (buttons,
+outlines, badges, alerts) from this map, so a palette change is a map edit —
+there is no second place to update.
+
+**Check contrast when you change colours.** Every pair in the shipped palette
+clears WCAG AA (4.5:1); keep yours there too. The
+[Colour playground](/playground) helps you preview combinations before
+committing.
+
+**Note:** compiling from source gives you only the Bootstrap theme — the Vue
+components' scoped styles live in the built `dist/style.css`. If you go this
+route, you're maintaining a fork of the theme; prefer runtime CSS variables
+unless you truly need a full rebrand.
+
+## Using colour in your own components
+
+**Never hardcode colour values.** Use the CSS variables from Bootstrap or the
+theme so your components pick up palette changes automatically:
 
 ```vue
 <style scoped>
+/* Good */
 .custom-component {
   background-color: var(--bs-primary);
   color: var(--bs-white);
@@ -23,110 +176,46 @@ Always use CSS variables from Bootstrap or the theme instead of hardcoding colou
 </style>
 ```
 
-### Bad Practice
-
 ```vue
 <style scoped>
+/* Bad */
 .custom-component {
-  background-color: #4f46e5;  /* Never do this! */
+  background-color: #4f46e5; /* Never do this! */
   color: #ffffff;
 }
 </style>
 ```
 
-## Common CSS Variables
-
-### Colours
-
-From Bootstrap 5:
+Commonly used variables:
 
 ```css
---bs-primary
---bs-secondary
---bs-success
---bs-danger
---bs-warning
---bs-info
---bs-light
---bs-dark
---bs-white
+/* Colours (each variant's emphasis shade — readable on white) */
+--bs-primary --bs-secondary --bs-success --bs-danger
+--bs-warning --bs-info --bs-light --bs-dark --bs-white
+
+/* Navigation */
+--bs-nav-link-color --bs-nav-link-hover-color --bs-nav-link-active-color
+
+/* Borders & spacing */
+--bs-border-color --bs-border-radius --bs-gutter-x --bs-gutter-y
 ```
 
-### Navigation
+Note that `--bs-success`, `--bs-warning` etc. resolve to the **emphasis**
+shades — correct for text and borders on light backgrounds. If you need a
+variant's soft tint or solid fill in your own CSS, take the value from the
+palette table above (or the `$dx-variants` map if compiling from source).
 
-```css
---bs-nav-link-color
---bs-nav-link-hover-color
---bs-nav-link-active-color
-```
+## Dark mode
 
-### Borders
-
-```css
---bs-border-color
---bs-border-radius
-```
-
-### Spacing
-
-```css
---bs-gutter-x
---bs-gutter-y
-```
-
-## Customising the Theme
-
-To customise the theme, create your own SCSS file that overrides Bootstrap variables:
-
-```scss
-// custom-theme.scss
-
-// Override Bootstrap variables
-$primary: #your-color;
-$secondary: #your-color;
-
-// Import Bootstrap
-@import 'bootstrap/scss/bootstrap';
-
-// Custom styles
-.custom-class {
-  color: var(--bs-primary);
-}
-```
-
-## Theme Structure
-
-The library's theme is located in `resources/css/theme.scss`:
-
-```scss
-// Override Bootstrap variables. The base colours carry each hue's
-// readable-on-light "emphasis" shade; a $dx-variants map after the import
-// applies the soft-first system (solid brand buttons, soft badges/alerts).
-// See plans/2026-07-18-semantic-colour-system.md.
-$primary: #151e2d;   // Omni Tend brand navy
-$secondary: #475569; // Slate
-
-// Import Bootstrap
-@import 'bootstrap/scss/bootstrap';
-
-// Custom component styles
-.custom-class {
-  color: var(--bs-primary);
-}
-```
-
-## Dark Mode Support
-
-Bootstrap 5.3 includes built-in dark mode support. The library components automatically support dark mode:
+Bootstrap 5.3 includes built-in dark mode support:
 
 ```html
-<!-- Enable dark mode -->
 <html data-bs-theme="dark">
   <!-- Your app -->
 </html>
 ```
 
-You can toggle dark mode dynamically:
+Toggle it dynamically:
 
 ```vue
 <script setup lang="ts">
@@ -150,11 +239,11 @@ const toggleDarkMode = () => {
 </template>
 ```
 
-## Component-Specific Styling
+## Component-specific styling
 
 ### DashboardSidebar
 
-The sidebar uses CSS variables for colours:
+The sidebar uses the brand navy (`$dark`) with CSS variables for links:
 
 ```css
 .sidebar {
@@ -173,7 +262,7 @@ The sidebar uses CSS variables for colours:
 
 ### DashboardNavbar
 
-The user avatar styling:
+The user avatar can be restyled via its stable `.user-avatar` class:
 
 ```css
 .user-avatar {
@@ -185,30 +274,15 @@ The user avatar styling:
 }
 ```
 
-## Responsive Design
-
-Use Bootstrap's responsive utilities:
-
-```vue
-<template>
-  <!-- Hidden on mobile, visible on desktop -->
-  <div class="d-none d-md-block">
-    Desktop content
-  </div>
-
-  <!-- Visible on mobile, hidden on desktop -->
-  <div class="d-md-none">
-    Mobile content
-  </div>
-</template>
-```
-
 ## Tips
 
-- **Use CSS variables** - Avoid hardcoding colour values for better maintainability
-- **Follow Bootstrap conventions** - Use Bootstrap classes when available
-- **Scope your styles** - Use `scoped` in Vue components
-- **Test dark mode** - Components should work in both light and dark modes
+- **Use CSS variables** — avoid hardcoding colour values
+- **Respect the soft-first rules** — one bold `primary` action per screen;
+  reach for soft variants and ghosts before solid fills
+- **Keep pairs at WCAG AA** (4.5:1) when changing colours
+- **Test dark mode** — components should work in both modes
+- **Check the [Style guide](/showcase)** after any palette change — it renders
+  every variant on the real components
 
 ## Troubleshooting
 
@@ -222,7 +296,16 @@ import '@omnitend/dashboard-for-laravel/theme.css'
 
 ### Component styles missing
 
-You must import `theme.css` (built CSS), not `theme.scss` (source). See the [Installation guide](/guide/installation#import-styles) for details.
+You must import `theme.css` (built CSS), not `theme.scss` (source). The built
+file contains both the Bootstrap theme **and** the Vue components' scoped
+styles. See the [Installation guide](/guide/installation#import-styles) for
+details.
+
+### A badge colour override isn't taking effect
+
+Badge variants go through Bootstrap's `.text-bg-*` helper, which is
+`!important` by design. Your override needs `!important` too (see
+[Customising the theme](#customising-the-theme) above).
 
 ### Dark mode not working
 
@@ -234,5 +317,7 @@ Ensure you're setting the `data-bs-theme` attribute on the `<html>` element:
 
 ## Next Steps
 
-- [Component Reference](/components/) - Browse styled components
-- [Examples](/examples/common-patterns) - See theming in action
+- [Style guide](/showcase) — every variant on the real components
+- [Colour playground](/playground) — experiment with the palette
+- [Component Reference](/components/) — browse styled components
+- [Examples](/examples/common-patterns) — see theming in action
