@@ -511,6 +511,30 @@ interface FormSubmitOptions {
 
 ## Styling Guidelines
 
+### Semantic colour system (soft-first, since v0.27.0)
+
+The library uses a **soft-first** semantic colour system built on the Omni Tend
+brand. Respect it when adding or styling components — don't reach for a loud
+solid fill by reflex.
+
+- **Emphasis comes from weight and place, not loudness.** Only two variants are
+  bold SOLID buttons: `primary` (the brand navy `#151e2d` fill + light text) and
+  `danger` (red). `secondary`/`success`/`warning`/`info` buttons are **soft**
+  (light same-hue tint + dark same-hue label). Tertiary actions use a `link`
+  variant restyled as a **ghost** (body colour, no underline).
+- **Status colours are soft** — badges, alerts, toasts all use the soft tint.
+- **`success`/green means a positive _outcome_, not "save".** The main action is
+  `primary`; a save's green reward belongs in a "Saved" toast, not the button.
+- **Outline buttons / coloured links / `.text-*`** use each variant's *emphasis*
+  shade (readable on white), which is also the base `$theme-color`.
+- Everything is driven by the **`$dx-variants` map in `resources/css/theme.scss`**
+  (one source of truth per variant: solid / soft / emphasis + solid-vs-soft
+  button). All pairs are WCAG AA. Full spec + rationale:
+  `plans/2026-07-18-semantic-colour-system.md`. Guarded by
+  `tests/components/soft-badges.test.ts`.
+- Design/review tooling: the **Style guide** (`docs /showcase`) and **Colour
+  playground** (`docs /playground`).
+
 ### CSS Variables Only
 
 **NEVER hardcode colour values**. Always use CSS variables from Bootstrap or theme.scss.

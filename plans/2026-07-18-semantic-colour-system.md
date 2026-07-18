@@ -4,6 +4,11 @@ _2026-07-18. Design pass, decided interactively against the Colour playground
 (`/playground`) and verified with WCAG AA maths. This is the authoritative record
 of the locked palette + how each token maps to CSS._
 
+**Status: SHIPPED in v0.27.0** (commit `3453543`). Implemented via the
+`$dx-variants` map in `theme.scss`; guarded by `tests/components/soft-badges.test.ts`
+(all six badges + four button variants). Follow-ups tracked as GitHub issues
+(DAlert example, theming-guide rewrite, chart palette; switch off-state under #90).
+
 ## The idea
 
 **Soft-first, with the main action bold.** Emphasis comes from weight and place,
