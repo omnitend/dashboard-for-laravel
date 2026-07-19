@@ -53,6 +53,7 @@ export { default as DDropdownDivider } from "./components/base/DDropdownDivider.
 export { default as DDropdownItem } from "./components/base/DDropdownItem.vue";
 export { default as DForm } from "./components/base/DForm.vue";
 export { default as DFormCheckbox } from "./components/base/DFormCheckbox.vue";
+export { default as DFormCheckboxGroup } from "./components/base/DFormCheckboxGroup.vue";
 export { default as DFormGroup } from "./components/base/DFormGroup.vue";
 export { default as DFormInput } from "./components/base/DFormInput.vue";
 export { default as DFormInvalidFeedback } from "./components/base/DFormInvalidFeedback.vue";

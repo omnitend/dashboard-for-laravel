@@ -370,6 +370,17 @@
             v-bind="controlPropsWithGuards"
         />
 
+        <!-- Checkbox group: "pick any of N" — the model is an ARRAY of the
+             checked option values (default the field to []). -->
+        <DFormCheckboxGroup
+            v-else-if="field.type === 'checkbox-group'"
+            v-model="fieldValue"
+            :options="resolvedOptions"
+            :state="fieldState"
+            :disabled="isDisabled || isReadonly || isPlaintext"
+            v-bind="controlPropsWithGuards"
+        />
+
         <!-- File / image upload -->
         <div v-else-if="field.type === 'image' || field.type === 'file'">
             <DFormInput
@@ -554,6 +565,7 @@ import DFormInput from "../base/DFormInput.vue";
 import DFormTextarea from "../base/DFormTextarea.vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import DFormRadioGroup from "../base/DFormRadioGroup.vue";
+import DFormCheckboxGroup from "../base/DFormCheckboxGroup.vue";
 import DFormCheckbox from "../base/DFormCheckbox.vue";
 import DXSwitch from "./DXSwitch.vue";
 import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";

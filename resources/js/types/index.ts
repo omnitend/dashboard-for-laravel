@@ -31,6 +31,7 @@ export type FieldType =
     | "select"
     | "autocomplete"
     | "checkbox"
+    | "checkbox-group"
     | "switch"
     | "radio"
     | "image"

@@ -1215,3 +1215,42 @@ describe('DXField searchable select (#105)', () => {
     expect((screen.container.querySelector('input') as HTMLInputElement).value).toBe('Waitrose');
   });
 });
+
+describe('DXField checkbox-group type (#148)', () => {
+  const allergenOptions = [
+    { value: 'gluten', text: 'Gluten' },
+    { value: 'nuts', text: 'Nuts' },
+    { value: 'dairy', text: 'Dairy' },
+  ];
+
+  it('renders a checkbox per option and reflects the seeded array', async () => {
+    const { screen } = renderField(
+      { key: 'allergens', type: 'checkbox-group', label: 'Allergens', options: allergenOptions },
+      { allergens: ['nuts'] },
+    );
+    await flush();
+
+    const boxes = screen.container.querySelectorAll<HTMLInputElement>('.form-check-input');
+    expect(boxes.length).toBe(3);
+    // The seeded value ('nuts', the 2nd option) is the only one checked.
+    expect(Array.from(boxes).filter((b) => b.checked).length).toBe(1);
+    expect(boxes[1].checked).toBe(true);
+  });
+
+  it('binds the checked values as an array on the form (pick any of N)', async () => {
+    const { screen, form } = renderField(
+      { key: 'allergens', type: 'checkbox-group', label: 'Allergens', options: allergenOptions },
+      { allergens: [] },
+    );
+    await flush();
+
+    const boxes = screen.container.querySelectorAll<HTMLInputElement>('.form-check-input');
+    await userEvent.click(boxes[0]); // gluten
+    await userEvent.click(boxes[2]); // dairy
+    await flush();
+
+    expect(Array.isArray(form.data.allergens)).toBe(true);
+    expect(form.data.allergens).toHaveLength(2);
+    expect(form.data.allergens).toEqual(expect.arrayContaining(['gluten', 'dairy']));
+  });
+});

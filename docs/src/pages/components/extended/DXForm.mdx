@@ -84,8 +84,9 @@ Each field is a `FieldDefinition`. Supported `type` values:
 | `textarea` | Multi-line input |
 | `select` | Dropdown (sync `options` or async `optionsLoader`). Add `searchable: true` for a type-to-filter select that still models the option's `value` |
 | `autocomplete` | Free-text input with a `<datalist>` of suggestions (sync `options` or async `optionsLoader`); accepts values not in the list |
-| `radio` | Radio group |
-| `checkbox` | Single checkbox |
+| `radio` | Radio group (single value from `options`) |
+| `checkbox` | Single checkbox (boolean) |
+| `checkbox-group` | Multiple checkboxes — "pick any of N" — from `options`; the model is an **array** of the checked option `value`s (default the field to `[]`) |
 | `currency`, `percentage` | Numeric input with a `£`/`%` affix |
 | `image`, `file` | File input (`image` shows a preview) |
 | `component` | Renders your `field.component` (escape hatch) |

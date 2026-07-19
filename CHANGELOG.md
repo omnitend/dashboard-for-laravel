@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`checkbox-group` field type + `DFormCheckboxGroup` component** (#148) — a
+  "pick any of N" multi-checkbox from an `options` array; the model is an array
+  of the checked values. Previously consumers hand-rolled the multi-checkbox in a
+  custom `#value(<key>)` slot. Use `type: 'checkbox-group'` in a DXForm field (or
+  `<DFormCheckboxGroup :options>` directly); default the field to `[]`.
+
 ### Changed
 
 - **Chart components moved to a `/charts` subpath entry** (#142) so `chart.js`
