@@ -36,8 +36,8 @@
              `.card-body` wrapper — DTabs already provides `.card-header`/
              `.card-body` internally via its own `card` prop, so wrapping
              that in another `.card-body` would double up. -->
-        <component :is="card ? DCard : 'div'" v-if="hasTabs" v-bind="card ? { noBody: true } : {}">
-            <DTabs v-model:index="activeTab" :card="card">
+        <component :is="tabsInCard ? DCard : 'div'" v-if="hasTabs" v-bind="tabsInCard ? { noBody: true } : {}">
+            <DTabs v-model:index="activeTab" :card="tabsInCard">
                 <DTab
                     v-for="(tab, index) in visibleTabs"
                     :key="tab.key"
@@ -213,11 +213,22 @@ interface Props {
 
     /**
      * Wrap the form in a card for a visual boundary (mirrors DXTable's
-     * `card` prop). Tabbed forms render the tab nav as a BS5
-     * card-header-tabs instead of double-wrapping. Off by default since
-     * DXForm is commonly embedded in a page card or modal already.
+     * `card` prop). Off by default since DXForm is commonly embedded in a
+     * page card or modal already. Tabbed forms are wrapped by default
+     * regardless — see `cardTabs`; setting `card` also forces the tabbed
+     * card on even when `cardTabs` is disabled.
      */
     card?: boolean;
+
+    /**
+     * Wrap a TABBED form's content in a card panel so the active tab reads
+     * as a finished panel connected to the tab strip (the standard
+     * Bootstrap card-with-tabs pattern) rather than floating on the bare
+     * page background (#159). On by default. Set `false` for bare tabs
+     * (e.g. inside a modal that already provides a boundary). Ignored for
+     * flat (non-tabbed) forms — use `card` for those.
+     */
+    cardTabs?: boolean;
 
     /**
      * Form-wide field layout: "vertical" (default, label above input) or
@@ -241,6 +252,7 @@ const props = withDefaults(defineProps<Props>(), {
     showSubmit: true,
     autoErrorTab: true,
     card: false,
+    cardTabs: true,
     layout: "vertical",
 });
 
@@ -316,6 +328,14 @@ function isFieldVisible(field: FieldDefinition): boolean {
 
 const hasTabs = computed(
     () => !!props.tabs && props.tabs.length > 0,
+);
+
+// Tabbed forms render inside a card panel by default (#159) so the tab
+// content reads as a finished panel rather than floating on the page.
+// `cardTabs` is the tabbed-only toggle (on by default); `card` (which also
+// wraps flat forms) still forces it on. Flat forms are unaffected.
+const tabsInCard = computed(
+    () => hasTabs.value && (props.card || props.cardTabs),
 );
 
 function visibleFieldsFor(tab: FormTab): FieldDefinition[] {

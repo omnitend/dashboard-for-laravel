@@ -619,13 +619,41 @@ describe('DXForm', () => {
       expect(card?.querySelector('button[type="submit"]')).toBeTruthy();
     });
 
-    it('does not render a card for a tabbed form by default', async () => {
+    // #159: a tabbed form's content used to float on the bare page with no
+    // panel beneath the tab strip ("tabs look weird without a card body").
+    // It now renders inside a card panel by default so the active tab reads
+    // as connected to a finished panel.
+    it('wraps tabbed content in a card-body panel by default (#159)', async () => {
       const screen = render(DXForm, {
         props: { form: makeForm(), fields: productFields, tabs: productTabs, showSubmit: false },
       });
       await flush();
 
+      const card = screen.container.querySelector('.card');
+      expect(card).toBeTruthy();
+      // The active tab's first field input sits inside `.card` → … → `.card-body`.
+      const input = screen.container.querySelector('input') as HTMLInputElement | null;
+      expect(input).toBeTruthy();
+      const cardBody = input?.closest('.card-body') ?? null;
+      expect(cardBody).toBeTruthy();
+      expect(cardBody?.closest('.card')).toBe(card);
+    });
+
+    it('renders bare tabs with no card panel when cardTabs is false', async () => {
+      const screen = render(DXForm, {
+        props: {
+          form: makeForm(),
+          fields: productFields,
+          tabs: productTabs,
+          showSubmit: false,
+          cardTabs: false,
+        },
+      });
+      await flush();
+
       expect(screen.container.querySelector('.card')).toBeFalsy();
+      // Tabs themselves still render.
+      expect(navLabels(screen.container)).toEqual(['General', 'Details']);
     });
 
     it('renders the tab nav as card-header-tabs when card is true on a tabbed form', async () => {
