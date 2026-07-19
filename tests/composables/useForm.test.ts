@@ -153,3 +153,39 @@ describe('useForm delete (#87)', () => {
     expect(deleteSpy.mock.calls[0][1]).toBeUndefined();
   });
 });
+
+describe('useForm transform shapes the payload without mutating form state (#150)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reflects the transform in the sent payload but leaves form.data untouched', async () => {
+    const putSpy = vi
+      .spyOn(api, 'put')
+      .mockResolvedValue({ data: {}, response: {} as Response });
+
+    const form = useForm({ name: 'Ada', web_shop: false });
+
+    // The exact footgun #150 targets: a transform that ASSEMBLES fields from
+    // separate state and MUTATES what it receives. Consumers were doing this in
+    // a before-save guard against `form.data` directly, corrupting form state.
+    await form.put('/api/products/1', {
+      transform: (data: any) => {
+        data.allergens = ['gluten', 'nuts']; // assembled from separate UI state
+        data.web_shop = true;
+        return data;
+      },
+    });
+
+    // Outbound payload carries the shaped values.
+    const sentBody = putSpy.mock.calls[0][1] as Record<string, any>;
+    expect(sentBody.allergens).toEqual(['gluten', 'nuts']);
+    expect(sentBody.web_shop).toBe(true);
+
+    // Form state is NOT mutated by the transform (would fail if transform got
+    // the live state.data instead of a copy).
+    expect((form.data as Record<string, any>).allergens).toBeUndefined();
+    expect(form.data.web_shop).toBe(false);
+    expect(form.data.name).toBe('Ada');
+  });
+});

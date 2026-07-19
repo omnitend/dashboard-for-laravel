@@ -255,7 +255,16 @@ export function useForm<TData extends Record<string, any>>(
 
         const payloadRaw = (
             options.transform
-                ? options.transform(state.data as TData)
+                ? // Give `transform` a COPY of the form data (#150), so a transform
+                  // that MUTATES what it receives — `data.allergens = assemble();
+                  // return data` — shapes the outbound payload WITHOUT corrupting
+                  // form state. (This is why consumers reach for a transform instead
+                  // of mutating `form.data` in a validation guard.) A shallow copy:
+                  // returning a new object is still the tidiest style, and a
+                  // deeply-nested field should be replaced, not mutated in place.
+                  options.transform({
+                      ...(toRaw(state.data) as Record<string, any>),
+                  } as TData)
                 : (state.data as TData)
         ) as any;
 

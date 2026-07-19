@@ -135,10 +135,34 @@ const form = useForm({
 </template>
 ```
 
+### Shaping the payload before submit
+
+When the submitted payload differs from the form's field state — fields
+assembled from other component state, computed values, renamed keys — pass a
+`transform` to the submit call. **Do not mutate `form.data`** (e.g. in a
+validation guard) to reshape the payload: that corrupts the form's own state and
+its validation bindings. `transform` receives a **copy** of the data and returns
+the payload to send, so form state stays intact — even if the transform mutates
+what it receives:
+
+```ts
+await form.put(`/api/products/${id}`, {
+  transform: (data) => ({
+    ...data,
+    // assembled from separate UI state, not a form field:
+    allergens: selectedAllergens.value.map((a) => a.id),
+    web_shop_available: availabilityToggle.value,
+  }),
+});
+```
+
+The transform applies only to that submit. Returning a new object (spread) is
+the tidiest style; a mutating transform is safe too, since it only sees the copy.
+
 ### Tips
 
 - Bind to `form.data.*` (or `form.field('name')`) so validation state stays in sync.
-- Use `options.transform` to reshape payloads before sending.
+- Reshape the outbound payload with `transform` (above), never by mutating `form.data`.
 - `reset()` restores the initial snapshot; pass a list of keys to reset specific fields only.
 
 ## DXForm Component

@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`useForm` `transform` no longer risks mutating form state** (#150). The
+  per-submit `transform(data)` hook now receives a *copy* of the form data, so a
+  transform that assembles the payload by mutating what it receives can't corrupt
+  `form.data` (and its validation bindings). Documented with a worked example in
+  the forms guide — reshape the payload with `transform`, not by mutating
+  `form.data` in a validation guard.
+
 - **Toast tints now track the soft-first palette** (#143). They were derived
   from the base *emphasis* colours, so success/warning read greyer and danger
   sat in the wrong hue (a pink, not the soft plum). Sourced from each variant's
