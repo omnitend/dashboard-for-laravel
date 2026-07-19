@@ -122,12 +122,14 @@ const items = ref([
   { name: 'pagination', type: 'PaginationData', required: 'No', default: 'function', description: 'Pagination data (Inertia mode)' },
   { name: 'showPagination', type: 'boolean', required: 'No', default: 'true', description: 'Show pagination controls' },
   { name: 'showPerPageSelector', type: 'boolean', required: 'No', default: 'true', description: 'Show per-page selector' },
+  { name: 'showCount', type: 'boolean', required: 'No', default: 'true', description: 'Show the footer item-count caption ("N items."). Set false to suppress just the caption, independent of the pager (e.g. a page ported from a plain <b-table> that hides the pager and never had a caption)' },
   { name: 'perPageOptions', type: 'number[]', required: 'No', default: '[10, 20, 50, 100]', description: 'Per-page options for selector' },
   { name: 'currentPage', type: 'number', required: 'No', default: '1', description: 'Current page (for provider mode)' },
-  { name: 'perPage', type: 'number', required: 'No', default: '10', description: 'Page size. With v-model, controlled by you; without one, the INITIAL page size and the per-page selector still works' },
+  { name: 'perPage', type: 'number', required: 'No', default: '10', description: 'Page size. With v-model, controlled by you; without one, the INITIAL page size and the per-page selector still works. An explicitly-passed perPage takes precedence over any per-page preference persisted in localStorage (URL-keyed tables only) — :per-page="20" always starts at 20' },
   { name: 'striped', type: 'boolean', required: 'No', default: 'false', description: 'Striped (banded) rows. Off by default; opt in for dense tables' },
   { name: 'hover', type: 'boolean', required: 'No', default: 'true', description: 'Hover effect on rows' },
   { name: 'responsive', type: 'boolean', required: 'No', default: 'true', description: 'Responsive table' },
+  { name: 'fixedLayout', type: 'boolean', required: 'No', default: 'false', description: 'Apply table-layout: fixed so column widths stop depending on cell content and no longer reshuffle when a filter narrows the rows. Off by default. Combine with per-field width/minWidth to control proportions; undeclared columns share the rest equally' },
   { name: 'fluid', type: 'boolean', required: 'No', default: 'false', description: 'Fluid container' },
   { name: 'containerClass', type: 'string', required: 'No', default: 'py-5', description: 'Container CSS class' },
   { name: 'columnSize', type: 'string | number', required: 'No', default: '12', description: 'Column size (Bootstrap grid)' },
@@ -822,6 +824,8 @@ interface TableField {
   filterOptions?: FilterOption[]; // Options for select filters
   filterPlaceholder?: string;     // Placeholder for filter input
   formatter?: (value: any, key: string, item: any) => string; // Custom formatter function
+  width?: string | number;        // Fixed column width via <colgroup> (number → px). Pair with fixedLayout (#156)
+  minWidth?: string | number;     // Minimum column width, same <col> (number → px)
   [key: string]: any;             // Any other Bootstrap Vue Next BTable field props
 }
 ```

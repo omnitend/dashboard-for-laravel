@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`DXForm` wraps tabbed content in a card panel by default** (#159) — a tabbed
+  form's tab content used to float on the bare page with no panel beneath the
+  tab strip, reading as unfinished. It now renders inside a card panel (the
+  standard Bootstrap card-with-tabs look) via a new `card-tabs` prop that
+  defaults `true`. Set `:card-tabs="false"` for bare tabs (e.g. inside a modal
+  that already provides a boundary — the DXTable edit modal does this). Flat
+  (non-tabbed) forms are unaffected.
+
+- **`DXTable` gains a `fixed-layout` prop + per-field `width`/`min-width`**
+  (#156) — filtering a table used to reshuffle every column width because
+  columns were content-sized, so the table "jumped" as rows narrowed.
+  `:fixed-layout="true"` applies `table-layout: fixed` so widths stop depending
+  on cell content; a field's `width`/`minWidth` is honoured via an injected
+  `<colgroup>` (authoritative even with the inline filter row present). Off by
+  default — existing tables are unchanged.
+
 - **`DAutocomplete` gains a `null-option` prop** (#138) — an opt-in, pinned,
   never-filtered, selectable "no selection" row whose value is `null`. `true`
   labels it **None**; a string sets a custom label. Selecting it sets the model
