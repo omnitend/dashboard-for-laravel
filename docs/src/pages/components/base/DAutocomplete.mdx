@@ -20,6 +20,20 @@ DAutocomplete - A type-safe wrapper around Bootstrap Vue Next's BAutocomplete co
   <DAutocompleteExample client:load />
 </ComponentExample>
 
+## Extra props (beyond Bootstrap Vue Next)
+
+`DAutocomplete` adds one prop on top of `BAutocomplete`'s API to make it a
+complete searchable single-select:
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `null-option` | `boolean \| string` | `false` | Prepend a pinned, never-filtered, selectable "no selection" row whose value is `null`. `true` uses the label **None**; a string sets a custom label. Selecting it sets the model to `null` (which reads as no selection — the clear ✕ hides and the placeholder shows). When a custom `filterFunction` is supplied it composes: the null option stays pinned and your filter runs on the remaining options. |
+
+Option **values round-trip unchanged** — a numeric `value` comes back as a
+number, so there is no `String()`/`Number()` dance. (DXTable's string-value
+column filters are unaffected; it builds its own "All" option and does not use
+`null-option`.)
+
 ## Slots
 
 This component forwards all slots dynamically from the underlying Bootstrap Vue Next component.

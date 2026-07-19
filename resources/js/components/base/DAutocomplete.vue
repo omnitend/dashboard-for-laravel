@@ -4,16 +4,106 @@
  * Text input with a filtered dropdown of suggestions (typeahead/combobox).
  * Pass `options` and bind `v-model`; supports `multiple` and a custom
  * `filterFunction`.
+ *
+ * `null-option` adds an opt-in, pinned "no selection" row (see below) so a
+ * searchable single-select can always reach "none" in-list (#138).
  */
 <script setup lang="ts">
 import { computed, useAttrs } from "vue";
 import { BAutocomplete } from "bootstrap-vue-next";
+import type { SelectOption } from "bootstrap-vue-next";
+
+// bvn's own `options` prop type — kept identical so this stays a pass-through.
+type AutocompleteOptions = readonly (object | string | number | boolean)[];
+type FilterFunction = (options: SelectOption[], search: string) => SelectOption[];
+
+interface Props {
+  /** Options passed straight through to BAutocomplete (see its `options` prop). */
+  options?: AutocompleteOptions;
+  /**
+   * A custom filter. Composed with `null-option` rather than replaced: when a
+   * null option is present it stays pinned and this runs on the rest.
+   */
+  filterFunction?: FilterFunction;
+  /**
+   * Prepend a pinned, never-filtered, selectable "no selection" row whose value
+   * is `null` (#138). `true` → default label "None"; a string → that label.
+   * Selecting it sets the model to `null` (bvn reads that as no selection, so
+   * the ✕ hides and the placeholder shows). Off by default — unchanged
+   * behaviour. DXTable does NOT use this; it builds its own "All" option.
+   */
+  nullOption?: boolean | string;
+}
+
+const props = defineProps<Props>();
 
 defineOptions({
   inheritAttrs: false,
 });
 
 const attrs = useAttrs();
+
+const attr = (name: string, hyphenated: string) =>
+  (attrs as Record<string, unknown>)[name] ?? (attrs as Record<string, unknown>)[hyphenated];
+
+const DEFAULT_NULL_OPTION_LABEL = "None";
+
+/*
+ * The null option is a raw option that bvn will normalise through the SAME
+ * `value-field`/`text-field` the consumer configured (default `value`/`text`).
+ * Build it with those effective field names so it normalises to
+ * `{ value: null, text: label }` — otherwise a consumer using e.g.
+ * `value-field="id" text-field="label"` would normalise our `{ value, text }`
+ * to `{ value: undefined, text: undefined }`, and the row would be filtered out
+ * and select as `undefined` instead of `null` (#138 review).
+ */
+const nullOption = computed<Record<string, unknown> | null>(() => {
+  const raw = props.nullOption;
+  if (raw === false || raw === undefined) return null;
+  const text = typeof raw === "string" ? raw : DEFAULT_NULL_OPTION_LABEL;
+  const valueField = (attr("valueField", "value-field") as string | undefined) ?? "value";
+  const textField = (attr("textField", "text-field") as string | undefined) ?? "text";
+  return { [valueField]: null, [textField]: text };
+});
+
+const consumerOptions = computed<AutocompleteOptions>(() =>
+  Array.isArray(props.options) ? props.options : [],
+);
+
+const computedOptions = computed<AutocompleteOptions>(() => {
+  const pinned = nullOption.value;
+  if (!pinned) return props.options ?? [];
+  return [pinned, ...consumerOptions.value];
+});
+
+const isNullOption = (option: SelectOption) => option?.value === null;
+
+/*
+ * When a null option is present it must stay pinned (top of the list, immune to
+ * the search term); the consumer's `filterFunction` — or bvn's default
+ * substring-on-text match — applies only to the rest, so the two compose rather
+ * than clobber. With no null option we forward the consumer's filter unchanged
+ * (possibly undefined, letting bvn use its own default).
+ */
+const effectiveFilterFunction = computed<FilterFunction | undefined>(() => {
+  const pinned = nullOption.value;
+  const consumerFilter = props.filterFunction;
+  if (!pinned) return consumerFilter;
+
+  return (options, search) => {
+    const rest = options.filter((option) => !isNullOption(option));
+    const filteredRest = consumerFilter
+      ? consumerFilter(rest, search)
+      : search
+        ? rest.filter((option) =>
+            String(option.text ?? "")
+              .toLowerCase()
+              .includes(search.toLowerCase()),
+          )
+        : rest;
+    return [...options.filter(isNullOption), ...filteredRest];
+  };
+});
 
 /*
  * Diverges from bvn: the clear (✕) is hidden when there is nothing to clear.
@@ -28,9 +118,6 @@ const attrs = useAttrs();
  * A consumer's explicit `no-clear-button` still wins; this only ever hides the
  * button, never forces it on.
  */
-const attr = (name: string, hyphenated: string) =>
-  (attrs as Record<string, unknown>)[name] ?? (attrs as Record<string, unknown>)[hyphenated];
-
 const hasValue = computed(() => {
   const value = attr("modelValue", "model-value");
   if (Array.isArray(value)) return value.length > 0;
@@ -52,7 +139,12 @@ const noClearButton = computed(
     (#53). A plain element root makes it deterministic.
   -->
   <div class="d-autocomplete">
-    <BAutocomplete v-bind="$attrs" :no-clear-button="noClearButton">
+    <BAutocomplete
+      v-bind="$attrs"
+      :options="computedOptions"
+      :filter-function="effectiveFilterFunction"
+      :no-clear-button="noClearButton"
+    >
       <!-- Dynamically pass through all named slots with their props -->
       <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
         <slot :name="name" v-bind="slotProps" />

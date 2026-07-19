@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`DAutocomplete` gains a `null-option` prop** (#138) — an opt-in, pinned,
+  never-filtered, selectable "no selection" row whose value is `null`. `true`
+  labels it **None**; a string sets a custom label. Selecting it sets the model
+  to `null` (the clear ✕ hides, the placeholder shows). A consumer
+  `filterFunction` composes rather than being replaced — the null option stays
+  pinned and the filter runs on the rest. This completes the searchable
+  single-select spec from #138: consumers can drop the house
+  `ot-searchable-select` and its two-tab-stop interaction.
+
+### Fixed
+
+- **`DAutocomplete` value identity confirmed and guarded** (#153, closed as
+  fixed-upstream). The long-standing belief that it stringifies option values
+  through the DOM — the biggest reason the house `ot-searchable-select` was
+  built — does **not** reproduce on the bundled bvn: a numeric `value`
+  round-trips as a number, no `String()`/`Number()` dance. Pinned with a test in
+  both directions (numeric and the string path DXTable filters depend on) so a
+  future bvn bump that regresses value identity fails loudly. Consumers carrying
+  the workaround can remove it.
+
 ## [0.29.0] - 2026-07-19
 
 ### Added
