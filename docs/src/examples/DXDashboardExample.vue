@@ -11,7 +11,7 @@
       ></iframe>
     </div>
 
-    <DAlert :model-value="true" variant="info" class="mt-3">
+    <DAlert variant="info" class="mt-3">
       <strong>Tip:</strong> Click the hamburger menu in the example above to toggle the sidebar. This documentation site itself also uses DXDashboard!
     </DAlert>
   </div>

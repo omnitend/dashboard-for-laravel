@@ -168,6 +168,36 @@ consumer source change needed (types match); document in the changelog.
 
 ---
 
+### 6. `DAlert` `modelValue` default — visible by default instead of bvn's hidden
+
+| | |
+| --- | --- |
+| **Our API** | `modelValue` defaults to `true`, so a bare static `<DAlert variant="info">…</DAlert>` renders visible |
+| **bvn API** | `BAlert` defaults `modelValue` to `false`, so a bare static alert renders **nothing** |
+| **Shielded in** | `resources/js/components/base/DAlert.vue` (declared `modelValue` prop, default `true`, re-bound explicitly) |
+| **Applies to** | `DAlert` (NOT `DToast` — see below) |
+| **Introduced** | issue #144 |
+
+**Why:** BAlert's hidden-by-default is a footgun for the common case — a static,
+always-shown alert — which then renders nothing with no error (it bit our own
+docs repeatedly). Same prop name and type as bvn (`boolean | number`, where a
+number is the auto-dismiss duration in ms), so it's source-compatible; only the
+default differs. Every call site that passes `v-model`/`:model-value` is
+unaffected — only the bare-static case (which was always a bug) changes. Like
+#4/#5 this is a same-typed behavioural enhancement. `emits` is left undeclared
+so an `update:modelValue` listener still flows through `$attrs` to `BAlert` and
+`v-model` dismissal round-trips.
+
+**Not `DToast`:** toasts are shown imperatively (via `useToast().create(…)`),
+not by statically placing a `<DToast>` with a truthy model — so hidden-by-default
+is semantically correct there and is left as bvn ships it.
+
+**Convergence (future major):** if a future bvn makes alerts visible by default
+(or the wrapper is dropped), remove the default. No consumer source change
+needed (types match); document in the changelog.
+
+---
+
 ## Components that are NOT wrapped (raw bvn passthrough)
 
 These are exported directly as the underlying bvn component (not a `D*`

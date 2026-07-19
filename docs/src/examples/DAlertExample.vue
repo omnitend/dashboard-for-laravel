@@ -3,22 +3,22 @@
     <div class="example-section">
       <h5>Alert Variants</h5>
       <div class="alert-group">
-        <DAlert :model-value="true" variant="primary">
+        <DAlert variant="primary">
           <strong>Primary Alert</strong> - This is a primary alert with important information.
         </DAlert>
-        <DAlert :model-value="true" variant="secondary">
+        <DAlert variant="secondary">
           <strong>Secondary Alert</strong> - This is a secondary alert with less critical information.
         </DAlert>
-        <DAlert :model-value="true" variant="success">
+        <DAlert variant="success">
           <strong>Success!</strong> Your changes have been saved successfully.
         </DAlert>
-        <DAlert :model-value="true" variant="danger">
+        <DAlert variant="danger">
           <strong>Error!</strong> There was a problem processing your request.
         </DAlert>
-        <DAlert :model-value="true" variant="warning">
+        <DAlert variant="warning">
           <strong>Warning!</strong> Please review the following information carefully.
         </DAlert>
-        <DAlert :model-value="true" variant="info">
+        <DAlert variant="info">
           <strong>Info:</strong> System maintenance scheduled for tonight at 2:00 AM.
         </DAlert>
       </div>
@@ -42,7 +42,7 @@
     <div class="example-section">
       <h5>Alerts with Additional Content</h5>
       <div class="alert-group">
-        <DAlert :model-value="true" variant="info">
+        <DAlert variant="info">
           <h6 class="alert-heading">System Update Available</h6>
           <p>A new version of the system is available. This update includes security patches and new features.</p>
           <hr>

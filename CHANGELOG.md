@@ -26,7 +26,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unchanged (a separate build emits `dist/charts.*`); the `.dx-chart` container
   style is now global in the main stylesheet, so `/charts` ships no CSS.
 
+- **`DAlert` is visible by default** (#144). bvn's `BAlert` defaults
+  `modelValue` to `false`, so a bare static `<DAlert variant="info">…</DAlert>`
+  rendered nothing — a recurring footgun. The wrapper now defaults it to `true`;
+  every call site passing `v-model`/`:model-value` is unaffected, only the
+  bare-static case (always a bug) changes. Same `boolean | number` type, so it's
+  source-compatible. Recorded as DIVERGENCES.md #6. `DToast` is intentionally
+  left hidden-by-default (toasts are shown imperatively via `useToast()`).
+
 ### Fixed
+
+- **Toast tints now track the soft-first palette** (#143). They were derived
+  from the base *emphasis* colours, so success/warning read greyer and danger
+  sat in the wrong hue (a pink, not the soft plum). Sourced from each variant's
+  `soft-bg` in `$dx-variants` now, so editing a `soft-bg` moves toasts too.
 
 - **CI Tests workflow is green again** (was red for weeks). Two dev-tooling
   causes, no runtime impact: (1) the `pretest*` hooks ran `vite build` without
