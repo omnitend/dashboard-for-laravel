@@ -37,6 +37,9 @@
              from one row into the next. The key gives each record a fresh
              field subtree; the data still lives in `form`, so nothing
              is lost by remounting. -->
+        <!-- Tabs stay bare here: the modal body already provides the panel
+             boundary, so DXForm's default card-panel-around-tabs (#159) would be
+             redundant nested chrome inside the modal. -->
         <DXForm
             v-if="form"
             :key="formInstanceKey"
@@ -44,6 +47,7 @@
             :form="form"
             :fields="fields"
             :tabs="tabs"
+            :card-tabs="false"
             :context="item ?? undefined"
             :show-submit="false"
             @update:active-tab="emit('update:activeTab', $event)"
