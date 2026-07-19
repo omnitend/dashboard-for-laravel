@@ -436,14 +436,17 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 
   // Semantic variants: subtle tinted surface, driven through the CSS variable
   // the base `.toast` rule (above, and Bootstrap's own) already reads.
-  @each $name, $color in (
-    "success": $success,
-    "danger": $danger,
-    "warning": $warning,
-    "info": $info
-  ) {
+  //
+  // Sourced from each variant's `soft-bg` in $dx-variants (#143) — the same
+  // vivid-derived soft family badges/alerts use — so the toast hue tracks the
+  // palette and editing a `soft-bg` moves toasts too. Previously these mixed the
+  // dark *emphasis* base colours (greyer success/warning) and danger's saturated
+  // red (a pink, not the soft system's plum). Mixed 50% with white so a large
+  // toast surface stays fainter than a small badge while keeping the hue.
+  @each $name in ("success", "danger", "warning", "info") {
+    $variant: map.get($dx-variants, $name);
     &.toast-#{$name} {
-      --bs-toast-bg: #{color.mix($color, $white, 8%)};
+      --bs-toast-bg: #{color.mix(map.get($variant, "soft-bg"), $white, 50%)};
     }
   }
 }
