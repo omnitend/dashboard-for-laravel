@@ -57,6 +57,7 @@
                         :striped="striped"
                         :hover="hover"
                         :responsive="responsive"
+                        :fixed="fixedLayout"
                         :tbody-tr-class="composeRowClass"
                         v-bind="{ ...tableModeBindings, ...tablePassthroughProps }"
                         @update:sort-by="handleSortChange"
@@ -65,6 +66,25 @@
                         @update:busy="handleBusyChange"
                         @row-clicked="handleRowClick"
                     >
+                        <!-- Per-column widths (#156) via a `<colgroup>`. bvn nests this
+                             slot's `<col>`s inside a `<colgroup>` it renders. Only
+                             emitted when a field declares a width AND the consumer hasn't
+                             supplied their own `table-colgroup` (forwarded generically) —
+                             so a table with no widths gets no colgroup and renders exactly
+                             as before. `<col>` widths are authoritative under
+                             `table-layout: fixed`, where the filter row (not the header)
+                             is the width-determining first row. -->
+                        <template
+                            v-if="fieldsHaveWidths && !$slots['table-colgroup']"
+                            #table-colgroup
+                        >
+                            <col
+                                v-for="field in fields"
+                                :key="`col-${field.key}`"
+                                :style="columnStyleFor(field)"
+                            />
+                        </template>
+
                         <!-- DXTable owns `thead-top` (its filter row lives there), so a
                              consumer's own thead-top content is COMPOSED above it rather
                              than being dropped: a grouped column-header banner or a pinned
@@ -289,6 +309,21 @@ export interface TableField {
     filter?: FilterType;
     filterOptions?: FilterOption[];
     filterPlaceholder?: string;
+
+    /**
+     * Fixed width for this column, applied via a `<colgroup>` `<col>`. A number
+     * is treated as pixels (`200` → `200px`); a string is used verbatim
+     * (`"20%"`, `"12rem"`). Pair with the table-level `fixedLayout` prop so the
+     * width is authoritative and the column stops resizing to fit its content —
+     * without `fixedLayout` a wider cell can still stretch the column (#156).
+     */
+    width?: string | number;
+
+    /**
+     * Minimum width for this column, applied via the same `<col>` as `width`.
+     * A number is pixels; a string is used verbatim.
+     */
+    minWidth?: string | number;
     [key: string]: any;
 }
 
@@ -543,6 +578,16 @@ export interface Props<TItem = any> {
 
     /** Enable client-side filtering, sorting, and pagination on items array */
     clientSide?: boolean;
+
+    /**
+     * Apply `table-layout: fixed` to the underlying table. Off by default, so
+     * existing tables keep their content-sized columns. When on, column widths
+     * stop depending on cell content, so they no longer reshuffle when a filter
+     * narrows the rows — the table stays put as you filter (#156). Combine with
+     * per-field `width`/`minWidth` to control the proportions; columns with no
+     * declared width share the remaining space equally.
+     */
+    fixedLayout?: boolean;
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
@@ -575,6 +620,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     showCreateButton: true,
     footClone: false,
     showEmpty: true,
+    fixedLayout: false,
 });
 
 const emit = defineEmits<{
@@ -924,6 +970,35 @@ const hasFieldValue = (item: unknown, key: string): boolean => {
  */
 const dottedCellFields = (slots: Record<string, unknown>): TableField[] =>
     props.fields.filter((field) => field.key.includes('.') && !slots[`cell(${field.key})`]);
+
+/*
+ * Per-column widths (#156). A field's `width`/`minWidth` is applied through a
+ * `<colgroup>` `<col>`, NOT the header `<th>`: with `table-layout: fixed` the
+ * column widths are taken from the FIRST row of cells, and DXTable's inline
+ * filter row (`thead-top`) is that first row — so a width on the header `<th>`
+ * would be ignored whenever filters are present. A `<col>` width is
+ * authoritative regardless of row order, in both fixed and auto layout.
+ */
+const sizeToCss = (value: string | number): string =>
+    typeof value === 'number' ? `${value}px` : value;
+
+const hasDeclaredWidth = (field: TableField): boolean =>
+    (field.width !== undefined && field.width !== null) ||
+    (field.minWidth !== undefined && field.minWidth !== null);
+
+const columnStyleFor = (field: TableField): Record<string, string> | undefined => {
+    const style: Record<string, string> = {};
+    if (field.width !== undefined && field.width !== null) style.width = sizeToCss(field.width);
+    if (field.minWidth !== undefined && field.minWidth !== null) {
+        style.minWidth = sizeToCss(field.minWidth);
+    }
+    return Object.keys(style).length > 0 ? style : undefined;
+};
+
+// Only inject a `<colgroup>` when a column actually declares a width — otherwise
+// the table renders exactly as before (no colgroup at all), preserving the
+// content-sized default byte-for-byte.
+const fieldsHaveWidths = computed(() => props.fields.some(hasDeclaredWidth));
 
 // Computed: Get effective filter options for a field
 // The key a column's filter is SENT under, which is not always the column's own
