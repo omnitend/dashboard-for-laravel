@@ -45,8 +45,9 @@
             </div>
         </div>
 
-        <!-- Bottom row: Info text -->
-        <div class="small text-muted">
+        <!-- Bottom row: Info text (the item-count caption). Suppressed by
+             `showCount` independent of the pager (#127). -->
+        <div v-if="showCount" class="small text-muted">
             <div>
                 <template v-if="pagination.total > pagination.per_page">
                     {{ pagination.from }} to {{ pagination.to }} out of {{ pagination.total }} {{ pagination.total === 1 ? singularItemName : pluralItemName }}.
@@ -81,6 +82,8 @@ interface Props {
     showPagination: boolean;
     /** Whether to render the per-page selector. */
     showPerPageSelector: boolean;
+    /** Whether to render the item-count caption (the "X out of Z items" line). */
+    showCount: boolean;
     /** Singular item noun for the info line (e.g. "product"). */
     singularItemName: string;
     /** Plural item noun for the info line (e.g. "products"). */

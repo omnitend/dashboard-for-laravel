@@ -2512,3 +2512,113 @@ describe('DXTable Inertia filter-change keeps the selected perPage', () => {
     expect(data).toHaveProperty('filters');
   });
 });
+
+/**
+ * #124. `getInitialPerPage()` read a persisted per-page from localStorage and
+ * preferred it over the `perPage` prop, so `:per-page="20"` (which since #110
+ * means "start at 20") was silently overridden by whatever the user last picked
+ * on some OTHER table. Compounded by the fallback storage key being the literal
+ * `table` — shared by every keyless client-side table, so they clobbered each
+ * other's preference. Fix: an explicitly-passed `perPage` wins over the stored
+ * value, and keyless tables don't persist at all.
+ */
+describe('DXTable explicit perPage wins over a stored preference (#124)', () => {
+  const KEYLESS_KEY = 'dxtable-perpage-table';
+  beforeEach(() => localStorage.removeItem(KEYLESS_KEY));
+  afterEach(() => localStorage.removeItem(KEYLESS_KEY));
+
+  const manyRows = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, name: `Row ${i + 1}` }));
+  const nameField = [{ key: 'name', label: 'Name', sortable: true }];
+
+  const pickPerPage = async (screen: any, value: string) => {
+    const select = screen.container.querySelector('select') as HTMLSelectElement;
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await wait(60);
+  };
+
+  it('starts at the explicitly-passed :per-page, not a conflicting stored value', async () => {
+    // A value this user once picked on a DIFFERENT table.
+    localStorage.setItem(KEYLESS_KEY, '10');
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: manyRows,
+            fields: nameField,
+            clientSide: true,
+            perPage: 20,
+            perPageOptions: [10, 20, 50, 100],
+          }),
+        ),
+    });
+    await flush();
+
+    // Before the fix: the stored 10 won and the table rendered 10 rows.
+    expect(screen.container.querySelectorAll('tbody tr').length).toBe(20);
+  });
+
+  it('does not persist a keyless client-side table (no shared `table` key collision)', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, { items: manyRows, fields: nameField, clientSide: true }),
+        ),
+    });
+    await flush();
+
+    await pickPerPage(screen, '50');
+
+    // Before the fix: this wrote `dxtable-perpage-table`, which every other
+    // keyless table then read back as its starting size — a cross-table leak.
+    expect(localStorage.getItem(KEYLESS_KEY)).toBeNull();
+  });
+});
+
+/**
+ * #127. On a client-side table, `show-pagination: false` hides the pager but the
+ * footer's "N items." caption still rendered, so a page ported from a plain
+ * `<b-table>` gained a caption it never had. `show-count` (default true)
+ * suppresses just that caption, independent of the pager.
+ */
+describe('DXTable show-count suppresses the item-count caption (#127)', () => {
+  const fiveRows = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, name: `Row ${i + 1}` }));
+  const nameField = [{ key: 'name', label: 'Name' }];
+
+  const paginationFooter = (screen: any) =>
+    screen.container.querySelector('.dx-table-pagination') as HTMLElement | null;
+
+  it('shows the count caption by default', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, { items: fiveRows, fields: nameField, clientSide: true }),
+        ),
+    });
+    await flush();
+
+    const footer = paginationFooter(screen);
+    expect(footer).toBeTruthy();
+    expect(footer!.textContent).toContain('5 items.');
+  });
+
+  it('suppresses the count caption when show-count is false', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: fiveRows,
+            fields: nameField,
+            clientSide: true,
+            showCount: false,
+          }),
+        ),
+    });
+    await flush();
+
+    const footer = paginationFooter(screen);
+    // Only the caption goes; the pager itself is still governed by show-pagination.
+    expect(footer?.textContent ?? '').not.toContain('items.');
+  });
+});

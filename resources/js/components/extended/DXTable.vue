@@ -177,6 +177,7 @@
                         :per-page-options="perPageOptions"
                         :show-pagination="showPagination"
                         :show-per-page-selector="shouldShowPerPageSelector"
+                        :show-count="showCount"
                         :singular-item-name="singularItemName"
                         :plural-item-name="pluralItemName"
                         :has-active-filters="hasActiveFilters"
@@ -390,13 +391,30 @@ export interface Props<TItem = any> {
     /** Show per-page selector */
     showPerPageSelector?: boolean;
 
+    /**
+     * Show the footer's item-count caption ("N items." / "X to Y out of Z
+     * items."). Defaults to `true`. Set `false` to suppress just the caption,
+     * independent of the pager — a page ported from a plain `<b-table>` that
+     * hides the pager with `:show-pagination="false"` would otherwise gain a
+     * caption it never had (#127).
+     */
+    showCount?: boolean;
+
     /** Per-page options for selector */
     perPageOptions?: number[];
 
     /** Current page (for provider mode) */
     currentPage?: number;
 
-    /** Items per page (for provider mode, v-model support) */
+    /**
+     * Items per page. With a `v-model:per-page` it is controlled state; a bare
+     * `:per-page="20"` is the INITIAL page size (see the initial-value vs
+     * controlled note above). When passed explicitly it takes PRECEDENCE over any
+     * per-page preference persisted in localStorage — `:per-page="20"` always
+     * starts at 20, never a size the user once picked on another table (#124).
+     * Omit it to let a stored preference (URL-keyed tables only) or the default
+     * apply.
+     */
     perPage?: number;
 
     /** Striped (banded) rows. Off by default — banding adds little on short
@@ -542,6 +560,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     }),
     showPagination: true,
     showPerPageSelector: true,
+    showCount: true,
     perPageOptions: () => [10, 20, 50, 100],
     currentPage: 1,
     // perPage: 10,  // Don't set default - let internalPerPage handle it
@@ -973,27 +992,51 @@ const getFieldFilterOptions = (field: TableField): FilterOption[] => {
     return [];
 };
 
-// LocalStorage key for perPage preference
-const perPageStorageKey = computed(() => {
-    const url = props.inertiaUrl || props.apiUrl || 'table';
+// LocalStorage key for the per-page preference. Only tables identified by a URL
+// (inertiaUrl / apiUrl) persist their preference: a keyless client-side table
+// has no stable identity across reloads, and every such table would otherwise
+// share the literal `table` key and clobber each other's stored value (#124).
+// Returns null when there is nothing stable to key on — every read and write
+// guards on that, so a keyless table simply doesn't persist.
+const perPageStorageKey = computed<string | null>(() => {
+    const url = props.inertiaUrl || props.apiUrl;
+    if (!url) return null;
     return `dxtable-perpage-${url.replace(/\//g, '-')}`;
 });
 
+// Whether the consumer EXPLICITLY passed `perPage`. A defaulted/omitted prop is
+// indistinguishable via `props`, so this reads the raw vnode props — the same
+// technique as `hasListener` above (Vue keeps passed props on the vnode).
+const wasPerPagePassed = ((): boolean => {
+    const vnodeProps = instance?.vnode.props ?? {};
+    return 'perPage' in vnodeProps || 'per-page' in vnodeProps;
+})();
+
 // Load perPage from localStorage or use default
 const getInitialPerPage = (): number => {
+    // An explicitly-passed `perPage` wins over any stored preference (#124):
+    // `:per-page="20"` means "start at 20" (since #110) and must not be silently
+    // overridden by a size the user once picked on a different table.
+    if (wasPerPagePassed && props.perPage !== undefined) {
+        return props.perPage;
+    }
+
     if (typeof window === 'undefined') return props.perPage || 10;
 
-    try {
-        const saved = localStorage.getItem(perPageStorageKey.value);
-        if (saved !== null) {
-            const parsed = parseInt(saved, 10);
-            // Validate it's in the allowed options
-            if (props.perPageOptions.includes(parsed)) {
-                return parsed;
+    const storageKey = perPageStorageKey.value;
+    if (storageKey !== null) {
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved !== null) {
+                const parsed = parseInt(saved, 10);
+                // Validate it's in the allowed options
+                if (props.perPageOptions.includes(parsed)) {
+                    return parsed;
+                }
             }
+        } catch (error) {
+            console.error('Error loading perPage from localStorage:', error);
         }
-    } catch (error) {
-        console.error('Error loading perPage from localStorage:', error);
     }
 
     return props.perPage || 10;
@@ -1006,10 +1049,11 @@ const internalPerPage = ref<number>(getInitialPerPage());
 watch(() => props.pagination?.per_page, (newPerPage) => {
     if (newPerPage && newPerPage !== internalPerPage.value) {
         internalPerPage.value = newPerPage;
-        // Also update localStorage to stay in sync
-        if (typeof window !== 'undefined') {
+        // Also update localStorage to stay in sync (only for URL-keyed tables).
+        const storageKey = perPageStorageKey.value;
+        if (typeof window !== 'undefined' && storageKey !== null) {
             try {
-                localStorage.setItem(perPageStorageKey.value, newPerPage.toString());
+                localStorage.setItem(storageKey, newPerPage.toString());
             } catch (error) {
                 console.error('Error saving perPage from watcher:', error);
             }
@@ -1445,10 +1489,11 @@ const handlePerPageChange = (newPerPage: number | string | null | (number | stri
         internalPerPage.value = perPageNum;
     }
 
-    // Save to localStorage
-    if (typeof window !== 'undefined') {
+    // Save to localStorage (only for URL-keyed tables — see perPageStorageKey).
+    const storageKey = perPageStorageKey.value;
+    if (typeof window !== 'undefined' && storageKey !== null) {
         try {
-            localStorage.setItem(perPageStorageKey.value, perPageNum.toString());
+            localStorage.setItem(storageKey, perPageNum.toString());
         } catch (error) {
             console.error('Error saving perPage to localStorage:', error);
         }
