@@ -154,6 +154,83 @@ describe('useForm delete (#87)', () => {
   });
 });
 
+describe('useForm overlapping submissions (#133)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('keeps processing true until the LAST in-flight request completes', async () => {
+    // Two submissions overlap. api.post returns a promise we resolve manually so
+    // we control completion order: the FIRST resolves while the SECOND is still
+    // pending. processing must stay true until the second also resolves — the bug
+    // was an unconditional `finally` flipping it false on the first completion.
+    vi.useFakeTimers();
+    const resolvers: Array<(value: { data: unknown; response: Response }) => void> = [];
+    vi.spyOn(api, 'post').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvers.push(resolve);
+        }) as Promise<{ data: unknown; response: Response }>,
+    );
+
+    const form = useForm({ name: 'Ada' });
+
+    const first = form.post('/api/first');
+    const second = form.post('/api/second');
+
+    expect(form.processing).toBe(true);
+    expect(resolvers.length).toBe(2);
+
+    // First request finishes while the second is still in flight.
+    resolvers[0]({ data: {}, response: {} as Response });
+    await first;
+
+    // Still processing — the second request has not completed.
+    expect(form.processing).toBe(true);
+
+    // Second request finishes → now nothing is in flight.
+    resolvers[1]({ data: {}, response: {} as Response });
+    await second;
+
+    expect(form.processing).toBe(false);
+  });
+});
+
+describe('useForm success timer is not cleared prematurely (#133)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('clears recentlySuccessful once at the latest success, not by an earlier timer', async () => {
+    // Two quick successes each set recentlySuccessful and schedule a 1500ms clear.
+    // The bug scheduled an UNTRACKED setTimeout per success, so the first
+    // success's timer fired ~1500ms after IT was scheduled and cleared the flag
+    // while the second success was still fresh.
+    vi.useFakeTimers();
+    vi.spyOn(api, 'post').mockResolvedValue({ data: {}, response: {} as Response });
+
+    const form = useForm({ name: 'Ada' });
+
+    await form.post('/api/first'); // schedules timer #1 (fires at t≈1500)
+    expect(form.recentlySuccessful).toBe(true);
+
+    vi.advanceTimersByTime(1000); // t=1000, timer #1 still pending
+    await form.post('/api/second'); // schedules timer #2 (fires at t≈2500)
+    expect(form.recentlySuccessful).toBe(true);
+
+    // t=1600: the FIRST success's timer would fire here. With the bug it clears
+    // the flag even though the second success is only 600ms old.
+    vi.advanceTimersByTime(600);
+    expect(form.recentlySuccessful).toBe(true);
+
+    // t=2600: the latest (only) timer fires and clears the flag exactly once.
+    vi.advanceTimersByTime(1000);
+    expect(form.recentlySuccessful).toBe(false);
+  });
+});
+
 describe('useForm transform shapes the payload without mutating form state (#150)', () => {
   afterEach(() => {
     vi.restoreAllMocks();

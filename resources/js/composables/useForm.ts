@@ -154,6 +154,17 @@ export function useForm<TData extends Record<string, any>>(
 ): UseFormReturn<TData> {
     const snapshot = deepClone(initialData);
 
+    // Concurrency guards (#133). `useForm` allows overlapping submissions (a
+    // consumer can fire two before the first resolves), so:
+    //  - `inFlightCount` tracks how many requests are active; `processing` only
+    //    flips false when the LAST one finishes (a per-request `finally` flipping
+    //    it unconditionally re-enabled the button while another was still running).
+    //  - `successTimer` is a single handle for the `recentlySuccessful` reset; a
+    //    new success clears any pending timer before scheduling its own, so an
+    //    earlier success's timer can't clear the flag a later success just set.
+    let inFlightCount = 0;
+    let successTimer: ReturnType<typeof setTimeout> | null = null;
+
     const state = reactive<FormState<TData>>({
         data: deepClone(snapshot) as TData,
         errors: {},
@@ -250,6 +261,7 @@ export function useForm<TData extends Record<string, any>>(
         url: string,
         options: FormSubmitOptions<TData, TResponse> = {},
     ): Promise<TResponse> => {
+        inFlightCount += 1;
         state.processing = true;
         if (!options.preserveErrors) clearErrors();
 
@@ -314,7 +326,11 @@ export function useForm<TData extends Record<string, any>>(
                         });
 
             state.recentlySuccessful = true;
-            setTimeout(() => (state.recentlySuccessful = false), 1500);
+            if (successTimer !== null) clearTimeout(successTimer);
+            successTimer = setTimeout(() => {
+                state.recentlySuccessful = false;
+                successTimer = null;
+            }, 1500);
 
             options.onSuccess?.(data);
             if (options.resetOnSuccess) {
@@ -328,7 +344,9 @@ export function useForm<TData extends Record<string, any>>(
             options.onError?.(err as FormError);
             throw err;
         } finally {
-            state.processing = false;
+            inFlightCount -= 1;
+            // Only clear `processing` once no submission is still in flight.
+            if (inFlightCount === 0) state.processing = false;
             options.onFinish?.();
         }
     };
