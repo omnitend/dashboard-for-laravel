@@ -18,6 +18,23 @@ tooltips, responsive, legend hidden for a single series). Pass `labels` +
 `datasets`; `options` deep-merges over the defaults so you can override anything
 Chart.js supports.
 
+## Installation
+
+The chart components live behind a **separate entry** so `chart.js` and
+`vue-chartjs` stay optional — a project that renders no charts installs neither.
+Install the two peers and import from `@omnitend/dashboard-for-laravel/charts`:
+
+```bash
+npm install chart.js vue-chartjs
+```
+
+```ts
+import { DXBarChart, DXLineChart, DXDoughnutChart } from '@omnitend/dashboard-for-laravel/charts';
+```
+
+Everything else (the theme stylesheet with the `--dx-chart-*` palette) comes from
+the main package as usual — no extra CSS import for charts.
+
 ## Chart palette
 
 Series colours come from a **dedicated data-viz palette**, not the semantic UI

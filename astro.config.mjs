@@ -108,7 +108,10 @@ export default defineConfig({
       alias: {
         '@': '/resources/js',
         '@components': '/resources/js/components',
-        // Map package imports to local dist for docs build (needed in CI where npm link isn't available)
+        // Map package imports to local dist for docs build (needed in CI where npm link isn't available).
+        // The `/charts` subpath (#142) MUST come first — a string alias matches by
+        // prefix, so the base alias would otherwise rewrite `.../charts` too.
+        '@omnitend/dashboard-for-laravel/charts': '/dist/charts.js',
         '@omnitend/dashboard-for-laravel': '/dist/dashboard-for-laravel.js',
       },
       // The dist bundle externalizes chart.js/vue-chartjs; without deduping,

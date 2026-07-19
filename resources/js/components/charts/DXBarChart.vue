@@ -68,12 +68,3 @@ const mergedOptions = computed(() =>
   ),
 );
 </script>
-
-<style scoped>
-.dx-chart {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 240px;
-}
-</style>

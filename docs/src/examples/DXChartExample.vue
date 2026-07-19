@@ -56,7 +56,7 @@ import {
   DXBarChart,
   DXLineChart,
   DXDoughnutChart,
-} from '@omnitend/dashboard-for-laravel';
+} from '@omnitend/dashboard-for-laravel/charts';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 </script>

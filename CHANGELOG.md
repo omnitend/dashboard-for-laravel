@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Chart components moved to a `/charts` subpath entry** (#142) so `chart.js`
+  and `vue-chartjs` are genuinely optional peers. Previously the main bundle
+  imported them statically, so a chart-free consumer's `vite build` failed
+  resolving the "optional" peers. **Breaking for chart users** — one-line import
+  change:
+
+  ```diff
+  - import { DXBarChart } from '@omnitend/dashboard-for-laravel';
+  + import { DXBarChart } from '@omnitend/dashboard-for-laravel/charts';
+  ```
+
+  Install `chart.js` + `vue-chartjs` and import the components from
+  `@omnitend/dashboard-for-laravel/charts`. Consumers who render no charts now
+  build without either package installed. The main package's output format is
+  unchanged (a separate build emits `dist/charts.*`); the `.dx-chart` container
+  style is now global in the main stylesheet, so `/charts` ships no CSS.
+
+### Fixed
+
+- **CI Tests workflow is green again** (was red for weeks). Two dev-tooling
+  causes, no runtime impact: (1) the `pretest*` hooks ran `vite build` without
+  the icon-font extract step, so tests ran against an inlined stylesheet the #77
+  guard forbids — factored into a shared `build:lib`; (2) a benign
+  bootstrap-vue-next teardown error surfaced as an unhandled rejection and made
+  vitest exit non-zero on an otherwise-green suite (#126) — swallowed narrowly
+  in the test setup.
+
 ## [0.28.0] - 2026-07-18
 
 ### Fixed

@@ -11,9 +11,9 @@ export { default as DXField } from "./components/extended/DXField.vue";
 export { default as DXFieldLabel } from "./components/extended/DXFieldLabel.vue";
 export { default as DXSwitch } from "./components/extended/DXSwitch.vue";
 export { default as DXStatCard } from "./components/extended/DXStatCard.vue";
-export { default as DXBarChart } from "./components/charts/DXBarChart.vue";
-export { default as DXLineChart } from "./components/charts/DXLineChart.vue";
-export { default as DXDoughnutChart } from "./components/charts/DXDoughnutChart.vue";
+// Chart components moved to the `@omnitend/dashboard-for-laravel/charts` entry
+// (#142) so chart.js / vue-chartjs stay genuinely optional peers — the main
+// entry no longer references them. See resources/js/charts.ts.
 export { default as DXRepeater } from "./components/extended/DXRepeater.vue";
 /**
  * @deprecated Use `DXForm`. `DXBasicForm` is a thin wrapper around `DXForm`

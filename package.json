@@ -15,6 +15,11 @@
       "import": "./dist/dashboard-for-laravel.js",
       "require": "./dist/dashboard-for-laravel.umd.cjs"
     },
+    "./charts": {
+      "types": "./dist/charts.d.ts",
+      "import": "./dist/charts.js",
+      "require": "./dist/charts.umd.cjs"
+    },
     "./style.css": "./dist/style.css",
     "./theme.css": "./dist/style.css",
     "./theme.scss": "./resources/css/theme.scss"
@@ -29,7 +34,7 @@
   ],
   "scripts": {
     "dev": "vite build --watch",
-    "build:lib": "vite build && node scripts/extract-icon-font.mjs",
+    "build:lib": "vite build && vite build --config vite.config.charts.ts && node scripts/extract-icon-font.mjs",
     "build": "npm run build:lib && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
     "typecheck": "vue-tsc --noEmit",
     "pretest": "npm run build:lib",
