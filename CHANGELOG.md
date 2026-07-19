@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   single-select spec from #138: consumers can drop the house
   `ot-searchable-select` and its two-tab-stop interaction.
 
+- **`DXTable` gains a `show-count` prop** (#127) — defaults `true`; set `false`
+  to suppress just the footer's "N items." caption, independent of the pager. A
+  page ported from a plain `<b-table>` that hides the pager with
+  `:show-pagination="false"` would otherwise gain a caption it never had.
+
 ### Fixed
 
 - **`DAutocomplete` value identity confirmed and guarded** (#153, closed as
@@ -28,6 +33,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   both directions (numeric and the string path DXTable filters depend on) so a
   future bvn bump that regresses value identity fails loudly. Consumers carrying
   the workaround can remove it.
+
+- **`useForm` no longer corrupts state on overlapping submissions** (#133). Two
+  in-flight submissions shared one `processing` flag (the first to finish
+  re-enabled the button while the second ran) and each success scheduled an
+  untracked timer (an earlier success could clear `recentlySuccessful` a later
+  one had just set). `processing` now clears only when the last request
+  completes, and a single tracked timer resets `recentlySuccessful`.
+
+- **`DXTable`: an explicit `per-page` prop now wins over the stored preference**
+  (#124). A `:per-page="20"` ("start at 20" since #110) was silently overridden
+  by whatever page size the user last picked — often on an unrelated table,
+  because keyless client-side tables all shared the literal `table` localStorage
+  key. An explicitly-passed `per-page` now takes precedence, and keyless tables
+  no longer persist (so they can't collide).
+
+- **`DFormSelect`: object-valued options confirmed to round-trip** (#128, closed
+  as not-a-bug). `BFormSelect` uses Vue's native `vModelSelect` (`_value` + deep
+  equality), so selecting an object option emits the object and an object model
+  selects the right option — the `[object Object]` DOM attribute is inert.
+  Guarded both directions; consumers can drop native-`<select>` workarounds.
 
 ## [0.29.0] - 2026-07-19
 
