@@ -12,14 +12,22 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
-2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (57 base components)
+2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (58 base components)
 3. **DX* Extended Components** - Complex dashboard layouts, forms, stat cards, and charts (15 components)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 72 components** (57 base + 15 extended)
+**Total: 73 components** (58 base + 15 extended)
+
+> **Chart components ship from a separate entry** (`#142`): `DXBarChart`,
+> `DXLineChart`, `DXDoughnutChart` are exported from
+> `@omnitend/dashboard-for-laravel/charts` (built by `vite.config.charts.ts` into
+> `dist/charts.*`), NOT the main entry — so `chart.js`/`vue-chartjs` stay
+> genuinely optional peers (the main bundle has zero references to them, guarded
+> by `tests/bundle/chart-optional-peer.test.ts`). Their `.dx-chart` container
+> style is global in `theme.scss`, so the charts entry ships no CSS.
 
 ## Project Structure
 
@@ -926,6 +934,23 @@ before trusting it.** Two tests in the 0.24 run passed for the wrong reason and
 certified live bugs as fixed — one swapped the form object where DXTable actually
 mutates one in place, the other gave fixture rows both keys where real rows carry
 one. Revert the fix, confirm red, then restore.
+
+### `npm test` does NOT type-check — run `npm run typecheck` after any TS change
+
+The `pretest*` hooks run **`build:lib`** (`vite build` = esbuild, which strips
+types without checking them), so a green `npm test` / `npm run test:headless`
+says **nothing** about TypeScript correctness. A `vue-tsc` error (e.g. spreading
+a generic type param) sails straight through the suite and only fails the CI
+**typecheck** step. Always run `npm run typecheck` yourself after touching `.ts`
+/ `<script setup>` — the test suite won't catch it (bit us bumping `useForm` in
+#150, 2026-07-19).
+
+Related, from the same chronically-red-CI fix: **the `pretest*` hooks must run
+the font-extract step, not a bare `vite build`.** Vite always inlines the icon
+woff2 in lib mode; the `build:lib` script (`vite build` + `extract-icon-font.mjs`
++ the charts build) is the one true "build the shipped artifact" step, shared by
+`build` and all `pretest*` so tests exercise the *extracted* stylesheet the #77
+guard expects — never re-inlined by a stray `vite build`.
 
 ### The icon webfont must never be inlined again (#77)
 
