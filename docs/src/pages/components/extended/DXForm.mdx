@@ -95,6 +95,7 @@ Common options beyond `key`/`type`/`label`:
 
 <PropsTable client:load props={[
   { name: 'label / hint', type: 'string | (model) => string', required: 'No', default: '-', description: 'Static or model-derived label and hint text.' },
+  { name: 'info', type: 'string | (model) => string', required: 'No', default: '-', description: 'PLAIN-TEXT help shown in the label\'s hover/focus popover — markup does not render, so links and lists are lost. For rich help (links, bulleted lists, bold), use the #info-popover(<key>) slot instead (or #info(<key>) for an always-visible block below the field).' },
   { name: 'when', type: 'boolean | (model) => boolean', required: 'No', default: 'true', description: 'Conditional visibility, evaluated reactively against the live model.' },
   { name: 'readonly', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Render the field read-only — still a bordered, non-editable control.' },
   { name: 'plaintext', type: 'boolean | (model) => boolean', required: 'No', default: 'false', description: 'Display the value as static text instead of a control (no border, no input box). Implies read-only for every type: anything backed by a real input (text family, textarea, currency, percentage, autocomplete) renders as static text; select/radio/checkbox/switch/file are disabled instead.' },
