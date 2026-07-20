@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`DXCurrencyInput`** (#152) — the money input leaf: `£`-prefixed numeric
+  input with the blur-padded display from #69, a model that is always a plain
+  number or `null` (clearing emits `null`, never `NaN`/`""`), and a
+  **`minorUnits` mode** (#116) that edits an integer-pence model as pounds
+  (display = value / 10^decimals, emit = `round(input × 10^decimals)`, so
+  float artefacts like `19.99 × 100` never reach your data). `DXField`'s
+  `currency` type now renders this leaf — same behaviour, plus the new
+  `minorUnits: true` field option — and it's exported for standalone use
+  (inline table corrections, filters). Note: an emptied `currency` field now
+  writes `null` to the form model (it previously left `""`).
 - **Dark-surface chart palette** (#145). Under `data-bs-theme="dark"` the
   theme remaps `--dx-chart-1..8` to lighter same-hue steps validated for the
   dark body (`#212529`): every step ≥ 5.6:1 contrast (the light palette dipped

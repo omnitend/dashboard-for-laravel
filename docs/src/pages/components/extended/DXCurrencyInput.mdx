@@ -1,0 +1,52 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXCurrencyInput
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import DXCurrencyInputExample from '../../../examples/DXCurrencyInputExample.vue';
+import DXCurrencyInputExampleRaw from '../../../examples/DXCurrencyInputExample.vue?raw';
+
+# DXCurrencyInput
+
+The money input leaf: a currency-symbol-prefixed numeric input whose **model is
+always a plain number (or `null`)** while the displayed text is padded to the
+minor-unit precision on blur and seed (`3.8` → `3.80`) — and never reformatted
+mid-edit. Clearing the input emits `null`, never `NaN` or `""`, so "no value"
+is one predictable shape.
+
+It's the same control `DXForm` / `DXField` render for a `type: 'currency'`
+field — reach for `DXCurrencyInput` directly when a money input lives *outside*
+a form (an inline table correction, a quick filter) so you don't re-inline the
+`£`-prefix + `toFixed` + parse foot-guns.
+
+**`minorUnits`** edits an **integer minor-unit model** (a legacy pence column)
+as major units: the input shows `19.99`, the model holds exactly `1999`
+(rounded, so float artefacts like `19.99 × 100 = 1998.999…` never reach your
+data). `min`/`max`/`step` and the displayed text are always in major units —
+only the model is scaled. On a `DXField`, set the `minorUnits: true` field
+option for the same behaviour.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXCurrencyInputExampleRaw}
+>
+  <DXCurrencyInputExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'modelValue', type: 'number | null', required: 'No', default: 'null', description: 'The amount (v-model). In minorUnits mode this is the integer minor-unit amount (pence); otherwise the major-unit amount. null = empty.' },
+  { name: 'currencySymbol', type: 'string', required: 'No', default: '"£"', description: 'Symbol shown in the input-group prepend.' },
+  { name: 'decimals', type: 'number', required: 'No', default: '2', description: 'Minor-unit decimal places the display pads to on blur/seed. Pass 0 for a currency with no minor unit (JPY). Also sets the minorUnits scale (10^decimals).' },
+  { name: 'minorUnits', type: 'boolean', required: 'No', default: 'false', description: 'Model is stored in integer minor units but shown/edited in major units: display = value / 10^decimals, emit = round(input × 10^decimals).' },
+  { name: 'step', type: 'string | number', required: 'No', default: 'one minor unit', description: 'Input step in MAJOR units (defaults to 0.01 at decimals: 2).' },
+]} />
+
+Any other attributes (`state`, `placeholder`, `min`, `max`, `disabled`,
+`readonly`, `plaintext`, `required`, `aria-*`, …) are forwarded to the
+underlying `DFormInput` — `min`/`max` are in major units.

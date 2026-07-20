@@ -402,35 +402,31 @@
             />
         </div>
 
-        <!-- Currency / percentage: numeric input with an affix -->
-        <DInputGroup v-else-if="field.type === 'currency' || field.type === 'percentage'">
-            <template v-if="field.type === 'currency'" #prepend>
-                <span class="input-group-text">{{ field.currencySymbol || "£" }}</span>
-            </template>
+        <!-- Currency: the DXCurrencyInput leaf (#152) owns the symbol prepend,
+             the blur-padded display (#69), empty -> null, and the minor-units
+             model scaling (#116). -->
+        <DXCurrencyInput
+            v-else-if="field.type === 'currency'"
+            :model-value="fieldValue"
+            :currency-symbol="field.currencySymbol || '£'"
+            :decimals="field.decimals ?? 2"
+            :minor-units="field.minorUnits ?? false"
+            :step="field.step"
+            :required="field.required"
+            :placeholder="field.placeholder"
+            :min="field.min"
+            :max="field.max"
+            :state="fieldState"
+            :disabled="isDisabled"
+            :readonly="isReadonly || isPlaintext"
+            :plaintext="isPlaintext"
+            v-bind="inputPropsWithGuards"
+            @update:model-value="setValue($event)"
+        />
 
-            <!-- Currency: the displayed text is padded to the minor-unit
-                 precision on blur/seed (e.g. `3.8` -> `3.80`); the model stays
-                 a plain number and typing is never reformatted mid-edit. -->
+        <!-- Percentage: numeric input with an affix -->
+        <DInputGroup v-else-if="field.type === 'percentage'">
             <DFormInput
-                v-if="field.type === 'currency'"
-                :model-value="currencyDisplayValue"
-                type="number"
-                :required="field.required"
-                :placeholder="field.placeholder"
-                :step="field.step ?? '0.01'"
-                :min="field.min"
-                :max="field.max"
-                :state="fieldState"
-                :disabled="isDisabled"
-                :readonly="isReadonly || isPlaintext"
-                :plaintext="isPlaintext"
-                v-bind="inputPropsWithGuards"
-                @input="handleCurrencyInput"
-                @focus="handleCurrencyFocus"
-                @blur="handleCurrencyBlur"
-            />
-            <DFormInput
-                v-else
                 v-model="numericInputValue"
                 type="number"
                 :required="field.required"
@@ -445,7 +441,7 @@
                 v-bind="inputPropsWithGuards"
             />
 
-            <template v-if="field.type === 'percentage'" #append>
+            <template #append>
                 <span class="input-group-text">%</span>
             </template>
         </DInputGroup>
@@ -576,6 +572,7 @@ import DInputGroup from "../base/DInputGroup.vue";
 import DAutocomplete from "../base/DAutocomplete.vue";
 import DButton from "../base/DButton.vue";
 import DXFieldLabel from "./DXFieldLabel.vue";
+import DXCurrencyInput from "./DXCurrencyInput.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { FieldDefinition, FieldOption, FieldType, LabelCols } from "../../types";
 import { getByPath, setByPath } from "../../utils/objectPath";
@@ -847,50 +844,6 @@ function setValue(value: any): void {
     }
     props.form.touched[errorKey.value] = true;
     props.form.clearError(errorKey.value);
-}
-
-// ————————————————— currency display formatting (#69)
-
-// The model stays a plain number throughout; only the input's *displayed*
-// text is padded to the minor-unit precision (`3.8` -> `3.80`), on blur and on
-// initial seed. Reformatting reactively on every keystroke (rather than on
-// blur) would fight the user mid-edit — e.g. rounding "3." to "3.00" before
-// they've typed the fractional digits — so a local ref tracks the shown text
-// independently of the numeric model, and is only resynced from the model
-// while the input isn't focused.
-const currencyDecimals = computed(() => props.field.decimals ?? 2);
-const isCurrencyFocused = ref(false);
-const currencyDisplayValue = ref("");
-
-function formatCurrency(value: any): string {
-    if (value === null || value === undefined || value === "") return "";
-    const num = Number(value);
-    if (!Number.isFinite(num)) return String(value);
-    return num.toFixed(currencyDecimals.value);
-}
-
-watch(
-    () => fieldValue.value,
-    (value) => {
-        if (isCurrencyFocused.value) return;
-        currencyDisplayValue.value = formatCurrency(value);
-    },
-    { immediate: true },
-);
-
-function handleCurrencyFocus(): void {
-    isCurrencyFocused.value = true;
-}
-
-function handleCurrencyInput(event: Event): void {
-    const raw = (event.target as HTMLInputElement).value;
-    currencyDisplayValue.value = raw;
-    setValue(raw);
-}
-
-function handleCurrencyBlur(): void {
-    isCurrencyFocused.value = false;
-    currencyDisplayValue.value = formatCurrency(fieldValue.value);
 }
 
 const fieldState = computed(() => props.form.getState(errorKey.value));

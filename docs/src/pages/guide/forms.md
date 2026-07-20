@@ -285,6 +285,11 @@ interface FieldDefinition {
   decimals?: number                 // Currency only. Minor-unit precision the display
                                     // value is formatted to on blur/seed (default: 2;
                                     // pass 0 for a currency with no minor unit, e.g. JPY)
+  minorUnits?: boolean              // Currency only. Model stores integer minor units
+                                    // (pence) but the input shows/edits major units
+                                    // (pounds): display = value / 10^decimals, submit =
+                                    // round(input × 10^decimals). min/max/step stay in
+                                    // major units
 
   // File (image / file)
   accept?: string                   // e.g. "image/*"

@@ -153,6 +153,15 @@ export interface FieldDefinition {
     decimals?: number;
 
     /**
+     * For `currency` fields: the model stores integer MINOR units (pence) but
+     * the input shows/edits MAJOR units (pounds) — display = value / 10^decimals,
+     * submit = round(input × 10^decimals). `min`/`max`/`step` stay in major
+     * units. Off by default (the model is the major-unit amount). Use for
+     * legacy pence-integer columns (#116).
+     */
+    minorUnits?: boolean;
+
+    /**
      * For `percentage` fields: treat the underlying model value as a 0–1
      * fraction while showing/editing it as a 0–100 percentage. The model keeps
      * the fraction (e.g. `0.2`), the input shows `20`. Off by default (the value
