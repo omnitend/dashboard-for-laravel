@@ -37,6 +37,10 @@ function getDefaultValueForType(type: FieldType): any {
         case "percentage":
             return 0;
         case "repeater":
+        // Array-valued selections: checkbox-group previously fell through to
+        // the "" default, which is the wrong shape for an array model.
+        case "checkbox-group":
+        case "switch-list":
             return [];
         case "image":
         case "file":

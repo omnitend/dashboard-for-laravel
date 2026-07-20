@@ -33,6 +33,7 @@ export type FieldType =
     | "checkbox"
     | "checkbox-group"
     | "switch"
+    | "switch-list"
     | "radio"
     | "image"
     | "file"
@@ -103,9 +104,11 @@ export interface FieldDefinition {
     required?: boolean;
 
     /**
-     * Options for `select`, `radio` and `autocomplete` fields. For
-     * `autocomplete` these are the datalist suggestions; the field still
-     * accepts free text not present in the list.
+     * Options for `select`, `radio`, `checkbox-group`, `switch-list` and
+     * `autocomplete` fields. For `autocomplete` these are the datalist
+     * suggestions; the field still accepts free text not present in the list.
+     * For `switch-list` each option renders a labelled toggle row
+     * (`description` becomes the row label's tooltip).
      */
     options?: FieldOption[];
 
@@ -206,11 +209,13 @@ export interface FieldDefinition {
     textWhenFalse?: MaybeFn<string>;
 
     /**
-     * For `switch` fields: the on-state colour. `"success"` (default) is the
-     * house green-on / red-off style for an active/enabled/good switch;
-     * `"neutral"` (brand primary on / grey off) is for semantically-mixed
-     * switches that shouldn't imply good/bad ("contains alcohol", an allergen
-     * toggle, "hidden on web shop"). See DXSwitch `onVariant` (#158).
+     * For `switch` and `switch-list` fields: the on-state colour. `"success"`
+     * (default) is the house green-on / red-off style for an
+     * active/enabled/good switch; `"neutral"` (brand primary on / grey off) is
+     * for semantically-mixed switches that shouldn't imply good/bad ("contains
+     * alcohol", an allergen toggle, "hidden on web shop"). A `switch-list`
+     * usually wants `"neutral"` — a wall of red-off toggles over-signals when
+     * off simply means "not present". See DXSwitch `onVariant` (#158).
      */
     switchVariant?: "success" | "neutral";
 

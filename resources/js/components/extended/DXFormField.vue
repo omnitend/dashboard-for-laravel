@@ -89,6 +89,7 @@ function fieldSlotMap(): Record<string, string> {
     ["info-popover", `info-popover(${key})`],
     ["hint", `hint(${key})`],
     ["repeater-row", `repeater-row(${key})`],
+    ["switch-list-item", `switch-list-item(${key})`],
   ];
   for (const [target, source] of candidates) {
     if (slots[source]) map[target] = source;

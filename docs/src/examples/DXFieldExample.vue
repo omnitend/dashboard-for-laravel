@@ -15,6 +15,10 @@
     <DXField :field="defaultField" :form="form" />
     <DXField :field="featuredField" :form="form" />
 
+    <!-- Switch-list: labelled toggle rows from options; the model is an array
+         of the on rows' values. `neutral` avoids a wall of red-off toggles. -->
+    <DXField :field="allergensField" :form="form" />
+
     <!-- Select with a custom hint slot -->
     <DXField :field="planField" :form="form">
       <template #hint>
@@ -66,6 +70,7 @@ const form = useForm({
   price: 12.5,
   is_default: true,
   is_featured: false,
+  allergens: [2] as number[],
   plan: 'pro',
   branch: 'main',
   rating: 3,
@@ -111,6 +116,20 @@ const featuredField: FieldDefinition = {
   label: 'Featured',
   textWhenTrue: 'Featured on the storefront',
   textWhenFalse: 'Not featured',
+};
+
+const allergensField: FieldDefinition = {
+  key: 'allergens',
+  type: 'switch-list',
+  label: 'Allergens',
+  switchVariant: 'neutral',
+  hint: 'The model is an array of the on rows\' values.',
+  options: [
+    { value: 1, text: 'Celery', description: 'Includes celeriac' },
+    { value: 2, text: 'Cereals containing gluten' },
+    { value: 3, text: 'Crustaceans' },
+    { value: 4, text: 'Eggs' },
+  ],
 };
 
 const planField: FieldDefinition = {

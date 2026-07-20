@@ -1,6 +1,7 @@
 # DXForm `type: "switch-list"` field
 
-Status: DRAFT (spec for review). Origin: greendragon app-next cutover — the
+Status: SHIPPED 2026-07-20 (#160) — implemented as spec'd; see Outcome at the
+end. Origin: greendragon app-next cutover — the
 product "Allergens" tab is a list of ~14 labelled toggles that was hand-rolled
 as a `#span` slot and drifted from the form's label/input grid (rows not
 vertically centred, over-tall, labels/switches unaligned). greendragon shipped a
@@ -136,3 +137,27 @@ sub-table, an activity log). greendragon's `web_shop_availability` should move
 from `#span` → labelled field + `#value` slot; no dfl change required. Worth a
 one-line docs note contrasting `#span` (full-width, no label) vs `#value`
 (keeps the label grid).
+
+---
+
+## Outcome (2026-07-20)
+
+Shipped as spec'd, with two small deltas:
+
+- The async-options prop is the existing **`optionsLoader`** (the spec's
+  `optionsResolver` was a guessed name); all the select/checkbox-group
+  machinery (stale-response token, reload-on-change) is reused untouched.
+- Adjacent fix folded in: `defineForm` seeded an unseeded `checkbox-group` as
+  `""` (wrong shape) — both it and `switch-list` now default to `[]`.
+
+Label option (2) implemented as recommended: a muted section heading renders
+only when `field.label` is set. Rows are per-option `DFormGroup
+v-bind="horizontalAttrs"` with `align-items-center` on the group root (its
+horizontal root IS the `.row`), so no deep selector into bvn internals was
+needed — dividers/padding sit on DXField-owned wrapper divs.
+
+11 tests, including the two-hop keyed-slot forward
+(`#switch-list-item(<key>)` through DXForm→DXFormField→DXField), verified
+red with the forward neutered. Screenshot-verified at desktop width: labels
+right-aligned in the label column, switches centred, dividers between rows.
+535 tests green, typecheck + docs build clean.

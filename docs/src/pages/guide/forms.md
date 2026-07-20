@@ -242,6 +242,9 @@ Supported field types:
 - `select` - Dropdown select (sync `options` or async `optionsLoader`)
 - `checkbox` - Checkbox
 - `switch` - Toggle with contextual on/off text and an on-state style (`textWhenTrue` / `textWhenFalse`)
+- `switch-list` - A list of labelled toggle rows from `options` (allergens,
+  feature flags, opt-ins); the model is an **array** of the on rows' option
+  values, like `checkbox-group`. Prefer `switchVariant: 'neutral'` for lists
 - `radio` - Radio button group (requires `options`)
 - `currency`, `percentage` - Numeric input with a `£`/`%` affix
 - `image`, `file` - File input (`image` previews the selection, or an existing

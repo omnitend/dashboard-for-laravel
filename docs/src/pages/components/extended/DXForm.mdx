@@ -59,6 +59,11 @@ accepts either a `useForm` return or a `defineForm` return (with the latter,
 
 Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
 
+> **`#value` vs `#span`:** a *labelled custom control* is a normal field plus a
+> `#value(<key>)` slot — it keeps the form's label column and grid, no
+> re-derived col classes. Reserve `#span(<key>)` (with `span: true`) for
+> genuinely full-width, label-less blocks (a sub-table, an activity log).
+
 <SlotsTable client:load slots={[
   { name: 'value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s input control with custom markup.' },
   { name: 'span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for a field marked span: true.' },
@@ -66,6 +71,7 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
   { name: 'info-popover(<key>)', props: 'field, model', description: 'Rich body for the label’s hover/focus info popover (lists, bold, paragraphs). Overrides the plain field.info text.' },
   { name: 'hint(<key>)', props: 'field, model', description: 'Override the hint text rendered below the field.' },
   { name: 'repeater-row(<key>)', props: 'row, index, fields, remove, path', description: 'Custom row layout for a repeater field.' },
+  { name: 'switch-list-item(<key>)', props: 'option, on', description: 'Extra content beside a switch-list row\'s toggle (e.g. a notes input bound to your own model).' },
   { name: 'field(<key>)', props: 'field, model', description: 'Fully replace a field\'s rendering (including its label), bypassing DXField entirely. Supersedes field-before/field-after for the same key.' },
   { name: 'field-before(<key>)', props: 'field, model', description: 'Content rendered directly above a field (e.g. a quick-create button above a select).' },
   { name: 'field-after(<key>)', props: 'field, model', description: 'Content rendered directly below a field.' },
@@ -88,6 +94,7 @@ Each field is a `FieldDefinition`. Supported `type` values:
 | `radio` | Radio group (single value from `options`) |
 | `checkbox` | Single checkbox (boolean) |
 | `checkbox-group` | Multiple checkboxes — "pick any of N" — from `options`; the model is an **array** of the checked option `value`s (default the field to `[]`) |
+| `switch-list` | A list of labelled toggle rows (allergens, feature flags, opt-ins) from `options` — each row a real form-grid group with a compact track switch. Same array model as `checkbox-group`. `switchVariant: 'neutral'` is usually right for lists (a wall of red-off toggles over-signals); per-row extras via `#switch-list-item(<key>)` |
 | `currency`, `percentage` | Numeric input with a `£`/`%` affix |
 | `image`, `file` | File input (`image` shows a preview) |
 | `component` | Renders your `field.component` (escape hatch) |

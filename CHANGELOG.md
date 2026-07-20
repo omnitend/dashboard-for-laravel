@@ -29,6 +29,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`switch-list` field type** (#160) — a list of labelled boolean toggle rows
+  (allergens, feature flags, notification opt-ins) as config, not markup. Each
+  option renders a real form-grid row (label in the label column, compact
+  track switch in the content column, divider between rows), so the list can't
+  drift from the form's grid the way hand-rolled `#span` markup does. The
+  model is an **array of the on rows' option values** — identical to
+  `checkbox-group` — and `optionsLoader` async options work as on selects.
+  `switchVariant: 'neutral'` opts the rows out of the green/red valence
+  (usually right for lists); per-row extras (a notes input) render via the new
+  `#switch-list-item(<key>)` scoped slot (`{ option, on }`). Also:
+  `defineForm` now seeds `checkbox-group` (and `switch-list`) defaults as
+  `[]` — previously an unseeded `checkbox-group` defaulted to `""`, the wrong
+  shape for an array model.
 - **`DXCurrencyInput`** (#152) — the money input leaf: `£`-prefixed numeric
   input with the blur-padded display from #69, a model that is always a plain
   number or `null` (clearing emits `null`, never `NaN`/`""`), and a

@@ -229,6 +229,65 @@
         <DFormText v-if="field.help">{{ field.help }}</DFormText>
     </div>
 
+    <!-- Switch-list (#160): a list of labelled boolean toggles as config, not
+         markup. One real DFormGroup per option row — the ONLY correct source of
+         the label/content grid (hardcoding col classes is exactly the drift
+         this field exists to end) — with the option text in the label column
+         and a compact track switch (not the filled-box DXSwitch, too heavy in
+         a dense list) in the content column. The model is an array of selected
+         option values, like checkbox-group. -->
+    <div v-else-if="field.type === 'switch-list'" :class="field.class || 'mb-3'">
+        <div
+            v-if="!hideLabel && field.label"
+            class="dx-switch-list-heading text-muted fw-semibold"
+        >
+            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+        </div>
+        <div
+            v-for="option in resolvedOptions ?? []"
+            :key="String(option.value)"
+            class="dx-switch-list-row"
+        >
+            <DFormGroup v-bind="horizontalAttrs" class="mb-0 align-items-center">
+                <template #label>
+                    <DXFieldLabel
+                        :label="option.text"
+                        :title="option.description"
+                    />
+                </template>
+                <div class="dx-switch-list-control">
+                    <DFormCheckbox
+                        switch
+                        :class="field.switchVariant === 'neutral' ? 'switch-neutral' : undefined"
+                        :model-value="switchListIsOn(option)"
+                        :disabled="isDisabled || isReadonly || isPlaintext"
+                        :aria-label="option.text"
+                        @update:model-value="setSwitchListOn(option, $event === true)"
+                    />
+                    <!--
+                      @slot Extra per-row content beside a switch-list row's toggle (e.g. a notes input the consumer binds to their own model).
+                      @binding {FieldOption} option The option this row renders.
+                      @binding {boolean} on Whether the row's switch is currently on.
+                    -->
+                    <slot
+                        name="switch-list-item"
+                        :option="option"
+                        :on="switchListIsOn(option)"
+                    />
+                </div>
+            </DFormGroup>
+        </div>
+
+        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
+            {{ form.getError(errorKey) }}
+        </DFormInvalidFeedback>
+        <slot name="info" :field="field" :model="model" />
+        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
+            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
+        </DFormText>
+        <DFormText v-if="field.help">{{ field.help }}</DFormText>
+    </div>
+
     <!-- Repeater: nested, repeatable sub-form -->
     <div v-else-if="field.type === 'repeater'" :class="field.class || 'mb-3'">
         <DFormGroup v-bind="repeaterHorizontalAttrs">
@@ -856,6 +915,29 @@ const resolvedHint = computed(() => resolveMaybe(props.field.hint));
 
 const resolvedInfo = computed(() => resolveMaybe(props.field.info));
 
+// ————————————————— switch-list (#160)
+
+// The model is an array of selected option values, exactly like
+// checkbox-group, so seeding/validation/diffing need nothing new. Toggling a
+// row adds/removes its option's value; `setValue` also clears the field error.
+const switchListValues = computed<any[]>(() =>
+    Array.isArray(fieldValue.value) ? fieldValue.value : [],
+);
+
+function switchListIsOn(option: FieldOption): boolean {
+    return switchListValues.value.includes(option.value);
+}
+
+function setSwitchListOn(option: FieldOption, on: boolean): void {
+    const current = switchListValues.value;
+    if (on === current.includes(option.value)) return;
+    setValue(
+        on
+            ? [...current, option.value]
+            : current.filter((value) => value !== option.value),
+    );
+}
+
 // ————————————————— switch (toggle) field
 
 // Whether a `switch` field is currently on. Coerces the model value to a
@@ -1054,6 +1136,29 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* Switch-list rows (#160): compact rhythm with a divider between rows. The
+   vertical centring of label vs switch is the `align-items-center` utility on
+   each row's DFormGroup (its horizontal root IS the .row element), so no
+   deep selector into bvn internals is needed here. */
+.dx-switch-list-row {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.dx-switch-list-row:last-of-type {
+    border-bottom: 0;
+}
+
+.dx-switch-list-heading {
+    margin-bottom: 0.25rem;
+}
+
+.dx-switch-list-control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .dx-field-image-preview {
     max-width: 160px;
     max-height: 160px;
