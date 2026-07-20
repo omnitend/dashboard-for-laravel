@@ -12,16 +12,17 @@ import DXSwitchExampleRaw from '../../../examples/DXSwitchExample.vue?raw';
 # DXSwitch
 
 A "filled box" toggle switch built on `DFormCheckbox`: a bordered box sized like
-a form control, with the label on the left and the toggle on the right, that
-colour-codes its state. By default (`on-variant="success"`) it reads the house
-**green-on / red-off** style — an active/enabled/good switch — with a soft-green
-box when on. Set `on-variant="neutral"` (brand primary on / grey off) for
-semantically-mixed switches that shouldn't imply good/bad ("contains alcohol",
-an allergen toggle, "hidden on web shop"). Unlike a checkbox it can say what each
-state *means* via `textWhenTrue`/`textWhenFalse`. It's the same control `DXForm` /
-`DXField` render for a `type: 'switch'` field (set the on-state colour there with
-the `switchVariant` field option) — reach for `DXSwitch` directly when you want
-that styled toggle outside a form.
+a form control, with the label on the left and the toggle on the right. The
+**whole box** carries the state colour and the pill stays a neutral affordance —
+by default (`on-variant="success"`) the box is **green when on, light red when
+off**, the house style for an active/enabled/good switch. Set
+`on-variant="neutral"` (brand primary on / grey off) for semantically-mixed
+switches that shouldn't imply good/bad ("contains alcohol", an allergen toggle,
+"hidden on web shop"). Unlike a checkbox it can say what each state *means* via
+`textWhenTrue`/`textWhenFalse` — use them so the label names each state too. It's
+the same control `DXForm` / `DXField` render for a `type: 'switch'` field (set
+the on-state colour there with the `switchVariant` field option) — reach for
+`DXSwitch` directly when you want that styled toggle outside a form.
 
 > **Use a switch sparingly.** A switch implies a distinct, meaningful on/off
 > *state* (e.g. "Product is current" / "not current"), and reads best with

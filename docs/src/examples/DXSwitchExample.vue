@@ -17,16 +17,37 @@
     </div>
 
     <div class="example-section">
-      <h5>On-state colour (green-on / red-off by default)</h5>
-      <DXSwitch :model-value="true" label="Product is current" />
-      <DXSwitch :model-value="false" label="Product is current" />
+      <h5>Filled box: green-on / light-red-off by default</h5>
+      <DXSwitch
+        :model-value="true"
+        text-when-true="Product is current"
+        text-when-false="Product is not current"
+      />
+      <DXSwitch
+        :model-value="false"
+        text-when-true="Product is current"
+        text-when-false="Product is not current"
+      />
       <p class="state-display">
-        Default <code>on-variant="success"</code>: green when on, red when off.
+        Default <code>on-variant="success"</code>: the whole box is green when on, light red when
+        off, with a neutral pill. Pair <code>textWhenTrue</code>/<code>textWhenFalse</code> so the
+        label names each state too.
       </p>
-      <DXSwitch :model-value="true" label="Contains alcohol" on-variant="neutral" />
-      <DXSwitch :model-value="false" label="Contains alcohol" on-variant="neutral" />
+      <DXSwitch
+        :model-value="true"
+        text-when-true="Contains alcohol"
+        text-when-false="No alcohol"
+        on-variant="neutral"
+      />
+      <DXSwitch
+        :model-value="false"
+        text-when-true="Contains alcohol"
+        text-when-false="No alcohol"
+        on-variant="neutral"
+      />
       <p class="state-display">
-        <code>on-variant="neutral"</code> for mixed-semantics switches: primary on, grey off.
+        <code>on-variant="neutral"</code> for mixed-semantics switches: primary on, grey off — no
+        good/bad valence.
       </p>
     </div>
 

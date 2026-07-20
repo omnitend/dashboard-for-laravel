@@ -148,22 +148,48 @@ defineOptions({
   cursor: pointer;
 }
 
-/* On-state box: emphasise the active state as a coloured panel. `success` (the
-   default, #158) is a soft-green panel — an active/enabled/good switch reads
-   green; `neutral` is the brand primary panel for mixed-semantics switches. The
-   TOGGLE itself is coloured by the global theme (green-on / red-off for the
-   default, grey-off / primary-on for `.switch-neutral`), so here we only style
-   the wrapper box + label. The off-state box stays neutral grey. */
+/* Filled box (#158): the WHOLE control carries the colour and the pill stays a
+   neutral grey affordance — the box IS the state, so it reads strongest at a
+   glance (the house style). `success` (default) is green ON / light-red OFF;
+   `neutral` keeps a brand primary panel for mixed-semantics switches. Pair with
+   `textWhenTrue`/`textWhenFalse` so the LABEL also names each state. */
+.dx-switch--success :deep(.form-check) {
+  background-color: var(--dx-switch-off-bg);
+  border-color: var(--dx-switch-off-line);
+}
+
+.dx-switch--success :deep(.form-check-label) {
+  color: var(--dx-switch-off-ink);
+}
+
 .dx-switch--success.dx-switch--on :deep(.form-check) {
-  background-color: var(--dx-success-soft-bg);
-  border-color: var(--dx-success-emphasis);
+  background-color: var(--dx-switch-on-bg);
+  border-color: var(--dx-switch-on-line);
 }
 
 .dx-switch--success.dx-switch--on :deep(.form-check-label) {
-  color: var(--dx-success-soft-text);
+  color: var(--dx-switch-on-ink);
   font-weight: 500;
 }
 
+/* Neutral grey pill in BOTH states (white thumb, sliding) — overrides the global
+   green-on/red-off toggle colours within the box, so only the box carries the
+   state. Explicit `:checked`/`:focus` selectors so they out-specify the global
+   `.form-switch .form-check-input:checked` rule. */
+.dx-switch--success :deep(.form-check-input),
+.dx-switch--success :deep(.form-check-input:checked),
+.dx-switch--success :deep(.form-check-input:focus) {
+  background-color: var(--dx-switch-pill);
+  border-color: var(--dx-switch-pill);
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+}
+
+.dx-switch--success :deep(.form-check-input:focus) {
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.12);
+}
+
+/* neutral variant (mixed-semantics): brand primary panel when on; the toggle is
+   handled by `.switch-neutral` on the inner form-switch (primary-on / grey-off). */
 .dx-switch--neutral.dx-switch--on :deep(.form-check) {
   background-color: var(--bs-primary-bg-subtle);
   border-color: var(--bs-primary);

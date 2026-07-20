@@ -97,6 +97,18 @@ Done, 2026-07-20 (unreleased on main).
 - Docs: DXSwitch example + mdx (intro + `onVariant` prop); CHANGELOG both parts;
   `switchVariant` in the FieldDefinition type.
 
-**Open decision left for James:** the red-off default is bold (every plain
-switch goes red when off). Screenshots shared for a react/keep-or-soften call.
-`.bg-*`/progress-bar success shade is still #154.
+**James's decisions (2026-07-20, via interactive artifact):**
+- OFF shade → **light red** (over solid red / outline / grey). Bare `.form-switch`
+  now paints a light-red OFF track (red thumb) / vivid-green ON track.
+- Form → **the Omni Tend "filled box"**: `DXSwitch` (and `DXField type:'switch'`)
+  fills the WHOLE box green (on) / light red (off) with a **neutral grey pill**,
+  not a coloured toggle. Reworked accordingly; the pill overrides the global
+  green/red within the box. `--dx-switch-on-*/-off-*/-pill` tokens drive it.
+- Label uses **`textWhenTrue`/`textWhenFalse`** so the text names each state
+  ("Product is current" ↔ "Product is not current") — reflected in the docs
+  example.
+- DXSwitch tests rewritten to assert the box channel-dominance (green/red) +
+  neutral pill (11 tests, green). Visually confirmed against the Omni Tend
+  screenshot. Artifact: claude.ai/code/artifact/d2590187-afe8-4bed-b3b7-4f91f9af4e43
+
+`.bg-*`/progress-bar success shade remains #154 (separate).

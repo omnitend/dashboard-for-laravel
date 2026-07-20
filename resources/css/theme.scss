@@ -590,38 +590,55 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // on web shop") shouldn't imply good/bad — those opt OUT with `.switch-neutral`
 // on the `.form-switch`, which restores Bootstrap's grey-off / primary-on.
 //
-// Applies to any bare `.form-switch` (DFormCheckbox `switch`); DXSwitch layers
-// its box styling on top and drives the same on/off variants via `onVariant`.
+// Applies to any bare `.form-switch` (DFormCheckbox `switch`); DXSwitch is the
+// "filled box" form where the whole control (not the toggle) carries the colour
+// and the pill stays a neutral affordance — it reads the same tokens below.
 $dx-switch-on: map.get(map.get($dx-variants, "success"), "solid-bg"); // vivid lime
 $dx-switch-off: map.get(map.get($dx-variants, "danger"), "solid-bg"); // vivid red
-// The white thumb (Bootstrap's checked image) — reused on the OFF state so the
-// thumb stays visible on the red track (Bootstrap's default OFF thumb is a faint
-// grey circle meant for a light track).
-$dx-switch-thumb: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+$dx-switch-thumb-white: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+// A red thumb reads better than white on the light-red OFF track.
+$dx-switch-thumb-red: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23dc2626'/%3e%3c/svg%3e");
+
+// Switch fill tokens — a punchier green than the soft badge tint (matches the
+// house filled-switch control) and a LIGHT red (not the plum danger-soft) for
+// off. Derived from the base success/danger so one edit moves them together.
+// Used by the DXSwitch filled box; the light-red OFF track below reuses them too.
+:root {
+  --dx-switch-on-bg: #{color.mix($dx-switch-on, #fff, 50%)};
+  --dx-switch-on-well: #{color.mix($dx-switch-on, #fff, 30%)};
+  --dx-switch-on-line: #{color.mix($dx-switch-on, #fff, 15%)};
+  --dx-switch-on-ink: #{map.get(map.get($dx-variants, "success"), "soft-text")};
+  --dx-switch-off-bg: #{color.mix($dx-switch-off, #fff, 20%)};
+  --dx-switch-off-well: #{color.mix($dx-switch-off, #fff, 10%)};
+  --dx-switch-off-line: #{color.mix($dx-switch-off, #fff, 45%)};
+  --dx-switch-off-ink: #{color.mix($dx-switch-off, #000, 30%)};
+  --dx-switch-pill: var(--bs-gray-400, #ced4da); // neutral pill in both states
+}
 
 .form-switch .form-check-input {
-  // OFF: red track, white thumb (left).
-  background-color: #{$dx-switch-off};
-  border-color: #{$dx-switch-off};
-  --bs-form-switch-bg: #{$dx-switch-thumb};
+  // OFF: light-red track, red thumb (left).
+  background-color: var(--dx-switch-off-bg);
+  border-color: var(--dx-switch-off-line);
+  --bs-form-switch-bg: #{$dx-switch-thumb-red};
 
   &:checked {
-    // ON: green track, white thumb (right — Bootstrap positions it).
+    // ON: vivid green track, white thumb (right — Bootstrap positions it).
     background-color: #{$dx-switch-on};
     border-color: #{$dx-switch-on};
+    --bs-form-switch-bg: #{$dx-switch-thumb-white};
   }
 
-  // Keep the thumb white on focus (Bootstrap swaps it for a navy circle, which
-  // is invisible-ish on green/red) and use a neutral grey focus ring rather than
-  // the brand navy one, since the track already carries the state colour.
+  // Neutral grey focus ring (the track carries the state colour, so the brand
+  // navy ring would clash); keep the state thumb rather than Bootstrap's navy.
   &:focus {
-    --bs-form-switch-bg: #{$dx-switch-thumb};
-    border-color: #{$dx-switch-off};
+    --bs-form-switch-bg: #{$dx-switch-thumb-red};
+    border-color: var(--dx-switch-off-line);
     box-shadow: 0 0 0 0.25rem rgba($dark, 0.15);
   }
 
   &:checked:focus {
     border-color: #{$dx-switch-on};
+    --bs-form-switch-bg: #{$dx-switch-thumb-white};
   }
 }
 
@@ -636,7 +653,7 @@ $dx-switch-thumb: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/s
   &:checked {
     background-color: var(--bs-primary);
     border-color: var(--bs-primary);
-    --bs-form-switch-bg: #{$dx-switch-thumb};
+    --bs-form-switch-bg: #{$dx-switch-thumb-white};
   }
 
   &:focus {

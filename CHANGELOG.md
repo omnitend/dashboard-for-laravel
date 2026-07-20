@@ -9,14 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Switches default to green-on / red-off** (#158). An active switch reads
-  `success` green when ON and red when OFF out of the box (house style), not only
-  when a consumer opts in — a reversal of the old primary-on default. Applies to
-  bare `.form-switch` (`DFormCheckbox switch`) and `DXSwitch` / `DXField`
-  `type:'switch'`. Semantically-mixed switches ("contains alcohol", an allergen
-  toggle, "hidden on web shop") opt out: `DXSwitch on-variant="neutral"` / a
-  `switchVariant: 'neutral'` field option / the `.switch-neutral` class on a bare
-  `.form-switch` restore primary-on / grey-off.
+- **Switches default to green-on / light-red-off** (#158). An active switch
+  reads `success` green when ON and light red when OFF out of the box (house
+  style), a reversal of the old primary-on default. The bare `.form-switch`
+  (`DFormCheckbox switch`) colours the toggle track; **`DXSwitch` (and `DXField`
+  `type:'switch'`) is the "filled box"** — the whole control fills green / light
+  red and the pill stays a neutral grey affordance, matching the house control.
+  Pair `textWhenTrue`/`textWhenFalse` so the label names each state too.
+  Semantically-mixed switches ("contains alcohol", an allergen toggle, "hidden on
+  web shop") opt out: `DXSwitch on-variant="neutral"` / a `switchVariant:
+  'neutral'` field option / the `.switch-neutral` class on a bare `.form-switch`
+  restore primary-on / grey-off.
 
 - **Soft `.text-bg-*` is the default on any element, not just `.badge`.** The
   soft-first tint now applies to any `.text-bg-<variant>` element (an
@@ -32,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   variables** published on `:root` from the `$dx-variants` map, so components and
   consumers can reference the exact soft-first tints on any element (Bootstrap's
   own `--bs-*-bg-subtle` are a greyer family that doesn't match the soft badge).
+  Also `--dx-switch-on-*` / `--dx-switch-off-*` / `--dx-switch-pill` for
+  retheming the filled switch.
 
 ## [0.30.0] - 2026-07-20
 
