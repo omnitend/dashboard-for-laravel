@@ -48,6 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   agree. If you relied on an un-defaulted array field starting as `""` in the
   edit modal, set an explicit `default`.
 
+### Fixed
+
+- **`DXTable` refetches when its `provider` function is swapped** (`:provider`
+  or `source.provider` reassigned). Previously only an `apiUrl` change forced a
+  refetch — the provider binding's identity is deliberately stable (#82), so a
+  new provider function kept showing the old rows until some other trigger
+  (sort, page, per-page, CRUD) fired. Now a provider swap resets to page 1 and
+  refetches, exactly as an `apiUrl` swap does.
+
 ### Internal
 
 - **Refactors with no consumer-visible behaviour change:** `DXField`

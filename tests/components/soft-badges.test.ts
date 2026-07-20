@@ -21,14 +21,30 @@ const rgb = (hex: string) => {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 };
 
-const paintedStyle = async (component: any, variant: string, selector: string) => {
+const TRANSPARENT = new Set(['rgba(0, 0, 0, 0)', 'transparent', '']);
+
+// Poll until the browser has actually applied dist/style.css to the freshly
+// rendered element, instead of a fixed sleep. A fixed 30ms flaked under
+// full-suite CPU load: the paint hadn't landed, so getComputedStyle returned
+// Bootstrap's unthemed default and the colour assertion failed intermittently
+// (only primary/danger/success, at 400ms+ durations). Bounded (~2.4s) so a
+// legitimately transparent element still resolves and the assertion runs.
+const readWhenPainted = async (container: Element, selector: string) => {
+  let el: HTMLElement | null = null;
+  for (let i = 0; i < 150; i++) {
+    el = container.querySelector(selector) as HTMLElement | null;
+    if (el && !TRANSPARENT.has(getComputedStyle(el).backgroundColor)) break;
+    await new Promise((resolve) => setTimeout(resolve, 16));
+  }
+  const style = getComputedStyle(el as HTMLElement);
+  return { background: style.backgroundColor, color: style.color };
+};
+
+const paintedStyle = (component: any, variant: string, selector: string) => {
   const screen = render({
     render: () => h(BApp, {}, () => h(component, { variant }, () => variant)),
   });
-  await new Promise((resolve) => setTimeout(resolve, 30));
-  const el = screen.container.querySelector(selector) as HTMLElement;
-  const style = getComputedStyle(el);
-  return { background: style.backgroundColor, color: style.color };
+  return readWhenPainted(screen.container, selector);
 };
 
 // [variant, soft bg, soft text]
@@ -58,14 +74,11 @@ describe('semantic badges are all soft-tinted', () => {
  * solid dark fill — so the soft tint applies to any element carrying the class.
  * `.toast` is deliberately excluded (its own fainter mix drives `--bs-toast-bg`).
  */
-const paintedRawStyle = async (className: string) => {
+const paintedRawStyle = (className: string) => {
   const screen = render({
     render: () => h(BApp, {}, () => h('span', { class: className }, 'x')),
   });
-  await new Promise((resolve) => setTimeout(resolve, 30));
-  const el = screen.container.querySelector('span') as HTMLElement;
-  const style = getComputedStyle(el);
-  return { background: style.backgroundColor, color: style.color };
+  return readWhenPainted(screen.container, 'span');
 };
 
 describe('.text-bg-* is soft on any element, not only .badge', () => {
@@ -118,9 +131,8 @@ describe('progress-bar fills use the vivid solid-bg, not the dark emphasis (#154
           ]),
         ),
     });
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    const bar = screen.container.querySelector('.progress-bar') as HTMLElement;
-    return getComputedStyle(bar).backgroundColor;
+    const { background } = await readWhenPainted(screen.container, '.progress-bar');
+    return background;
   };
 
   it('bg-success fills as the vivid lime (the switch-ON green), not the dark olive', async () => {

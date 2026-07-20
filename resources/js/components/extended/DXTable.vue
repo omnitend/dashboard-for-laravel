@@ -1345,6 +1345,25 @@ watch(() => resolvedApiUrl.value, (newUrl, oldUrl) => {
     }
 });
 
+// A `provider` swap (`:provider` or `source.provider` reassigned to a new
+// function) must refetch, exactly as an `apiUrl` swap does above. `effectiveProvider`'s
+// identity is deliberately STABLE (#82) so BTable doesn't refetch on its own
+// when the underlying provider changes — so, like the apiUrl watcher, force it.
+// Only fires for an actual provider function (apiUrl mode is covered above), and
+// `watch` skips the initial value, so no double-fetch on mount.
+watch(() => resolvedProvider.value, (newProvider, oldProvider) => {
+    if (newProvider !== oldProvider && !!newProvider) {
+        apiFilterValues.value = {};
+        apiPaginationMeta.value = null;
+        apiError.value = null;
+        const wasOnFirstPage = apiCurrentPage.value === 1;
+        apiCurrentPage.value = 1;
+        if (wasOnFirstPage) {
+            refresh();
+        }
+    }
+});
+
 // Computed effective perPage (use external if provided, otherwise internal)
 const effectivePerPage = computed(() => {
     // Only when the consumer is actually driving it (v-model). A bare

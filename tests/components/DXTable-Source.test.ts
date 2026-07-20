@@ -88,6 +88,25 @@ describe('DXTable source prop (#130)', () => {
     expect(rowNames(container)).toEqual(['ProvRow']);
   });
 
+  it('refetches when the provider function is swapped (reactivity)', async () => {
+    const providerA = vi.fn().mockResolvedValue([{ id: 1, name: 'FromA' }]);
+    const providerB = vi.fn().mockResolvedValue([{ id: 2, name: 'FromB' }]);
+
+    const { container, rerender } = render(DXTable, {
+      props: { fields: FIELDS, provider: providerA },
+    });
+    await wait(80);
+    expect(rowNames(container)).toEqual(['FromA']);
+
+    // Swap the provider. effectiveProvider's identity is stable (#82), so this
+    // only refetches because the explicit resolvedProvider watcher forces it.
+    await rerender({ fields: FIELDS, provider: providerB });
+    await wait(80);
+
+    expect(providerB).toHaveBeenCalled();
+    expect(rowNames(container)).toEqual(['FromB']);
+  });
+
   it('legacy props still work unchanged when source is omitted', async () => {
     const { container } = mount({ clientSide: true, items: ITEMS, perPage: 2 });
     await wait(30);
