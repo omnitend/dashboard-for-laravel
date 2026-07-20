@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-07-20
+
 ### Added
 
 - **`DXForm` wraps tabbed content in a card panel by default** (#159) — a tabbed
