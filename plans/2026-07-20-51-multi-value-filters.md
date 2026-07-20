@@ -53,3 +53,8 @@ interaction test must bind-and-feed-back (real v-model), not just listen —
 listen-only reads as one-value-at-a-time replacement. The predicate refactor
 made scalar filtering the one-candidate case of the array rule, so
 single-value behaviour is provably unchanged (existing DXTable suite intact).
+
+Post-review addendum (same day, 28bc6c7): Codex spotted that a CONTROLLED
+filter array mutated in place (`filters.status.push(...)`) never refreshed
+provider/Inertia data — the deep watcher compared the same object reference
+against itself. The watcher now watches the serialised map. Red-first tested.

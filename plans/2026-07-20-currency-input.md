@@ -37,3 +37,9 @@ Landed 2026-07-20. DXField currency tests passed unchanged (display parity);
 non-reformat, minorUnits float-safety, and decimals-scaling. Docs page +
 example + nav entry added; forms.md documents `minorUnits`. 524 tests green,
 typecheck + docs build clean.
+
+Post-review addendum (same day, 28bc6c7): Codex found a real P1 — the
+`Math.round(num * scale)` guard failed at half-unit boundaries (`1.005 × 100 =
+100.4999…` → 100) and negative halves rounded to `-0`. Rounding is now
+decimal-safe (toPrecision snap) with halves away from zero, and a hostile
+`decimals` prop is clamped instead of throwing. Both red-first tested.
