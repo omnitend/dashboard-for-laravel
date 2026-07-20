@@ -110,6 +110,7 @@ const items = ref([
   { name: 'clientSide', type: 'boolean', required: 'No', default: 'false', description: 'Enable client-side filtering, sorting, and pagination' },
   { name: 'provider', type: 'BTableProvider<TItem>', required: 'No', default: '-', description: 'Provider function for API mode' },
   { name: 'apiUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint URL for auto-provider mode' },
+  { name: 'apiAdapter', type: 'DXTableApiAdapter', required: 'No', default: '-', description: 'Translate the built-in provider\'s request params / response body to a different backend convention (see "Adapting to a different backend convention")' },
   { name: 'fields', type: 'TableField[]', required: 'Yes', default: '-', description: 'Table field definitions (see TableField interface)' },
   { name: 'sortBy', type: 'BTableSortBy[]', required: 'No', default: '[]', description: 'Sort state. With v-model, controlled by you; without one, the table\'s INITIAL sort and the user can change it. When nothing is sorted, no sort params are sent (see Sorting)' },
   { name: 'filters', type: 'Record<string, string>', required: 'No', default: '{}', description: 'Filter values. With v-model, controlled by you; without one, the INITIAL filters and the user can change them' },
@@ -305,6 +306,46 @@ takes precedence over the built-in path resolution:
   <DBadge>{{ item.paid_by?.card ?? '—' }}</DBadge>
 </template>
 ```
+
+## Adapting to a different backend convention (`api-adapter`)
+
+If your backend doesn't speak dfl's provider contract — different param names
+(spatie query-builder's `sort=-name`, `filter[key]=…`), or an envelope without
+`{data, pagination}` — the `api-adapter` prop translates in both directions
+while keeping the built-in provider's error handling and pager:
+
+```vue
+<DXTable
+  api-url="/api/accounts"
+  :fields="fields"
+  :api-adapter="{
+    // dfl params in → your backend's params out (this return IS the wire)
+    request: (params) => ({
+      paginate: 'true',
+      page: params.page,
+      perPage: params.perPage,
+      sort: (params.sortOrder === 'desc' ? '-' : '') + params.sortBy,
+    }),
+    // your envelope in → dfl shape out. `params` are the ORIGINAL dfl params,
+    // for synthesizing paginator metadata your envelope lacks.
+    response: (body, { params }) => ({
+      data: body.data,
+      pagination: {
+        current_page: params.page,
+        per_page: params.perPage,
+        total: body.total,
+        from: (params.page - 1) * params.perPage + 1,
+        to: (params.page - 1) * params.perPage + body.data.length,
+      },
+    }),
+  }"
+/>
+```
+
+This replaces the axios-interceptor bridges some consumers used before v0.33
+(DXTable no longer requests through axios). Without an adapter, a response
+that is a **bare array** of rows renders as rows with no pager, rather than a
+silently empty table.
 
 ## Custom providers and pagination
 

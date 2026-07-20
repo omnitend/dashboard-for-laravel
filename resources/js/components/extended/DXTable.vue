@@ -284,6 +284,23 @@ export interface FilterOption {
     text: string;
 }
 
+/**
+ * Adapts the built-in `apiUrl` provider's request/response to a backend whose
+ * convention differs from dfl's (spatie query-builder params, an envelope
+ * without the `{data, pagination}` shape). The sanctioned replacement for the
+ * axios-interceptor bridges #132 removed the route for: `request` maps the
+ * outgoing params (its return is what goes on the wire); `response` maps the
+ * body back, receiving the ORIGINAL dfl-shape params (`page`, `perPage`, …)
+ * so it can synthesize paginator metadata a foreign envelope lacks.
+ */
+export interface DXTableApiAdapter {
+    request?: (params: Record<string, any>) => Record<string, any>;
+    response?: (
+        body: any,
+        context: { params: Record<string, any> },
+    ) => { data: any[]; pagination?: PaginationData; filterValues?: Record<string, string[]> };
+}
+
 export interface TableField {
     key: string;
     label?: string;
@@ -413,6 +430,10 @@ export interface Props<TItem = any> {
 
     /** API endpoint URL for auto-provider mode (alternative to provider function) */
     apiUrl?: string;
+
+    /** Adapts the built-in provider's request params / response body to a
+     *  backend convention that differs from dfl's (see DXTableApiAdapter). */
+    apiAdapter?: DXTableApiAdapter;
 
     /** Table field definitions */
     fields: TableField[];
@@ -1419,19 +1440,41 @@ const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProvi
         params.filterValues = fieldsNeedingFilterValues.value;
     }
 
-    const response = await api.get<any>(props.apiUrl, params);
+    // Adapt the outgoing params to the backend's convention (e.g. spatie
+    // query-builder's `sort=-name` / `filter[key]`). This is the sanctioned
+    // replacement for the axios request interceptors #132 removed the route
+    // for — the adapter's return IS the wire params.
+    const wireParams = props.apiAdapter?.request
+        ? props.apiAdapter.request(params)
+        : params;
+
+    const response = await api.get<any>(props.apiUrl, wireParams);
+
+    // Adapt a foreign response envelope back into the dfl shape. Gets the
+    // ORIGINAL dfl-shape params (page/perPage/…) for context, since a foreign
+    // envelope often lacks paginator metadata the adapter must synthesize.
+    let body = props.apiAdapter?.response
+        ? props.apiAdapter.response(response.data, { params })
+        : response.data;
+
+    // A backend that ignores the pagination convention and returns a bare
+    // array of rows used to render as a SILENTLY EMPTY table (data present,
+    // nothing shown). Degrade to visible rows with no pager metadata instead.
+    if (Array.isArray(body)) {
+        body = { data: body };
+    }
 
     // Extract and store pagination metadata for display
-    if (response.data.pagination) {
-        apiPaginationMeta.value = response.data.pagination;
+    if (body.pagination) {
+        apiPaginationMeta.value = body.pagination;
     }
 
     // Extract and store filter values
-    if (response.data.filterValues) {
-        apiFilterValues.value = { ...apiFilterValues.value, ...response.data.filterValues };
+    if (body.filterValues) {
+        apiFilterValues.value = { ...apiFilterValues.value, ...body.filterValues };
     }
 
-    return response.data.data;
+    return body.data;
 };
 
 /**

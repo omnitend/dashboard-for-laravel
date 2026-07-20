@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.1] - 2026-07-20
+
+### Added
+
+- **`DXTable` `api-adapter` prop** — translate the built-in `api-url`
+  provider's request params and response body to a backend whose convention
+  differs from dfl's (e.g. spatie query-builder's `sort=-name`, or an envelope
+  without `{data, pagination}`), while keeping the provider's error handling
+  and pager. `request(params)` returns the wire params; `response(body,
+  { params })` returns the dfl shape, with the original dfl params available
+  to synthesize paginator metadata. This is the sanctioned replacement for
+  the **axios request/response interceptor bridges** that stopped applying in
+  0.33.0 when DXTable moved off axios (#132) — if your provider tables came up
+  empty on 0.33.0 against a previously-working backend, this is almost
+  certainly why, and the adapter is the fix.
+
+### Fixed
+
+- **A bare-array provider response renders its rows** (with no pager) instead
+  of a silently empty table — a backend that ignores the pagination
+  convention and returns all rows as a JSON array now degrades visibly.
+
 ## [0.33.0] - 2026-07-20
 
 ### Changed
