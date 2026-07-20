@@ -68,7 +68,14 @@ const emit = defineEmits<{
     "update:modelValue": [value: number | null];
 }>();
 
-const scale = computed(() => Math.pow(10, props.decimals));
+// `decimals` is public input — clamp it to a supported non-negative integer
+// so a hostile value can't throw (`10 ** -1` scaling vs `toFixed(101)`
+// RangeError) or make display precision and scale disagree.
+const safeDecimals = computed(() => {
+    const truncated = Math.trunc(props.decimals);
+    return Number.isFinite(truncated) ? Math.min(8, Math.max(0, truncated)) : 2;
+});
+const scale = computed(() => Math.pow(10, safeDecimals.value));
 const defaultStep = computed(() => (1 / scale.value).toString());
 
 // Model (possibly minor units) -> the major-unit display string.
@@ -77,7 +84,7 @@ function format(value: number | null | undefined): string {
     const num = Number(value);
     if (!Number.isFinite(num)) return "";
     const major = props.minorUnits ? num / scale.value : num;
-    return major.toFixed(props.decimals);
+    return major.toFixed(safeDecimals.value);
 }
 
 // The shown text tracks a local ref so typing is never reformatted mid-edit
@@ -111,8 +118,19 @@ function handleInput(event: Event): void {
         emit("update:modelValue", null);
         return;
     }
-    // Math.round guards float artefacts (19.99 * 100 === 1998.9999…).
-    emit("update:modelValue", props.minorUnits ? Math.round(num * scale.value) : num);
+    emit("update:modelValue", props.minorUnits ? toMinorUnits(num) : num);
+}
+
+// Major units -> integer minor units, decimal-safely. A bare
+// `Math.round(num * scale)` is wrong at half-unit boundaries: 19.99 * 100 is
+// 1998.9999… (fine, rounds up) but 1.005 * 100 is 100.4999… and silently
+// drops to 100, and negative halves round toward +∞ (-0.005 → -0). So the
+// float product is first snapped back to its decimal value (toPrecision), and
+// halves round AWAY FROM ZERO — the accounting convention, symmetric in sign.
+function toMinorUnits(major: number): number {
+    const scaled = Number((major * scale.value).toPrecision(12));
+    const rounded = Math.sign(scaled) * Math.round(Math.abs(scaled));
+    return rounded === 0 ? 0 : rounded; // normalise -0
 }
 
 // Consumer listeners (@blur, @focus, @input) arrive through `$attrs` and are

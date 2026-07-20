@@ -117,4 +117,37 @@ describe('DXCurrencyInput minorUnits mode (#116)', () => {
     await type(input(), '2.25');
     expect(model.value).toBe(2250);
   });
+
+  it('rounds half-unit boundaries decimal-safely, away from zero (Codex P1)', async () => {
+    // 1.005 * 100 is 100.4999… in binary floating point — a plain Math.round
+    // drops it to 100. With a custom half-unit step this is a legal input.
+    const { model, input } = mount({ minorUnits: true, step: '0.005' });
+    await flush();
+    await type(input(), '1.005');
+    expect(model.value).toBe(101);
+
+    // 2.675 * 100 = 267.4999… — the classic float-rounding example.
+    await type(input(), '2.675');
+    expect(model.value).toBe(268);
+
+    // Negative halves round away from zero symmetrically (not toward +∞,
+    // which yields -0 for -0.005).
+    await type(input(), '-0.005');
+    expect(model.value).toBe(-1);
+    await type(input(), '-1.005');
+    expect(model.value).toBe(-101);
+  });
+
+  it('survives a hostile decimals prop instead of throwing (Codex P2)', async () => {
+    // 10 ** -1 and toFixed(101) would throw or disagree; clamp instead.
+    const { input } = mount({ decimals: -1 }, 5);
+    await flush();
+    expect(input().value).toBe('5');
+
+    const { model, input: frac } = mount({ minorUnits: true, decimals: 2.9 }, 199);
+    await flush();
+    expect(frac().value).toBe('1.99');
+    await type(frac(), '2.50');
+    expect(model.value).toBe(250);
+  });
 });

@@ -1192,15 +1192,18 @@ watch(() => props.pagination?.per_page, (newPerPage) => {
     }
 });
 
-// Watch for external filter changes (when filters prop is controlled by parent)
-watch(() => props.filters, (newFilters, oldFilters) => {
+// Watch for external filter changes (when filters prop is controlled by parent).
+// Watches the SERIALISED map, not the object: a deep watch hands the same
+// object reference as both new and old value when a consumer mutates in place
+// (`filters.status.push(...)` on a multi-value array), so an old==new JSON
+// guard ate exactly the changes it was meant to detect. A string source only
+// fires when the content genuinely changed, and stringifying inside the getter
+// makes every nested key a reactive dependency.
+watch(() => JSON.stringify(props.filters ?? null), () => {
     // Only when the consumer CONTROLS filters. Uncontrolled, the prop is just a
     // seed: `effectiveFilters` stays internal, so refreshing on a later prop
     // change would fetch with filters the table isn't actually showing (#110).
     if (!isControlled.filters || props.filters === undefined) return;
-
-    // Only refresh if filters actually changed
-    if (JSON.stringify(newFilters) === JSON.stringify(oldFilters)) return;
 
     // Refresh data for the new filters
     if (isProviderMode.value) {
@@ -1211,14 +1214,14 @@ watch(() => props.filters, (newFilters, oldFilters) => {
             props.inertiaUrl!,
             {
                 page: 1, // Reset to first page when filters change
-                filters: newFilters,
+                filters: props.filters,
                 perPage: effectivePerPage.value,
                 ...sortParams(effectiveSortBy.value),
             },
             { preserveState: true }
         );
     }
-}, { deep: true });
+});
 
 // Watch apiUrl changes to reset filter cache and refetch. The api-url isn't part
 // of BTable's provider context, so an api-url-only change doesn't re-invoke the

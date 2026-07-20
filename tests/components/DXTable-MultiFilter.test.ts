@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
-import { h, ref } from 'vue';
+import { h, ref, reactive } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
+import { api } from '../../resources/js/utils/api';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -37,6 +38,10 @@ const rowNames = (container: Element) =>
   );
 
 describe('DXTable multi-value select filters (#51)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('client-side: an array filter matches the UNION of its values', async () => {
     const screen = render({
       render: () =>
@@ -140,6 +145,43 @@ describe('DXTable multi-value select filters (#51)', () => {
 
     expect(emitted.at(-1)).toEqual({ status: ['active', 'pending'] });
     expect(rowNames(screen.container)).toEqual(['Alpha', 'Beta']);
+  });
+
+  it('a controlled filter array mutated IN PLACE still refreshes provider data (Codex P2)', async () => {
+    // The old watcher compared JSON of the same object reference, so a
+    // consumer doing `filters.status.push(...)` never triggered a refetch.
+    const requests: any[] = [];
+    vi.spyOn(api, 'get').mockImplementation((_url: string, params: any) => {
+      requests.push(JSON.parse(JSON.stringify(params ?? {})));
+      return Promise.resolve({
+        data: { data: [], pagination: { current_page: 1, per_page: 10, total: 0, from: 0, to: 0 } },
+      }) as any;
+    });
+
+    const filters = reactive<Record<string, string | string[]>>({ status: ['active'] });
+    render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            apiUrl: '/api/things',
+            fields: FIELDS,
+            filters,
+            'onUpdate:filters': () => {},
+          }),
+        ),
+    });
+    await wait(80);
+    const before = requests.length;
+    expect(before).toBeGreaterThan(0);
+
+    (filters.status as string[]).push('pending');
+    await wait(120);
+
+    const after = requests.filter(
+      (p) => JSON.stringify(p.filters?.status) === JSON.stringify(['active', 'pending']),
+    );
+    expect(requests.length).toBeGreaterThan(before);
+    expect(after.length).toBeGreaterThan(0);
   });
 
   it('multiple mode omits the "All …" sentinel row from the options', async () => {

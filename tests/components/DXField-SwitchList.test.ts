@@ -47,6 +47,16 @@ const rowInputs = (container: Element) =>
     ),
   );
 
+// Whether an element subtree carries REAL grid column classes (col, col-3,
+// col-sm-4…). A bare `[class*="col-"]` attribute match is vacuous — it also
+// matches `col-form-label`, which bvn emits even in vertical layout.
+const hasGridColumns = (root: Element): boolean =>
+  Array.from(root.querySelectorAll('*')).some((el) =>
+    Array.from(el.classList).some(
+      (c) => /^col(-\d+)?$/.test(c) || /^col-(sm|md|lg|xl|xxl)-\d+$/.test(c),
+    ),
+  );
+
 describe('DXField switch-list (#160)', () => {
   it('renders one labelled track-switch row per option', async () => {
     const { screen } = renderField(field(), { allergens: [] });
@@ -70,12 +80,12 @@ describe('DXField switch-list (#160)', () => {
     await flush();
 
     // Would this pass with hardcoded markup instead of DFormGroup? No — the
-    // col-form-label class and the column wrapper come from the real group.
+    // grid col classes come from the real group's labelCols.
     const firstRow = screen.container.querySelector('.dx-switch-list-row')!;
     const label = firstRow.querySelector('.col-form-label');
     expect(label).not.toBeNull();
     expect(label!.textContent).toContain('Celery');
-    expect(firstRow.querySelector('[class*="col-"]')).not.toBeNull();
+    expect(hasGridColumns(firstRow)).toBe(true);
   });
 
   it('seeds on-state from the array model and toggling adds/removes values', async () => {
@@ -157,6 +167,39 @@ describe('DXField switch-list (#160)', () => {
     const { screen: unlabelled } = renderField(field(), { allergens: [] });
     await flush();
     expect(unlabelled.container.querySelector('.dx-switch-list-heading')).toBeNull();
+  });
+
+  it('honours a disabled option (non-interactive row, model untouched) (Codex P2)', async () => {
+    const disabledOptions: FieldOption[] = [
+      { value: 1, text: 'Celery' },
+      { value: 2, text: 'Locked', disabled: true },
+    ];
+    const { screen, form } = renderField(field({ options: disabledOptions }), {
+      allergens: [],
+    });
+    await flush();
+
+    const inputs = rowInputs(screen.container);
+    expect(inputs[0].disabled).toBe(false);
+    expect(inputs[1].disabled).toBe(true);
+
+    await userEvent.click(inputs[1], { force: true });
+    expect(form.data.allergens).toEqual([]);
+  });
+
+  it('hideLabel drops only the section heading, not the option-row grid (Codex P2)', async () => {
+    const { screen } = renderField(
+      field({ label: 'Allergens' }),
+      { allergens: [] },
+      { layout: 'horizontal', hideLabel: true },
+    );
+    await flush();
+
+    expect(screen.container.querySelector('.dx-switch-list-heading')).toBeNull();
+    // The rows must keep the label COLUMN (real col-* classes, not merely a
+    // .col-form-label element — bvn emits that even in vertical layout).
+    const firstRow = screen.container.querySelector('.dx-switch-list-row')!;
+    expect(hasGridColumns(firstRow)).toBe(true);
   });
 
   it('handles empty options without crashing', async () => {

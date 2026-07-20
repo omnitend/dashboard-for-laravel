@@ -37,8 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`filters[status][]=active&filters[status][]=pending`), and client-side mode
   matches a row when its value equals **any** chosen value (`filterNullText`'s
   "has no value" option works inside the array too). An emptied selection
-  removes the filter. TypeScript note: the `filters` prop/emit type widened
-  from `Record<string, string>` to `Record<string, string | string[]>`.
+  removes the filter. **TypeScript note (source-breaking for typed
+  consumers):** the `filters` prop, `v-model:filters` payload and
+  `filterChange` emit widened from `Record<string, string>` to
+  `Record<string, string | string[]>` — a ref/handler typed with the old
+  shape needs its annotation widened, even on tables with no multi filters.
+  Mutating a controlled filter array **in place** now correctly triggers a
+  provider/Inertia refresh (the old change-detection compared an object
+  against itself and missed it).
 - **`switch-list` field type** (#160) — a list of labelled boolean toggle rows
   (allergens, feature flags, notification opt-ins) as config, not markup. Each
   option renders a real form-grid row (label in the label column, compact
@@ -48,10 +54,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `checkbox-group` — and `optionsLoader` async options work as on selects.
   `switchVariant: 'neutral'` opts the rows out of the green/red valence
   (usually right for lists); per-row extras (a notes input) render via the new
-  `#switch-list-item(<key>)` scoped slot (`{ option, on }`). Also:
-  `defineForm` now seeds `checkbox-group` (and `switch-list`) defaults as
-  `[]` — previously an unseeded `checkbox-group` defaulted to `""`, the wrong
-  shape for an array model.
+  `#switch-list-item(<key>)` scoped slot (`{ option, on }`), and an option
+  with `disabled: true` renders a non-interactive row. Also: `defineForm` now
+  seeds `checkbox-group` (and `switch-list`) defaults as `[]` — previously an
+  unseeded `checkbox-group` defaulted to `""`, the wrong shape for an array
+  model — and `FormFieldDefinition.default` is now **optional** in TypeScript
+  (the runtime fallback existed but the type demanded a value, so typed
+  consumers could never use it).
 - **`DXCurrencyInput`** (#152) — the money input leaf: `£`-prefixed numeric
   input with the blur-padded display from #69, a model that is always a plain
   number or `null` (clearing emits `null`, never `NaN`/`""`), and a
@@ -61,7 +70,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `currency` type now renders this leaf — same behaviour, plus the new
   `minorUnits: true` field option — and it's exported for standalone use
   (inline table corrections, filters). Note: an emptied `currency` field now
-  writes `null` to the form model (it previously left `""`).
+  writes `null` to the form model (it previously left `""`). Minor-unit
+  rounding is decimal-safe at half-unit boundaries (`1.005` → `101`, where a
+  bare float round drops to `100`) and rounds halves **away from zero**
+  symmetrically; a hostile `decimals` prop is clamped to a supported integer
+  range instead of throwing.
 - **Dark-surface chart palette** (#145). Under `data-bs-theme="dark"` the
   theme remaps `--dx-chart-1..8` to lighter same-hue steps validated for the
   dark body (`#212529`): every step ≥ 5.6:1 contrast (the light palette dipped

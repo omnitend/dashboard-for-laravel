@@ -5,8 +5,14 @@ import type { FieldDefinition, FieldType } from "../types";
  * Extended field definition that includes default value
  */
 export interface FormFieldDefinition<TValue = any> extends FieldDefinition {
-    /** Default/initial value for the field */
-    default: TValue;
+    /**
+     * Default/initial value for the field. Optional: when omitted, the field
+     * seeds from its type (`false` for checkbox/switch, `[]` for
+     * checkbox-group/switch-list/repeater, `0` for numerics, `""` otherwise) —
+     * previously the type required this even though the runtime had a
+     * fallback, so typed consumers could never use it.
+     */
+    default?: TValue;
 }
 
 /**

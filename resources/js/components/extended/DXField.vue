@@ -248,7 +248,7 @@
             :key="String(option.value)"
             class="dx-switch-list-row"
         >
-            <DFormGroup v-bind="horizontalAttrs" class="mb-0 align-items-center">
+            <DFormGroup v-bind="switchListRowAttrs" class="mb-0 align-items-center">
                 <template #label>
                     <DXFieldLabel
                         :label="option.text"
@@ -260,7 +260,7 @@
                         switch
                         :class="field.switchVariant === 'neutral' ? 'switch-neutral' : undefined"
                         :model-value="switchListIsOn(option)"
-                        :disabled="isDisabled || isReadonly || isPlaintext"
+                        :disabled="isDisabled || isReadonly || isPlaintext || option.disabled === true"
                         :aria-label="option.text"
                         @update:model-value="setSwitchListOn(option, $event === true)"
                     />
@@ -916,6 +916,19 @@ const resolvedHint = computed(() => resolveMaybe(props.field.hint));
 const resolvedInfo = computed(() => resolveMaybe(props.field.info));
 
 // ————————————————— switch-list (#160)
+
+// Row grid for switch-list option rows. Deliberately NOT `horizontalAttrs`:
+// that computed empties itself under `hideLabel`, which is right for the
+// FIELD label but would collapse every option row's label column too —
+// `hideLabel` on a switch-list should drop only the section heading.
+const switchListRowAttrs = computed<Record<string, any>>(() =>
+    isHorizontal.value
+        ? {
+              ...labelColsAttrs(props.labelCols ?? 3),
+              labelClass: "text-sm-end dx-field-label-col",
+          }
+        : {},
+);
 
 // The model is an array of selected option values, exactly like
 // checkbox-group, so seeding/validation/diffing need nothing new. Toggling a
