@@ -29,3 +29,21 @@ describe('chart libs are isolated to the /charts entry (#142)', () => {
     expect(chartsBundle).toMatch(/from\s*["']vue-chartjs["']/);
   });
 });
+
+/*
+ * axios was the other not-actually-optional peer (#132): two plain GETs
+ * (DXTable's internal provider, useResourceEditor's showUrl fetch) imported it
+ * statically while everything else already used the library's own fetch client
+ * (utils/api). Those GETs now go through `api.get` and axios is no longer a
+ * peer at all. Same silent failure mode as the charts: one `import axios`
+ * anywhere reachable from the barrel makes it mandatory again for every
+ * consumer.
+ */
+describe('axios is not referenced by any entry (#132)', () => {
+  it('neither bundle references axios', () => {
+    // Would this pass if the bug were present? No — a static import puts the
+    // "axios" specifier in the bundle text, which this matches.
+    expect(mainBundle).not.toMatch(/["']axios["']/);
+    expect(chartsBundle).not.toMatch(/["']axios["']/);
+  });
+});

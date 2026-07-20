@@ -250,7 +250,7 @@
 <script setup lang="ts" generic="T = any">
 import { computed, getCurrentInstance, ref, watch } from "vue";
 import { router } from "@inertiajs/vue3";
-import axios from "axios";
+import { api } from "../../utils/api";
 import pluralize from "pluralize";
 import { useResourceEditor } from "../../composables/useResourceEditor";
 import { getByPath } from "../../utils/objectPath";
@@ -1360,7 +1360,7 @@ const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProvi
         params.filterValues = fieldsNeedingFilterValues.value;
     }
 
-    const response = await axios.get(props.apiUrl, { params });
+    const response = await api.get<any>(props.apiUrl, params);
 
     // Extract and store pagination metadata for display
     if (response.data.pagination) {
@@ -1393,6 +1393,8 @@ const wrappedProvider: BTableProvider<T> = async (context: Readonly<BTableProvid
     } catch (error: any) {
         // eslint-disable-next-line no-console
         console.error('DXTable: the data provider failed', error);
+        // `error.message` covers the internal provider's ApiError; the
+        // `response.data` branch covers a consumer's own axios-based provider.
         apiError.value =
             error?.response?.data?.message ||
             error?.message ||

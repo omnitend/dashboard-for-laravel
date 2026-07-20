@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
 import { h, ref } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
-import axios from 'axios';
+import { api } from '../../resources/js/utils/api';
 import { router } from '@inertiajs/vue3';
 import DXTable from '../../resources/js/components/extended/DXTable.vue';
 import { customerData, customerFields, paginationData, largePaginationData } from '../fixtures/tableData';
@@ -329,7 +329,7 @@ describe('DXTable', () => {
     it('seeds the edit form from the fetched record, not just the list row', async () => {
       // Thin list row: no `notes`. The show endpoint returns the full record.
       const listRow = { id: 7, name: 'Acme' };
-      const getSpy = vi.spyOn(axios, 'get').mockResolvedValue({
+      const getSpy = vi.spyOn(api, 'get').mockResolvedValue({
         data: { data: { id: 7, name: 'Acme', notes: 'Full record notes' } },
       });
 
@@ -367,7 +367,7 @@ describe('DXTable', () => {
     it('disables Delete while the full record is still loading', async () => {
       // A never-resolving fetch keeps editLoading true so we can observe the
       // disabled state (guard could otherwise read the thin row's data).
-      vi.spyOn(axios, 'get').mockReturnValue(new Promise(() => {}) as any);
+      vi.spyOn(api, 'get').mockReturnValue(new Promise(() => {}) as any);
 
       const screen = render({
         render: () =>
@@ -890,7 +890,7 @@ describe('DXTable', () => {
           : [{ id: 1, name: 'Current Co' }];
 
       const getSpy = vi
-        .spyOn(axios, 'get')
+        .spyOn(api, 'get')
         .mockImplementation((url: string) => Promise.resolve(respond(rowsFor(url))) as any);
 
       const apiUrl = ref('/api/things');
@@ -920,7 +920,7 @@ describe('DXTable', () => {
         (c) => c[0] === '/api/things?filter[archived]=1',
       );
       expect(newUrlCalls.length).toBe(1);
-      expect((newUrlCalls[0][1] as any).params.page).toBe(1);
+      expect((newUrlCalls[0][1] as any).page).toBe(1);
       expect(getSpy.mock.calls.length).toBe(callsAfterInitial + 1);
 
       // The rendered rows reflect the new url, not the stale ones.
@@ -931,8 +931,8 @@ describe('DXTable', () => {
 
     it('resets to page 1 and refetches once when api-url changes while past page 1', async () => {
       // A multi-page dataset so the user can be on page 2 when the url changes.
-      const getSpy = vi.spyOn(axios, 'get').mockImplementation((url: string, config?: any) => {
-        const page = config?.params?.page ?? 1;
+      const getSpy = vi.spyOn(api, 'get').mockImplementation((url: string, params?: any) => {
+        const page = params?.page ?? 1;
         return Promise.resolve({
           data: {
             data: [{ id: page, name: `${url.includes('archived') ? 'Archived' : 'Current'} p${page}` }],
@@ -962,7 +962,7 @@ describe('DXTable', () => {
       pageTwo!.click();
       await wait(30);
       expect(
-        getSpy.mock.calls.some((c) => c[0] === '/api/things' && (c[1] as any).params.page === 2),
+        getSpy.mock.calls.some((c) => c[0] === '/api/things' && (c[1] as any).page === 2),
       ).toBe(true);
 
       const callsBeforeUrlChange = getSpy.mock.calls.length;
@@ -979,7 +979,7 @@ describe('DXTable', () => {
         .slice(callsBeforeUrlChange)
         .filter((c) => c[0] === '/api/things?filter[archived]=1');
       expect(newCalls.length).toBe(1);
-      expect((newCalls[0][1] as any).params.page).toBe(1);
+      expect((newCalls[0][1] as any).page).toBe(1);
     });
   });
 });
@@ -1017,8 +1017,8 @@ describe('DXTable sort params and failed fetches (#109)', () => {
 
   it('sends no sort at all when nothing is sorted, rather than a magic column', async () => {
     const params: any[] = [];
-    vi.spyOn(axios, 'get').mockImplementation((_url: string, config: any) => {
-      params.push(config?.params);
+    vi.spyOn(api, 'get').mockImplementation((_url: string, requestParams: any) => {
+      params.push(requestParams);
       return Promise.resolve(okResponse([{ id: 1, name: 'A' }])) as any;
     });
 
@@ -1032,8 +1032,8 @@ describe('DXTable sort params and failed fetches (#109)', () => {
 
   it('stops sending a sort when the header cycles back to unsorted', async () => {
     const params: any[] = [];
-    vi.spyOn(axios, 'get').mockImplementation((_url: string, config: any) => {
-      params.push(config?.params);
+    vi.spyOn(api, 'get').mockImplementation((_url: string, requestParams: any) => {
+      params.push(requestParams);
       return Promise.resolve(okResponse([{ id: 1, name: 'A' }])) as any;
     });
 
@@ -1055,10 +1055,11 @@ describe('DXTable sort params and failed fetches (#109)', () => {
   });
 
   it('surfaces a failed api-url fetch as an error instead of an empty table', async () => {
-    vi.spyOn(axios, 'get').mockImplementation(
+    // The shape utils/api throws (ApiError), not an axios error (#132).
+    vi.spyOn(api, 'get').mockImplementation(
       () =>
         Promise.reject({
-          response: { status: 400, data: { message: 'Requested sort is not allowed' } },
+          message: 'Requested sort is not allowed', errors: {}, status: 400,
         }) as any,
     );
 
@@ -1090,8 +1091,8 @@ describe('DXTable sort params and failed fetches (#109)', () => {
   });
 
   it('keeps the table on screen when a fetch fails, so the user can undo the sort/filter', async () => {
-    vi.spyOn(axios, 'get').mockImplementation(
-      () => Promise.reject({ response: { data: { message: 'nope' } } }) as any,
+    vi.spyOn(api, 'get').mockImplementation(
+      () => Promise.reject({ message: 'nope', errors: {}, status: 500 }) as any,
     );
 
     const screen = renderApiTable();
@@ -1105,9 +1106,9 @@ describe('DXTable sort params and failed fetches (#109)', () => {
 
   it('clears the error once a later request succeeds', async () => {
     let shouldFail = true;
-    vi.spyOn(axios, 'get').mockImplementation(() =>
+    vi.spyOn(api, 'get').mockImplementation(() =>
       shouldFail
-        ? (Promise.reject({ response: { data: { message: 'transient' } } }) as any)
+        ? (Promise.reject({ message: 'transient', errors: {}, status: 500 }) as any)
         : (Promise.resolve(okResponse([{ id: 1, name: 'A' }])) as any),
     );
 
@@ -1540,8 +1541,8 @@ describe('DXTable filter and provider gaps (#106)', () => {
   describe('a column can filter on a different key (#106.1)', () => {
     it('sends the filter under filterKey, not the column key', async () => {
       const params: any[] = [];
-      vi.spyOn(axios, 'get').mockImplementation((_url: string, config: any) => {
-        params.push(config?.params);
+      vi.spyOn(api, 'get').mockImplementation((_url: string, requestParams: any) => {
+        params.push(requestParams);
         return Promise.resolve({
           data: { data: [], pagination: { current_page: 1, per_page: 10, total: 0, from: 0, to: 0 } },
         }) as any;

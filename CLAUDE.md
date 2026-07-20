@@ -962,6 +962,16 @@ woff2 in lib mode; the `build:lib` script (`vite build` + `extract-icon-font.mjs
 `build` and all `pretest*` so tests exercise the *extracted* stylesheet the #77
 guard expects — never re-inlined by a stray `vite build`.
 
+**LOCAL trap: the `pretest*` hooks do NOT run on this machine.** `~/.npmrc`
+sets `ignore-scripts=true` (supply-chain hardening), and that also skips
+`pre`/`post` hooks on explicit `npm run` — so a local `npm run test:headless`
+tests **whatever stale `dist/` is on disk** (the bundle guards go vacuous or
+fail against the previous build; caught 2026-07-20 when the #132 axios guard
+"failed" against a pre-fix dist). Locally, always `npm run build:lib` before
+the test run (release.sh now does this explicitly). CI is unaffected (hooks
+run there). Explicitly-named scripts themselves still run — only their
+`pre`/`post` companions are dropped.
+
 ### The icon webfont must never be inlined again (#77)
 
 `dist/style.css` used to be ~191 KB gzip, and **137 KB of that was one base64

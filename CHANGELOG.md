@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **axios is no longer a peer dependency** (#132) — the main entry no longer
+  imports it at all, so a consumer without axios installed builds cleanly (the
+  same class of failure the `/charts` split fixed for chart.js in #142). The
+  only two axios call sites — `DXTable`'s built-in `api-url` provider and the
+  edit modal's `show-url` fetch — now go through the library's own fetch-based
+  `api` client (already used by `useForm` for every form submission). You can
+  remove `axios` from your dependencies if nothing else uses it.
+
+  **Behaviour notes for the two GETs:** the query string is unchanged (same
+  Laravel bracket notation, e.g. `filters[status]=active`); requests now also
+  carry `Accept: application/json` and `X-Requested-With` (the same headers
+  every form submission already sent — note the latter is a non-simple CORS
+  header, so a **cross-origin** `api-url`/`show-url` endpoint must answer a
+  preflight, as was already true for the library's POSTs). If you relied on
+  **axios interceptors** (auth header, base URL) decorating these requests,
+  move that to the exported `api` client —
+  `api.setDefaultHeader('Authorization', …)` / `api.setBaseURL(…)` — which
+  also covers all form submissions. Failed fetches surface `ApiError`
+  status-specific messages (e.g. "Unauthenticated. Please log in.") instead of
+  raw axios error text. Guarded by `tests/bundle/chart-optional-peer.test.ts`
+  (no entry may reference axios).
+
+### Fixed
+
+- **`api.get` now merges params into a URL that already has a query string**
+  (`/api/things?scope=live` + `{page: 2}` → `…?scope=live&page=2`). It used to
+  blindly append a second `?`, corrupting the query so the server dropped the
+  params — axios handled this, so it would have regressed `apiUrl` values
+  carrying their own query string. Caught by Codex review; guarded at the
+  fetch level in `tests/utils/api-get.test.ts`.
+- **The `api` client no longer sends `Content-Type` or `X-CSRF-TOKEN` on
+  GET/HEAD.** A bodyless request has nothing for `Content-Type` to describe
+  and no CSRF exposure, and both are non-simple CORS headers that forced a
+  needless preflight on cross-origin GETs. POST/PUT/PATCH/DELETE are
+  unchanged.
+
 ## [0.32.0] - 2026-07-20
 
 ### Changed

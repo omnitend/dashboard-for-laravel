@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from "vue";
-import axios from "axios";
+import { api } from "../utils/api";
 import { useForm } from "./useForm";
 import { useToast } from "./useToast";
 
@@ -254,7 +254,7 @@ export function useResourceEditor<T = any>(
         editLoading.value = true;
         try {
             const url = props.showUrl!.replace(':id', String(itemId));
-            const response = await axios.get(url);
+            const response = await api.get<any>(url);
             // Superseded by a newer row-open — discard.
             if (token !== editFetchToken) return;
 
@@ -271,9 +271,7 @@ export function useResourceEditor<T = any>(
         } catch (error: any) {
             if (token !== editFetchToken) return;
             const message =
-                error?.response?.data?.message ??
-                error?.message ??
-                'Failed to load the full record.';
+                error?.message ?? 'Failed to load the full record.';
             createToast?.({
                 title: 'Error',
                 body: message,

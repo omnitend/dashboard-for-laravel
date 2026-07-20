@@ -40,7 +40,7 @@ DXTable supports three modes for loading data. **API mode is recommended** for s
   client:load
   items={[
     { feature: 'Setup', apiMode: '1 prop: api-url', clientSideMode: '2 props: items, client-side', inertiaMode: '3 props: items, pagination, inertia-url' },
-    { feature: 'Data Source', apiMode: 'Auto-fetched via axios', clientSideMode: 'Passed as items prop', inertiaMode: 'Passed as page props' },
+    { feature: 'Data Source', apiMode: 'Auto-fetched (built-in fetch client)', clientSideMode: 'Passed as items prop', inertiaMode: 'Passed as page props' },
     { feature: 'Sorting/Filtering', apiMode: 'Server-side (AJAX)', clientSideMode: 'Client-side (instant)', inertiaMode: 'Server-side (page reload)' },
     { feature: 'Pagination', apiMode: 'Server-side', clientSideMode: 'Client-side', inertiaMode: 'Server-side' },
     { feature: 'Best For', apiMode: 'Large datasets', clientSideMode: 'Small datasets (<1000)', inertiaMode: 'Inertia apps' },
@@ -454,7 +454,7 @@ const busy = ref(false);
 ```
 
 **That's it!** Just pass `api-url` and DXTable handles:
-- AJAX requests with axios
+- AJAX requests via the built-in fetch client (`api` — no axios needed)
 - Sorting parameters
 - Pagination parameters
 - Data extraction from `response.data.data`

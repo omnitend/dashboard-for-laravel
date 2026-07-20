@@ -54,7 +54,14 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-# Step 1: Run tests
+# Step 1: Build + run tests. The explicit build:lib matters: with
+# `ignore-scripts=true` in ~/.npmrc (supply-chain hardening), npm SKIPS the
+# `pretest:headless` hook, so without it the bundle-guard tests (icon font,
+# chart/axios optional peers, scoped-deep) would certify whatever stale dist/
+# is on disk — typically the PREVIOUS release's bundle.
+print_step "Building library for tests..."
+npm run build:lib
+
 print_step "Running tests..."
 npm run test:headless
 

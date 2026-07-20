@@ -53,8 +53,7 @@ class ApiClient {
             }
         };
         for (const [k, v] of Object.entries(params)) append(k, v);
-        const qs = search.toString();
-        return qs ? `?${qs}` : "";
+        return search.toString();
     }
 
     private handleError(response: Response, data: any): never {
@@ -92,18 +91,24 @@ class ApiClient {
     ): Promise<ApiResponse<T>> {
         const isFormData =
             typeof FormData !== "undefined" && options.body instanceof FormData;
+        // GET/HEAD carry no body (nothing for Content-Type to describe) and
+        // change no state (no CSRF exposure). Both headers are also non-simple
+        // for CORS, so sending them would force a preflight on cross-origin
+        // apiUrl/showUrl endpoints that axios's plain GETs never needed (#132).
+        const method = (options.method ?? "GET").toUpperCase();
+        const isBodyless = method === "GET" || method === "HEAD";
 
         const headers: Record<string, string> = {
             ...this.defaultHeaders,
             ...(isFormData
                 ? {}
                 : { "Content-Type": this.defaultHeaders["Content-Type"] }),
-            "X-CSRF-TOKEN": this.getCsrfToken(),
+            ...(isBodyless ? {} : { "X-CSRF-TOKEN": this.getCsrfToken() }),
             ...options.headers,
         };
 
         // Let fetch set the multipart boundary if FormData
-        if (isFormData) delete headers["Content-Type"];
+        if (isFormData || isBodyless) delete headers["Content-Type"];
 
         const config: RequestOptions = {
             credentials: "same-origin",
@@ -140,7 +145,10 @@ class ApiClient {
         params: Record<string, unknown> = {},
         options: Omit<RequestOptions, "method"> = {},
     ) {
-        const full = `${url}${this.toQuery(params)}`;
+        // Merge into an existing query string (`/things?scope=x` + params) with
+        // `&` — a blind `?` append corrupts the URL and silently drops params.
+        const qs = this.toQuery(params);
+        const full = qs ? `${url}${url.includes("?") ? "&" : "?"}${qs}` : url;
         return this.request<T>(full, { ...options, method: "GET" });
     }
 

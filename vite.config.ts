@@ -71,13 +71,12 @@ export default defineConfig({
       // Externalize deps that shouldn't be bundled. chart.js / vue-chartjs are
       // OPTIONAL peer deps (only the DX*Chart components need them), so they
       // stay external — consumers who chart install them; others pay nothing.
-      external: ['vue', '@inertiajs/vue3', 'axios', 'chart.js', 'vue-chartjs'],
+      external: ['vue', '@inertiajs/vue3', 'chart.js', 'vue-chartjs'],
       output: {
         // Provide global variables to use in the UMD build
         globals: {
           vue: 'Vue',
           '@inertiajs/vue3': 'Inertia',
-          axios: 'axios',
           'chart.js': 'Chart',
           'vue-chartjs': 'VueChartjs',
         },
