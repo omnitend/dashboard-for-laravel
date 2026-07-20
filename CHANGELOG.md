@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-07-20
+
 ### Changed
 
 - **`danger` buttons are now SOFT; `primary` is the only bold solid button.** The
