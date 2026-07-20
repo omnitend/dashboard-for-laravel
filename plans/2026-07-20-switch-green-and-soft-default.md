@@ -72,4 +72,31 @@ Two commits (Part A, Part B). Minor bump; CHANGELOG both as behaviour changes
 default is a deliberate divergence from bvn/Bootstrap.
 
 ## Outcome
-_(filled on completion)_
+
+Done, 2026-07-20 (unreleased on main).
+
+- **Part A** (ae8bb0b): broadened the `$dx-variants` soft rule
+  `.badge.text-bg-#{$name}` → `.text-bg-#{$name}:not(.toast)`. A non-badge
+  `.text-bg-success` (input-group-text) now matches the badge green; toast keeps
+  its fainter mix. Guarded in `soft-badges.test.ts` (verified red vs the old
+  badge-only rule). `.bg-*`/progress left for #154.
+- **Part B** (806f7fd): switch default green-on / red-off with a `neutral`
+  override.
+  - theme.scss: bare `.form-switch` green ON / red OFF (white thumb both);
+    `.switch-neutral` restores grey-off / primary-on. Published
+    `--dx-<variant>-soft-bg/-soft-text/-solid-bg/-emphasis` on `:root`.
+  - DXSwitch: `onVariant` prop (`success` default | `neutral`); box is a
+    soft-green panel (success) or primary panel (neutral); neutral tags the
+    inner form-switch `switch-neutral`.
+  - DXField / FieldDefinition: `switchVariant` field option → DXSwitch.
+  - `DXSwitch.test.ts` asserts the ACTUAL painted toggle colour (green ON / red
+    OFF / neutral primary) — 3/4 verified red vs pre-change. 495 tests green.
+- Visually confirmed both parts via headless-Chrome screenshots (bare switch
+  filmstrip + DXSwitch docs page). Not a DIVERGENCES.md entry — a theme default,
+  not a bvn API shield.
+- Docs: DXSwitch example + mdx (intro + `onVariant` prop); CHANGELOG both parts;
+  `switchVariant` in the FieldDefinition type.
+
+**Open decision left for James:** the red-off default is bold (every plain
+switch goes red when off). Screenshots shared for a react/keep-or-soften call.
+`.bg-*`/progress-bar success shade is still #154.

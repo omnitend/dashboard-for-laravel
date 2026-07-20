@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Switches default to green-on / red-off** (#158). An active switch reads
+  `success` green when ON and red when OFF out of the box (house style), not only
+  when a consumer opts in — a reversal of the old primary-on default. Applies to
+  bare `.form-switch` (`DFormCheckbox switch`) and `DXSwitch` / `DXField`
+  `type:'switch'`. Semantically-mixed switches ("contains alcohol", an allergen
+  toggle, "hidden on web shop") opt out: `DXSwitch on-variant="neutral"` / a
+  `switchVariant: 'neutral'` field option / the `.switch-neutral` class on a bare
+  `.form-switch` restore primary-on / grey-off.
+
+- **Soft `.text-bg-*` is the default on any element, not just `.badge`.** The
+  soft-first tint now applies to any `.text-bg-<variant>` element (an
+  `.input-group-text`, chip, or small status bar), so a stock indicator matches a
+  "current" badge's soft green without hardcoding. Previously only `.badge` was
+  softened; every other `.text-bg-success` stayed Bootstrap's solid dark green.
+  `.toast` keeps its own fainter mix. `.bg-*` / progress bars are unchanged (a
+  fill must stay readable — that's tracked separately in #154).
+
+### Added
+
+- **`--dx-<variant>-soft-bg` / `-soft-text` / `-solid-bg` / `-emphasis` CSS
+  variables** published on `:root` from the `$dx-variants` map, so components and
+  consumers can reference the exact soft-first tints on any element (Bootstrap's
+  own `--bs-*-bg-subtle` are a greyer family that doesn't match the soft badge).
+
 ## [0.30.0] - 2026-07-20
 
 ### Added

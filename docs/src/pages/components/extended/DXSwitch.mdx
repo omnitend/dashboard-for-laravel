@@ -13,11 +13,15 @@ import DXSwitchExampleRaw from '../../../examples/DXSwitchExample.vue?raw';
 
 A "filled box" toggle switch built on `DFormCheckbox`: a bordered box sized like
 a form control, with the label on the left and the toggle on the right, that
-colour-codes its state (a neutral box when off, a filled **primary** box when
-on). Unlike a checkbox it can say what each state *means* via
-`textWhenTrue`/`textWhenFalse`. It's the same control `DXForm` / `DXField` render
-for a `type: 'switch'` field — reach for `DXSwitch` directly when you want that
-styled toggle outside a form.
+colour-codes its state. By default (`on-variant="success"`) it reads the house
+**green-on / red-off** style — an active/enabled/good switch — with a soft-green
+box when on. Set `on-variant="neutral"` (brand primary on / grey off) for
+semantically-mixed switches that shouldn't imply good/bad ("contains alcohol",
+an allergen toggle, "hidden on web shop"). Unlike a checkbox it can say what each
+state *means* via `textWhenTrue`/`textWhenFalse`. It's the same control `DXForm` /
+`DXField` render for a `type: 'switch'` field (set the on-state colour there with
+the `switchVariant` field option) — reach for `DXSwitch` directly when you want
+that styled toggle outside a form.
 
 > **Use a switch sparingly.** A switch implies a distinct, meaningful on/off
 > *state* (e.g. "Product is current" / "not current"), and reads best with
@@ -42,6 +46,7 @@ styled toggle outside a form.
   { name: 'label', type: 'string', required: 'No', default: '-', description: 'Static text beside the toggle; the fallback when no contextual text applies.' },
   { name: 'textWhenTrue', type: 'string', required: 'No', default: '-', description: 'Text shown when on — overrides label in the on state (e.g. "Product is current").' },
   { name: 'textWhenFalse', type: 'string', required: 'No', default: '-', description: 'Text shown when off — overrides label in the off state (e.g. "Product is not current").' },
+  { name: 'onVariant', type: '"success" | "neutral"', required: 'No', default: '"success"', description: 'On-state colour. "success" (default) is green-on / red-off for an active/enabled/good switch; "neutral" is brand primary-on / grey-off for mixed-semantics switches that should not imply good/bad.' },
 ]} />
 
 Any other attributes (`disabled`, `id`, `name`, `aria-*`, …) are forwarded to
