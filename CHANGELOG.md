@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   build may now error — annotate it `const fields: FieldDefinition[] = [...]`
   or `[...] satisfies FieldDefinition[]`. Inline literals and already-annotated
   arrays are unaffected. The tightening also surfaces mistyped field `type`s.
+- **`DXBarChart` / `DXLineChart` props are now strictly typed (#135).** Their
+  `datasets` / `options` props changed from `any[]` / `Record<string, any>` to
+  Chart.js's `ChartDataset<'bar'|'line'>[]` / `ChartOptions<'bar'|'line'>`. If a
+  build newly errors, adjust a loosely-typed dataset/options object to match
+  Chart.js's types (or cast at the call site). Runtime behaviour is unchanged.
 - **Create/edit-modal seeding is now type-aware (#134).** `DXTable`'s
   create/edit modal previously seeded every field lacking an explicit `default`
   with `""`; it now uses the same rule as `defineForm`/`DXRepeater` — a

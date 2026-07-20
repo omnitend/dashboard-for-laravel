@@ -107,6 +107,24 @@ describe('DXTable source prop (#130)', () => {
     expect(rowNames(container)).toEqual(['FromB']);
   });
 
+  it('hides a stale provider error after switching to client mode', async () => {
+    const provider = vi.fn().mockRejectedValue(new Error('boom'));
+    const { container, rerender } = render(DXTable, {
+      props: { fields: FIELDS, provider },
+    });
+    await wait(80);
+    expect(container.querySelector('.alert-danger')).toBeTruthy();
+
+    // Switch to client mode: the provider error is now stale and must not
+    // render (it's gated on isProviderMode). The table itself stays mounted —
+    // asserting a live table guards against a vacuous "no alert because the
+    // whole thing unmounted" pass.
+    await rerender({ fields: FIELDS, source: { mode: 'client', items: ITEMS } });
+    await wait(50);
+    expect(container.querySelector('.alert-danger')).toBeFalsy();
+    expect(container.querySelector('table')).toBeTruthy();
+  });
+
   it('legacy props still work unchanged when source is omitted', async () => {
     const { container } = mount({ clientSide: true, items: ITEMS, perPage: 2 });
     await wait(30);

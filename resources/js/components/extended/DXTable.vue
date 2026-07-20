@@ -31,7 +31,7 @@
                          request is usually caused by the sort or a filter, and
                          replacing the table would take away the very controls
                          needed to undo it, leaving a reload as the only way out. -->
-                    <div v-if="error || apiError" class="alert alert-danger">
+                    <div v-if="error || (apiError && isProviderMode)" class="alert alert-danger">
                         {{ error || apiError }}
                     </div>
 
@@ -1326,7 +1326,14 @@ watch(() => JSON.stringify(props.filters ?? null), () => {
 // provider on its own — without this the table keeps showing the previous url's
 // rows until some other trigger (sort, per-page, create/edit/delete) fires.
 watch(() => resolvedApiUrl.value, (newUrl, oldUrl) => {
-    if (newUrl !== oldUrl && isProviderMode.value) {
+    // `newUrl` must be truthy: an api-url → provider transition drops the url to
+    // `undefined` while still satisfying `isProviderMode` via the new provider.
+    // Without this guard both this watcher and the provider watcher below run
+    // their clear+refresh on that transition (bvn coalesces the two refreshes
+    // into one fetch, so it isn't an observable double-fetch — but the redundant
+    // work is avoidable). The provider watcher owns the url-removal transition;
+    // this one only fires for an actual new url.
+    if (newUrl && newUrl !== oldUrl && isProviderMode.value) {
         // Clear cached filter values and pagination when API endpoint changes.
         // The next provider call will request fresh filter values.
         apiFilterValues.value = {};

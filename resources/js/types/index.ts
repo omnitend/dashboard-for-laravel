@@ -395,6 +395,14 @@ export interface FieldDefinition {
 // interface with a codemod. **Until then, keep the two in step** — a prop added
 // to `FieldDefinition` must be added to the matching variant(s) below. The doc
 // comments live on `FieldDefinition`; variants stay terse to keep them aligned.
+//
+// Known limitation: the union rejects invalid FRESH object literals (excess
+// property checking — the common `fields: [{ type: "checkbox", … }]` call site),
+// but a PRE-DECLARED object with excess props (`const f = { type: "checkbox",
+// currencySymbol: "£" }`) stays structurally assignable. Full exclusivity would
+// need `never`-typed exclusion keys on every variant (or a StrictUnion helper) —
+// heavy machinery with confusing errors for marginal gain on an opt-in type, so
+// it's deliberately not done here.
 // ───────────────────────────────────────────────────────────────────────────
 
 /** Options common to every field variant (the non-`type`-specific props). */
@@ -455,8 +463,10 @@ export interface NumberFieldDef
     type: "number";
 }
 
-/** `date` / `datetime` / `datetime-local` / `time` — native date/time controls. */
-export interface DateFieldDef extends BaseFieldDef {
+/** `date` / `datetime` / `datetime-local` / `time` — native date/time controls.
+ *  `min`/`max`/`step` are valid on these inputs (e.g. `min="2024-01-01"`) and
+ *  DXField forwards them, so the variant permits them. */
+export interface DateFieldDef extends BaseFieldDef, WithNumericBounds {
     type: "date" | "datetime" | "datetime-local" | "time";
 }
 

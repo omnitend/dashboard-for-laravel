@@ -23,17 +23,26 @@ const rgb = (hex: string) => {
 
 const TRANSPARENT = new Set(['rgba(0, 0, 0, 0)', 'transparent', '']);
 
-// Poll until the browser has actually applied dist/style.css to the freshly
-// rendered element, instead of a fixed sleep. A fixed 30ms flaked under
-// full-suite CPU load: the paint hadn't landed, so getComputedStyle returned
-// Bootstrap's unthemed default and the colour assertion failed intermittently
-// (only primary/danger/success, at 400ms+ durations). Bounded (~2.4s) so a
-// legitimately transparent element still resolves and the assertion runs.
+// The theme (dist/style.css) defines `--dx-chart-1` on :root; Bootstrap does
+// not. Non-empty ⇒ the theme stylesheet has been applied, so getComputedStyle
+// reflects the themed cascade rather than Bootstrap's default.
+const themeApplied = () =>
+  getComputedStyle(document.documentElement)
+    .getPropertyValue('--dx-chart-1')
+    .trim() !== '';
+
+// Poll until the theme has applied AND the element is painted, instead of a
+// fixed sleep. A fixed 30ms flaked under full-suite CPU load; and a plain
+// "wait until non-transparent" isn't enough because Bootstrap's OWN default
+// button/badge fills are opaque — the poll would exit on the stale unthemed
+// colour before dist/style.css landed. Gating on `themeApplied()` waits for the
+// theme specifically. Bounded (~2.4s) so a legitimately transparent element
+// still resolves and the assertion runs.
 const readWhenPainted = async (container: Element, selector: string) => {
   let el: HTMLElement | null = null;
   for (let i = 0; i < 150; i++) {
     el = container.querySelector(selector) as HTMLElement | null;
-    if (el && !TRANSPARENT.has(getComputedStyle(el).backgroundColor)) break;
+    if (el && themeApplied() && !TRANSPARENT.has(getComputedStyle(el).backgroundColor)) break;
     await new Promise((resolve) => setTimeout(resolve, 16));
   }
   const style = getComputedStyle(el as HTMLElement);
