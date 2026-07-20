@@ -17,6 +17,20 @@
     </div>
 
     <div class="example-section">
+      <h5>On-state colour (green-on / red-off by default)</h5>
+      <DXSwitch :model-value="true" label="Product is current" />
+      <DXSwitch :model-value="false" label="Product is current" />
+      <p class="state-display">
+        Default <code>on-variant="success"</code>: green when on, red when off.
+      </p>
+      <DXSwitch :model-value="true" label="Contains alcohol" on-variant="neutral" />
+      <DXSwitch :model-value="false" label="Contains alcohol" on-variant="neutral" />
+      <p class="state-display">
+        <code>on-variant="neutral"</code> for mixed-semantics switches: primary on, grey off.
+      </p>
+    </div>
+
+    <div class="example-section">
       <h5>Disabled</h5>
       <DXSwitch :model-value="true" label="Locked on" disabled />
       <DXSwitch :model-value="false" label="Locked off" disabled />

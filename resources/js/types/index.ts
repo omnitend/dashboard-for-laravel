@@ -196,6 +196,15 @@ export interface FieldDefinition {
      */
     textWhenFalse?: MaybeFn<string>;
 
+    /**
+     * For `switch` fields: the on-state colour. `"success"` (default) is the
+     * house green-on / red-off style for an active/enabled/good switch;
+     * `"neutral"` (brand primary on / grey off) is for semantically-mixed
+     * switches that shouldn't imply good/bad ("contains alcohol", an allergen
+     * toggle, "hidden on web shop"). See DXSwitch `onVariant` (#158).
+     */
+    switchVariant?: "success" | "neutral";
+
     /** CSS class for the form group */
     class?: string;
 

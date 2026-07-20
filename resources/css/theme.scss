@@ -541,6 +541,20 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   // colour IS its emphasis shade, so Bootstrap already renders them legible.
 }
 
+// Publish each variant's soft/emphasis shades as CSS variables so components
+// (e.g. DXSwitch's on-box) and consumers can reference the exact soft-first
+// tints on any element — Bootstrap's own `--bs-*-bg-subtle` are a different,
+// greyer family derived from the dark emphasis base, so they don't match the
+// soft badge/alert green. These are the same values the $dx-variants loop paints.
+:root {
+  @each $name, $v in $dx-variants {
+    --dx-#{$name}-soft-bg: #{map.get($v, "soft-bg")};
+    --dx-#{$name}-soft-text: #{map.get($v, "soft-text")};
+    --dx-#{$name}-solid-bg: #{map.get($v, "solid-bg")};
+    --dx-#{$name}-emphasis: #{map.get($v, "emphasis")};
+  }
+}
+
 // primary is near-black navy, so Bootstrap's darken-on-hover is imperceptible —
 // the main action button would have no visible hover feedback. Lighten instead.
 // (danger's red darkens visibly, so the generic solid path is fine for it.)
@@ -561,6 +575,73 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 
   &:hover {
     background-color: var(--bs-light);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Switches — green when ON, red when OFF, by default (#158)
+// ----------------------------------------------------------------------------
+// House style (James): an active switch — "Product is current", "Stock is
+// tracked", "Visible" — should read success GREEN when on and RED when off,
+// OUT OF THE BOX, not only when a consumer opts in. Bootstrap's default is a
+// primary (navy) track when on / grey when off. We flip the default here.
+//
+// Semantically-MIXED switches ("contains alcohol", an allergen toggle, "hidden
+// on web shop") shouldn't imply good/bad — those opt OUT with `.switch-neutral`
+// on the `.form-switch`, which restores Bootstrap's grey-off / primary-on.
+//
+// Applies to any bare `.form-switch` (DFormCheckbox `switch`); DXSwitch layers
+// its box styling on top and drives the same on/off variants via `onVariant`.
+$dx-switch-on: map.get(map.get($dx-variants, "success"), "solid-bg"); // vivid lime
+$dx-switch-off: map.get(map.get($dx-variants, "danger"), "solid-bg"); // vivid red
+// The white thumb (Bootstrap's checked image) — reused on the OFF state so the
+// thumb stays visible on the red track (Bootstrap's default OFF thumb is a faint
+// grey circle meant for a light track).
+$dx-switch-thumb: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+
+.form-switch .form-check-input {
+  // OFF: red track, white thumb (left).
+  background-color: #{$dx-switch-off};
+  border-color: #{$dx-switch-off};
+  --bs-form-switch-bg: #{$dx-switch-thumb};
+
+  &:checked {
+    // ON: green track, white thumb (right — Bootstrap positions it).
+    background-color: #{$dx-switch-on};
+    border-color: #{$dx-switch-on};
+  }
+
+  // Keep the thumb white on focus (Bootstrap swaps it for a navy circle, which
+  // is invisible-ish on green/red) and use a neutral grey focus ring rather than
+  // the brand navy one, since the track already carries the state colour.
+  &:focus {
+    --bs-form-switch-bg: #{$dx-switch-thumb};
+    border-color: #{$dx-switch-off};
+    box-shadow: 0 0 0 0.25rem rgba($dark, 0.15);
+  }
+
+  &:checked:focus {
+    border-color: #{$dx-switch-on};
+  }
+}
+
+// Neutral opt-out for mixed-semantics switches: restore Bootstrap's grey-off /
+// primary-on (no good/bad valence).
+.form-switch.switch-neutral .form-check-input {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  // Bootstrap's default faint-grey OFF thumb.
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+
+  &:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    --bs-form-switch-bg: #{$dx-switch-thumb};
+  }
+
+  &:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
   }
 }
 

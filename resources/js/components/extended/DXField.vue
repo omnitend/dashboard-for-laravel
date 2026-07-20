@@ -159,6 +159,7 @@
         <DXSwitch
             v-else
             v-model="switchModel"
+            :on-variant="field.switchVariant"
             :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="controlPropsWithGuards"
         >
@@ -201,6 +202,7 @@
         <DXSwitch
             v-else
             v-model="switchModel"
+            :on-variant="field.switchVariant"
             :disabled="isDisabled || isReadonly || isPlaintext"
             v-bind="controlPropsWithGuards"
         >

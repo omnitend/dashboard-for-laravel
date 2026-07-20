@@ -95,3 +95,50 @@ describe('DXSwitch', () => {
     expect(input.disabled).toBe(true);
   });
 });
+
+/**
+ * #158 — the default switch style is green-on / red-off; a `neutral` override is
+ * for mixed-semantics switches (primary-on / grey-off). Asserts the ACTUAL
+ * painted toggle colour (from the built dist theme), not just a class, so the
+ * property that was asked for is what's tested.
+ */
+describe('DXSwitch on-variant (green-on / red-off default, #158)', () => {
+  const SUCCESS = 'rgb(132, 204, 22)'; // #84cc16 solid lime
+  const DANGER = 'rgb(220, 38, 38)'; // #dc2626 solid red
+  const PRIMARY = 'rgb(21, 30, 45)'; // #151e2d brand navy
+
+  const toggleBg = async (props: Record<string, unknown>) => {
+    const screen = mount(props);
+    await flush();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const input = screen.container.querySelector('.form-check-input') as HTMLElement;
+    return { bg: getComputedStyle(input).backgroundColor, root: screen.container.querySelector('.dx-switch') as HTMLElement, screen };
+  };
+
+  it('defaults to onVariant="success": green track when ON', async () => {
+    const { bg, root } = await toggleBg({ modelValue: true, label: 'Current' });
+    expect(bg).toBe(SUCCESS);
+    expect(root.classList.contains('dx-switch--success')).toBe(true);
+  });
+
+  it('defaults to red track when OFF', async () => {
+    const { bg } = await toggleBg({ modelValue: false, label: 'Current' });
+    expect(bg).toBe(DANGER);
+  });
+
+  it('onVariant="neutral" is primary-on (not green) and tags the toggle switch-neutral', async () => {
+    const { bg, root, screen } = await toggleBg({ modelValue: true, label: 'Contains alcohol', onVariant: 'neutral' });
+    expect(bg).toBe(PRIMARY);
+    expect(bg).not.toBe(SUCCESS);
+    expect(root.classList.contains('dx-switch--neutral')).toBe(true);
+    // The inner form-switch carries switch-neutral so the global theme restores
+    // grey-off / primary-on for the toggle.
+    expect(screen.container.querySelector('.form-switch.switch-neutral')).toBeTruthy();
+  });
+
+  it('onVariant="neutral" is grey (not red) when OFF', async () => {
+    const { bg } = await toggleBg({ modelValue: false, label: 'Contains alcohol', onVariant: 'neutral' });
+    expect(bg).not.toBe(DANGER);
+    expect(bg).not.toBe(SUCCESS);
+  });
+});

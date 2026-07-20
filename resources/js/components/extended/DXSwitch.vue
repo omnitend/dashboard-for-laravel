@@ -4,9 +4,12 @@
 
   An opinionated switch built on `DFormCheckbox` (`switch`): a bordered box sized
   like a `.form-control` with the label on the left and the toggle on the right,
-  colour-coding its state (a neutral box when off, a filled primary box when on).
-  Used standalone or, internally, by `DXField`'s `switch` field type so a form
-  switch and a lone switch share one look.
+  colour-coding its state. By default (`onVariant="success"`) it reads the house
+  green-on / red-off style — a neutral box + red toggle when off, a soft-green
+  box + green toggle when on. `onVariant="neutral"` (brand primary on / grey off)
+  is for semantically-mixed switches that shouldn't imply good/bad (#158). Used
+  standalone or, internally, by `DXField`'s `switch` field type so a form switch
+  and a lone switch share one look.
 
   Usage:
   ```vue
@@ -18,8 +21,16 @@
   `label` prop for simple text, or the default slot for richer label content.
 -->
 <template>
-  <div class="dx-switch" :class="{ 'dx-switch--on': isOn }">
-    <DFormCheckbox v-model="model" switch v-bind="$attrs">
+  <div class="dx-switch" :class="[`dx-switch--${onVariant}`, { 'dx-switch--on': isOn }]">
+    <!-- For the neutral variant, tag the inner `.form-switch` with
+         `switch-neutral` so the global theme restores grey-off / primary-on for
+         the toggle itself (the box styling below handles the wrapper). -->
+    <DFormCheckbox
+      v-model="model"
+      switch
+      :class="onVariant === 'neutral' ? 'switch-neutral' : undefined"
+      v-bind="$attrs"
+    >
       <!--
         @slot Label content shown beside the toggle. Falls back to the contextual
         text / `label` prop. Scoped with the current on-state so a caller can vary
@@ -44,10 +55,19 @@ interface Props {
   textWhenTrue?: string;
   /** Text shown when off — overrides `label` in the off state (e.g. "Product is not current"). */
   textWhenFalse?: string;
+  /**
+   * On-state colour. `"success"` (default) reads the house green-on / red-off
+   * style — an active/enabled/good switch ("Product is current", "Stock is
+   * tracked", "Visible"). `"neutral"` is for semantically-mixed switches
+   * ("contains alcohol", an allergen toggle, "hidden on web shop") that
+   * shouldn't imply good/bad — it uses the brand primary on / grey off (#158).
+   */
+  onVariant?: "success" | "neutral";
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: false,
+  onVariant: "success",
 });
 
 const emit = defineEmits<{
@@ -128,26 +148,29 @@ defineOptions({
   cursor: pointer;
 }
 
-/* On-state: filled primary. Green is reserved for success semantics, so a
-   generic "on" toggle uses the brand action colour, matching the base switch,
-   checkboxes and radios. */
-.dx-switch--on :deep(.form-check) {
+/* On-state box: emphasise the active state as a coloured panel. `success` (the
+   default, #158) is a soft-green panel — an active/enabled/good switch reads
+   green; `neutral` is the brand primary panel for mixed-semantics switches. The
+   TOGGLE itself is coloured by the global theme (green-on / red-off for the
+   default, grey-off / primary-on for `.switch-neutral`), so here we only style
+   the wrapper box + label. The off-state box stays neutral grey. */
+.dx-switch--success.dx-switch--on :deep(.form-check) {
+  background-color: var(--dx-success-soft-bg);
+  border-color: var(--dx-success-emphasis);
+}
+
+.dx-switch--success.dx-switch--on :deep(.form-check-label) {
+  color: var(--dx-success-soft-text);
+  font-weight: 500;
+}
+
+.dx-switch--neutral.dx-switch--on :deep(.form-check) {
   background-color: var(--bs-primary-bg-subtle);
   border-color: var(--bs-primary);
 }
 
-.dx-switch--on :deep(.form-check-label) {
+.dx-switch--neutral.dx-switch--on :deep(.form-check-label) {
   color: var(--bs-primary-text-emphasis);
   font-weight: 500;
-}
-
-.dx-switch--on :deep(.form-check-input:checked) {
-  background-color: var(--bs-primary);
-  border-color: var(--bs-primary);
-}
-
-.dx-switch--on :deep(.form-check-input:focus) {
-  border-color: var(--bs-primary);
-  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 }
 </style>
