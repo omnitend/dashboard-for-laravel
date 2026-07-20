@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`DXTable` multi-value column filters** (#51) — `filterMultiple: true` on a
+  `filter: 'select'` field renders a multi-select typeahead so a column can
+  filter on several values at once (status in *active, pending*). The
+  `filters` map entry (and the `v-model:filters` payload) becomes an **array**
+  for such columns; provider and Inertia modes send Laravel bracket notation
+  (`filters[status][]=active&filters[status][]=pending`), and client-side mode
+  matches a row when its value equals **any** chosen value (`filterNullText`'s
+  "has no value" option works inside the array too). An emptied selection
+  removes the filter. TypeScript note: the `filters` prop/emit type widened
+  from `Record<string, string>` to `Record<string, string | string[]>`.
 - **`switch-list` field type** (#160) — a list of labelled boolean toggle rows
   (allergens, feature flags, notification opt-ins) as config, not markup. Each
   option renders a real form-grid row (label in the label column, compact

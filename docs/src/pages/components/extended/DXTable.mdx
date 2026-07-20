@@ -244,7 +244,7 @@ content **under** a row, instead of pushing every per-row detail into a modal:
 ## Column filters
 
 Set `filter` on a field (`'text' | 'select' | 'number' | 'date'`) to give the
-column an inline filter. Two options matter beyond that:
+column an inline filter. Three options matter beyond that:
 
 - **`filterKey`** — the key the filter is *sent* under, when it differs from the
   column's own key. A "Customer" column can render a name and filter on
@@ -254,11 +254,20 @@ column an inline filter. Two options matter beyond that:
   `Unassigned` on an assignee column). Choosing it sends `filterNullValue`
   (default `"null"`); client-side it matches rows whose value is null, undefined
   or empty.
+- **`filterMultiple`** — lets a `select` filter hold **several** values at once
+  (status in *active, pending*). The filters map entry becomes an **array**,
+  sent as Laravel bracket notation
+  (`filters[status][]=active&filters[status][]=pending`) in provider and
+  Inertia modes; client-side, a row matches when its value equals **any**
+  chosen value. An emptied selection means "no filter". The "All …" reset row
+  is omitted (remove the chips or ✕ instead); `filterNullText` remains
+  choosable alongside real values.
 
 ```js
 const fields = [
   { key: 'customer_name', label: 'Customer', filter: 'text', filterKey: 'customer_id' },
   { key: 'assignee', label: 'Assignee', filter: 'select', filterNullText: 'Unassigned' },
+  { key: 'status', label: 'Status', filter: 'select', filterMultiple: true },
 ];
 ```
 
@@ -694,7 +703,7 @@ const items = ref([
 The same filter types work in client-side mode:
 
 - `'text'` - Case-insensitive contains search
-- `'select'` - Exact match dropdown
+- `'select'` - Exact match dropdown (`filterMultiple: true` matches ANY of the chosen values)
 - `'number'` - Exact numeric match
 - `'date'` - Exact date match
 
@@ -832,6 +841,7 @@ interface TableField {
   sortable?: boolean;             // Enable sorting for this column
   hint?: string;                  // Hint text below column header
   filter?: FilterType;            // Filter type: 'text' | 'select' | 'number' | 'date' | false
+  filterMultiple?: boolean;       // 'select' filters only: allow several values (array filter entry, ANY-match)
   filterOptions?: FilterOption[]; // Options for select filters
   filterPlaceholder?: string;     // Placeholder for filter input
   formatter?: (value: any, key: string, item: any) => string; // Custom formatter function

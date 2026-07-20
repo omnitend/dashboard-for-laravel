@@ -108,10 +108,22 @@
                                         @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                     />
 
+                                    <!-- Multi-value Select Filter (#51): several values at once; the filters entry is an array -->
+                                    <DAutocomplete
+                                        v-else-if="field.filter === 'select' && field.filterMultiple"
+                                        :model-value="multiFilterValueFor(field)"
+                                        :options="getFieldFilterOptions(field)"
+                                        :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
+                                        size="sm"
+                                        multiple
+                                        open-on-focus
+                                        @update:model-value="handleMultiSelectFilterChange(field, $event)"
+                                    />
+
                                     <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
                                     <DAutocomplete
                                         v-else-if="field.filter === 'select'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
+                                        :model-value="(effectiveFilters[filterKeyFor(field)] as string) || ''"
                                         :options="getFieldFilterOptions(field)"
                                         :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
                                         size="sm"
@@ -287,6 +299,18 @@ export interface TableField {
     filterKey?: string;
 
     /**
+     * For a `select` filter: allow SEVERAL values at once (#51). The filter
+     * renders as a multi-select typeahead, the filters map holds an ARRAY of
+     * the chosen option values, and the query string carries Laravel bracket
+     * notation (`filters[status][]=active&filters[status][]=pending`).
+     * Client-side, a row matches when its value equals ANY chosen value. An
+     * empty selection means "no filter". The "All …" reset row is omitted in
+     * this mode (removing the chips/✕ is the way back); `filterNullText`
+     * stays available as a choosable value.
+     */
+    filterMultiple?: boolean;
+
+    /**
      * For a `select` filter: adds an option meaning "has no value", e.g.
      * `filterNullText: "Unassigned"` on an assignee column. Selecting it sends
      * `filterNullValue` (default `"null"`) as the filter value; client-side, it
@@ -396,8 +420,9 @@ export interface Props<TItem = any> {
     /** Sort configuration (v-model support) */
     sortBy?: BTableSortBy[];
 
-    /** Filter values (v-model support) - key is field key, value is filter string */
-    filters?: Record<string, string>;
+    /** Filter values (v-model support) - key is field key, value is the filter
+     *  string, or an ARRAY of values for a `filterMultiple` column (#51). */
+    filters?: Record<string, string | string[]>;
 
     /** Dynamic filter options from server - key is field key, value is array of values */
     filterValues?: Record<string, string[]>;
@@ -629,7 +654,7 @@ const emit = defineEmits<{
     /** Emitted (Inertia mode) when the sort column or direction changes, with the active field key and order. */
     sortChange: [sort: { key: string; order: 'asc' | 'desc' }];
     /** Emitted when the inline column filter values change (debounced for server modes, immediate for client-side). Payload is the full filter map. */
-    filterChange: [filters: Record<string, string>];
+    filterChange: [filters: Record<string, string | string[]>];
     /** Emitted when the per-page selector value changes. Payload is the new page size. */
     perPageChange: [perPage: number];
     /** Emitted when a table row is clicked, with the row item, its index, and the click event. */
@@ -651,7 +676,7 @@ const emit = defineEmits<{
     /** `v-model:expandedItems` update, emitted with the rows currently expanded. */
     'update:expandedItems': [items: T[]];
     /** `v-model:filters` update, emitted with the new filter map when a column filter changes. */
-    'update:filters': [filters: Record<string, string>];
+    'update:filters': [filters: Record<string, string | string[]>];
     /** `v-model:perPage` update, emitted with the new page size when the per-page selector changes. */
     'update:perPage': [perPage: number];
     /** `v-model:busy` update, forwarded from the underlying table's provider loading state (provider mode). */
@@ -749,7 +774,7 @@ const effectiveSortBy = computed(() =>
 );
 
 // Internal filters state, seeded from the prop when it's an initial value.
-const internalFilters = ref<Record<string, string>>({ ...(props.filters ?? {}) });
+const internalFilters = ref<Record<string, string | string[]>>({ ...(props.filters ?? {}) });
 
 const effectiveFilters = computed(() =>
     isControlled.filters && props.filters !== undefined ? props.filters : internalFilters.value,
@@ -758,10 +783,15 @@ const effectiveFilters = computed(() =>
 // Computed: check if any field has filtering enabled
 const hasFilters = computed(() => props.fields.some(field => field.filter !== false && field.filter !== undefined));
 
+// Whether a filter map entry actually filters anything: a non-blank string,
+// or a non-empty array for a `filterMultiple` column (#51).
+const isActiveFilterValue = (value: string | string[] | undefined): boolean =>
+    Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null && value.trim() !== '';
+
 // Computed: check if any filters are currently active
 const hasActiveFilters = computed(() => {
     const filters = effectiveFilters.value;
-    return Object.keys(filters).some(key => filters[key] && filters[key].trim() !== '');
+    return Object.keys(filters).some(key => isActiveFilterValue(filters[key]));
 });
 
 // API mode pagination metadata (extracted from responses)
@@ -825,7 +855,7 @@ const clientSideFilteredItems = computed<T[]>(() => {
     if (!isClientSideMode.value || !props.items) return [];
 
     const filters = effectiveFilters.value;
-    const filterKeys = Object.keys(filters).filter(key => filters[key] && filters[key].trim() !== '');
+    const filterKeys = Object.keys(filters).filter(key => isActiveFilterValue(filters[key]));
 
     if (filterKeys.length === 0) {
         return props.items;
@@ -833,7 +863,6 @@ const clientSideFilteredItems = computed<T[]>(() => {
 
     return props.items.filter(item => {
         return filterKeys.every(key => {
-            const filterValue = filters[key].trim().toLowerCase();
             // Resolve by the FILTER key, which may differ from the column's key.
             const field = props.fields.find(f => filterKeyFor(f) === key);
             // `filterKey` names the param the SERVER filters on; a local row may
@@ -847,39 +876,47 @@ const clientSideFilteredItems = computed<T[]>(() => {
                     ? fieldValueOf(item, key)
                     : fieldValueOf(item, field?.key ?? key);
 
-            // The "no value" option (e.g. Unassigned) is the one filter that
-            // MATCHES an absent value rather than failing on it.
-            if (field?.filterNullText && filters[key] === filterNullValueFor(field)) {
-                return itemValue === null || itemValue === undefined || itemValue === '';
-            }
+            const matchesCandidate = (candidate: string): boolean => {
+                // The "no value" option (e.g. Unassigned) is the one filter that
+                // MATCHES an absent value rather than failing on it.
+                if (field?.filterNullText && candidate === filterNullValueFor(field)) {
+                    return itemValue === null || itemValue === undefined || itemValue === '';
+                }
 
-            if (itemValue === null || itemValue === undefined) {
-                return false;
-            }
+                if (itemValue === null || itemValue === undefined) {
+                    return false;
+                }
 
-            const filterType = field?.filter;
+                const filterValue = candidate.trim().toLowerCase();
 
-            switch (filterType) {
-                case 'text':
-                    // Case-insensitive contains search
-                    return String(itemValue).toLowerCase().includes(filterValue);
+                switch (field?.filter) {
+                    case 'text':
+                        // Case-insensitive contains search
+                        return String(itemValue).toLowerCase().includes(filterValue);
 
-                case 'select':
-                    // Exact match
-                    return String(itemValue) === filters[key];
+                    case 'select':
+                        // Exact match
+                        return String(itemValue) === candidate;
 
-                case 'number':
-                    // Exact numeric match
-                    return Number(itemValue) === Number(filters[key]);
+                    case 'number':
+                        // Exact numeric match
+                        return Number(itemValue) === Number(candidate);
 
-                case 'date':
-                    // Exact date match
-                    return String(itemValue) === filters[key];
+                    case 'date':
+                        // Exact date match
+                        return String(itemValue) === candidate;
 
-                default:
-                    // Default: case-insensitive contains
-                    return String(itemValue).toLowerCase().includes(filterValue);
-            }
+                    default:
+                        // Default: case-insensitive contains
+                        return String(itemValue).toLowerCase().includes(filterValue);
+                }
+            };
+
+            // A `filterMultiple` column holds an ARRAY of values; the row
+            // matches when it matches ANY of them (#51). A scalar filter is
+            // the one-candidate case of the same rule.
+            const raw = filters[key];
+            return (Array.isArray(raw) ? raw : [raw]).some(matchesCandidate);
         });
     });
 });
@@ -1019,6 +1056,19 @@ const handleSelectFilterChange = (field: TableField, value: unknown) => {
     handleFilterChange(filterKeyFor(field), selected === FILTER_ALL_VALUE ? '' : selected);
 };
 
+// Multi-value select filter (#51): the autocomplete's array model maps
+// straight onto the filters entry; an emptied selection removes the entry.
+const multiFilterValueFor = (field: TableField): string[] => {
+    const value = effectiveFilters.value[filterKeyFor(field)];
+    if (Array.isArray(value)) return value;
+    return isActiveFilterValue(value) ? [String(value)] : [];
+};
+
+const handleMultiSelectFilterChange = (field: TableField, value: unknown) => {
+    const selected = (Array.isArray(value) ? value : []).map(String);
+    handleFilterChange(filterKeyFor(field), selected);
+};
+
 const filterAllLabelFor = (field: TableField): string =>
     field.filterAllText ?? field.filterPlaceholder ?? `All ${field.label || field.key}`;
 
@@ -1042,7 +1092,13 @@ const getFieldFilterOptions = (field: TableField): FilterOption[] => {
     // so the obvious encoding of "no filter" silently empties the dropdown.
     // `handleSelectFilterChange` translates it back to `''`, which is already
     // how the filter map represents unset.
-    options.push({ value: FILTER_ALL_VALUE, text: filterAllLabelFor(field) });
+    //
+    // A `filterMultiple` column omits it (#51): "no filter" inside a
+    // multi-select reads as a selectable value, and clearing is already
+    // discoverable there — remove the chips, or the ✕.
+    if (!field.filterMultiple) {
+        options.push({ value: FILTER_ALL_VALUE, text: filterAllLabelFor(field) });
+    }
 
     // An "Unassigned"-style option, so a select filter can express "has no value"
     // — a different thing from "no filter" above.
@@ -1602,12 +1658,12 @@ const handlePerPageChange = (newPerPage: number | string | null | (number | stri
     emit('perPageChange', perPageNum);
 };
 
-const handleFilterChange = (fieldKey: string, value: string) => {
+const handleFilterChange = (fieldKey: string, value: string | string[]) => {
     // Update filters
     const newFilters = { ...effectiveFilters.value, [fieldKey]: value };
 
-    // Remove empty filters
-    if (!value || value.trim() === '') {
+    // Remove empty filters (a blank string, or an empty multi-value array)
+    if (!isActiveFilterValue(value)) {
         delete newFilters[fieldKey];
     }
 
