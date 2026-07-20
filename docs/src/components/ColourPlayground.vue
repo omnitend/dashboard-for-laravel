@@ -87,6 +87,43 @@ const autoText = (bg: string) => (ratio(bg, '#ffffff') >= ratio(bg, '#0f172a') ?
 // Outline buttons and coloured links use the explicit `emphasis` shade.
 const outlineColor = (v: Variant) => variants[v].emphasis;
 
+// --- Filled switch (#158) ---
+// The DXSwitch "filled box" fills the whole control green (on) / light red (off)
+// with a neutral pill. Its tokens are `color.mix`ed from the base success/danger
+// solids in theme.scss, so mirror that maths here to keep the switch preview
+// live: tune the success or danger SOLID above and the switch tracks it.
+const hexToRgb = (hex: string): [number, number, number] => {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const toHex = (rgb: number[]) =>
+  '#' + rgb.map((x) => Math.round(x).toString(16).padStart(2, '0')).join('');
+// color.mix($a, $b, $weightA%) on opaque colours = weighted average.
+const mix = (a: string, b: string, weightA: number) => {
+  if (!isHex(a) || !isHex(b)) return a;
+  const [ar, ag, ab] = hexToRgb(a);
+  const [br, bg, bb] = hexToRgb(b);
+  const w = weightA / 100;
+  return toHex([ar * w + br * (1 - w), ag * w + bg * (1 - w), ab * w + bb * (1 - w)]);
+};
+const WHITE = '#ffffff';
+const BLACK = '#000000';
+const switchFills = computed(() => {
+  const on = variants.success.solidBg;
+  const off = variants.danger.solidBg;
+  return {
+    onBg: mix(on, WHITE, 50),
+    onWell: mix(on, WHITE, 30),
+    onLine: mix(on, WHITE, 15),
+    onInk: variants.success.softText,
+    offBg: mix(off, WHITE, 20),
+    offWell: mix(off, WHITE, 10),
+    offLine: mix(off, WHITE, 45),
+    offInk: mix(off, BLACK, 30),
+    pill: '#ced4da',
+  };
+});
+
 const isHex = (value: string) => /^#[0-9a-fA-F]{6}$/.test(value);
 
 const reset = () => Object.assign(variants, clone(seed));
@@ -195,6 +232,28 @@ const showExport = ref(false);
             :style="{ background: variants.danger.solidBg, color: variants.danger.solidText }"
           >Delete</button>
         </div>
+      </div>
+
+      <!-- Filled switch (#158): the whole box carries the state colour, derived
+           live from the success/danger SOLID values above. -->
+      <p class="section-note pg-switch-note">
+        The <strong>filled switch</strong> (<code>DXSwitch</code>) — green on, light red off, neutral
+        pill. Its fills are <code>color.mix</code>ed from the success / danger solids, so tune those
+        above and the switch follows.
+      </p>
+      <div class="pg-switch-row">
+        <label class="pg-switch" :style="{ background: switchFills.onBg, borderColor: switchFills.onLine }">
+          <span class="pg-switch-lab" :style="{ color: switchFills.onInk }">Product is current</span>
+          <span class="pg-switch-well" :style="{ background: switchFills.onWell }">
+            <span class="pg-switch-pill pg-switch-pill--on" :style="{ background: switchFills.pill }" />
+          </span>
+        </label>
+        <label class="pg-switch" :style="{ background: switchFills.offBg, borderColor: switchFills.offLine }">
+          <span class="pg-switch-lab" :style="{ color: switchFills.offInk }">Product is not current</span>
+          <span class="pg-switch-well" :style="{ background: switchFills.offWell }">
+            <span class="pg-switch-pill" :style="{ background: switchFills.pill }" />
+          </span>
+        </label>
       </div>
     </section>
 
@@ -643,5 +702,55 @@ const showExport = ref(false);
   margin: 0;
   font-size: 0.72rem;
   color: var(--bs-secondary-color);
+}
+
+/* Filled-switch preview (#158) — painted live from switchFills. */
+.pg-switch-note {
+  margin-top: 1.5rem;
+}
+.pg-switch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.pg-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  min-width: 260px;
+  padding: 0.5rem 0.55rem 0.5rem 1rem;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+.pg-switch-lab {
+  font-weight: 500;
+}
+.pg-switch-well {
+  display: inline-flex;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+}
+.pg-switch-pill {
+  position: relative;
+  width: 2.6em;
+  height: 1.5em;
+  border-radius: 2em;
+}
+.pg-switch-pill::after {
+  content: "";
+  position: absolute;
+  top: 0.18em;
+  left: 0.18em;
+  width: 1.14em;
+  height: 1.14em;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.pg-switch-pill--on::after {
+  left: auto;
+  right: 0.18em;
 }
 </style>
