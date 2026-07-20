@@ -16,9 +16,9 @@
 
 // Base $theme-colors carry each hue's READABLE-ON-LIGHT identity (its "emphasis"
 // shade) — this is what `.text-*`, `.link-*`, `.border-*` and outline buttons
-// use, so every one must clear AA on white. Bold solid FILLS (primary/danger
-// buttons) and SOFT tints (soft buttons, badges, alerts) are applied as explicit
-// overrides after the Bootstrap import, from the $dx-variants map. See
+// use, so every one must clear AA on white. The one bold solid FILL (the primary
+// button) and SOFT tints (soft buttons incl. danger, badges, alerts) are applied
+// as explicit overrides after the Bootstrap import, from the $dx-variants map. See
 // plans/2026-07-18-semantic-colour-system.md.
 $primary: #151e2d; // Omni Tend brand navy (16.73:1 on white)
 $secondary: #475569; // Slate-600 (7.58:1 on white)
@@ -168,16 +168,22 @@ $badge-padding-x: 0.625rem;
 $badge-font-weight: 500;
 
 // The ONE source of truth for the semantic colour system. Each variant carries
-// its SOLID fill + same-hue text (primary/danger buttons, solid fills), its SOFT
+// its SOLID fill + same-hue text (the primary button, solid fills), its SOFT
 // tint pair (soft buttons, badges, alerts, status), its EMPHASIS shade (outline
 // buttons, coloured links, .text-*), and whether its button is solid or soft.
 // The overrides after the Bootstrap import loop over this map. All pairs are
 // WCAG AA verified. See plans/2026-07-18-semantic-colour-system.md.
+//
+// Only PRIMARY is a bold solid button — one loud action (the brand). Everything
+// else, INCLUDING danger, is soft: a soft red "Delete" reads as danger without
+// a heavy fill, and one solid button per screen keeps the hierarchy clear. (Was
+// primary+danger solid; danger's soft was also an off-hue plum — it is now a
+// same-hue light red, matching the danger emphasis and the switch OFF.)
 $dx-variants: (
   "primary": (solid-bg: #151e2d, solid-text: #e9f0f8, soft-bg: #e9f0f8, soft-text: #151e2d, emphasis: #151e2d, button: "solid"),
   "secondary": (solid-bg: #475569, solid-text: #e6ebf2, soft-bg: #e6ebf2, soft-text: #29374a, emphasis: #475569, button: "soft"),
   "success": (solid-bg: #84cc16, solid-text: #203b0e, soft-bg: #cdf9b2, soft-text: #203b0e, emphasis: #4d7c0f, button: "soft"),
-  "danger": (solid-bg: #dc2626, solid-text: #ffffff, soft-bg: #f5dff1, soft-text: #59194a, emphasis: #dc2626, button: "solid"),
+  "danger": (solid-bg: #dc2626, solid-text: #ffffff, soft-bg: #f8d4d4, soft-text: #7a1a1a, emphasis: #dc2626, button: "soft"),
   "warning": (solid-bg: #f59e0b, solid-text: #512d05, soft-bg: #fce5c4, soft-text: #512d05, emphasis: #b45309, button: "soft"),
   "info": (solid-bg: #2563eb, solid-text: #eef4ff, soft-bg: #deebff, soft-text: #12376c, emphasis: #2563eb, button: "soft"),
 );
@@ -456,10 +462,10 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // ----------------------------------------------------------------------------
 // One loop over $dx-variants applies the whole system on top of Bootstrap:
 //
-//   - Buttons: primary/danger are SOLID (fill from the base colour; we only
+//   - Buttons: only PRIMARY is SOLID (fill from the base colour; we only
 //     override the label to the same-hue tint, letting Bootstrap shade hover/
-//     active). secondary/success/warning/info are SOFT (light tint bg + dark
-//     text, fully overridden incl. hover/active).
+//     active). secondary/success/danger/warning/info are SOFT (light tint bg +
+//     dark text, fully overridden incl. hover/active).
 //   - Outline buttons: the emphasis shade for border/label, the soft tint on hover.
 //   - Badges: `.badge.text-bg-*` re-tinted soft — needs `!important` because
 //     Bootstrap's `.text-bg-*` helper sets its colours `!important` by design.
@@ -556,8 +562,8 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 }
 
 // primary is near-black navy, so Bootstrap's darken-on-hover is imperceptible —
-// the main action button would have no visible hover feedback. Lighten instead.
-// (danger's red darkens visibly, so the generic solid path is fine for it.)
+// the main (and now only) solid button would have no visible hover feedback.
+// Lighten instead. (Other variants are soft; their hover is handled in the loop.)
 .btn-primary {
   --bs-btn-hover-bg: #{color.scale($primary, $lightness: 20%)};
   --bs-btn-hover-border-color: #{color.scale($primary, $lightness: 20%)};

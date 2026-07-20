@@ -36,7 +36,7 @@ const softBadges: Array<[string, string, string]> = [
   ['primary', '#e9f0f8', '#151e2d'],
   ['secondary', '#e6ebf2', '#29374a'],
   ['success', '#cdf9b2', '#203b0e'],
-  ['danger', '#f5dff1', '#59194a'],
+  ['danger', '#f8d4d4', '#7a1a1a'],
   ['warning', '#fce5c4', '#512d05'],
   ['info', '#deebff', '#12376c'],
 ];
@@ -82,17 +82,17 @@ describe('.text-bg-* is soft on any element, not only .badge', () => {
   });
 });
 
-describe('buttons: bold solid only for primary/danger, soft for the rest', () => {
+describe('buttons: bold solid ONLY for primary, soft for the rest (incl. danger)', () => {
   it('primary button is the brand navy fill with light-brand text (solid)', async () => {
     const style = await paintedStyle(DButton, 'primary', '.btn');
     expect(style.background).toBe(rgb('#151e2d'));
     expect(style.color).toBe(rgb('#e9f0f8'));
   });
 
-  it('danger button is the red fill with white text (solid)', async () => {
+  it('danger button is SOFT now (light-red tint + dark-red text), not a solid red fill', async () => {
     const style = await paintedStyle(DButton, 'danger', '.btn');
-    expect(style.background).toBe(rgb('#dc2626'));
-    expect(style.color).toBe(rgb('#ffffff'));
+    expect(style.background).toBe(rgb('#f8d4d4'));
+    expect(style.color).toBe(rgb('#7a1a1a'));
   });
 
   it('secondary button is the soft grey tint (not the dark slate solid)', async () => {

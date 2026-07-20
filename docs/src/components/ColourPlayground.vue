@@ -40,7 +40,7 @@ const seed: Record<Variant, Pair> = {
   primary: { solidBg: '#151e2d', solidText: '#e9f0f8', softBg: '#e9f0f8', softText: '#151e2d', emphasis: '#151e2d' },
   secondary: { solidBg: '#475569', solidText: '#e6ebf2', softBg: '#e6ebf2', softText: '#29374a', emphasis: '#475569' },
   success: { solidBg: '#84cc16', solidText: '#203b0e', softBg: '#cdf9b2', softText: '#203b0e', emphasis: '#4d7c0f' },
-  danger: { solidBg: '#dc2626', solidText: '#ffffff', softBg: '#f5dff1', softText: '#59194a', emphasis: '#dc2626' },
+  danger: { solidBg: '#dc2626', solidText: '#ffffff', softBg: '#f8d4d4', softText: '#7a1a1a', emphasis: '#dc2626' },
   warning: { solidBg: '#f59e0b', solidText: '#512d05', softBg: '#fce5c4', softText: '#512d05', emphasis: '#b45309' },
   info: { solidBg: '#2563eb', solidText: '#eef4ff', softBg: '#deebff', softText: '#12376c', emphasis: '#2563eb' },
 };
@@ -54,7 +54,7 @@ const variants = reactive(clone(seed));
 // get a bold SOLID button. Everything else is a SOFT button — secondary is a
 // real action; success/warning/info are status colours that rarely act as a
 // button, and when they do they stay soft, never a loud fill.
-const solidButtonVariants = new Set<Variant>(['primary', 'danger']);
+const solidButtonVariants = new Set<Variant>(['primary']);
 const isSolidButton = (v: Variant) => solidButtonVariants.has(v);
 const buttonStyle = (v: Variant) =>
   isSolidButton(v)
@@ -201,9 +201,9 @@ const showExport = ref(false);
     <section class="pg-context">
       <h2>In context</h2>
       <p class="section-note">
-        The hierarchy with the live values — a bold <strong>primary</strong> action (brand),
-        a soft <strong>secondary</strong>, a <strong>ghost</strong> tertiary, and a semantic
-        <strong>danger</strong>. Emphasis comes from weight and place, not loudness.
+        The hierarchy with the live values — one bold <strong>primary</strong> action (brand),
+        a soft <strong>secondary</strong>, a <strong>ghost</strong> tertiary, and a soft
+        <strong>danger</strong> delete. Emphasis comes from weight and place, not loudness.
       </p>
       <div class="pg-mock">
         <div class="pg-mock-bar">
@@ -230,8 +230,8 @@ const showExport = ref(false);
           <button class="pg-ghost" :style="{ color: 'var(--bs-body-color)' }">Cancel</button>
           <span class="pg-mock-spacer" />
           <button
-            class="pg-solid-btn"
-            :style="{ background: variants.danger.solidBg, color: variants.danger.solidText }"
+            class="pg-soft-btn"
+            :style="{ background: variants.danger.softBg, color: variants.danger.softText }"
           >Delete</button>
         </div>
       </div>

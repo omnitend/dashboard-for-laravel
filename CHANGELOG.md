@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`danger` buttons are now SOFT; `primary` is the only bold solid button.** The
+  soft-first doctrine tightens to one loud action per screen (the brand primary);
+  a `.btn-danger` / "Delete" now reads as a soft **light-red** tint with dark-red
+  text rather than a solid red fill. As part of this, `danger`'s soft tint moves
+  from an off-hue plum (`#f5dff1`/`#59194a`) to a same-hue light red
+  (`#f8d4d4`/`#7a1a1a`) — so danger badges, alerts, toasts, the soft button, and
+  the switch OFF are all one red. Outline-danger / `.text-danger` / links keep
+  the `#dc2626` emphasis red. **Visible change** for any `danger` button or
+  soft-danger surface.
+
 - **Switches default to green-on / light-red-off** (#158). An active switch
   reads `success` green when ON and light red when OFF out of the box (house
   style), a reversal of the old primary-on default. The bare `.form-switch`
