@@ -64,13 +64,11 @@ const KNOWN_DEEP_TARGETS: Record<string, string[]> = {
   'DAutocomplete.vue': ['.input-group', '.b-autocomplete-input-wrapper', '.b-autocomplete-trigger', '.b-autocomplete-clear.btn-close', '.input-group:focus-within', '.form-control', '.btn'],
   'DXSwitch.vue': ['.form-check', '.form-check-label', '.form-check-input'],
   'DXTable.vue': ['tbody tr.dx-row-actionable'],
-  // The pagination :deep() rules moved out of DXTable into DXTablePagination
-  // (#123). They target the pager rendered by DPagination, anchored on the
-  // component's own `.dx-table-pagination` root so the scope-id has a host. The
-  // DXTable DOM audit below still exercises them — DXTablePagination renders as
-  // a child of DXTable, so `.pagination`'s ancestor carries this component's
-  // scope-id.
-  'DXTablePagination.vue': ['.pagination', '.pagination-sm .page-link', '.pagination .page-item.disabled .page-link'],
+  // The windowed pager (#155) styles its DButtons via `.dx-pager :deep(.btn)`,
+  // anchored on the component's own plain `.dx-pager` root so the scope-id has a
+  // host. The DXTable DOM audit below exercises it — DXTablePagination renders as
+  // a child of DXTable, so `.dx-pager .btn`'s ancestor carries this scope-id.
+  'DXTablePagination.vue': ['.btn', '.btn:first-child'],
   'DXStatCard.vue': ['.dx-stat-card__body'],
   'DXDashboardSidebar.vue': ['.nav-link', '.nav-icon', '.nav-label'],
   'DXRepeater.vue': ['.mb-3'],
@@ -123,7 +121,7 @@ describe('scoped :deep() DOM-level audit (#58)', () => {
     expect(ancestorHasScopeId(box, scopeIdForSelector('.form-check'))).toBe(true);
   });
 
-  it('DXTable: :deep(tbody tr) and :deep(.pagination)', async () => {
+  it('DXTable: :deep(tbody tr) and the windowed pager :deep(.dx-pager .btn)', async () => {
     const screen = render(DXTable, {
       props: {
         items: [{ id: 1, name: 'A' }],
@@ -135,9 +133,13 @@ describe('scoped :deep() DOM-level audit (#58)', () => {
     });
     await flush();
 
-    const pagination = screen.container.querySelector('.pagination');
-    expect(pagination).not.toBeNull();
-    expect(ancestorHasScopeId(pagination!, scopeIdForSelector('.pagination'))).toBe(true);
+    // The pager's DButton — the `.dx-pager :deep(.btn)` rule's target. Look the
+    // scope-id up via `.btn:first-child` (compiled as `.dx-pager[data-v] .btn:
+    // first-child`), which is unique to this component's pager rule — a bare
+    // `.btn` is generic and would match another component's scope-id first.
+    const pagerButton = screen.container.querySelector('.dx-pager .btn');
+    expect(pagerButton).not.toBeNull();
+    expect(ancestorHasScopeId(pagerButton!, scopeIdForSelector('.btn:first-child'))).toBe(true);
 
     // The clickable affordance hangs off a marker class now (#115), so the row
     // must both carry the class and sit under the scope-id for the rule to bite.

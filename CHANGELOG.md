@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`DXTable` pagination is now a windowed pager** (#155) — clearer **« Previous**
+  / **Next »** text buttons (not `‹ ›` arrows), the **first/last page numbers**
+  always shown, and a wider run of pages with ellipses:
+  `1 2 … 8 9 10 [11] 12 13 14 … 44 45`. Adopts the house (custard) style. The
+  window is computed client-side from the current/last page, so it works in every
+  DXTable mode (provider / client-side / inertia), and the row wraps on narrow
+  widths. The active page is the brand primary; the rest are outline buttons.
+
 ## [0.31.0] - 2026-07-20
 
 ### Changed

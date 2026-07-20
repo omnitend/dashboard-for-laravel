@@ -527,7 +527,7 @@ describe('DXTable', () => {
       await expect.element(screen.getByText(/1 to 10 out of 25 items/)).toBeVisible();
 
       // Check pagination buttons are rendered
-      const paginationButtons = screen.container.querySelectorAll('.pagination .page-item');
+      const paginationButtons = screen.container.querySelectorAll('.dx-pager .btn');
       expect(paginationButtons.length).toBeGreaterThan(0);
     });
 
@@ -542,7 +542,7 @@ describe('DXTable', () => {
       });
 
       // When total (5) < perPage (10), pagination should not render
-      const paginationElements = screen.container.querySelectorAll('.pagination');
+      const paginationElements = screen.container.querySelectorAll('.dx-pager');
       expect(paginationElements.length).toBe(0);
     });
 
@@ -557,7 +557,7 @@ describe('DXTable', () => {
       });
 
       // Check multiple page buttons are rendered (for 25 total / 10 per page = 3 pages)
-      const pageItems = screen.container.querySelectorAll('.pagination .page-item');
+      const pageItems = screen.container.querySelectorAll('.dx-pager .btn');
 
       // Should have at least next/prev + page numbers
       expect(pageItems.length).toBeGreaterThan(2);
@@ -583,7 +583,7 @@ describe('DXTable', () => {
       });
 
       // Find pagination buttons
-      const paginationButtons = screen.container.querySelectorAll('.pagination .page-link');
+      const paginationButtons = screen.container.querySelectorAll('.dx-pager .btn');
 
       console.log('Pagination buttons found:', paginationButtons.length);
       console.log('Button texts:', Array.from(paginationButtons).map(b => b.textContent?.trim()));
@@ -956,7 +956,7 @@ describe('DXTable', () => {
 
       // Navigate to page 2 via the pagination control.
       const pageTwo = Array.from(
-        screen.container.querySelectorAll('.pagination button, .pagination a'),
+        screen.container.querySelectorAll('.dx-pager .btn'),
       ).find((el) => el.textContent?.trim() === '2') as HTMLElement | undefined;
       expect(pageTwo).toBeTruthy();
       pageTwo!.click();
@@ -1661,7 +1661,7 @@ describe('DXTable filter and provider gaps (#106)', () => {
 
     // Before: apiPaginationMeta was only populated by the built-in provider, so
     // a custom one rendered a table with no pager and no warning.
-    expect(screen.container.querySelector('.pagination')).not.toBeNull();
+    expect(screen.container.querySelector('.dx-pager')).not.toBeNull();
     expect(screen.container.textContent).toContain('out of 45');
   });
 
@@ -1714,7 +1714,7 @@ describe('DXTable review fixes (#106, #110)', () => {
     });
     await wait(150);
 
-    expect(screen.container.querySelector('.pagination')).not.toBeNull();
+    expect(screen.container.querySelector('.dx-pager')).not.toBeNull();
     expect(screen.container.textContent).toContain('Per page');
   });
 
@@ -2151,7 +2151,7 @@ describe('DXTable client-side page is clamped when items shrink (#118)', () => {
   };
 
   const goToPage = async (screen: any, page: number) => {
-    const link = [...screen.container.querySelectorAll('.pagination .page-link')].find(
+    const link = [...screen.container.querySelectorAll('.dx-pager .btn')].find(
       (element) => element.textContent?.trim() === String(page),
     ) as HTMLElement;
     expect(link, `no page-${page} link in the pager`).toBeTruthy();
@@ -2160,7 +2160,7 @@ describe('DXTable client-side page is clamped when items shrink (#118)', () => {
   };
 
   const activePage = (screen: any) =>
-    screen.container.querySelector('.pagination .page-item.active')?.textContent?.trim();
+    screen.container.querySelector('.dx-pager .btn[aria-current="page"]')?.textContent?.trim();
 
   it('renders rows instead of a blank table when the data shrinks under the current page', async () => {
     // 60 rows @ 20 = 3 pages.
@@ -2289,7 +2289,7 @@ describe('DXTable forwards cell slots created after the first render (#114)', ()
     });
     await flush();
 
-    const page2 = [...screen.container.querySelectorAll('.pagination .page-link')].find(
+    const page2 = [...screen.container.querySelectorAll('.dx-pager .btn')].find(
       (element) => element.textContent?.trim() === '2',
     ) as HTMLElement;
     page2.click();
@@ -2300,7 +2300,7 @@ describe('DXTable forwards cell slots created after the first render (#114)', ()
 
     // Still on page 2, and the late slot rendered.
     expect(
-      screen.container.querySelector('.pagination .page-item.active')?.textContent?.trim(),
+      screen.container.querySelector('.dx-pager .btn[aria-current="page"]')?.textContent?.trim(),
     ).toBe('2');
     expect(screen.container.querySelectorAll('.slotted').length).toBeGreaterThan(0);
   });

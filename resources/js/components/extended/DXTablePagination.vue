@@ -19,16 +19,40 @@
 <template>
     <div class="dx-table-pagination mt-3">
         <!-- Top row: Pagination and Per-page selector -->
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <!-- Pagination controls (only when multiple pages) -->
-            <DPagination
+        <div class="dx-pager-row d-flex justify-content-between align-items-center gap-2 mb-2">
+            <!-- Windowed pager (#155): «Previous / leading / … / window / … /
+                 trailing / Next». Client-computed from current + last page, so it
+                 works in every DXTable mode. Only shown when >1 page. -->
+            <nav
                 v-if="showPagination && pagination.total > pagination.per_page"
-                :model-value="pagination.current_page"
-                :total-rows="pagination.total"
-                :per-page="pagination.per_page"
-                size="sm"
-                @update:model-value="emit('page-change', $event as number)"
-            />
+                class="dx-pager d-flex flex-wrap align-items-center gap-1"
+                aria-label="Pagination"
+            >
+                <DButton
+                    variant="outline-secondary"
+                    size="sm"
+                    :disabled="!canPrev"
+                    @click="goToPage(currentPage - 1)"
+                >&laquo; Previous</DButton>
+
+                <template v-for="(item, index) in pageItems" :key="item.type === 'page' ? `p${item.page}` : `e${index}`">
+                    <DButton
+                        v-if="item.type === 'page'"
+                        size="sm"
+                        :variant="item.active ? 'primary' : 'outline-secondary'"
+                        :aria-current="item.active ? 'page' : undefined"
+                        @click="goToPage(item.page)"
+                    >{{ item.page }}</DButton>
+                    <span v-else class="dx-pager-ellipsis" aria-hidden="true">&hellip;</span>
+                </template>
+
+                <DButton
+                    variant="outline-secondary"
+                    size="sm"
+                    :disabled="!canNext"
+                    @click="goToPage(currentPage + 1)"
+                >Next &raquo;</DButton>
+            </nav>
             <div v-else></div>
 
             <!-- Per-page selector -->
@@ -67,7 +91,8 @@
 </template>
 
 <script setup lang="ts">
-import DPagination from "../base/DPagination.vue";
+import { computed } from "vue";
+import DButton from "../base/DButton.vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import type { PaginationData } from "./DXTable.vue";
 
@@ -92,7 +117,7 @@ interface Props {
     hasActiveFilters: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     /** The user picked a page. Payload is the new 1-based page number. */
@@ -104,26 +129,95 @@ const emit = defineEmits<{
      */
     'per-page-change': [value: number | string | null | (number | string)[]];
 }>();
+
+// Windowed pager (#155). Always show the first/last BOUNDARY pages and a window
+// of AROUND pages each side of the current page; fill gaps with an ellipsis,
+// except a single-page gap which shows the page itself (an ellipsis hiding one
+// page is silly). Client-computed from current + last page so it works in every
+// DXTable mode (provider / client-side / inertia) — not just where a server
+// `links` array exists. Reproduces custard's `1 2 … 8 9 10 [11] 12 13 14 … 44 45`.
+const BOUNDARY = 2;
+const AROUND = 3;
+
+type PageItem = { type: "page"; page: number; active: boolean } | { type: "ellipsis" };
+
+const currentPage = computed(() => props.pagination.current_page);
+const lastPage = computed(() =>
+  Math.max(1, Math.ceil(props.pagination.total / props.pagination.per_page)),
+);
+
+const pageItems = computed<PageItem[]>(() => {
+  const last = lastPage.value;
+  const current = currentPage.value;
+
+  const shown = new Set<number>();
+  // Leading + trailing boundary pages (1,2 … last-1,last).
+  for (let page = 1; page <= Math.min(BOUNDARY, last); page += 1) shown.add(page);
+  for (let page = Math.max(1, last - BOUNDARY + 1); page <= last; page += 1) shown.add(page);
+  // A window around the current page. When it clamps at an edge, push the other
+  // edge out by the shortfall so the row stays a full width near the start/end
+  // (a fuller run of numbers, like the house pager) instead of going sparse.
+  let windowLow = current - AROUND;
+  let windowHigh = current + AROUND;
+  const shortfall = 2 * AROUND + 1 - (Math.min(last, windowHigh) - Math.max(1, windowLow) + 1);
+  if (shortfall > 0 && windowLow < 1) windowHigh += shortfall;
+  else if (shortfall > 0 && windowHigh > last) windowLow -= shortfall;
+  for (let page = Math.max(1, windowLow); page <= Math.min(last, windowHigh); page += 1) {
+    shown.add(page);
+  }
+
+  const sorted = [...shown].sort((a, b) => a - b);
+  const items: PageItem[] = [];
+  let previous = 0;
+  for (const page of sorted) {
+    if (page - previous === 2) {
+      // Exactly one page missing — show it rather than an ellipsis.
+      items.push({ type: "page", page: previous + 1, active: previous + 1 === current });
+    } else if (page - previous > 2) {
+      items.push({ type: "ellipsis" });
+    }
+    items.push({ type: "page", page, active: page === current });
+    previous = page;
+  }
+  return items;
+});
+
+const canPrev = computed(() => currentPage.value > 1);
+const canNext = computed(() => currentPage.value < lastPage.value);
+
+const goToPage = (page: number) => {
+  if (page < 1 || page > lastPage.value || page === currentPage.value) return;
+  emit("page-change", page);
+};
 </script>
 
 <style scoped>
-/* Pagination button sizing to match form controls. Anchored on this component's
-   own `.dx-table-pagination` root so the scope-id has a plain-element host — a
-   `:deep()` rule that targeted the pager from DXTable would not reach it once
-   the pager lives here (the scope-id doesn't cross the component boundary). */
-.dx-table-pagination :deep(.pagination) {
-    margin-bottom: 0;
+/* Windowed pager (#155). The buttons are DButtons; give the numbered ones a
+   consistent min-width so they read as an even row of keys (like the house
+   custard pager), and let the whole row wrap on narrow widths rather than
+   overflow. `:deep(.btn)` is anchored on the plain `.dx-pager` host, so the
+   scope-id has a deterministic element to attach to. */
+.dx-pager :deep(.btn) {
+    min-width: 2.5rem;
 }
 
-.dx-table-pagination :deep(.pagination-sm .page-link) {
-    min-width: 2.25rem;
-    height: auto;
+/* Previous / Next carry text, so they shouldn't be forced square. */
+.dx-pager :deep(.btn):first-child,
+.dx-pager :deep(.btn):last-child {
+    min-width: auto;
 }
 
-/* Make disabled pagination buttons more subtle */
-.dx-table-pagination :deep(.pagination .page-item.disabled .page-link) {
-    background-color: transparent;
-    border-color: transparent;
-    opacity: 0.3;
+.dx-pager-ellipsis {
+    display: inline-flex;
+    align-items: flex-end;
+    padding: 0 0.15rem;
+    color: var(--bs-secondary-color);
+    user-select: none;
+}
+
+/* On narrow screens the row can get long; allow it to scroll horizontally as a
+   fallback so it never blows out the table width. */
+.dx-pager-row {
+    flex-wrap: wrap;
 }
 </style>

@@ -86,4 +86,23 @@ Ships as 0.32.0 (a new pagination style — visible change; default-on to adopt 
 better look, per James "we should adopt it"). Relates to #155.
 
 ## Outcome
-_(filled on completion)_
+
+Built, 2026-07-20 (for 0.32.0).
+
+- `DXTablePagination` replaces bvn `BPagination` with a custom windowed pager:
+  `« Previous`, leading (1 2), ellipsis, an edge-redistributing window around
+  current (AROUND=3), ellipsis, trailing (44 45), `Next »`. Single-page gaps show
+  the page rather than an ellipsis. Active = `primary` (navy), others =
+  `outline-secondary`; Previous/Next disabled at the boundaries. Emits
+  `page-change` (contract unchanged). Client-computed → works in all modes.
+- Tests: `DXTablePagination.test.ts` (8) asserts the exact sequence for
+  mid-list / near-start / all-fit / boundaries / emits / single-page; updated
+  DXTable.test.ts pager selectors (`.pagination` → `.dx-pager .btn`) and the
+  scoped-deep guard (`.dx-pager :deep(.btn)`, keyed on `.btn:first-child`). 502
+  tests green, typecheck clean.
+- Visually confirmed against custard (static-render screenshot at page 11/45 and
+  2/45).
+- `DPagination` / `BPagination` stays exported; DXTable just no longer uses it.
+
+Follow-up idea (not done): a compact mobile variant. Currently the row wraps /
+can scroll; acceptable, revisit if it looks cramped on real phones.
