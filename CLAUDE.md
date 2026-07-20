@@ -507,6 +507,18 @@ The three seams between the editor and the table: `editFields` presence →
 bridge, still emits `rowClicked` regardless); a `refresh()` callback the editor
 calls after a successful op. Plan: `plans/2026-07-18-dxtable-decomposition.md`.
 
+**Backend-convention adaptation goes through the `api-adapter` prop** (0.33.1)
+— `request(params)` returns the wire params, `response(body, { params })`
+returns the dfl `{data, pagination?, filterValues?}` shape. This is the
+sanctioned seam for consumers whose backend speaks a different convention
+(spatie params, foreign envelopes). It exists because #132's axios→fetch swap
+silently bypassed consumer **axios-interceptor bridges** even though the
+provider params never changed — a transport swap is a breaking change for
+interceptor-dependent consumers. When changing how DXTable *sends* requests,
+check that the adapter seam still covers what interceptors used to. A
+bare-array response renders rows with no pager (never a silently empty table);
+plan: `plans/2026-07-20-dxtable-033-provider-contract-regression.md`.
+
 ## Composables
 
 ### useForm
