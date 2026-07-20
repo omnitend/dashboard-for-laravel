@@ -2,6 +2,12 @@ import { computed, ref, type Ref } from "vue";
 import { api } from "../utils/api";
 import { useForm } from "./useForm";
 import { useToast } from "./useToast";
+import type { FieldDefinition } from "../types";
+import {
+    resolveFieldDefault,
+    isFieldVisible as isFieldVisibleFor,
+    isSubmittableField,
+} from "../utils/formSchema";
 
 /**
  * The subset of `DXTable`'s props the resource editor reads. Declared
@@ -11,7 +17,7 @@ import { useToast } from "./useToast";
  */
 export interface ResourceEditorProps<T = any> {
     /** Field definitions for the edit/create modal (enables edit-on-row-click). */
-    editFields?: any[];
+    editFields?: FieldDefinition[];
     /** Tab definitions — only their `key` is read here (DXForm consumes the rest). */
     editTabs?: Array<{ key: string }>;
     /** Modal title, or a function of the edited row. */
@@ -108,58 +114,38 @@ export function useResourceEditor<T = any>(
     // and auto-switching to the first tab with a validation error.
 
     /*
-     * A field's own starting value, used to seed a CREATE form and as the fallback
-     * when a row lacks the key (#122).
-     *
-     * `field.default ?? ''` can't express a NULL default: a select whose "none"
-     * option is `value: null` — which is what the column stores — seeds '' instead,
-     * matches no option, and renders blank. Presence, not nullishness, decides here
-     * too, so the create and edit paths agree about the same field.
-     */
-    const defaultValueFor = (field: any): any =>
-        Object.prototype.hasOwnProperty.call(field, 'default') ? field.default : '';
-
-    /*
-     * Seeding an EDIT form from a row (#117).
-     *
-     * `row[key] ?? field.default` is wrong: it can't tell "the row has no such key"
-     * from "the row's value IS null", so an explicitly-null column gets overwritten
-     * by the field's default — a value the user never saw, on a field they may not
-     * even be able to see. Presence, not nullishness, decides.
+     * Seeding an EDIT form from a row (#117): use the row's own value when it
+     * HAS the key (presence, not nullishness — an explicitly-null column must
+     * not be overwritten by the field's default), else the field's own default.
+     * The default comes from the shared `resolveFieldDefault` rule, so create
+     * and edit seeding agree with defineForm/DXRepeater (#134) — this path is
+     * now type-aware (an array field falls back to `[]`, not `''`).
      */
     const seedValueFor = (field: any, row: T): any => {
         if (Object.prototype.hasOwnProperty.call(row as any, field.key)) {
             return (row as any)[field.key];
         }
-        return defaultValueFor(field);
+        return resolveFieldDefault(field);
     };
 
     /*
-     * Whether a field is currently VISIBLE, by the same rule DXForm renders by
-     * (`when` + the legacy `show`), against the same model (context + live data).
-     * Kept in step with DXForm.isFieldVisible.
+     * The model field/tab predicates evaluate against: the edited row widened
+     * with the live form data (context + data), same as DXForm's `model`.
      */
     const editPredicateModel = computed(() => ({
         ...((selectedItem.value as any) ?? {}),
         ...(editForm.value?.data ?? {}),
     }));
 
-    const isEditFieldVisible = (field: any): boolean => {
-        const when = field.when;
-        const whenOk =
-            when === undefined
-                ? true
-                : typeof when === 'function'
-                  ? when(editPredicateModel.value)
-                  : when;
-        const showOk = field.show ? field.show() : true;
-        return whenOk && showOk;
-    };
+    // Visibility by the one shared rule (`when` + legacy `show`), against the
+    // edit model — see formSchema.isFieldVisible (#134).
+    const isEditFieldVisible = (field: any): boolean =>
+        isFieldVisibleFor(field, editPredicateModel.value);
 
     // Fields whose value actually belongs in the payload. A presentational field
     // (submit: false) renders but holds no data — see FieldDefinition.submit.
     const submittableEditFields = computed(() =>
-        (props.editFields ?? []).filter((field) => field.submit !== false),
+        (props.editFields ?? []).filter(isSubmittableField),
     );
 
     // Enforced at SUBMIT, not just at seeding: the modal still renders every field,
@@ -172,7 +158,7 @@ export function useResourceEditor<T = any>(
                     .filter(
                         (field) =>
                             // Presentational: lays the form out, holds no data (#110).
-                            field.submit === false ||
+                            !isSubmittableField(field) ||
                             // Hidden by `when` at submit time (#117). Submitting a field
                             // the user cannot see is a silent write — and with `default`
                             // set it writes a value they never chose. Omitting the key
@@ -299,13 +285,13 @@ export function useResourceEditor<T = any>(
         if (!editForm.value) {
             const formData: Record<string, any> = {};
             submittableEditFields.value.forEach(field => {
-                formData[field.key] = defaultValueFor(field);
+                formData[field.key] = resolveFieldDefault(field);
             });
             editForm.value = useForm(formData);
         } else {
             // Reset existing form to defaults
             submittableEditFields.value.forEach(field => {
-                editForm.value.data[field.key] = defaultValueFor(field);
+                editForm.value.data[field.key] = resolveFieldDefault(field);
             });
             editForm.value.clearErrors();
         }

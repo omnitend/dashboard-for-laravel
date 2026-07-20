@@ -308,6 +308,44 @@ describe('DXRepeater', () => {
     expect(form.data.lines[0].name).toBe('Renamed');
   });
 
+  // The cards markup was extracted into DXRepeaterCards (#135), so the custom
+  // `row` slot now forwards across an extra component hop. A dropped binding
+  // there is a silent regression — assert the slot renders with its bindings.
+  it('forwards the custom `row` slot (with bindings) through DXRepeaterCards', async () => {
+    const form = useForm({
+      lines: [
+        { name: 'First', qty: 1 },
+        { name: 'Second', qty: 2 },
+      ],
+    });
+
+    const screen = render(DXRepeater, {
+      props: { form, field: lineField, keyPath: 'lines' },
+      slots: {
+        row: (binds: any) =>
+          h(
+            'div',
+            { class: 'custom-row', 'data-path': binds.path },
+            [
+              `#${binds.index} ${binds.row.name}`,
+              h('button', { class: 'custom-remove', onClick: () => binds.remove() }, 'X'),
+            ],
+          ),
+      },
+    });
+
+    // Default sub-field stack is replaced by the custom row content.
+    const custom = Array.from(screen.container.querySelectorAll('.custom-row'));
+    expect(custom.length).toBe(2);
+    // Bindings arrive: index, row data, and the dot path.
+    expect(custom[0].textContent).toContain('#0 First');
+    expect(custom[0].getAttribute('data-path')).toBe('lines.0');
+    // The `remove` binding works through the hop.
+    (custom[0].querySelector('.custom-remove') as HTMLButtonElement).click();
+    await flush();
+    expect(form.data.lines.map((l: any) => l.name)).toEqual(['Second']);
+  });
+
   describe('table layout (#68)', () => {
     const tableField: FieldDefinition = { ...lineField, repeaterLayout: 'table' };
 

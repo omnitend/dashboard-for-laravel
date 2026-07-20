@@ -380,6 +380,225 @@ export interface FieldDefinition {
     show?: () => boolean;
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// Strict, discriminated field types (#131)
+//
+// The permissive `FieldDefinition` above lets every option appear on every
+// field type: `currencySymbol` compiles on a checkbox, `options` on a text
+// input, `component` without `type: "component"`. The types below are the
+// strict, `type`-keyed replacement — each variant permits only its own
+// options, so the compiler catches an invalid field config at the call site.
+//
+// ADDITIVE for now: `FieldDefinition` stays canonical and these are opt-in
+// (`import type { FieldDef } from "@omnitend/dashboard-for-laravel"`). A future
+// major (#131 Phase 3) makes `FieldDef` canonical and removes the permissive
+// interface with a codemod. **Until then, keep the two in step** — a prop added
+// to `FieldDefinition` must be added to the matching variant(s) below. The doc
+// comments live on `FieldDefinition`; variants stay terse to keep them aligned.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** Options common to every field variant (the non-`type`-specific props). */
+export interface BaseFieldDef {
+    key: string;
+    label?: MaybeFn<string>;
+    required?: boolean;
+    help?: string;
+    hint?: MaybeFn<string>;
+    info?: MaybeFn<string>;
+    class?: string;
+    inputProps?: Record<string, any>;
+    span?: boolean;
+    layout?: "vertical" | "horizontal";
+    labelCols?: LabelCols;
+    hideLabel?: boolean;
+    default?: any;
+    disabled?: MaybeFn<boolean>;
+    disabledWhen?: (model: any) => boolean;
+    readonly?: MaybeFn<boolean>;
+    plaintext?: MaybeFn<boolean>;
+    submit?: boolean;
+    when?: MaybeFn<boolean>;
+    show?: () => boolean;
+}
+
+/** Mixins shared by several variants (not exported — internal composition). */
+interface WithPlaceholder {
+    placeholder?: string;
+}
+interface WithNumericBounds {
+    step?: number | string;
+    min?: number | string;
+    max?: number | string;
+}
+interface WithSelectableOptions {
+    options?: FieldOption[];
+    optionsLoader?: OptionsLoader;
+    reloadOptionsOnChange?: boolean;
+}
+
+/** `text` / `email` / `url` / `tel` — a plain text-like `<input>`. */
+export interface TextFieldDef extends BaseFieldDef, WithPlaceholder {
+    type: "text" | "email" | "url" | "tel";
+}
+
+/** `password` — text input with an optional reveal (eye) toggle. */
+export interface PasswordFieldDef extends BaseFieldDef, WithPlaceholder {
+    type: "password";
+    revealable?: boolean;
+}
+
+/** `number` — numeric input with optional bounds. */
+export interface NumberFieldDef
+    extends BaseFieldDef,
+        WithPlaceholder,
+        WithNumericBounds {
+    type: "number";
+}
+
+/** `date` / `datetime` / `datetime-local` / `time` — native date/time controls. */
+export interface DateFieldDef extends BaseFieldDef {
+    type: "date" | "datetime" | "datetime-local" | "time";
+}
+
+/** `currency` — numeric input with a symbol affix and minor-unit handling. */
+export interface CurrencyFieldDef
+    extends BaseFieldDef,
+        WithPlaceholder,
+        WithNumericBounds {
+    type: "currency";
+    currencySymbol?: string;
+    decimals?: number;
+    minorUnits?: boolean;
+}
+
+/** `percentage` — numeric input shown as a 0–100 percentage. */
+export interface PercentageFieldDef
+    extends BaseFieldDef,
+        WithPlaceholder,
+        WithNumericBounds {
+    type: "percentage";
+    asFraction?: boolean;
+}
+
+/** `textarea` — multi-line text input. */
+export interface TextareaFieldDef extends BaseFieldDef, WithPlaceholder {
+    type: "textarea";
+    rows?: number;
+}
+
+/** `select` — dropdown; `searchable` upgrades it to a filterable select. */
+export interface SelectFieldDef
+    extends BaseFieldDef,
+        WithPlaceholder,
+        WithSelectableOptions {
+    type: "select";
+    searchable?: boolean;
+}
+
+/** `autocomplete` — free-text input with datalist suggestions. */
+export interface AutocompleteFieldDef
+    extends BaseFieldDef,
+        WithPlaceholder,
+        WithSelectableOptions {
+    type: "autocomplete";
+}
+
+/** `checkbox` — a single boolean checkbox. */
+export interface CheckboxFieldDef extends BaseFieldDef {
+    type: "checkbox";
+}
+
+/** `checkbox-group` — multiple checkboxes; model is an array of values. */
+export interface CheckboxGroupFieldDef extends BaseFieldDef {
+    type: "checkbox-group";
+    options?: FieldOption[];
+}
+
+/** `switch` — a toggle with contextual on/off text and on-state colour. */
+export interface SwitchFieldDef extends BaseFieldDef {
+    type: "switch";
+    textWhenTrue?: MaybeFn<string>;
+    textWhenFalse?: MaybeFn<string>;
+    switchVariant?: "success" | "neutral";
+}
+
+/** `switch-list` — a labelled toggle row per option; model is an array. */
+export interface SwitchListFieldDef extends BaseFieldDef {
+    type: "switch-list";
+    options?: FieldOption[];
+    switchVariant?: "success" | "neutral";
+}
+
+/** `radio` — a radio group. */
+export interface RadioFieldDef extends BaseFieldDef, WithSelectableOptions {
+    type: "radio";
+}
+
+/** `image` / `file` — file input (`image` also shows a preview). */
+export interface FileFieldDef extends BaseFieldDef {
+    type: "image" | "file";
+    accept?: string;
+}
+
+/** `component` — escape hatch rendering `field.component`. */
+export interface ComponentFieldDef extends BaseFieldDef {
+    type: "component";
+    /** Required on the strict variant: a `component` field with no component
+     *  falls through to the generic input branch, so the union enforces it. */
+    component: Component;
+}
+
+/** `repeater` — a nested, repeatable sub-form driven by `fields`. */
+export interface RepeaterFieldDef extends BaseFieldDef {
+    type: "repeater";
+    fields?: FieldDef[];
+    addLabel?: string;
+    minItems?: number;
+    maxItems?: number;
+    repeaterLayout?: "cards" | "table";
+    showRowIndex?: boolean;
+    softDeleteKey?: string;
+}
+
+/**
+ * Strict, discriminated replacement for `FieldDefinition`. Keyed on `type`,
+ * so each field only permits its own options. Opt-in today; canonical in a
+ * future major (#131). See the banner above.
+ */
+export type FieldDef =
+    | TextFieldDef
+    | PasswordFieldDef
+    | NumberFieldDef
+    | DateFieldDef
+    | CurrencyFieldDef
+    | PercentageFieldDef
+    | TextareaFieldDef
+    | SelectFieldDef
+    | AutocompleteFieldDef
+    | CheckboxFieldDef
+    | CheckboxGroupFieldDef
+    | SwitchFieldDef
+    | SwitchListFieldDef
+    | RadioFieldDef
+    | FileFieldDef
+    | ComponentFieldDef
+    | RepeaterFieldDef;
+
+/**
+ * Compile-time drift guard (#131): every strict variant must remain assignable
+ * to the permissive `FieldDefinition`. If a `FieldDef` variant grows a prop that
+ * `FieldDefinition` doesn't have (or types incompatibly), this fails to satisfy
+ * its `true` constraint and the build goes red. Purely type-level — no runtime.
+ * (The reverse direction — a prop added to `FieldDefinition` but forgotten on a
+ * variant — can't be asserted this way; the banner above is the reminder.)
+ */
+type _AssertTrue<T extends true> = T;
+// Exported (under an internal underscore name, not re-exported by the barrel)
+// only so `noUnusedLocals` treats it as used — its value is the constraint check.
+export type _FieldDefStaysASubset = _AssertTrue<
+    FieldDef extends FieldDefinition ? true : false
+>;
+
 /**
  * A tab in a tabbed form. Groups a subset of fields and can be shown
  * conditionally or lazily mounted.

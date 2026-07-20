@@ -113,6 +113,16 @@ export { useToast } from "./composables/useToast";
 
 // Utils
 export { api } from "./utils/api";
+// Pure form-schema helpers (#134) — the single source of defaulting, cloning,
+// predicate resolution, visibility and submission-eligibility.
+export {
+    defaultValueForType,
+    cloneDefault,
+    resolveFieldDefault,
+    resolvePredicate,
+    isFieldVisible,
+    isSubmittableField,
+} from "./utils/formSchema";
 
 // Types
 export type {
@@ -122,6 +132,27 @@ export type {
     FormTab,
     MaybeFn,
     OptionsLoader,
+    // Strict, discriminated field types (#131) — opt-in; canonical in a future
+    // major. `FieldDef` is the union; the rest are its per-type members.
+    FieldDef,
+    BaseFieldDef,
+    TextFieldDef,
+    PasswordFieldDef,
+    NumberFieldDef,
+    DateFieldDef,
+    CurrencyFieldDef,
+    PercentageFieldDef,
+    TextareaFieldDef,
+    SelectFieldDef,
+    AutocompleteFieldDef,
+    CheckboxFieldDef,
+    CheckboxGroupFieldDef,
+    SwitchFieldDef,
+    SwitchListFieldDef,
+    RadioFieldDef,
+    FileFieldDef,
+    ComponentFieldDef,
+    RepeaterFieldDef,
 } from "./types";
 
 export type {
@@ -149,6 +180,8 @@ export type {
     BTableProvider,
     EditTab,
     BTableProviderContext,
+    DXTableApiAdapter,
+    DXTableSource,
 } from "./components/extended/DXTable.vue";
 
 export type {

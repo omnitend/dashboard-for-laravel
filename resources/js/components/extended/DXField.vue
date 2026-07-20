@@ -1,9 +1,18 @@
 <!--
   @component
   Renders a single `FieldDefinition` of any type (text, select, autocomplete, checkbox, switch, repeater, currency, percentage, file/image, component, etc.) with its label, validation error, hint and help. Used by `DXForm` and `DXTable`'s edit modal; exposes `value`, `span`, `info`, `info-popover`, `hint` and `repeater-row` slots for per-field customisation.
+
+  Structure (#135): a thin DISPATCHER. The shared chrome (label + validation
+  feedback + hint + help + info) lives in `DXFieldShell`; the numeric controls
+  (currency/percentage/number) in `DXNumericField`; the choice controls
+  (select/searchable/radio/checkbox-group) in `DXChoiceField`; and the async
+  option loading in the `useAsyncOptions` composable. This file decides which
+  control to render inside the shell by `field.type`. None of those pieces are
+  exported — they exist only to keep this component factored.
 -->
 <template>
-    <!-- Full-width span field: delegate entirely to the #span slot -->
+    <!-- Full-width span field: delegate entirely to the #span slot, bypassing
+         the label and built-in control (and the shell). -->
     <div v-if="field.span" :class="field.class || 'mb-3'">
         <!--
           @slot Replaces the entire field with custom full-width content when `field.span` is set, bypassing the label and built-in control.
@@ -21,64 +30,45 @@
         />
     </div>
 
-    <!-- Checkbox (horizontal layout): wrapped in DFormGroup for the same
-         label/content column split as other field types, instead of the
-         label-beside-control layout below. The inline label beside the
-         checkbox itself is kept (not deduplicated against the outer label)
-         so the control's accessible name doesn't depend on aria-labelledby
-         association through the fieldset alone — but its `info` popover is
-         omitted here, since rendering the same popover trigger twice (once
-         per label) would be a duplicated interactive element, not just
-         duplicated text. -->
-    <DFormGroup
-        v-else-if="field.type === 'checkbox' && isHorizontal"
-        :class="field.class || 'mb-3'"
-        v-bind="horizontalAttrs"
+    <!-- Every other field type shares the same chrome via DXFieldShell; the
+         control that goes inside is chosen by field.type in the default slot. -->
+    <DXFieldShell
+        v-else
+        :field="field"
+        :form="form"
+        :error-key="errorKey"
+        :model="model"
+        :mode="shellMode"
+        :wrapper-class="field.class || 'mb-3'"
+        :group-attrs="horizontalAttrs"
+        :label="resolvedLabel"
+        :info="resolvedInfo"
+        :hide-label="hideLabel"
+        :hint-in-label="hintInLabel"
+        :resolved-hint="resolvedHint"
     >
-        <!-- The row label (left column) names the control; the checkbox's own
-             label is kept for screen readers but hidden visually so it doesn't
-             duplicate the row label. In horizontal layout the hint sits beneath
-             the label here rather than below the control. -->
-        <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
-            <small
-                v-if="isHorizontal && (resolvedHint || $slots.hint)"
-                class="form-text text-muted d-block dx-field-hint"
-            >
-                <slot name="hint" :field="field" :model="model">{{
-                    resolvedHint
-                }}</slot>
-            </small>
+        <!-- Forward the field's hint slot (content + props) only when present,
+             so the shell's `$slots.hint` reflects reality (it gates the hint
+             rendering); the info slot is a pure pass-through. -->
+        <template v-if="$slots.hint" #hint="hintProps">
+            <!--
+              @slot Overrides the field's hint text shown below the control (or, in horizontal layout, in the label column).
+              @binding {FieldDefinition} field The field definition being rendered.
+              @binding {any} model The model passed to field predicates (defaults to the live form data).
+            -->
+            <slot name="hint" v-bind="hintProps" />
         </template>
-        <slot
-            v-if="$slots.value"
-            name="value"
-            :field="field"
-            :model="model"
-            :value="fieldValue"
-            :update="setValue"
-        />
-        <DFormCheckbox
-            v-else
-            v-model="fieldValue"
-            :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="controlPropsWithGuards"
-        >
-            <DXFieldLabel :label="resolvedLabel" class="visually-hidden" />
-        </DFormCheckbox>
+        <template #info="infoProps">
+            <!--
+              @slot Rich info block rendered below the control.
+              @binding {FieldDefinition} field The field definition being rendered.
+              @binding {any} model The model passed to field predicates (defaults to the live form data).
+            -->
+            <slot name="info" v-bind="infoProps" />
+        </template>
 
-        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
-            {{ form.getError(errorKey) }}
-        </DFormInvalidFeedback>
-        <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="!hintInLabel && (resolvedHint || $slots.hint)" class="text-muted">
-            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
-        </DFormText>
-        <DFormText v-if="field.help">{{ field.help }}</DFormText>
-    </DFormGroup>
-
-    <!-- Checkbox (vertical, default): no label wrapper, label sits beside the control -->
-    <div v-else-if="field.type === 'checkbox'" :class="field.class || 'mb-3'">
+        <!-- Custom value slot overrides the built-in control (checkbox / switch
+             / standard types; not switch-list or repeater). -->
         <!--
           @slot Replaces the built-in control with a custom value editor.
           @binding {FieldDefinition} field The field definition being rendered.
@@ -87,521 +77,288 @@
           @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
         -->
         <slot
-            v-if="$slots.value"
+            v-if="showValueSlot && $slots.value"
             name="value"
             :field="field"
             :model="model"
             :value="fieldValue"
             :update="setValue"
         />
-        <DFormCheckbox
-            v-else
-            v-model="fieldValue"
-            :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="controlPropsWithGuards"
-        >
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
-        </DFormCheckbox>
-
-        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
-            {{ form.getError(errorKey) }}
-        </DFormInvalidFeedback>
-        <!--
-          @slot Rich info block rendered below the control.
-          @binding {FieldDefinition} field The field definition being rendered.
-          @binding {any} model The model passed to field predicates (defaults to the live form data).
-        -->
-        <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
-            <!--
-              @slot Overrides the field's hint text shown below the control.
-              @binding {FieldDefinition} field The field definition being rendered.
-              @binding {any} model The model passed to field predicates (defaults to the live form data).
-            -->
-            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
-        </DFormText>
-        <DFormText v-if="field.help">{{ field.help }}</DFormText>
-    </div>
-
-    <!-- Switch (horizontal layout): same column-split treatment as checkbox
-         above, including omitting `info` from the inner label to avoid a
-         duplicated popover trigger. -->
-    <DFormGroup
-        v-else-if="field.type === 'switch' && isHorizontal"
-        :class="field.class || 'mb-3'"
-        v-bind="horizontalAttrs"
-    >
-        <!-- The row label (left column) names the control. The switch's own
-             inner text is shown only when the field opts into contextual on/off
-             text (e.g. "Product is current"); otherwise it falls back to the row
-             label and is hidden visually (kept for screen readers). In horizontal
-             layout the hint sits beneath the label here rather than below the
-             control. -->
-        <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
-            <small
-                v-if="isHorizontal && (resolvedHint || $slots.hint)"
-                class="form-text text-muted d-block dx-field-hint"
+        <template v-else>
+            <!-- Checkbox (horizontal): the row label (shell #label) names the
+                 control; the checkbox's own label is kept for screen readers
+                 but hidden visually so it doesn't duplicate the row label. -->
+            <DFormCheckbox
+                v-if="field.type === 'checkbox' && isHorizontal"
+                v-model="fieldValue"
+                :disabled="isDisabled || isReadonly || isPlaintext"
+                v-bind="controlPropsWithGuards"
             >
-                <slot name="hint" :field="field" :model="model">{{
-                    resolvedHint
-                }}</slot>
-            </small>
-        </template>
-        <slot
-            v-if="$slots.value"
-            name="value"
-            :field="field"
-            :model="model"
-            :value="fieldValue"
-            :update="setValue"
-        />
-        <DXSwitch
-            v-else
-            v-model="switchModel"
-            :on-variant="field.switchVariant"
-            :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="controlPropsWithGuards"
-        >
-            <DXFieldLabel
-                :label="switchText"
-                :class="switchHasContextualText ? undefined : 'visually-hidden'"
-            />
-        </DXSwitch>
+                <DXFieldLabel :label="resolvedLabel" class="visually-hidden" />
+            </DFormCheckbox>
 
-        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
-            {{ form.getError(errorKey) }}
-        </DFormInvalidFeedback>
-        <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="!hintInLabel && (resolvedHint || $slots.hint)" class="text-muted">
-            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
-        </DFormText>
-        <DFormText v-if="field.help">{{ field.help }}</DFormText>
-    </DFormGroup>
+            <!-- Checkbox (vertical): label sits beside the control -->
+            <DFormCheckbox
+                v-else-if="field.type === 'checkbox'"
+                v-model="fieldValue"
+                :disabled="isDisabled || isReadonly || isPlaintext"
+                v-bind="controlPropsWithGuards"
+            >
+                <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+            </DFormCheckbox>
 
-    <!-- Switch (vertical, default): toggle with contextual on/off text (DXSwitch owns the filled-box on-state style) -->
-    <div
-        v-else-if="field.type === 'switch'"
-        :class="field.class || 'mb-3'"
-    >
-        <!--
-          @slot Replaces the built-in control with a custom value editor.
-          @binding {FieldDefinition} field The field definition being rendered.
-          @binding {any} model The model passed to field predicates (defaults to the live form data).
-          @binding {any} value The current field value.
-          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
-        -->
-        <slot
-            v-if="$slots.value"
-            name="value"
-            :field="field"
-            :model="model"
-            :value="fieldValue"
-            :update="setValue"
-        />
-        <DXSwitch
-            v-else
-            v-model="switchModel"
-            :on-variant="field.switchVariant"
-            :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="controlPropsWithGuards"
-        >
-            <DXFieldLabel :label="switchText" :info="resolvedInfo" />
-        </DXSwitch>
+            <!-- Switch (horizontal): the switch's inner text shows only when the
+                 field opts into contextual on/off text; otherwise it falls back
+                 to the row label and is hidden visually (kept for a11y). -->
+            <DXSwitch
+                v-else-if="field.type === 'switch' && isHorizontal"
+                v-model="switchModel"
+                :on-variant="field.switchVariant"
+                :disabled="isDisabled || isReadonly || isPlaintext"
+                v-bind="controlPropsWithGuards"
+            >
+                <DXFieldLabel
+                    :label="switchText"
+                    :class="switchHasContextualText ? undefined : 'visually-hidden'"
+                />
+            </DXSwitch>
 
-        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
-            {{ form.getError(errorKey) }}
-        </DFormInvalidFeedback>
-        <!--
-          @slot Rich info block rendered below the control.
-          @binding {FieldDefinition} field The field definition being rendered.
-          @binding {any} model The model passed to field predicates (defaults to the live form data).
-        -->
-        <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
-            <!--
-              @slot Overrides the field's hint text shown below the control.
-              @binding {FieldDefinition} field The field definition being rendered.
-              @binding {any} model The model passed to field predicates (defaults to the live form data).
-            -->
-            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
-        </DFormText>
-        <DFormText v-if="field.help">{{ field.help }}</DFormText>
-    </div>
+            <!-- Switch (vertical): toggle with contextual on/off text -->
+            <DXSwitch
+                v-else-if="field.type === 'switch'"
+                v-model="switchModel"
+                :on-variant="field.switchVariant"
+                :disabled="isDisabled || isReadonly || isPlaintext"
+                v-bind="controlPropsWithGuards"
+            >
+                <DXFieldLabel :label="switchText" :info="resolvedInfo" />
+            </DXSwitch>
 
-    <!-- Switch-list (#160): a list of labelled boolean toggles as config, not
-         markup. One real DFormGroup per option row — the ONLY correct source of
-         the label/content grid (hardcoding col classes is exactly the drift
-         this field exists to end) — with the option text in the label column
-         and a compact track switch (not the filled-box DXSwitch, too heavy in
-         a dense list) in the content column. The model is an array of selected
-         option values, like checkbox-group. -->
-    <div v-else-if="field.type === 'switch-list'" :class="field.class || 'mb-3'">
-        <div
-            v-if="!hideLabel && field.label"
-            class="dx-switch-list-heading text-muted fw-semibold"
-        >
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
-        </div>
-        <div
-            v-for="option in resolvedOptions ?? []"
-            :key="String(option.value)"
-            class="dx-switch-list-row"
-        >
-            <DFormGroup v-bind="switchListRowAttrs" class="mb-0 align-items-center">
-                <template #label>
-                    <DXFieldLabel
-                        :label="option.text"
-                        :title="option.description"
-                    />
+            <!-- Switch-list (#160): a list of labelled boolean toggles as config,
+                 not markup. One real DFormGroup per option row (the ONLY correct
+                 source of the label/content grid) with the option text in the
+                 label column and a compact track switch in the content column.
+                 The model is an array of selected option values, like
+                 checkbox-group. -->
+            <template v-else-if="field.type === 'switch-list'">
+                <div
+                    v-if="!hideLabel && field.label"
+                    class="dx-switch-list-heading text-muted fw-semibold"
+                >
+                    <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
+                </div>
+                <div
+                    v-for="option in resolvedOptions ?? []"
+                    :key="String(option.value)"
+                    class="dx-switch-list-row"
+                >
+                    <DFormGroup
+                        v-bind="switchListRowAttrs"
+                        class="mb-0 align-items-center"
+                    >
+                        <template #label>
+                            <DXFieldLabel
+                                :label="option.text"
+                                :title="option.description"
+                            />
+                        </template>
+                        <div class="dx-switch-list-control">
+                            <DFormCheckbox
+                                switch
+                                :class="field.switchVariant === 'neutral' ? 'switch-neutral' : undefined"
+                                :model-value="switchListIsOn(option)"
+                                :disabled="isDisabled || isReadonly || isPlaintext || option.disabled === true"
+                                :aria-label="option.text"
+                                @update:model-value="setSwitchListOn(option, $event === true)"
+                            />
+                            <!--
+                              @slot Extra per-row content beside a switch-list row's toggle (e.g. a notes input the consumer binds to their own model).
+                              @binding {FieldOption} option The option this row renders.
+                              @binding {boolean} on Whether the row's switch is currently on.
+                            -->
+                            <slot
+                                name="switch-list-item"
+                                :option="option"
+                                :on="switchListIsOn(option)"
+                            />
+                        </div>
+                    </DFormGroup>
+                </div>
+            </template>
+
+            <!-- Repeater: nested, repeatable sub-form. Renders its own label
+                 group (a table-layout repeater keeps its label above, so it uses
+                 repeaterHorizontalAttrs rather than the field's horizontal
+                 layout). The shell contributes only the trailing block here. -->
+            <DFormGroup
+                v-else-if="field.type === 'repeater'"
+                v-bind="repeaterHorizontalAttrs"
+            >
+                <template v-if="!hideLabel" #label>
+                    <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
                 </template>
-                <div class="dx-switch-list-control">
-                    <DFormCheckbox
-                        switch
-                        :class="field.switchVariant === 'neutral' ? 'switch-neutral' : undefined"
-                        :model-value="switchListIsOn(option)"
-                        :disabled="isDisabled || isReadonly || isPlaintext || option.disabled === true"
-                        :aria-label="option.text"
-                        @update:model-value="setSwitchListOn(option, $event === true)"
+                <DXRepeater
+                    :form="form"
+                    :field="field"
+                    :key-path="keyPath"
+                    :model="model"
+                >
+                    <!-- Forward repeater row slot for custom row layouts -->
+                    <template v-if="$slots['repeater-row']" #row="rowProps">
+                        <!-- @slot Custom layout for a single repeater row, forwarded to `DXRepeater`'s `row` slot with its row props (row index, item, remove handler, etc.). -->
+                        <slot name="repeater-row" v-bind="rowProps" />
+                    </template>
+                </DXRepeater>
+            </DFormGroup>
+
+            <!-- Standard labelled field: the control goes inside the shell's
+                 group (label column + trailing block). -->
+            <template v-else>
+                <!-- Component escape hatch -->
+                <component
+                    :is="field.component"
+                    v-if="field.type === 'component' && field.component"
+                    v-model="fieldValue"
+                    :field="field"
+                    :model="model"
+                    :disabled="isDisabled || isReadonly || isPlaintext"
+                    v-bind="controlPropsWithGuards"
+                />
+
+                <!-- Textarea. Error clearing happens in the v-model setter. -->
+                <DFormTextarea
+                    v-else-if="field.type === 'textarea'"
+                    v-model="fieldValue"
+                    :required="field.required"
+                    :placeholder="field.placeholder"
+                    :rows="field.rows || 3"
+                    :state="fieldState"
+                    :disabled="isDisabled"
+                    :readonly="isReadonly || isPlaintext"
+                    :plaintext="isPlaintext"
+                    v-bind="inputPropsWithGuards"
+                />
+
+                <!-- Choice controls: select (plain or searchable), radio,
+                     checkbox-group. -->
+                <DXChoiceField
+                    v-else-if="isChoiceType"
+                    :field="field"
+                    :model-value="fieldValue"
+                    :options="resolvedOptions"
+                    :state="fieldState"
+                    :disabled="isDisabled || isReadonly || isPlaintext"
+                    :control-props="controlPropsWithGuards"
+                    :options-ready="searchableOptionsReady"
+                    @update:model-value="setValue"
+                />
+
+                <!-- File / image upload -->
+                <div v-else-if="field.type === 'image' || field.type === 'file'">
+                    <DFormInput
+                        type="file"
+                        :accept="field.accept || (field.type === 'image' ? 'image/*' : undefined)"
+                        :required="field.required"
+                        :state="fieldState"
+                        :disabled="isDisabled || isReadonly || isPlaintext"
+                        v-bind="controlPropsWithGuards"
+                        @change="handleFileChange"
                     />
-                    <!--
-                      @slot Extra per-row content beside a switch-list row's toggle (e.g. a notes input the consumer binds to their own model).
-                      @binding {FieldOption} option The option this row renders.
-                      @binding {boolean} on Whether the row's switch is currently on.
-                    -->
-                    <slot
-                        name="switch-list-item"
-                        :option="option"
-                        :on="switchListIsOn(option)"
+                    <img
+                        v-if="field.type === 'image' && imagePreview"
+                        :src="imagePreview"
+                        alt="Preview"
+                        class="dx-field-image-preview mt-2"
                     />
                 </div>
-            </DFormGroup>
-        </div>
 
-        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
-            {{ form.getError(errorKey) }}
-        </DFormInvalidFeedback>
-        <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
-            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
-        </DFormText>
-        <DFormText v-if="field.help">{{ field.help }}</DFormText>
-    </div>
+                <!-- Numeric controls: currency, percentage, number. -->
+                <DXNumericField
+                    v-else-if="isNumericType"
+                    :field="field"
+                    :model-value="fieldValue"
+                    :state="fieldState"
+                    :is-disabled="isDisabled"
+                    :is-readonly="isReadonly"
+                    :is-plaintext="isPlaintext"
+                    :input-props="inputPropsWithGuards"
+                    @update:model-value="setValue"
+                />
 
-    <!-- Repeater: nested, repeatable sub-form -->
-    <div v-else-if="field.type === 'repeater'" :class="field.class || 'mb-3'">
-        <DFormGroup v-bind="repeaterHorizontalAttrs">
-            <template v-if="!hideLabel" #label>
-                <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
-            </template>
-            <DXRepeater
-                :form="form"
-                :field="field"
-                :key-path="keyPath"
-                :model="model"
-            >
-                <!-- Forward repeater row slot for custom row layouts -->
-                <template v-if="$slots['repeater-row']" #row="rowProps">
-                    <!-- @slot Custom layout for a single repeater row, forwarded to `DXRepeater`'s `row` slot with its row props (row index, item, remove handler, etc.). -->
-                    <slot name="repeater-row" v-bind="rowProps" />
+                <!-- Autocomplete: a free-text input with a datalist of
+                     suggestions (sync or async options). Unlike select, a value
+                     not in the list can still be typed and submitted; the
+                     consumer validates. -->
+                <template v-else-if="field.type === 'autocomplete'">
+                    <DFormInput
+                        v-model="fieldValue"
+                        type="text"
+                        :list="datalistId"
+                        :required="field.required"
+                        :placeholder="field.placeholder"
+                        :state="fieldState"
+                        :disabled="isDisabled"
+                        :readonly="isReadonly || isPlaintext"
+                        :plaintext="isPlaintext"
+                        autocomplete="off"
+                        v-bind="inputPropsWithGuards"
+                    />
+                    <datalist :id="datalistId">
+                        <option
+                            v-for="opt in resolvedOptions"
+                            :key="String(opt.value)"
+                            :value="String(opt.value)"
+                        >
+                            {{ opt.text }}
+                        </option>
+                    </datalist>
                 </template>
-            </DXRepeater>
-        </DFormGroup>
-        <!--
-          @slot Rich info block rendered below the control.
-          @binding {FieldDefinition} field The field definition being rendered.
-          @binding {any} model The model passed to field predicates (defaults to the live form data).
-        -->
-        <slot name="info" :field="field" :model="model" />
-        <DFormText v-if="resolvedHint || $slots.hint" class="text-muted">
-            <!--
-              @slot Overrides the field's hint text shown below the control.
-              @binding {FieldDefinition} field The field definition being rendered.
-              @binding {any} model The model passed to field predicates (defaults to the live form data).
-            -->
-            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
-        </DFormText>
-        <DFormText v-if="field.help">{{ field.help }}</DFormText>
-    </div>
 
-    <!-- Standard labelled field -->
-    <DFormGroup v-else :class="field.class || 'mb-3'" v-bind="horizontalAttrs">
-        <!-- Label with optional info popover. Omitted entirely (not just
-             emptied) when hideLabel is set, so BFormGroup doesn't reserve a
-             label column/row for it (see DXRepeater's table layout). In
-             horizontal layout the hint sits beneath the label here rather than
-             below the control. -->
-        <template v-if="!hideLabel" #label>
-            <DXFieldLabel :label="resolvedLabel" :info="resolvedInfo" />
-            <small
-                v-if="isHorizontal && (resolvedHint || $slots.hint)"
-                class="form-text text-muted d-block dx-field-hint"
-            >
-                <slot name="hint" :field="field" :model="model">{{
-                    resolvedHint
-                }}</slot>
-            </small>
-        </template>
+                <!-- Password with a reveal toggle (the default for
+                     `type: "password"`). Typing a long password blind is the one
+                     place the eye really earns its keep, so it's opt-out
+                     (`revealable: false`) rather than opt-in. -->
+                <DInputGroup v-else-if="isRevealablePassword">
+                    <DFormInput
+                        v-model="textFieldModel"
+                        :required="field.required"
+                        :placeholder="field.placeholder"
+                        :state="fieldState"
+                        :disabled="isDisabled"
+                        :readonly="isReadonly"
+                        v-bind="passwordInputProps"
+                    />
+                    <template #append>
+                        <DButton
+                            variant="outline-secondary"
+                            :icon="passwordRevealed ? 'eye-slash' : 'eye'"
+                            :aria-label="passwordRevealed ? 'Hide password' : 'Show password'"
+                            :aria-pressed="passwordRevealed"
+                            :disabled="isDisabled"
+                            @click="passwordRevealed = !passwordRevealed"
+                        />
+                    </template>
+                </DInputGroup>
 
-        <!-- Custom value slot overrides the built-in control -->
-        <!--
-          @slot Replaces the built-in control with a custom value editor.
-          @binding {FieldDefinition} field The field definition being rendered.
-          @binding {any} model The model passed to field predicates (defaults to the live form data).
-          @binding {any} value The current field value.
-          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
-        -->
-        <slot
-            v-if="$slots.value"
-            name="value"
-            :field="field"
-            :model="model"
-            :value="fieldValue"
-            :update="setValue"
-        />
-
-        <!-- Component escape hatch -->
-        <component
-            :is="field.component"
-            v-else-if="field.type === 'component' && field.component"
-            v-model="fieldValue"
-            :field="field"
-            :model="model"
-            :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="controlPropsWithGuards"
-        />
-
-        <!-- Textarea. Error clearing happens in the v-model setter. -->
-        <DFormTextarea
-            v-else-if="field.type === 'textarea'"
-            v-model="fieldValue"
-            :required="field.required"
-            :placeholder="field.placeholder"
-            :rows="field.rows || 3"
-            :state="fieldState"
-            :disabled="isDisabled"
-            :readonly="isReadonly || isPlaintext"
-            :plaintext="isPlaintext"
-            v-bind="inputPropsWithGuards"
-        />
-
-        <!-- Searchable select: type to filter a long option list, while the
-             model keeps the option's VALUE (an id), not the typed text. The
-             `autocomplete` type below models the text, so it can't back a
-             foreign key. -->
-        <template v-else-if="field.type === 'select' && field.searchable">
-            <DAutocomplete
-                v-if="searchableOptionsReady"
-                v-model="fieldValue"
-                :options="resolvedOptions"
-                :placeholder="field.placeholder"
-                :required="field.required"
-                :state="fieldState"
-                :disabled="isDisabled || isReadonly || isPlaintext"
-                open-on-focus
-                v-bind="controlPropsWithGuards"
-            />
-            <!-- BAutocomplete resolves the input's display text from the model
-                 AT MOUNT and doesn't re-derive it when `options` arrive later,
-                 so an async list would leave the raw id showing ("51" instead
-                 of "Waitrose") — and a long list is exactly the case that loads
-                 async. Hold the control until the options are in. -->
-            <DFormInput v-else placeholder="Loading…" disabled />
-        </template>
-
-        <!-- Select (sync or async options) -->
-        <DFormSelect
-            v-else-if="field.type === 'select'"
-            v-model="fieldValue"
-            :required="field.required"
-            :options="resolvedOptions"
-            :state="fieldState"
-            :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="controlPropsWithGuards"
-        />
-
-        <!-- Radio group -->
-        <DFormRadioGroup
-            v-else-if="field.type === 'radio'"
-            v-model="fieldValue"
-            :options="resolvedOptions"
-            :required="field.required"
-            :state="fieldState"
-            :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="controlPropsWithGuards"
-        />
-
-        <!-- Checkbox group: "pick any of N" — the model is an ARRAY of the
-             checked option values (default the field to []). -->
-        <DFormCheckboxGroup
-            v-else-if="field.type === 'checkbox-group'"
-            v-model="fieldValue"
-            :options="resolvedOptions"
-            :state="fieldState"
-            :disabled="isDisabled || isReadonly || isPlaintext"
-            v-bind="controlPropsWithGuards"
-        />
-
-        <!-- File / image upload -->
-        <div v-else-if="field.type === 'image' || field.type === 'file'">
-            <DFormInput
-                type="file"
-                :accept="field.accept || (field.type === 'image' ? 'image/*' : undefined)"
-                :required="field.required"
-                :state="fieldState"
-                :disabled="isDisabled || isReadonly || isPlaintext"
-                v-bind="controlPropsWithGuards"
-                @change="handleFileChange"
-            />
-            <img
-                v-if="field.type === 'image' && imagePreview"
-                :src="imagePreview"
-                alt="Preview"
-                class="dx-field-image-preview mt-2"
-            />
-        </div>
-
-        <!-- Currency: the DXCurrencyInput leaf (#152) owns the symbol prepend,
-             the blur-padded display (#69), empty -> null, and the minor-units
-             model scaling (#116). -->
-        <DXCurrencyInput
-            v-else-if="field.type === 'currency'"
-            :model-value="fieldValue"
-            :currency-symbol="field.currencySymbol || '£'"
-            :decimals="field.decimals ?? 2"
-            :minor-units="field.minorUnits ?? false"
-            :step="field.step"
-            :required="field.required"
-            :placeholder="field.placeholder"
-            :min="field.min"
-            :max="field.max"
-            :state="fieldState"
-            :disabled="isDisabled"
-            :readonly="isReadonly || isPlaintext"
-            :plaintext="isPlaintext"
-            v-bind="inputPropsWithGuards"
-            @update:model-value="setValue($event)"
-        />
-
-        <!-- Percentage: numeric input with an affix -->
-        <DInputGroup v-else-if="field.type === 'percentage'">
-            <DFormInput
-                v-model="numericInputValue"
-                type="number"
-                :required="field.required"
-                :placeholder="field.placeholder"
-                :step="field.step"
-                :min="field.min"
-                :max="field.max"
-                :state="fieldState"
-                :disabled="isDisabled"
-                :readonly="isReadonly || isPlaintext"
-                :plaintext="isPlaintext"
-                v-bind="inputPropsWithGuards"
-            />
-
-            <template #append>
-                <span class="input-group-text">%</span>
-            </template>
-        </DInputGroup>
-
-        <!-- Autocomplete: a free-text input with a datalist of suggestions
-             (sync or async options). Unlike select, a value not in the list can
-             still be typed and submitted; the consumer validates. -->
-        <template v-else-if="field.type === 'autocomplete'">
-            <DFormInput
-                v-model="fieldValue"
-                type="text"
-                :list="datalistId"
-                :required="field.required"
-                :placeholder="field.placeholder"
-                :state="fieldState"
-                :disabled="isDisabled"
-                :readonly="isReadonly || isPlaintext"
-                :plaintext="isPlaintext"
-                autocomplete="off"
-                v-bind="inputPropsWithGuards"
-            />
-            <datalist :id="datalistId">
-                <option
-                    v-for="opt in resolvedOptions"
-                    :key="String(opt.value)"
-                    :value="String(opt.value)"
-                >
-                    {{ opt.text }}
-                </option>
-            </datalist>
-        </template>
-
-        <!-- Password with a reveal toggle (the default for `type: "password"`).
-             Typing a long password blind is the one place the eye really earns
-             its keep, so it's opt-out (`revealable: false`) rather than opt-in. -->
-        <DInputGroup v-else-if="isRevealablePassword">
-            <DFormInput
-                v-model="textFieldModel"
-                :required="field.required"
-                :placeholder="field.placeholder"
-                :state="fieldState"
-                :disabled="isDisabled"
-                :readonly="isReadonly"
-                v-bind="passwordInputProps"
-            />
-            <template #append>
-                <DButton
-                    variant="outline-secondary"
-                    :icon="passwordRevealed ? 'eye-slash' : 'eye'"
-                    :aria-label="passwordRevealed ? 'Hide password' : 'Show password'"
-                    :aria-pressed="passwordRevealed"
+                <!-- Text-based inputs (text/email/password/url/tel/date/time/datetime) -->
+                <DFormInput
+                    v-else
+                    v-model="textFieldModel"
+                    :type="inputType"
+                    :required="field.required"
+                    :placeholder="field.placeholder"
+                    :step="field.step"
+                    :min="field.min"
+                    :max="field.max"
+                    :state="fieldState"
                     :disabled="isDisabled"
-                    @click="passwordRevealed = !passwordRevealed"
+                    :readonly="isReadonly || isPlaintext"
+                    :plaintext="isPlaintext"
+                    v-bind="inputPropsWithGuards"
                 />
             </template>
-        </DInputGroup>
-
-        <!-- Text-based inputs (text/email/password/number/url/tel/date/time/datetime) -->
-        <DFormInput
-            v-else
-            v-model="textFieldModel"
-            :type="inputType"
-            :required="field.required"
-            :placeholder="field.placeholder"
-            :step="field.step"
-            :min="field.min"
-            :max="field.max"
-            :state="fieldState"
-            :disabled="isDisabled"
-            :readonly="isReadonly || isPlaintext"
-            :plaintext="isPlaintext"
-            v-bind="inputPropsWithGuards"
-        />
-
-        <!-- Validation error -->
-        <DFormInvalidFeedback v-if="form.hasError(errorKey)" force-show>
-            {{ form.getError(errorKey) }}
-        </DFormInvalidFeedback>
-
-        <!-- Optional rich info block -->
-        <!--
-          @slot Rich info block rendered below the control.
-          @binding {FieldDefinition} field The field definition being rendered.
-          @binding {any} model The model passed to field predicates (defaults to the live form data).
-        -->
-        <slot name="info" :field="field" :model="model" />
-
-        <!-- Hint (dynamic, slot-overridable). In horizontal layout it renders in
-             the label column instead (see the #label slot above). -->
-        <DFormText v-if="!hintInLabel && (resolvedHint || $slots.hint)" class="text-muted">
-            <!--
-              @slot Overrides the field's hint text shown below the control.
-              @binding {FieldDefinition} field The field definition being rendered.
-              @binding {any} model The model passed to field predicates (defaults to the live form data).
-            -->
-            <slot name="hint" :field="field" :model="model">{{ resolvedHint }}</slot>
-        </DFormText>
-
-        <!-- Static help text -->
-        <DFormText v-if="field.help">{{ field.help }}</DFormText>
-    </DFormGroup>
+        </template>
+    </DXFieldShell>
 </template>
 
 <script setup lang="ts">
@@ -609,7 +366,6 @@ import {
     computed,
     defineAsyncComponent,
     onBeforeUnmount,
-    onMounted,
     provide,
     ref,
     useId,
@@ -620,18 +376,15 @@ import { dxFieldInfoPopoverKey } from "./dxFieldContext";
 import DFormGroup from "../base/DFormGroup.vue";
 import DFormInput from "../base/DFormInput.vue";
 import DFormTextarea from "../base/DFormTextarea.vue";
-import DFormSelect from "../base/DFormSelect.vue";
-import DFormRadioGroup from "../base/DFormRadioGroup.vue";
-import DFormCheckboxGroup from "../base/DFormCheckboxGroup.vue";
 import DFormCheckbox from "../base/DFormCheckbox.vue";
 import DXSwitch from "./DXSwitch.vue";
-import DFormInvalidFeedback from "../base/DFormInvalidFeedback.vue";
-import DFormText from "../base/DFormText.vue";
 import DInputGroup from "../base/DInputGroup.vue";
-import DAutocomplete from "../base/DAutocomplete.vue";
 import DButton from "../base/DButton.vue";
 import DXFieldLabel from "./DXFieldLabel.vue";
-import DXCurrencyInput from "./DXCurrencyInput.vue";
+import DXFieldShell from "./DXFieldShell.vue";
+import DXNumericField from "./DXNumericField.vue";
+import DXChoiceField from "./DXChoiceField.vue";
+import { useAsyncOptions } from "../../composables/useAsyncOptions";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { FieldDefinition, FieldOption, FieldType, LabelCols } from "../../types";
 import { getByPath, setByPath } from "../../utils/objectPath";
@@ -760,6 +513,33 @@ const horizontalAttrs = computed<Record<string, any>>(() =>
 // hint below the control.
 const hintInLabel = computed(() => isHorizontal.value && !props.hideLabel);
 
+// Which shape DXFieldShell should render: `group` (a DFormGroup with a label
+// column, holding the control + trailing) for the standard field and the
+// horizontal checkbox/switch; `plain` (a div, the control owning its own label
+// or heading) for the vertical checkbox/switch, switch-list and repeater.
+const shellMode = computed<"group" | "plain">(() => {
+    const type = props.field.type;
+    if (type === "checkbox" || type === "switch") {
+        return isHorizontal.value ? "group" : "plain";
+    }
+    if (type === "switch-list" || type === "repeater") return "plain";
+    return "group";
+});
+
+// The custom value slot applies to the checkbox/switch/standard branches, but
+// not switch-list or repeater (which never honoured it).
+const showValueSlot = computed(
+    () => props.field.type !== "switch-list" && props.field.type !== "repeater",
+);
+
+const isChoiceType = computed(() =>
+    ["select", "radio", "checkbox-group"].includes(props.field.type),
+);
+
+const isNumericType = computed(() =>
+    ["currency", "percentage", "number"].includes(props.field.type),
+);
+
 // A `switch` renders visible text inside the control only when the field opts
 // into contextual on/off text (textWhenTrue/textWhenFalse) — e.g. "Product is
 // current". Without it, `switchText` falls back to the row label, which would
@@ -841,41 +621,6 @@ const textFieldModel = computed({
             ? normaliseDateForInput(fieldValue.value, props.field.type)
             : fieldValue.value,
     set: (value: any) => setValue(value),
-});
-
-// For `percentage` fields with `asFraction`, the model holds a 0–1 fraction but
-// the input shows/edits a 0–100 percentage. Scale on read/write, rounding away
-// binary-float artefacts (0.2 * 100 = 20.000000000000004). Currency and plain
-// percentage fields pass straight through.
-const isFractionPercentage = computed(
-    () => props.field.type === "percentage" && props.field.asFraction === true,
-);
-
-const numericInputValue = computed({
-    get: () => {
-        const value = fieldValue.value;
-        if (!isFractionPercentage.value) return value;
-        if (value === null || value === undefined || value === "") return value;
-        const num = Number(value);
-        if (!Number.isFinite(num)) return value;
-        return Math.round(num * 100 * 1e6) / 1e6;
-    },
-    set: (value: any) => {
-        if (!isFractionPercentage.value) {
-            setValue(value);
-            return;
-        }
-        if (value === null || value === undefined || value === "") {
-            setValue(value);
-            return;
-        }
-        const num = Number(value);
-        if (!Number.isFinite(num)) {
-            setValue(value);
-            return;
-        }
-        setValue(Math.round((num / 100) * 1e9) / 1e9);
-    },
 });
 
 const NUMERIC_TYPES: ReadonlySet<FieldType> = new Set([
@@ -1081,42 +826,11 @@ const datalistId = useId();
 
 // ————————————————— async options
 
-const loadedOptions = ref<FieldOption[] | null>(null);
+const { loadedOptions } = useAsyncOptions(() => props.field, effectiveModel);
 
 const resolvedOptions = computed<FieldOption[] | undefined>(
     () => loadedOptions.value ?? props.field.options,
 );
-
-// Monotonic token so out-of-order async responses can't clobber newer ones.
-let optionsRequestToken = 0;
-
-async function loadOptions(): Promise<void> {
-    if (!props.field.optionsLoader) return;
-    const token = ++optionsRequestToken;
-    try {
-        const options = await props.field.optionsLoader(effectiveModel.value);
-        // Ignore a stale response superseded by a newer load.
-        if (token === optionsRequestToken) loadedOptions.value = options;
-    } catch (error) {
-        // Swallow loader failures: keep the last successfully loaded options
-        // (or the static `field.options` fallback when none have loaded yet).
-        if (token === optionsRequestToken) {
-            // eslint-disable-next-line no-console
-            console.error(
-                `optionsLoader failed for field "${props.field.key}"`,
-                error,
-            );
-        }
-    }
-}
-
-onMounted(() => {
-    void loadOptions();
-});
-
-if (props.field.reloadOptionsOnChange) {
-    watch(effectiveModel, () => void loadOptions(), { deep: true });
-}
 
 // ————————————————— image preview
 
@@ -1179,5 +893,4 @@ onBeforeUnmount(() => {
     border: 1px solid var(--bs-border-color);
     border-radius: var(--bs-border-radius);
 }
-
 </style>

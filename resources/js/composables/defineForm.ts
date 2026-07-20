@@ -1,5 +1,6 @@
 import { useForm, type UseFormReturn } from "./useForm";
-import type { FieldDefinition, FieldType } from "../types";
+import type { FieldDefinition } from "../types";
+import { resolveFieldDefault } from "../utils/formSchema";
 
 /**
  * Extended field definition that includes default value
@@ -31,35 +32,6 @@ export interface DefineFormReturn<TData extends Record<string, any>> {
 }
 
 /**
- * Helper to get default value for a field type
- */
-function getDefaultValueForType(type: FieldType): any {
-    switch (type) {
-        case "checkbox":
-        case "switch":
-            return false;
-        case "number":
-        case "currency":
-        case "percentage":
-            return 0;
-        case "repeater":
-        // Array-valued selections: checkbox-group previously fell through to
-        // the "" default, which is the wrong shape for an array model.
-        case "checkbox-group":
-        case "switch-list":
-            return [];
-        case "image":
-        case "file":
-            return null;
-        case "select":
-        case "radio":
-            return "";
-        default:
-            return "";
-    }
-}
-
-/**
  * Define a form with type-safe field definitions.
  * Reduces duplication by inferring initial values from field definitions.
  *
@@ -75,22 +47,14 @@ export function defineForm<const TFields extends readonly FormFieldDefinition[]>
 ): DefineFormReturn<InferFormData<TFields>> {
     type FormData = InferFormData<TFields>;
 
-    // Extract initial data from field definitions.
-    //
-    // #125: `field.default ?? getDefaultValueForType(type)` cannot express a
-    // *null* default — a select whose "none" option is `value: null` (which is
-    // what the column stores) seeded '' (the type default), matched no option,
-    // and rendered blank. This is the same bug #122 fixed in DXTable. Decide on
-    // definedness, not nullishness, so null survives; an absent (or explicitly
-    // `undefined`) default still falls back to the type default rather than
-    // seeding `undefined`, which would drop the key from the JSON payload. This
-    // matches DXRepeater's `!== undefined` rule, so all seeding sites agree.
+    // Extract initial data from field definitions. Seeding (definedness over
+    // nullishness so a `null` default survives — #122/#125 — plus a type-aware
+    // fallback and deep-cloning) is the shared `resolveFieldDefault` rule, so
+    // every seeding site (defineForm / useResourceEditor / DXRepeater) agrees
+    // by construction (#134).
     const initialData = fieldDefinitions.reduce(
         (acc, field) => {
-            acc[field.key] =
-                field.default !== undefined
-                    ? field.default
-                    : getDefaultValueForType(field.type);
+            acc[field.key] = resolveFieldDefault(field);
             return acc;
         },
         {} as Record<string, any>,

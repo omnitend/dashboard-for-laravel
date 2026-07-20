@@ -91,137 +91,65 @@
             </DButton>
         </div>
 
-        <!-- Cards fallback: identical to the default cards markup below,
-             shown instead of the table when there isn't enough room for it.
-             `v-else` (not `v-show`) — only the OUTER wrapper above needs to
+        <!-- Cards fallback: the same DXRepeaterCards as the default branch
+             below, shown instead of the table when there isn't enough room for
+             it. `v-else` (not `v-show`) — only the OUTER wrapper above needs to
              stay mounted for measurement; unmounting whichever of these two
              isn't current avoids permanently double-running every DXField
              in both layouts at once (double async optionsLoader fetches,
              double watchers, double everything else a field might do). -->
-        <div v-else class="dx-repeater">
-            <div
-                v-for="(entry, position) in visibleRows"
-                :key="rowKey(entry.row, position)"
-                class="dx-repeater-row"
-            >
-                <slot
-                    v-if="$slots.row"
-                    name="row"
-                    :row="entry.row"
-                    :index="position"
-                    :fields="subFields"
-                    :remove="() => removeRow(entry.index)"
-                    :path="rowPath(entry.index)"
-                />
-
-                <template v-else>
-                    <div class="dx-repeater-row-header">
-                        <span v-if="field.showRowIndex" class="dx-repeater-row-index">{{ position + 1 }}</span>
-                        <DButton
-                            variant="outline-danger"
-                            size="sm"
-                            :disabled="visibleRows.length <= minItems"
-                            @click="removeRow(entry.index)"
-                        >
-                            Remove
-                        </DButton>
-                    </div>
-                    <DXField
-                        v-for="subField in subFields"
-                        :key="subField.key"
-                        :field="subField"
-                        :form="form"
-                        :model="entry.row"
-                        :key-path="`${rowPath(entry.index)}.${subField.key}`"
-                        :error-key="`${rowPath(entry.index)}.${subField.key}`"
-                    />
-                </template>
-            </div>
-
-            <DButton
-                variant="outline-primary"
-                size="sm"
-                :disabled="maxItems !== undefined && visibleRows.length >= maxItems"
-                @click="addRow"
-            >
-                {{ field.addLabel || "Add" }}
-            </DButton>
-        </div>
+        <DXRepeaterCards
+            v-else
+            :visible-rows="visibleRows"
+            :sub-fields="subFields"
+            :form="form"
+            :field="field"
+            :min-items="minItems"
+            :max-items="maxItems"
+            :row-key="rowKey"
+            :row-path="rowPath"
+            :remove-row="removeRow"
+            :add-row="addRow"
+        >
+            <template v-if="$slots.row" #row="binds">
+                <slot name="row" v-bind="binds" />
+            </template>
+        </DXRepeaterCards>
     </div>
 
     <!-- Cards layout (default, `repeaterLayout: "cards"` or unset): each row
-         is its own bordered card with sub-fields stacked vertically. Kept as
-         a separate, unconditional branch (rather than reusing the fallback
-         above) so this — the overwhelmingly common case — never pays for a
-         ResizeObserver or the extra wrapper div; its markup is byte-for-byte
-         what cards mode has always rendered. -->
-    <div v-else class="dx-repeater">
-        <div
-            v-for="(entry, position) in visibleRows"
-            :key="rowKey(entry.row, position)"
-            class="dx-repeater-row"
-        >
-            <!--
-              @slot Custom layout for a single repeater row, replacing the default sub-field stack.
-              @binding {object} row The current row's data object.
-              @binding {number} index The row's zero-based position among visible rows.
-              @binding {FieldDefinition[]} fields The sub-field definitions for the row.
-              @binding {function} remove Removes this row (respects `minItems`; soft-deletes instead of splicing when `field.softDeleteKey` is set and the row has an `id`).
-              @binding {string} path The dot path into `form.data` for this row (e.g. `lines.0`).
-            -->
-            <slot
-                v-if="$slots.row"
-                name="row"
-                :row="entry.row"
-                :index="position"
-                :fields="subFields"
-                :remove="() => removeRow(entry.index)"
-                :path="rowPath(entry.index)"
-            />
-
-            <!-- Default row: stack each sub-field -->
-            <template v-else>
-                <div class="dx-repeater-row-header">
-                    <span v-if="field.showRowIndex" class="dx-repeater-row-index">{{ position + 1 }}</span>
-                    <DButton
-                        variant="outline-danger"
-                        size="sm"
-                        :disabled="visibleRows.length <= minItems"
-                        @click="removeRow(entry.index)"
-                    >
-                        Remove
-                    </DButton>
-                </div>
-                <DXField
-                    v-for="subField in subFields"
-                    :key="subField.key"
-                    :field="subField"
-                    :form="form"
-                    :model="entry.row"
-                    :key-path="`${rowPath(entry.index)}.${subField.key}`"
-                    :error-key="`${rowPath(entry.index)}.${subField.key}`"
-                />
-            </template>
-        </div>
-
-        <DButton
-            variant="outline-primary"
-            size="sm"
-            :disabled="maxItems !== undefined && visibleRows.length >= maxItems"
-            @click="addRow"
-        >
-            {{ field.addLabel || "Add" }}
-        </DButton>
-    </div>
+         is its own bordered card with sub-fields stacked vertically. The
+         overwhelmingly common case, rendered directly (no ResizeObserver, no
+         measurement wrapper) — only the `table` preference above pays for
+         those. Both branches render the same DXRepeaterCards (#135). -->
+    <DXRepeaterCards
+        v-else
+        :visible-rows="visibleRows"
+        :sub-fields="subFields"
+        :form="form"
+        :field="field"
+        :min-items="minItems"
+        :max-items="maxItems"
+        :row-key="rowKey"
+        :row-path="rowPath"
+        :remove-row="removeRow"
+        :add-row="addRow"
+    >
+        <template v-if="$slots.row" #row="binds">
+            <slot name="row" v-bind="binds" />
+        </template>
+    </DXRepeaterCards>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import DButton from "../base/DButton.vue";
 import DXField from "./DXField.vue";
+import DXRepeaterCards from "./DXRepeaterCards.vue";
 import type { UseFormReturn } from "../../composables/useForm";
-import type { FieldDefinition, FieldType } from "../../types";
+import type { FieldDefinition } from "../../types";
 import { getByPath, setByPath } from "../../utils/objectPath";
+import { resolveFieldDefault } from "../../utils/formSchema";
 
 interface Props {
     /** Form instance owning the repeater array */
@@ -378,42 +306,15 @@ const rowKey = (row: any, fallbackPosition: number): string | number => {
     return fallbackPosition;
 };
 
-/** Default value for a freshly added row's sub-field. */
-function defaultForType(type: FieldType): any {
-    switch (type) {
-        case "checkbox":
-        case "switch":
-            return false;
-        case "number":
-        case "currency":
-        case "percentage":
-            return 0;
-        case "repeater":
-            return [];
-        case "image":
-        case "file":
-            return null;
-        default:
-            return "";
-    }
-}
-
-/** Deep-clone a sub-field default so object/array defaults aren't shared
- *  (by reference) across rows. Uses JSON (not structuredClone) because the
- *  default may be a Vue reactive proxy — which structuredClone can't clone —
- *  and form defaults are JSON-serializable by construction. */
-function cloneDefault(value: any): any {
-    if (value === null || typeof value !== "object") return value;
-    return JSON.parse(JSON.stringify(value));
-}
-
+/**
+ * A freshly-added row: each sub-field seeded by the shared `resolveFieldDefault`
+ * rule (explicit default deep-cloned when defined, else the type default), so
+ * repeater rows agree with every other seeding site (#134).
+ */
 function buildRow(): Record<string, any> {
     const row: Record<string, any> = {};
     for (const subField of subFields.value) {
-        row[subField.key] =
-            subField.default !== undefined
-                ? cloneDefault(subField.default)
-                : defaultForType(subField.type);
+        row[subField.key] = resolveFieldDefault(subField);
     }
     return row;
 }
@@ -467,32 +368,9 @@ function removeRow(index: number): void {
 </script>
 
 <style scoped>
-.dx-repeater-row {
-    border: 1px solid var(--bs-border-color);
-    border-radius: var(--bs-border-radius);
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-}
-
-.dx-repeater-row-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.75rem;
-}
-
-/* The Remove control is always this header's last child, whether or not the
-   (opt-in) row-index span is also present — push it to the end explicitly
-   rather than relying on `justify-content: space-between`, which centres a
-   single remaining child at the *start* once the index is off (the default). */
-.dx-repeater-row-header > :last-child {
-    margin-inline-start: auto;
-}
-
-.dx-repeater-row-index {
-    font-weight: 600;
-    color: var(--bs-secondary-color);
-}
-
+/* Cards-layout row styles (.dx-repeater-row*) live in DXRepeaterCards.vue with
+   the markup they target — a scoped rule can't reach another component (#135).
+   Only the table layout is rendered directly here, so only its styles remain. */
 .dx-repeater-table td {
     vertical-align: middle;
 }

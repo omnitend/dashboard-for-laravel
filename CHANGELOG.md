@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Strict, discriminated field types (#131)** — `FieldDef` (a union keyed on
+  `type`) and its per-type members (`CurrencyFieldDef`, `SwitchFieldDef`,
+  `RepeaterFieldDef`, …) are exported alongside the existing permissive
+  `FieldDefinition`. Each variant permits only its own options, so an invalid
+  field config (`currencySymbol` on a checkbox, `options` on a text input) is a
+  compile error at the call site. **Opt-in and non-breaking**: `FieldDefinition`
+  stays canonical; adopt `FieldDef` where you want the checking. A future major
+  makes the union canonical with a codemod.
+- **`DXTable` discriminated `source` prop (#130)** — a type-safe alternative to
+  the `items` / `provider` / `apiUrl` / `inertiaUrl` / `clientSide` matrix:
+  `:source="{ mode: 'provider', provider }"` (or `'client'` / `'api'` /
+  `'inertia'`), where the mode's required companion is enforced by the compiler.
+  **Non-breaking**: the legacy props still work and apply when `source` is
+  omitted. `apiAdapter`/`pagination` stay sibling props. The invalid-combo
+  runtime warning now also covers `clientSide + provider`.
+- **Exported form-schema helpers (#134)** — `resolveFieldDefault`,
+  `defaultValueForType`, `cloneDefault`, `resolvePredicate`, `isFieldVisible`,
+  `isSubmittableField` are now public, for consumers building custom form
+  renderers on the same rules DXForm/DXTable use.
+- **`DXTableApiAdapter` and `DXTableSource` are now exported** from the package
+  root (previously the adapter type was internal).
+
+### Changed
+
+- **`DXTable`'s `editFields` is now typed `FieldDefinition[]` (was `any[]`)
+  (#131).** A minor type-tightening: if you passed a separately-declared,
+  un-annotated field array (where TypeScript infers `type` as `string`), your
+  build may now error — annotate it `const fields: FieldDefinition[] = [...]`
+  or `[...] satisfies FieldDefinition[]`. Inline literals and already-annotated
+  arrays are unaffected. The tightening also surfaces mistyped field `type`s.
+- **Create/edit-modal seeding is now type-aware (#134).** `DXTable`'s
+  create/edit modal previously seeded every field lacking an explicit `default`
+  with `""`; it now uses the same rule as `defineForm`/`DXRepeater` — a
+  `checkbox-group`/`switch-list`/`repeater` seeds `[]`, a `number`/`currency`/
+  `percentage` seeds `0`, a `checkbox`/`switch` seeds `false`. This fixes an
+  array-shape mismatch for un-defaulted array fields and makes all seeding sites
+  agree. If you relied on an un-defaulted array field starting as `""` in the
+  edit modal, set an explicit `default`.
+
+### Internal
+
+- **Refactors with no consumer-visible behaviour change:** `DXField`
+  decomposed into a `DXFieldShell` + `DXNumericField`/`DXChoiceField` controls +
+  a `useAsyncOptions` composable (1183→896 lines); `DXRepeater`'s duplicated
+  cards markup extracted into `DXRepeaterCards`; `DXBarChart`/`DXLineChart`
+  share a `useThemedChart` composable with Chart.js generic types; form-schema
+  defaulting/visibility deduplicated into `utils/formSchema.ts`; the docs
+  metadata pipeline consolidated onto one `vue-docgen-api` manifest (#136) —
+  which also fixes raw bvn aliases (`DTab`, `DCarousel`) being missing from
+  `llms.txt` / `api-reference.json`.
+
 ## [0.33.1] - 2026-07-20
 
 ### Added

@@ -8,34 +8,31 @@
  * the documentation.
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = join(__dirname, '..');
+import { readFileSync, writeFileSync, readdirSync } from 'fs';
+import { join } from 'path';
+import { buildManifest, rootDir } from './lib/component-manifest.mjs';
 
 // Read package.json for project info
 const packageJson = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8'));
 
-// Scan component exports from index.ts
-function getComponentLists() {
-  const indexTs = readFileSync(join(rootDir, 'resources/js/index.ts'), 'utf8');
-
-  const baseComponents = [];
-  const extendedComponents = [];
-
-  // Extract D* component exports (base components)
-  const baseMatches = indexTs.matchAll(/export \{ default as (D[A-Z][a-zA-Z]+) \} from "\.\/components\/base\//g);
-  for (const match of baseMatches) {
-    baseComponents.push(match[1]);
-  }
-
-  // Extract DX* component exports (extended components)
-  const extendedMatches = indexTs.matchAll(/export \{ default as (DX[A-Z][a-zA-Z]+) \} from "\.\/components\/extended\//g);
-  for (const match of extendedMatches) {
-    extendedComponents.push(match[1]);
-  }
+// Component lists come from the single shared manifest (#136). The old
+// implementation scanned index.ts for `export { default as … }` ONLY, which
+// silently omitted the raw bvn re-exports (DTab, DCarousel, DCarouselSlide,
+// exported as `export { BTab as DTab }`) — they were missing from llms.txt.
+// The manifest resolves those, so they now appear.
+//
+// Audience filter: the PUBLIC main-entry components (`exported && entry main`).
+// Charts live behind a separate subpath entry and were never listed here, so
+// filtering to `entry === 'main'` preserves that; internal (non-exported)
+// pieces such as DXTableShell stay out, as before.
+function getComponentLists(manifest) {
+  const isPublicMain = (c) => c.exported && c.entry === 'main';
+  const baseComponents = manifest.components
+    .filter((c) => c.category === 'base' && isPublicMain(c))
+    .map((c) => c.name);
+  const extendedComponents = manifest.components
+    .filter((c) => c.category === 'extended' && isPublicMain(c))
+    .map((c) => c.name);
 
   return { baseComponents, extendedComponents };
 }
@@ -57,8 +54,8 @@ function getGuidePages() {
 }
 
 // Generate llms.txt content
-function generateLlmsTxt() {
-  const { baseComponents, extendedComponents } = getComponentLists();
+function generateLlmsTxt(manifest) {
+  const { baseComponents, extendedComponents } = getComponentLists(manifest);
   const guides = getGuidePages();
 
   const content = `# ${packageJson.name}
@@ -140,7 +137,8 @@ function getExtendedDescription(name) {
 }
 
 // Main execution
-const llmsTxt = generateLlmsTxt();
+const manifest = await buildManifest();
+const llmsTxt = generateLlmsTxt(manifest);
 const outputPath = join(rootDir, 'docs/public/llms.txt');
 
 writeFileSync(outputPath, llmsTxt, 'utf8');

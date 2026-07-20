@@ -1,13 +1,26 @@
 #!/usr/bin/env node
 
 /**
- * Simple custom documentation generator for Vue components
- * Parses JSDoc comments and generates Markdown files for Astro
+ * Generate MDX documentation pages for Vue components.
+ *
+ * Metadata (description, props, events, slots) now comes from the SINGLE shared
+ * manifest (scripts/lib/component-manifest.mjs), which parses every component
+ * with vue-docgen-api — the ~350 lines of bespoke regex TS/prop/emit parsing
+ * that used to live here are gone (#136). The prose the parser can't give us —
+ * the leading-JSDoc description + `@example`, and the "forwards all slots
+ * dynamically" wrapper detection — is preserved (it's carried on each manifest
+ * entry as `jsDoc` / `templateSlots`).
+ *
+ * NB: this generator is a manually-run, curated step (`npm run docs:generate`).
+ * It is NOT part of `docs:build` (which only runs `docs:generate:ai` + astro),
+ * and it deliberately mirrors the previous iteration behaviour: it walks the
+ * component tree and emits a page for every component that has a JSDoc block.
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from 'fs';
+import { writeFileSync, readdirSync, statSync, mkdirSync } from 'fs';
 import { join, basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { buildManifest } from './lib/component-manifest.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,288 +28,66 @@ const __dirname = dirname(__filename);
 const COMPONENTS_ROOT = join(__dirname, '../resources/js/components');
 const OUTPUT_DIR = join(__dirname, '../docs/src/pages/components');
 
-/**
- * Extract JSDoc comment block from file content
- */
-function extractJSDoc(content) {
-  const jsDocRegex = /\/\*\*([\s\S]*?)\*\//g;
-  const matches = [...content.matchAll(jsDocRegex)];
-
-  if (matches.length === 0) return null;
-
-  // Get the first (main) JSDoc block
-  const mainDoc = matches[0][1];
-
-  // Parse the JSDoc content
-  const lines = mainDoc.split('\n').map(line => {
-    // Remove leading * and whitespace
-    return line.replace(/^\s*\*\s?/, '').trim();
-  }).filter(line => line.length > 0);
-
-  const parsed = {
-    description: '',
-    component: false,
-    example: '',
-    tags: {}
-  };
-
-  let currentSection = 'description';
-  let exampleLines = [];
-
-  for (const line of lines) {
-    if (line.startsWith('@component')) {
-      parsed.component = true;
-      continue;
-    }
-
-    if (line.startsWith('@example')) {
-      currentSection = 'example';
-      continue;
-    }
-
-    const tagMatch = line.match(/^@(\w+)\s+(.+)/);
-    if (tagMatch) {
-      parsed.tags[tagMatch[1]] = tagMatch[2];
-      currentSection = null;
-      continue;
-    }
-
-    if (currentSection === 'description' && !line.startsWith('@')) {
-      parsed.description += (parsed.description ? ' ' : '') + line;
-    } else if (currentSection === 'example') {
-      exampleLines.push(line);
-    }
-  }
-
-  parsed.example = exampleLines.join('\n');
-
-  return parsed;
-}
-
-/**
- * Extract component name from file path
- */
+/** Component name from a .vue file path. */
 function getComponentName(filePath) {
   return basename(filePath, '.vue');
 }
 
 /**
- * Determine component category (base wrapper vs extended)
+ * Determine the MDX page category from the file path (base vs extended). This is
+ * intentionally path-based, matching the previous script: charts live outside
+ * base/extended and render as a generic ('unknown') page.
  */
 function getComponentCategory(filePath) {
-  if (filePath.includes('/base/')) {
-    return 'base';
-  } else if (filePath.includes('/extended/')) {
-    return 'extended';
-  }
+  if (filePath.includes('/base/')) return 'base';
+  if (filePath.includes('/extended/')) return 'extended';
   return 'unknown';
 }
 
-/**
- * Extract props from TypeScript interface in script section
- */
-function extractProps(content) {
-  const props = [];
-
-  // Match interface Props { ... } or interface PropsType { ... }
-  // Support generics like Props<T> or Props<TItem = any>
-  const interfaceRegex = /interface\s+(Props|PropsType)(?:<[^>]+>)?\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/s;
-  const match = content.match(interfaceRegex);
-
-  if (!match) return props;
-
-  const interfaceContent = match[2];
-
-  // Match each property line
-  // Format: key?: type; or key: type; with optional JSDoc comment
-  const propRegex = /\/\*\*\s*([^*]+?)\s*\*\/\s*\n\s*(\w+)(\?)?:\s*([^;]+);/g;
-  const simplePropRegex = /^\s*(\w+)(\?)?:\s*([^;]+);/gm;
-
-  // First try to match props with JSDoc comments
-  let propMatch;
-  const propsWithDocs = new Map();
-
-  while ((propMatch = propRegex.exec(interfaceContent)) !== null) {
-    const [, description, name, optional, type] = propMatch;
-    propsWithDocs.set(name, {
-      name,
-      type: type.trim(),
-      required: !optional,
-      description: description.trim()
-    });
-  }
-
-  // Then get all props (including those without JSDoc)
-  while ((propMatch = simplePropRegex.exec(interfaceContent)) !== null) {
-    const [, name, optional, type] = propMatch;
-
-    if (!propsWithDocs.has(name)) {
-      props.push({
-        name,
-        type: type.trim(),
-        required: !optional,
-        description: ''
-      });
-    }
-  }
-
-  // Add props with docs
-  props.push(...propsWithDocs.values());
-
-  // Try to find defaults from withDefaults
-  // Handle both simple and complex default objects
-  const defaultsRegex = /withDefaults\s*\([^,]+,\s*\{([\s\S]*?)\n\}\)/;
-  const defaultsMatch = content.match(defaultsRegex);
-
-  if (defaultsMatch) {
-    const defaultsContent = defaultsMatch[1];
-    props.forEach(prop => {
-      // Try to match various formats:
-      // propertyName: value,
-      // propertyName: () => ({ ... }),
-      const defaultRegex = new RegExp(`${prop.name}:\\s*([^,\n]+(?:\\([^)]*\\))?(?:\\s*=>\\s*\\([^)]*\\))?)`);
-      const defaultMatch = defaultsContent.match(defaultRegex);
-      if (defaultMatch) {
-        let defaultValue = defaultMatch[1].trim();
-
-        // Simplify function defaults
-        if (defaultValue.startsWith('() =>')) {
-          defaultValue = 'function';
-        }
-
-        // Remove quotes from strings
-        defaultValue = defaultValue.replace(/^['"]|['"]$/g, '');
-
-        prop.default = defaultValue;
-      }
-    });
-  }
-
-  return props;
+/** Make text safe for a single Markdown table cell (no newlines, escape pipes). */
+function cell(text) {
+  return String(text ?? '')
+    .replace(/\s*\n\s*/g, ' ')
+    .replace(/\|/g, '\\|')
+    .trim();
 }
 
-/**
- * Extract events from defineEmits in script section
- */
-function extractEvents(content) {
-  const events = [];
-
-  // Match defineEmits<{ eventName: [...] }> or defineEmits(['eventName'])
-  const emitsTypeRegex = /defineEmits<\{([^}]+)\}>/s;
-  const emitsArrayRegex = /defineEmits\(\[([^\]]+)\]/;
-
-  const typeMatch = content.match(emitsTypeRegex);
-  const arrayMatch = content.match(emitsArrayRegex);
-
-  if (typeMatch) {
-    // Parse type-based emits
-    const emitsContent = typeMatch[1];
-    const eventRegex = /(\w+):\s*\[([^\]]*)\]/g;
-
-    let eventMatch;
-    while ((eventMatch = eventRegex.exec(emitsContent)) !== null) {
-      const [, name, params] = eventMatch;
-      events.push({
-        name,
-        params: params.trim() || 'none'
-      });
-    }
-  } else if (arrayMatch) {
-    // Parse array-based emits
-    const eventNames = arrayMatch[1].split(',').map(s => s.trim().replace(/['"]/g, ''));
-    eventNames.forEach(name => {
-      if (name) {
-        events.push({ name, params: 'unknown' });
-      }
-    });
-  }
-
-  return events;
-}
-
-/**
- * Extract slots from template section
- */
-function extractSlots(content) {
-  const templateMatch = content.match(/<template>([\s\S]*?)<\/template>/);
-  if (!templateMatch) return [];
-
-  const template = templateMatch[1];
-
-  // Check for v-for slot forwarding pattern first
-  // This pattern indicates the component forwards all slots dynamically
-  if (template.includes('v-for="(_, name) in $slots"') || template.includes('v-for="(_, name) in slots"')) {
-    return ['*']; // Indicates dynamic slot forwarding
-  }
-
-  // Only extract explicit slot names if not using dynamic forwarding
-  const slotRegex = /<slot\s+name="([^"]+)"/g;
-  const slots = new Set();
-
-  let match;
-  while ((match = slotRegex.exec(template)) !== null) {
-    const slotName = match[1];
-    if (slotName && !slotName.includes('${')) { // Ignore template literals
-      slots.add(slotName);
-    }
-  }
-
-  // Check for default slot
-  if (template.includes('<slot') && !template.match(/<slot\s+name=/)) {
-    slots.add('default');
-  }
-
-  return Array.from(slots);
-}
-
-/**
- * Generate a basic example for a component if none provided
- */
+/** A basic example for components whose JSDoc carries no `@example`. */
 function generateBasicExample(componentName, category) {
-  // Define some basic examples for common components
   const examples = {
-    'DButton': '<DButton variant="primary">Click Me</DButton>',
-    'DCard': '<DCard>\n  <template #header>Card Header</template>\n  <p>Card content goes here.</p>\n</DCard>',
-    'DAlert': '<DAlert variant="info">This is an informational alert.</DAlert>',
-    'DBadge': '<DBadge variant="success">New</DBadge>',
-    'DSpinner': '<DSpinner variant="primary" />',
-    'DCollapse': '<DCollapse id="example-collapse">\n  <p>This content can be collapsed.</p>\n</DCollapse>',
+    DButton: '<DButton variant="primary">Click Me</DButton>',
+    DCard: '<DCard>\n  <template #header>Card Header</template>\n  <p>Card content goes here.</p>\n</DCard>',
+    DAlert: '<DAlert variant="info">This is an informational alert.</DAlert>',
+    DBadge: '<DBadge variant="success">New</DBadge>',
+    DSpinner: '<DSpinner variant="primary" />',
+    DCollapse: '<DCollapse id="example-collapse">\n  <p>This content can be collapsed.</p>\n</DCollapse>',
   };
-
-  // Return specific example if available, otherwise generic
-  if (examples[componentName]) {
-    return examples[componentName];
-  }
-
-  // Generate a generic example
-  if (category === 'base') {
-    return `<${componentName}>\n  Example content\n</${componentName}>`;
-  } else {
-    return `<${componentName} />\n<!-- Configure props as needed -->`;
-  }
+  if (examples[componentName]) return examples[componentName];
+  if (category === 'base') return `<${componentName}>\n  Example content\n</${componentName}>`;
+  return `<${componentName} />\n<!-- Configure props as needed -->`;
 }
 
 /**
- * Generate MDX documentation for a component
+ * Generate MDX for one component, driven by its shared-manifest entry.
+ * Returns the markdown string, or null to skip (no JSDoc block — same skip rule
+ * as before).
  */
-function generateAstro(filePath) {
-  const content = readFileSync(filePath, 'utf-8');
+function generateAstro(filePath, component) {
   const componentName = getComponentName(filePath);
   const category = getComponentCategory(filePath);
-  const jsDoc = extractJSDoc(content);
-  const slots = extractSlots(content);
-  const props = category === 'extended' ? extractProps(content) : [];
-  const events = category === 'extended' ? extractEvents(content) : [];
 
+  const jsDoc = component?.jsDoc;
   if (!jsDoc) {
     console.log(`⚠️  No JSDoc found for ${componentName}, skipping...`);
     return null;
   }
 
-  // Determine paths based on category
+  const props = category === 'extended' ? component.props : [];
+  const events = category === 'extended' ? component.events : [];
+  const templateSlots = component.templateSlots ?? { dynamic: false, names: [] };
+
   const layoutPath = '../../../layouts/DashboardLayout.astro';
 
-  // Build MDX frontmatter and imports
   let markdown = `---
 layout: ${layoutPath}
 title: ${componentName}
@@ -310,16 +101,13 @@ import ${componentName}Example from '../../../examples/${componentName}Example.v
 ${jsDoc.description}
 `;
 
-  // Add example if present
+  // Example
   if (jsDoc.example) {
-    // Remove code fences if they exist
     let exampleCode = jsDoc.example.trim();
     if (exampleCode.startsWith('```')) {
-      // Extract code from fences
       const lines = exampleCode.split('\n');
       exampleCode = lines.slice(1, -1).join('\n');
     }
-
     markdown += `
 ## Example
 
@@ -328,18 +116,16 @@ ${exampleCode}
 \`\`\`
 `;
   } else {
-    // Generate a basic example if none provided
-    const basicExample = generateBasicExample(componentName, category);
     markdown += `
 ## Example
 
 \`\`\`vue
-${basicExample}
+${generateBasicExample(componentName, category)}
 \`\`\`
 `;
   }
 
-  // Add props section for extended components
+  // Props (extended only)
   if (category === 'extended' && props.length > 0) {
     markdown += `
 ## Props
@@ -347,15 +133,15 @@ ${basicExample}
 | Name | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 `;
-    props.forEach(prop => {
+    props.forEach((prop) => {
       const required = prop.required ? 'Yes' : 'No';
-      const defaultValue = prop.default || '-';
-      const description = prop.description || '';
-      markdown += `| ${prop.name} | \`${prop.type}\` | ${required} | ${defaultValue} | ${description} |\n`;
+      const defaultValue = cell(prop.default ?? '-');
+      const description = cell(prop.description);
+      markdown += `| ${cell(prop.name)} | \`${cell(prop.typeLabel || prop.type)}\` | ${required} | ${defaultValue} | ${description} |\n`;
     });
   }
 
-  // Add events section for extended components
+  // Events (extended only)
   if (category === 'extended' && events.length > 0) {
     markdown += `
 ## Events
@@ -363,31 +149,36 @@ ${basicExample}
 | Name | Parameters |
 |------|------------|
 `;
-    events.forEach(event => {
-      markdown += `| ${event.name} | ${event.params} |\n`;
+    events.forEach((event) => {
+      const params =
+        (event.properties || []).map((p) => p.name).join(', ') ||
+        event.description ||
+        '-';
+      markdown += `| ${cell(event.name)} | ${cell(params)} |\n`;
     });
   }
 
-  // Add slots section
-  if (slots.length > 0) {
+  // Slots
+  const hasSlots = templateSlots.dynamic || templateSlots.names.length > 0;
+  if (hasSlots) {
     markdown += `
 ## Slots
 
 `;
-    if (slots.includes('*')) {
+    if (templateSlots.dynamic) {
       markdown += `This component forwards all slots dynamically from the underlying Bootstrap Vue Next component.
 `;
     } else {
       markdown += `| Name | Description |
 |------|-------------|
 `;
-      slots.forEach(slotName => {
+      templateSlots.names.forEach((slotName) => {
         markdown += `| ${slotName} | - |\n`;
       });
     }
   }
 
-  // Add footer note based on component category
+  // Footer
   if (category === 'base') {
     markdown += `
 ## Bootstrap Vue Next Wrapper
@@ -409,60 +200,35 @@ providing additional functionality specific to Laravel dashboards.
   return markdown;
 }
 
-/**
- * Escape HTML special characters
- */
-function escapeHtml(text) {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-    '{': '&#123;',
-    '}': '&#125;',
-  };
-  return text.replace(/[&<>"'{}]/g, m => map[m]);
-}
-
-/**
- * Find all Vue component files recursively
- */
+/** Find all Vue component files recursively (PascalCase .vue). */
 function findVueFiles(dir) {
   const files = [];
-
   function traverse(currentDir) {
-    const entries = readdirSync(currentDir);
-
-    for (const entry of entries) {
+    for (const entry of readdirSync(currentDir)) {
       const fullPath = join(currentDir, entry);
-      const stat = statSync(fullPath);
-
-      if (stat.isDirectory()) {
+      if (statSync(fullPath).isDirectory()) {
         traverse(fullPath);
       } else if (entry.endsWith('.vue') && /^[A-Z]/.test(entry)) {
         files.push(fullPath);
       }
     }
   }
-
   traverse(dir);
   return files;
 }
 
-/**
- * Main function
- */
-function main() {
+async function main() {
+  console.log('🔍 Building shared component manifest...');
+  const manifest = await buildManifest();
+
   console.log('🔍 Finding Vue components...');
   const componentFiles = findVueFiles(COMPONENTS_ROOT);
   console.log(`📦 Found ${componentFiles.length} components\n`);
 
-  // Ensure output directory exists
   try {
     mkdirSync(OUTPUT_DIR, { recursive: true });
-  } catch (err) {
-    // Directory already exists
+  } catch {
+    // exists
   }
 
   let generated = 0;
@@ -471,19 +237,17 @@ function main() {
   for (const filePath of componentFiles) {
     const componentName = getComponentName(filePath);
     const category = getComponentCategory(filePath);
-    const astro = generateAstro(filePath);
+    const component = manifest.byAbsPath.get(filePath);
+    const astro = component ? generateAstro(filePath, component) : null;
 
     if (astro) {
-      // Organize by category: base/ and extended/ subdirectories
       const categoryDir = join(OUTPUT_DIR, category);
       try {
         mkdirSync(categoryDir, { recursive: true });
-      } catch (err) {
-        // Directory already exists
+      } catch {
+        // exists
       }
-
-      const outputPath = join(categoryDir, `${componentName}.mdx`);
-      writeFileSync(outputPath, astro, 'utf-8');
+      writeFileSync(join(categoryDir, `${componentName}.mdx`), astro, 'utf-8');
       console.log(`✅ Generated docs for ${componentName} (${category})`);
       generated++;
     } else {
@@ -494,4 +258,7 @@ function main() {
   console.log(`\n✨ Done! Generated ${generated} docs, skipped ${skipped}`);
 }
 
-main();
+main().catch((error) => {
+  console.error('❌ Error generating component docs:', error);
+  process.exit(1);
+});

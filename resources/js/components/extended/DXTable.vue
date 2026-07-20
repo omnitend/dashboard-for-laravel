@@ -266,6 +266,7 @@ import { api } from "../../utils/api";
 import pluralize from "pluralize";
 import { useResourceEditor } from "../../composables/useResourceEditor";
 import { getByPath } from "../../utils/objectPath";
+import type { FieldDefinition } from "../../types";
 import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
 import DCol from "../base/DCol.vue";
@@ -415,6 +416,27 @@ export interface EditTab {
     lazy?: boolean;
 }
 
+/**
+ * Discriminated data-source descriptor (#130). The additive, type-safe
+ * replacement for the legacy `items` / `provider` / `apiUrl` / `inertiaUrl` /
+ * `clientSide` prop matrix, in which every prop was independently optional and
+ * the mode was inferred by precedence — so invalid combinations compiled and
+ * some were silently ignored.
+ *
+ * Pass ONE `source`: the mode is explicit and its required companion prop is
+ * enforced by the compiler (`{ mode: 'provider' }` without a `provider` won't
+ * type-check). The legacy props still work and take over when `source` is
+ * omitted; a future major removes them with a codemod (#130 Phase 3).
+ *
+ * `apiAdapter` (transport translation) and `pagination` (server-supplied page
+ * metadata) stay sibling props — they're orthogonal to which mode is active.
+ */
+export type DXTableSource<TItem = any> =
+    | { mode: 'client'; items: TItem[] }
+    | { mode: 'provider'; provider: BTableProvider<TItem> }
+    | { mode: 'api'; url: string }
+    | { mode: 'inertia'; items: TItem[]; url?: string };
+
 export interface Props<TItem = any> {
     /** Table title */
     title?: string;
@@ -434,6 +456,14 @@ export interface Props<TItem = any> {
     /** Adapts the built-in provider's request params / response body to a
      *  backend convention that differs from dfl's (see DXTableApiAdapter). */
     apiAdapter?: DXTableApiAdapter;
+
+    /**
+     * Discriminated data-source (#130) — the type-safe alternative to the
+     * legacy `items` / `provider` / `apiUrl` / `inertiaUrl` / `clientSide`
+     * props. When set it WINS over those props; when omitted, the legacy props
+     * apply unchanged. See `DXTableSource`.
+     */
+    source?: DXTableSource<TItem>;
 
     /** Table field definitions */
     fields: TableField[];
@@ -526,8 +556,12 @@ export interface Props<TItem = any> {
     card?: boolean;
 
     // Edit Modal Props
-    /** Form field definitions for edit modal (if provided, enables edit on row click) */
-    editFields?: any[]; // FieldDefinition[] - using any to avoid circular import
+    /**
+     * Form field definitions for edit modal (if provided, enables edit on row
+     * click). `import type` is erased at compile time, so this creates no
+     * runtime import cycle (#131).
+     */
+    editFields?: FieldDefinition[];
 
     /** Tab definitions for organizing edit modal content */
     editTabs?: EditTab[];
@@ -704,15 +738,58 @@ const emit = defineEmits<{
     'update:busy': [busy: boolean];
 }>();
 
-// Mode detection
-const isProviderMode = computed(() => !props.clientSide && (!!props.provider || !!props.apiUrl));
-const isInertiaMode = computed(() => !props.clientSide && !props.provider && !props.apiUrl && !!props.items);
-const isClientSideMode = computed(() => props.clientSide === true && !!props.items);
-const hasInertiaUrl = computed(() => !!props.inertiaUrl);
+// Effective data-source values (#130). Prefer an explicit `source` prop, else
+// fall back to the legacy `items`/`provider`/`apiUrl`/`inertiaUrl`/`clientSide`
+// props. Every read below (mode detection, provider, client-side pipeline,
+// inertia navigation) goes through these, so both APIs drive identical logic.
+const resolvedClientSide = computed(() =>
+    props.source ? props.source.mode === 'client' : props.clientSide === true,
+);
+const resolvedItems = computed<T[] | undefined>(() => {
+    if (props.source) {
+        return props.source.mode === 'client' || props.source.mode === 'inertia'
+            ? props.source.items
+            : undefined;
+    }
+    return props.items;
+});
+const resolvedProvider = computed<BTableProvider<T> | undefined>(() =>
+    props.source
+        ? props.source.mode === 'provider'
+            ? props.source.provider
+            : undefined
+        : props.provider,
+);
+const resolvedApiUrl = computed<string | undefined>(() =>
+    props.source
+        ? props.source.mode === 'api'
+            ? props.source.url
+            : undefined
+        : props.apiUrl,
+);
+const resolvedInertiaUrl = computed<string | undefined>(() =>
+    props.source
+        ? props.source.mode === 'inertia'
+            ? props.source.url
+            : undefined
+        : props.inertiaUrl,
+);
 
-// Warn about invalid prop combinations in client-side mode
-if (props.clientSide && (props.apiUrl || props.inertiaUrl)) {
-    console.warn('[DXTable] clientSide mode ignores apiUrl and inertiaUrl props. Data is processed locally from items.');
+// Mode detection
+const isProviderMode = computed(() => !resolvedClientSide.value && (!!resolvedProvider.value || !!resolvedApiUrl.value));
+const isInertiaMode = computed(() => !resolvedClientSide.value && !resolvedProvider.value && !resolvedApiUrl.value && !!resolvedItems.value);
+const isClientSideMode = computed(() => resolvedClientSide.value && !!resolvedItems.value);
+const hasInertiaUrl = computed(() => !!resolvedInertiaUrl.value);
+
+// Warn about invalid LEGACY prop combinations (a `source` prop makes these
+// impossible at the type level, so it's exempt). #130: `clientSide + provider`
+// was previously uncovered by this guard.
+if (
+    !props.source &&
+    props.clientSide &&
+    (props.provider || props.apiUrl || props.inertiaUrl)
+) {
+    console.warn('[DXTable] clientSide mode ignores provider, apiUrl and inertiaUrl props. Data is processed locally from items.');
 }
 
 // Computed for effective busy state (provider mode uses 'busy', inertia uses 'loading')
@@ -835,7 +912,7 @@ const paginationWasProvided = 'pagination' in (instance?.vnode.props ?? {});
 
 const providerPagination = computed<PaginationData | null>(() => {
     if (apiPaginationMeta.value) return apiPaginationMeta.value;
-    if (props.provider && paginationWasProvided && props.pagination) {
+    if (resolvedProvider.value && paginationWasProvided && props.pagination) {
         return props.pagination;
     }
     return null;
@@ -850,7 +927,7 @@ const providerPagination = computed<PaginationData | null>(() => {
 const providerHasRun = ref(false);
 let warnedAboutProviderPagination = false;
 watch(
-    () => [props.provider, props.showPagination, providerPagination.value, providerHasRun.value] as const,
+    () => [resolvedProvider.value, props.showPagination, providerPagination.value, providerHasRun.value] as const,
     ([provider, showPagination, pagination, hasRun]) => {
         if (warnedAboutProviderPagination || !hasRun) return;
         if (provider && showPagination && !pagination) {
@@ -873,16 +950,16 @@ const clientSideCurrentPage = ref(1);
 
 // Client-side filtered items
 const clientSideFilteredItems = computed<T[]>(() => {
-    if (!isClientSideMode.value || !props.items) return [];
+    if (!isClientSideMode.value || !resolvedItems.value) return [];
 
     const filters = effectiveFilters.value;
     const filterKeys = Object.keys(filters).filter(key => isActiveFilterValue(filters[key]));
 
     if (filterKeys.length === 0) {
-        return props.items;
+        return resolvedItems.value;
     }
 
-    return props.items.filter(item => {
+    return resolvedItems.value.filter(item => {
         return filterKeys.every(key => {
             // Resolve by the FILTER key, which may differ from the column's key.
             const field = props.fields.find(f => filterKeyFor(f) === key);
@@ -1151,7 +1228,7 @@ const getFieldFilterOptions = (field: TableField): FilterOption[] => {
 // Returns null when there is nothing stable to key on — every read and write
 // guards on that, so a keyless table simply doesn't persist.
 const perPageStorageKey = computed<string | null>(() => {
-    const url = props.inertiaUrl || props.apiUrl;
+    const url = resolvedInertiaUrl.value || resolvedApiUrl.value;
     if (!url) return null;
     return `dxtable-perpage-${url.replace(/\//g, '-')}`;
 });
@@ -1232,7 +1309,7 @@ watch(() => JSON.stringify(props.filters ?? null), () => {
     } else if (hasInertiaUrl.value && isInertiaMode.value && router) {
         // Inertia mode - trigger navigation with new filters
         router.get(
-            props.inertiaUrl!,
+            resolvedInertiaUrl.value!,
             {
                 page: 1, // Reset to first page when filters change
                 filters: props.filters,
@@ -1248,7 +1325,7 @@ watch(() => JSON.stringify(props.filters ?? null), () => {
 // of BTable's provider context, so an api-url-only change doesn't re-invoke the
 // provider on its own — without this the table keeps showing the previous url's
 // rows until some other trigger (sort, per-page, create/edit/delete) fires.
-watch(() => props.apiUrl, (newUrl, oldUrl) => {
+watch(() => resolvedApiUrl.value, (newUrl, oldUrl) => {
     if (newUrl !== oldUrl && isProviderMode.value) {
         // Clear cached filter values and pagination when API endpoint changes.
         // The next provider call will request fresh filter values.
@@ -1330,7 +1407,7 @@ const clientSidePaginatedItems = computed<T[]>(() => {
 // Client-side pagination metadata
 const clientSidePagination = computed<PaginationData>(() => {
     const total = clientSideFilteredItems.value.length;
-    const totalUnfiltered = props.items?.length || 0;
+    const totalUnfiltered = resolvedItems.value?.length || 0;
     const perPage = effectivePerPage.value;
     const lastPage = clientSideLastPage.value;
 
@@ -1426,7 +1503,7 @@ const sortParams = (sortBy: readonly BTableSortBy[] | undefined) => {
 // catch: `effectiveProvider` wraps every provider (including a consumer's own)
 // in one error handler, so no provider can fail silently.
 const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProviderContext>) => {
-    if (!props.apiUrl) return [];
+    if (!resolvedApiUrl.value) return [];
 
     const params: any = {
         page: context.currentPage,
@@ -1448,7 +1525,7 @@ const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProvi
         ? props.apiAdapter.request(params)
         : params;
 
-    const response = await api.get<any>(props.apiUrl, wireParams);
+    const response = await api.get<any>(resolvedApiUrl.value, wireParams);
 
     // Adapt a foreign response envelope back into the dfl shape. Gets the
     // ORIGINAL dfl-shape params (page/perPage/…) for context, since a foreign
@@ -1486,7 +1563,7 @@ const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProvi
  * error handling lived inside the internal one, so it never covered them.
  */
 const wrappedProvider: BTableProvider<T> = async (context: Readonly<BTableProviderContext>) => {
-    const provider = props.provider || (props.apiUrl ? internalProvider : undefined);
+    const provider = resolvedProvider.value || (resolvedApiUrl.value ? internalProvider : undefined);
     if (!provider) return [];
 
     apiError.value = null;
@@ -1512,14 +1589,14 @@ const wrappedProvider: BTableProvider<T> = async (context: Readonly<BTableProvid
 // function changes, which would double every request that the explicit apiUrl
 // watcher already refetches (#82).
 const effectiveProvider = computed<BTableProvider<T> | undefined>(() =>
-    props.provider || props.apiUrl ? wrappedProvider : undefined,
+    resolvedProvider.value || resolvedApiUrl.value ? wrappedProvider : undefined,
 );
 
 const handlePageChange = (page: number) => {
     // If inertiaUrl provided, handle navigation automatically
     if (hasInertiaUrl.value && isInertiaMode.value && router) {
         router.get(
-            props.inertiaUrl!,
+            resolvedInertiaUrl.value!,
             {
                 page,
                 filters: effectiveFilters.value,
@@ -1574,7 +1651,7 @@ const tableModeBindings = computed<Record<string, unknown>>(() => {
         return { items: clientSidePaginatedItems.value, noLocalSorting: true };
     }
     // inertia
-    return { items: props.items, noLocalSorting: true, busy: effectiveBusy.value };
+    return { items: resolvedItems.value, noLocalSorting: true, busy: effectiveBusy.value };
 });
 
 /*
@@ -1627,7 +1704,7 @@ const handleSortChange = (sortBy: BTableSortBy[]) => {
         // The cleared state has a key but no order — `sortParams` sends nothing
         // for it, rather than inventing an ascending sort the user didn't ask for.
         router.get(
-            props.inertiaUrl!,
+            resolvedInertiaUrl.value!,
             {
                 page: props.pagination?.current_page || 1,
                 filters: effectiveFilters.value,
@@ -1684,7 +1761,7 @@ const handlePerPageChange = (newPerPage: number | string | null | (number | stri
     // Handle navigation automatically
     if (hasInertiaUrl.value && isInertiaMode.value && router) {
         router.get(
-            props.inertiaUrl!,
+            resolvedInertiaUrl.value!,
             {
                 page: 1, // Reset to first page when changing perPage
                 filters: effectiveFilters.value,
@@ -1737,7 +1814,7 @@ const handleFilterChange = (fieldKey: string, value: string | string[]) => {
         // Handle Inertia navigation automatically if URL provided
         if (hasInertiaUrl.value && isInertiaMode.value && router) {
             router.get(
-                props.inertiaUrl!,
+                resolvedInertiaUrl.value!,
                 {
                     page: 1, // Reset to first page when filtering
                     filters: newFilters,
@@ -1769,7 +1846,7 @@ const refresh = () => {
         (tableRef.value as any).refresh();
     }
     // Inertia mode: reload current page to refresh data
-    else if (isInertiaMode.value && props.inertiaUrl && router) {
+    else if (isInertiaMode.value && resolvedInertiaUrl.value && router) {
         router.reload();
     }
 };

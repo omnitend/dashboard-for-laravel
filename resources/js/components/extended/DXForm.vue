@@ -177,6 +177,10 @@ import DXFormField from "./DXFormField.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { DefineFormReturn } from "../../composables/defineForm";
 import type { FieldDefinition, FormTab, LabelCols, MaybeFn } from "../../types";
+import {
+    resolvePredicate as resolvePredicateFor,
+    isFieldVisible as isFieldVisibleFor,
+} from "../../utils/formSchema";
 
 interface Props {
     /**
@@ -303,12 +307,14 @@ const model = computed(() => ({
     ...resolvedForm.value.data,
 }));
 
+// Thin wrappers binding the shared formSchema predicates to this form's live
+// model (context + form data), so field/tab visibility follows the one rule
+// every renderer shares (#134).
 function resolvePredicate(
     when: MaybeFn<boolean> | undefined,
     fallback: boolean,
 ): boolean {
-    if (when === undefined) return fallback;
-    return typeof when === "function" ? when(model.value) : when;
+    return resolvePredicateFor(when, model.value, fallback);
 }
 
 /** Resolve a tab's (possibly function-valued) label against the live model. */
@@ -319,9 +325,7 @@ function resolveTabLabel(tab: FormTab): string {
 }
 
 function isFieldVisible(field: FieldDefinition): boolean {
-    const whenOk = resolvePredicate(field.when, true);
-    const showOk = field.show ? field.show() : true;
-    return whenOk && showOk;
+    return isFieldVisibleFor(field, model.value);
 }
 
 // ————————————————— tabs
