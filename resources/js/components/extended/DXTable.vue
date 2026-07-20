@@ -49,7 +49,7 @@
                     <DTable
                         v-else-if="isProviderMode || isClientSideMode || isInertiaMode"
                         ref="tableRef"
-                        :key="tableSlotSignature($slots)"
+                        :key="activeMode + ':' + tableSlotSignature($slots)"
                         :fields="fields"
                         :sort-by="effectiveSortBy"
                         :multisort="false"
@@ -780,6 +780,22 @@ const isProviderMode = computed(() => !resolvedClientSide.value && (!!resolvedPr
 const isInertiaMode = computed(() => !resolvedClientSide.value && !resolvedProvider.value && !resolvedApiUrl.value && !!resolvedItems.value);
 const isClientSideMode = computed(() => resolvedClientSide.value && !!resolvedItems.value);
 const hasInertiaUrl = computed(() => !!resolvedInertiaUrl.value);
+
+// The active data-source mode, folded into the table's `:key` so a runtime
+// mode switch (e.g. `source` provider → client) REMOUNTS the DTable. bvn's
+// BTable caches its provider-fetched items internally and doesn't cleanly adopt
+// a fresh `:items` binding when the provider is removed — without a remount the
+// table shows "No items found" after switching to client/inertia mode. Stable
+// for a table that never changes mode, so it adds no spurious remounts.
+const activeMode = computed(() =>
+    isClientSideMode.value
+        ? 'client'
+        : isInertiaMode.value
+          ? 'inertia'
+          : isProviderMode.value
+            ? 'provider'
+            : 'empty',
+);
 
 // Warn about invalid LEGACY prop combinations (a `source` prop makes these
 // impossible at the type level, so it's exempt). #130: `clientSide + provider`
@@ -1588,14 +1604,24 @@ const internalProvider: BTableProvider<T> = async (context: Readonly<BTableProvi
  * a blank page to a user. A consumer's provider used to be the silent case: the
  * error handling lived inside the internal one, so it never covered them.
  */
+// Monotonic generation for provider calls. When a provider is swapped (or a
+// refetch supersedes an in-flight call), a still-pending older call that later
+// REJECTS must not publish its error over the newer call's rows — bvn already
+// discards a superseded call's rows, but `apiError` isn't otherwise guarded.
+let providerGeneration = 0;
+
 const wrappedProvider: BTableProvider<T> = async (context: Readonly<BTableProviderContext>) => {
     const provider = resolvedProvider.value || (resolvedApiUrl.value ? internalProvider : undefined);
     if (!provider) return [];
 
+    const generation = ++providerGeneration;
     apiError.value = null;
     try {
         return await provider(context);
     } catch (error: any) {
+        // Superseded by a newer provider call — its result/error owns the table
+        // now, so drop this stale rejection silently.
+        if (generation !== providerGeneration) return [];
         // eslint-disable-next-line no-console
         console.error('DXTable: the data provider failed', error);
         // `error.message` covers the internal provider's ApiError; the

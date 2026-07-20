@@ -55,6 +55,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`DXTable` handles a runtime data-source mode switch.** Switching `source`
+  (or the legacy props) between provider/api and client/inertia at runtime now
+  remounts the table (the active mode is part of its key), so the new rows
+  appear instead of bvn's cached "No items found" from the previous provider.
+- **A superseded provider's late failure no longer shows a stale error.** If a
+  provider is swapped and the old, still-pending call rejects after the new one
+  rendered, its error is dropped (generation token) instead of appearing over
+  the new rows.
 - **`DXTable` refetches when its `provider` function is swapped** (`:provider`
   or `source.provider` reassigned). Previously only an `apiUrl` change forced a
   refetch — the provider binding's identity is deliberately stable (#82), so a

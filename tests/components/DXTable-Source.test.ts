@@ -107,7 +107,7 @@ describe('DXTable source prop (#130)', () => {
     expect(rowNames(container)).toEqual(['FromB']);
   });
 
-  it('hides a stale provider error after switching to client mode', async () => {
+  it('switches from a failed provider to client mode: error gone, local rows shown', async () => {
     const provider = vi.fn().mockRejectedValue(new Error('boom'));
     const { container, rerender } = render(DXTable, {
       props: { fields: FIELDS, provider },
@@ -115,14 +115,39 @@ describe('DXTable source prop (#130)', () => {
     await wait(80);
     expect(container.querySelector('.alert-danger')).toBeTruthy();
 
-    // Switch to client mode: the provider error is now stale and must not
-    // render (it's gated on isProviderMode). The table itself stays mounted —
-    // asserting a live table guards against a vacuous "no alert because the
-    // whole thing unmounted" pass.
+    // Switch to client mode: the stale provider error must not render (gated on
+    // isProviderMode) AND the local rows must appear (the mode is in the table
+    // `:key`, so the DTable remounts instead of clinging to bvn's cached empty
+    // provider result — otherwise it shows "No items found").
     await rerender({ fields: FIELDS, source: { mode: 'client', items: ITEMS } });
-    await wait(50);
+    await wait(80);
     expect(container.querySelector('.alert-danger')).toBeFalsy();
-    expect(container.querySelector('table')).toBeTruthy();
+    expect(rowNames(container)).toContain('Acme');
+  });
+
+  it('a superseded provider that rejects late does not clobber the newer rows', async () => {
+    // Provider A hangs then rejects; provider B resolves first. A's late
+    // rejection must not publish an error over B's rendered rows (generation
+    // token in wrappedProvider).
+    let rejectA!: (e: Error) => void;
+    const providerA = vi.fn(
+      () => new Promise<any[]>((_resolve, reject) => { rejectA = reject; }),
+    );
+    const providerB = vi.fn().mockResolvedValue([{ id: 2, name: 'FromB' }]);
+
+    const { container, rerender } = render(DXTable, {
+      props: { fields: FIELDS, provider: providerA },
+    });
+    await wait(40);
+    await rerender({ fields: FIELDS, provider: providerB });
+    await wait(60);
+    expect(rowNames(container)).toEqual(['FromB']);
+
+    // Now A rejects, superseded — must be ignored.
+    rejectA(new Error('A failed late'));
+    await wait(40);
+    expect(container.querySelector('.alert-danger')).toBeFalsy();
+    expect(rowNames(container)).toEqual(['FromB']);
   });
 
   it('legacy props still work unchanged when source is omitted', async () => {

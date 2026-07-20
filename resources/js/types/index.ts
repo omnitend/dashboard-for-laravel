@@ -519,9 +519,10 @@ export interface CheckboxFieldDef extends BaseFieldDef {
 }
 
 /** `checkbox-group` — multiple checkboxes; model is an array of values. */
-export interface CheckboxGroupFieldDef extends BaseFieldDef {
+export interface CheckboxGroupFieldDef
+    extends BaseFieldDef,
+        WithSelectableOptions {
     type: "checkbox-group";
-    options?: FieldOption[];
 }
 
 /** `switch` — a toggle with contextual on/off text and on-state colour. */
@@ -533,9 +534,10 @@ export interface SwitchFieldDef extends BaseFieldDef {
 }
 
 /** `switch-list` — a labelled toggle row per option; model is an array. */
-export interface SwitchListFieldDef extends BaseFieldDef {
+export interface SwitchListFieldDef
+    extends BaseFieldDef,
+        WithSelectableOptions {
     type: "switch-list";
-    options?: FieldOption[];
     switchVariant?: "success" | "neutral";
 }
 
