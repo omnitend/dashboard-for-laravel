@@ -486,8 +486,12 @@ which are exported; they exist only to keep `DXTable` factored (#123, #129):
   for all three data modes (provider / client-side / inertia), not copied per
   mode. `activePagination` + `handleActivePageChange` likewise drive one footer.
 - **`DXTablePagination.vue`** — the pager + per-page selector + info line (one
-  footer for all modes). Owns its own `:deep(.pagination…)` styles (a `:deep()`
-  in DXTable would not cross the boundary — see the BVN-styling note above).
+  footer for all modes). Since v0.32.0 the pager is a **custom windowed pager**
+  (#155, custard-style: «Previous / 1 2 … window … 44 45 / Next», client-computed
+  from current/last page), NOT bvn `BPagination` — it renders `DButton`s and owns
+  its `.dx-pager :deep(.btn)` styles (a `:deep()` in DXTable would not cross the
+  boundary — see the BVN-styling note above). `DPagination`/`BPagination` stays
+  exported but is no longer used by the table.
 - **`useResourceEditor.ts`** (composable) — the create/edit/delete concern:
   modal state, form seeding + visibility rules, the `showUrl` fetch, submission,
   toasts. Pure logic; it never touches the table's data/sort/filter/page state.
@@ -555,11 +559,17 @@ The library uses a **soft-first** semantic colour system built on the Omni Tend
 brand. Respect it when adding or styling components — don't reach for a loud
 solid fill by reflex.
 
-- **Emphasis comes from weight and place, not loudness.** Only two variants are
-  bold SOLID buttons: `primary` (the brand navy `#151e2d` fill + light text) and
-  `danger` (red). `secondary`/`success`/`warning`/`info` buttons are **soft**
-  (light same-hue tint + dark same-hue label). Tertiary actions use a `link`
-  variant restyled as a **ghost** (body colour, no underline).
+- **Emphasis comes from weight and place, not loudness.** Only **`primary`** is a
+  bold SOLID button (the brand navy `#151e2d` fill + light text) — one loud action
+  per screen. Every other variant, **including `danger`**, is **soft** (light
+  same-hue tint + dark same-hue label); a soft `.btn-danger`/"Delete" is a light
+  red (`#f8d4d4`/`#7a1a1a`). (Changed 2026-07-20 / v0.31.0 — danger was the second
+  solid; it and its off-hue plum soft became a same-hue soft red.) Tertiary
+  actions use a `link` variant restyled as a **ghost** (body colour, no underline).
+- **Switches** default to the filled-box style (`DXSwitch` / `DXField
+  type:'switch'`): the whole box is green when on (the success soft green) / light
+  red when off, with a neutral grey pill; `on-variant="neutral"` for mixed cases
+  (#158, v0.31.0).
 - **Status colours are soft** — badges, alerts, toasts all use the soft tint.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
   `primary`; a save's green reward belongs in a "Saved" toast, not the button.
