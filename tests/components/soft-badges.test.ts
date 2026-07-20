@@ -51,6 +51,37 @@ describe('semantic badges are all soft-tinted', () => {
   }
 });
 
+/**
+ * Soft-first is the default for `.text-bg-*` across the board, not just `.badge`
+ * (#158 follow-on). A stock indicator built as `.input-group-text.text-bg-success`
+ * must match the "current" `.badge.text-bg-success` green instead of Bootstrap's
+ * solid dark fill — so the soft tint applies to any element carrying the class.
+ * `.toast` is deliberately excluded (its own fainter mix drives `--bs-toast-bg`).
+ */
+const paintedRawStyle = async (className: string) => {
+  const screen = render({
+    render: () => h(BApp, {}, () => h('span', { class: className }, 'x')),
+  });
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const el = screen.container.querySelector('span') as HTMLElement;
+  const style = getComputedStyle(el);
+  return { background: style.backgroundColor, color: style.color };
+};
+
+describe('.text-bg-* is soft on any element, not only .badge', () => {
+  it('paints a non-badge .text-bg-success (e.g. input-group-text) as the soft badge green', async () => {
+    const style = await paintedRawStyle('input-group-text text-bg-success');
+    expect(style.background).toBe(rgb('#cdf9b2'));
+    expect(style.color).toBe(rgb('#203b0e'));
+  });
+
+  it('excludes .toast so its own fainter mix is not clobbered', async () => {
+    const style = await paintedRawStyle('toast text-bg-success');
+    // The broad soft rule must NOT paint a toast the full soft badge green.
+    expect(style.background).not.toBe(rgb('#cdf9b2'));
+  });
+});
+
 describe('buttons: bold solid only for primary/danger, soft for the rest', () => {
   it('primary button is the brand navy fill with light-brand text (solid)', async () => {
     const style = await paintedStyle(DButton, 'primary', '.btn');

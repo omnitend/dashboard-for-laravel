@@ -516,8 +516,15 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     --bs-btn-active-border-color: #{$emphasis};
   }
 
-  // Badge — soft tint. `!important` beats Bootstrap's `.text-bg-*` helper.
-  .badge.text-bg-#{$name} {
+  // `.text-bg-*` — soft tint, everywhere (not just `.badge`). Soft-first is the
+  // default across the board: a `.badge`, an `.input-group-text`, a chip or a
+  // small status bar built with `.text-bg-success` all get the same soft green
+  // as the badge, so a stock indicator can match a "current" badge without
+  // hardcoding the hue. `!important` beats Bootstrap's `.text-bg-*` helper
+  // (which sets its colours `!important` by design). `.toast` is excluded: it
+  // has its own soft handling (a fainter 50%-white mix via `--bs-toast-bg` for
+  // its large surface) and themed toasts don't carry `.text-bg-*` anyway.
+  .text-bg-#{$name}:not(.toast) {
     background-color: #{$soft-bg} !important;
     color: #{$soft-text} !important;
   }
