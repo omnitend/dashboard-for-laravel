@@ -1861,4 +1861,11 @@ defineExpose({
 :deep(tbody tr.dx-row-actionable:hover) {
     background-color: var(--bs-table-hover-bg);
 }
+
+/* Muted header titles (#157): in a data table the CONTENT is what matters —
+   near-black bold headers compete with it. Grey (still bold) keeps the
+   structure without the shout. Consumers re-louden via the token. */
+:deep(thead th) {
+    color: var(--dx-table-header-color, var(--bs-secondary-color));
+}
 </style>

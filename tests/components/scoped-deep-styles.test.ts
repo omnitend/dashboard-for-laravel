@@ -63,7 +63,7 @@ function ancestorHasScopeId(el: Element, scopeAttr: string): boolean {
 const KNOWN_DEEP_TARGETS: Record<string, string[]> = {
   'DAutocomplete.vue': ['.input-group', '.b-autocomplete-input-wrapper', '.b-autocomplete-trigger', '.b-autocomplete-clear.btn-close', '.input-group:focus-within', '.form-control', '.btn'],
   'DXSwitch.vue': ['.form-check', '.form-check-label', '.form-check-input'],
-  'DXTable.vue': ['tbody tr.dx-row-actionable'],
+  'DXTable.vue': ['tbody tr.dx-row-actionable', 'thead th'],
   // The windowed pager (#155) styles its DButtons via `.dx-pager :deep(.btn)`,
   // anchored on the component's own plain `.dx-pager` root so the scope-id has a
   // host. The DXTable DOM audit below exercises it — DXTablePagination renders as
@@ -149,6 +149,15 @@ describe('scoped :deep() DOM-level audit (#58)', () => {
     expect(
       ancestorHasScopeId(row!, scopeIdForSelector('tbody tr.dx-row-actionable')),
     ).toBe(true);
+
+    // Muted header titles (#157): the scope-id must reach the th AND the
+    // colour must actually differ from the body text — presence of the rule in
+    // the CSS alone would pass with the rule inert, which is the #53 trap.
+    const th = screen.container.querySelector('thead th');
+    expect(th).not.toBeNull();
+    expect(ancestorHasScopeId(th!, scopeIdForSelector('thead th'))).toBe(true);
+    const thColor = getComputedStyle(th!).color;
+    expect(thColor).not.toBe(getComputedStyle(document.body).color);
   });
 
   it('DXStatCard: .dx-stat-card :deep(.dx-stat-card__body)', async () => {

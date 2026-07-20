@@ -39,14 +39,14 @@
       <template v-for="(group, groupIndex) in navigation" :key="groupIndex">
         <div
           v-if="group.visible !== false"
-          class="nav-group mb-3"
+          class="nav-group"
           :class="{ 'nav-group-open': isGroupExpanded(groupIndex, group) }"
         >
           <!-- Collapsible group header (accordion toggle) -->
           <button
             v-if="isGroupToggle(group)"
             type="button"
-            class="nav-group-toggle text-uppercase small fw-semibold mb-2 px-2"
+            class="nav-group-toggle fw-semibold mb-2 px-2"
             :aria-expanded="isGroupExpanded(groupIndex, group)"
             :aria-controls="groupItemsId(groupIndex)"
             @click="toggleGroup(groupKey(group, groupIndex))"
@@ -75,7 +75,7 @@
           <!-- Static group label (non-collapsible, expanded sidebar) -->
           <div
             v-else-if="group.label && !collapsed"
-            class="nav-group-label text-uppercase small fw-semibold mb-2 px-2"
+            class="nav-group-label fw-semibold mb-2 px-2"
           >
             {{ group.label }}
           </div>
@@ -426,9 +426,15 @@ watch(activeGroupIndex, () => {
   overflow-x: hidden;
 }
 
+/* Dense rhythm (#95): greendragon's cutover values, adopted as the default —
+   natural-case headers at 0.875rem (no uppercase/letter-spacing), tight group
+   spacing. */
+.nav-group {
+  margin-bottom: 0.25rem;
+}
+
 .nav-group-label {
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
+  font-size: 0.875rem;
 }
 
 /* When collapsible groups are on, give the static (non-collapsible) group
@@ -437,7 +443,7 @@ watch(activeGroupIndex, () => {
 .sidebar-collapsible-groups .nav-group-label {
   display: flex;
   align-items: center;
-  min-height: 2.5rem;
+  min-height: 2rem;
 }
 
 /* Collapsible group toggle header */
@@ -446,14 +452,13 @@ watch(activeGroupIndex, () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  /* Comfortable, ergonomic click target (matches the nav links' vertical
-     rhythm). `px-2` on the element sets only left/right padding, so vertical
-     padding here does not fight Bootstrap's utility `!important`. */
-  min-height: 2.5rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
+  /* Comfortable click target at the dense rhythm (#95). `px-2` on the element
+     sets only left/right padding, so vertical padding here does not fight
+     Bootstrap's utility `!important`. */
+  min-height: 2rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  font-size: 0.875rem;
   background: transparent;
   border: 0;
   /* No `color` here on purpose: theme.scss sets `.nav-group-toggle` to
@@ -543,7 +548,7 @@ watch(activeGroupIndex, () => {
 }
 
 :deep(.nav-link) {
-  padding: 0.625rem 0.75rem;
+  padding: 0.3rem 0.75rem;
   transition: all 0.2s ease;
   text-decoration: none;
   white-space: nowrap;
@@ -562,7 +567,7 @@ watch(activeGroupIndex, () => {
 }
 
 .sidebar-collapsed :deep(.nav-link) {
-  padding: 0.625rem;
+  padding: 0.3rem 0.625rem;
 }
 
 /* Custom scrollbar (the nav is the scroll region) */

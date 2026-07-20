@@ -810,6 +810,17 @@ If you need custom behavior, omit `inertia-url` and handle events manually:
 />
 ```
 
+## Styling
+
+Header titles render **muted grey** (still bold) by default, so the table's
+content is the loud layer. Re-louden — or retheme — via the CSS token:
+
+```css
+:root {
+  --dx-table-header-color: var(--bs-body-color); /* back to near-black */
+}
+```
+
 ## TableField Interface
 
 Fields support the following properties:

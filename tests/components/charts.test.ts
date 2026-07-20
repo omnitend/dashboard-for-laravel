@@ -47,6 +47,44 @@ describe('chartTheme helpers', () => {
     expect(published).toEqual(EXPECTED_PALETTE);
   });
 
+  // Dark-surface remap (#145): same hue slots (the CVD-derived ORDER is
+  // load-bearing), lightness lifted so every step clears 3:1 on Bootstrap's
+  // dark body #212529. Validated with the same method as the light set —
+  // min adjacent CVD ΔE 15.1, min normal 25.3, contrast 5.67–10.23:1.
+  const EXPECTED_DARK_PALETTE = [
+    '#60a5fa', // blue
+    '#a3e635', // lime
+    '#a78bfa', // violet
+    '#2dd4bf', // teal
+    '#fb923c', // orange
+    '#22d3ee', // cyan
+    '#fbbf24', // amber
+    '#f472b6', // pink
+  ];
+
+  it('under data-bs-theme=dark the CSS remaps --dx-chart-* and getPalette follows', () => {
+    // Would this pass if the remap were missing? No — the vars would resolve
+    // to the light hexes and both assertions reject the light set.
+    document.documentElement.setAttribute('data-bs-theme', 'dark');
+    try {
+      const styles = getComputedStyle(document.documentElement);
+      const published = EXPECTED_DARK_PALETTE.map(
+        (_, i) => styles.getPropertyValue(`--dx-chart-${i + 1}`).trim(),
+      );
+      expect(published).toEqual(EXPECTED_DARK_PALETTE);
+      expect(getPalette()).toEqual(EXPECTED_DARK_PALETTE);
+    } finally {
+      document.documentElement.removeAttribute('data-bs-theme');
+    }
+  });
+
+  it('the dark Sass list keeps the hue-slot order of the light list', () => {
+    const darkLine = themeScssSource.match(/\$dx-chart-palette-dark:\s*\(([^)]*)\)/);
+    expect(darkLine).not.toBeNull();
+    const scssHexes = darkLine![1].match(/#[0-9a-fA-F]{3,8}/g);
+    expect(scssHexes).toEqual(EXPECTED_DARK_PALETTE);
+  });
+
   it('chartTheme fallbacks match theme.scss $dx-chart-palette', () => {
     // The TS fallbacks only ever run on the SSR/no-CSS path, which no browser
     // test exercises — so drift there is invisible to the two tests above.

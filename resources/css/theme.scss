@@ -543,6 +543,19 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     --bs-alert-link-color: #{$emphasis};
   }
 
+  // Progress bars — large FILLS use the vivid `solid-bg`, not the dark
+  // emphasis Bootstrap wires into `.bg-*` (#154). A big solid block of the
+  // emphasis olive reads muddy and clashes with the soft badge green; the
+  // vivid fill is the same family as the switch-ON colour, so badge + switch +
+  // bar read as one system. Only success and warning actually change hex
+  // (danger/info's solid IS their emphasis). The variant-less default bar
+  // stays `$progress-bar-bg` (brand navy). `!important` beats the `.bg-*`
+  // utility, which sets its colour `!important` by design.
+  .progress-bar.bg-#{$name} {
+    background-color: #{$solid-bg} !important;
+    color: #{$solid-text};
+  }
+
   // `.text-#{$name}` and `.link-#{$name}` need no override: each variant's base
   // colour IS its emphasis shade, so Bootstrap already renders them legible.
 }
@@ -559,6 +572,10 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     --dx-#{$name}-solid-bg: #{map.get($v, "solid-bg")};
     --dx-#{$name}-emphasis: #{map.get($v, "emphasis")};
   }
+
+  // DXTable header titles: muted by default (#157) so the table's CONTENT is
+  // the loud layer. Override to re-louden (e.g. `var(--bs-body-color)`).
+  --dx-table-header-color: var(--bs-secondary-color);
 }
 
 // primary is near-black navy, so Bootstrap's darken-on-hover is imperceptible —
@@ -692,9 +709,26 @@ $dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cd
 // fallbacks for SSR / missing-CSS cases — keep the two lists in sync).
 $dx-chart-palette: (#2563eb, #65a30d, #7c3aed, #0d9488, #ea580c, #0891b2, #d97706, #db2777);
 
+// Dark-surface remap (#145). SAME hue slots — the CVD-derived order above is
+// load-bearing, so only lightness moves: each hue lifted into the dark band so
+// every step clears the 3:1 non-text guideline on Bootstrap's dark body
+// (#212529), where two of the light steps dipped below. Validated with the
+// same method as the light set (OKLab ΔE ×100, Viénot protan/deutan): min
+// adjacent CVD ΔE 15.1 (light set: 13.8), min normal ΔE 25.3, contrast
+// 5.67–10.23:1 on #212529. Swapping a step needs that validation re-run.
+// getPalette() reads the CSS variables live, so charts follow the theme with
+// no JS change; the TS fallbacks stay the light set (SSR/no-CSS default).
+$dx-chart-palette-dark: (#60a5fa, #a3e635, #a78bfa, #2dd4bf, #fb923c, #22d3ee, #fbbf24, #f472b6);
+
 :root {
   @for $i from 1 through list.length($dx-chart-palette) {
     --dx-chart-#{$i}: #{list.nth($dx-chart-palette, $i)};
+  }
+}
+
+[data-bs-theme="dark"] {
+  @for $i from 1 through list.length($dx-chart-palette-dark) {
+    --dx-chart-#{$i}: #{list.nth($dx-chart-palette-dark, $i)};
   }
 }
 

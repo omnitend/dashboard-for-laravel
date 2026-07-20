@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Progress-bar fills use each variant's vivid solid, not the dark emphasis
+  shade** (#154). `.progress-bar.bg-success` is now the switch-ON lime
+  (`#84cc16`, was the dark olive `#4d7c0f`) and `.bg-warning` the bright amber
+  (`#f59e0b`, was `#b45309`) — so a success bar, badge, and switch read as one
+  green family. `danger`/`info` fills are unchanged (their solid *is* their
+  emphasis), and the variant-less default bar stays the brand navy. **Visible
+  change** on any coloured progress bar.
+- **Sidebar nav is denser, with natural-case group headers** (#95). Group
+  headers drop the all-caps treatment (now natural case at `0.875rem`), group
+  spacing tightens (`0.25rem` between groups, `2rem` header rows), and nav
+  links use `0.3rem` vertical padding — the values Omni Tend's cutover work
+  settled on. **Visible change** for every `DXDashboardSidebar`; apps that
+  overrode these with `!important` can delete those overrides.
+- **`DXTable` header titles are muted grey by default** (#157) — still bold,
+  but no longer competing with the table's content. Retheme via the new
+  `--dx-table-header-color` token (set it to `var(--bs-body-color)` to
+  restore the old near-black).
+
+### Added
+
+- **Dark-surface chart palette** (#145). Under `data-bs-theme="dark"` the
+  theme remaps `--dx-chart-1..8` to lighter same-hue steps validated for the
+  dark body (`#212529`): every step ≥ 5.6:1 contrast (the light palette dipped
+  to ~2.7:1 there), hue order preserved (it encodes the CVD separation), min
+  adjacent CVD ΔE 15.1 — validated with the same OKLab/protan/deutan method
+  as the light set. Charts follow the theme automatically; no JS change.
+
 ### Removed
 
 - **axios is no longer a peer dependency** (#132) — the main entry no longer

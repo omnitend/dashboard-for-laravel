@@ -571,6 +571,12 @@ solid fill by reflex.
   red when off, with a neutral grey pill; `on-variant="neutral"` for mixed cases
   (#158, v0.31.0).
 - **Status colours are soft** — badges, alerts, toasts all use the soft tint.
+- **Large FILLS use the vivid `solid-bg`, not the emphasis shade** (#154):
+  `.progress-bar.bg-success` is the switch-ON lime `#84cc16`, not the dark
+  olive emphasis. Emphasis shades stay for outlines/links/text.
+- **DXTable header titles are muted grey** by default (#157), token
+  `--dx-table-header-color`. Sidebar nav is dense with natural-case group
+  headers since #95 (0.25rem group gap, 0.875rem headers, 0.3rem link padding).
 - **`success`/green means a positive _outcome_, not "save".** The main action is
   `primary`; a save's green reward belongs in a "Saved" toast, not the button.
 - **Outline buttons / coloured links / `.text-*`** use each variant's *emphasis*
@@ -592,7 +598,11 @@ solid fill by reflex.
   validation (dataviz-skill `validate_palette.js`). Sync between the Sass
   list, the TS fallbacks, and the test expectation is enforced by
   `tests/components/charts.test.ts` (it parses the Sass source). The palette
-  cycles after 8 series. Related: `release.sh` regenerates the AI docs
+  cycles after 8 series. Under `data-bs-theme="dark"` the same slots remap to
+  `$dx-chart-palette-dark` (#145) — same hue ORDER (it encodes the CVD
+  separation), lightness lifted for the dark body; validated min adjacent CVD
+  ΔE 15.1, all ≥5.6:1 on `#212529`. Swapping a dark step needs the validation
+  re-run, same as the light set. Related: `release.sh` regenerates the AI docs
   (`docs:generate:ai`) before publish because `api-reference.json`/`llms.txt`
   are **gitignored but listed in package.json `files`** — without the regen,
   publish ships whatever stale copy sits on disk.

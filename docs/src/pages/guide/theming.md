@@ -20,10 +20,11 @@ Emphasis comes from **weight and place, not loudness**. Most dashboards drown
 their one important action in a sea of saturated buttons; this theme inverts
 that:
 
-- **Only two variants are bold solid buttons**: `primary` (the brand navy) and
-  `danger` (red, for destructive actions). Everything else stays quiet.
-- **`secondary` / `success` / `warning` / `info` buttons are _soft_** — a light
-  same-hue tint background with a dark same-hue label.
+- **Only `primary` is a bold solid button** (the brand navy) — one loud action
+  per screen. Everything else stays quiet.
+- **`secondary` / `success` / `danger` / `warning` / `info` buttons are
+  _soft_** — a light same-hue tint background with a dark same-hue label. A
+  soft light-red "Delete" still reads as danger without a heavy fill.
 - **Tertiary actions are ghosts** — the `link` variant is restyled as a quiet
   button: body-colour text, no underline, a faint hover surface.
 - **All status colour is soft.** Badges, alerts, and toasts use light tints,
@@ -37,7 +38,8 @@ that:
   reward belongs in a "Saved ✓" toast or badge after it succeeds, not on the
   button itself.
 - **`danger` is for destructive actions** (delete, remove) and error states.
-  It keeps the solid red fill because the convention is load-bearing.
+  Since v0.31.0 it renders soft (light red + dark-red label), matching the
+  rest of the system; the emphasis red still carries outlines and links.
 - **Links are info-blue** (`#2563eb`), independent of the near-black brand
   primary — a navy link would read as bold text, not a link.
 
@@ -48,7 +50,7 @@ Each of the six variants carries three colour roles, defined in one Sass map
 
 | Token | Drives |
 |---|---|
-| **solid** (bg + text) | `.btn-primary` / `.btn-danger` fill and label |
+| **solid** (bg + text) | The `.btn-primary` fill and label, the switch-ON green, and large fills — `.progress-bar.bg-*` uses each variant's vivid solid, not the dark emphasis |
 | **soft** (bg + text) | Soft buttons (`.btn-secondary` etc.), all badges (`.text-bg-*`), alerts (`.alert-*`), toast tints |
 | **emphasis** | Outline buttons (`.btn-outline-*`), coloured links (`.link-*`), text utilities (`.text-*`) — the shade that reads on a white background |
 
@@ -77,7 +79,7 @@ All colour pairs are WCAG AA verified.
 | `primary` | `#151e2d` | `#e9f0f8` | `#e9f0f8` | `#151e2d` | `#151e2d` | **solid** |
 | `secondary` | `#475569` | `#e6ebf2` | `#e6ebf2` | `#29374a` | `#475569` | soft |
 | `success` | `#84cc16` | `#203b0e` | `#cdf9b2` | `#203b0e` | `#4d7c0f` | soft |
-| `danger` | `#dc2626` | `#ffffff` | `#f5dff1` | `#59194a` | `#dc2626` | **solid** |
+| `danger` | `#dc2626` | `#ffffff` | `#f8d4d4` | `#7a1a1a` | `#dc2626` | soft |
 | `warning` | `#f59e0b` | `#512d05` | `#fce5c4` | `#512d05` | `#b45309` | soft |
 | `info` | `#2563eb` | `#eef4ff` | `#deebff` | `#12376c` | `#2563eb` | soft |
 
@@ -89,7 +91,10 @@ Data-viz gets its own palette — eight vivid hues published as `--dx-chart-1` �
 `--dx-chart-8`, separate from the semantic UI colours (whose emphasis shades are
 too muted for series, and whose status meanings shouldn't leak into "series 2").
 The chart components read these variables at runtime, so overriding them
-rethemes every chart. See the [Charts documentation](/components/extended/DXChart#chart-palette)
+rethemes every chart. Under `data-bs-theme="dark"` the theme remaps the same
+eight slots to lighter, dark-surface-validated steps (same hue order — it
+encodes colour-vision-deficiency separation), so charts follow the theme with
+no configuration. See the [Charts documentation](/components/extended/DXChart#chart-palette)
 for the full palette and rationale.
 
 ## Customising the theme

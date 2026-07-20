@@ -107,3 +107,33 @@ describe('buttons: bold solid ONLY for primary, soft for the rest (incl. danger)
     expect(style.color).toBe(rgb('#203b0e'));
   });
 });
+
+describe('progress-bar fills use the vivid solid-bg, not the dark emphasis (#154)', () => {
+  const paintedBar = async (variantClass: string) => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h('div', { class: 'progress' }, [
+            h('div', { class: `progress-bar ${variantClass}`, style: 'width: 50%' }),
+          ]),
+        ),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const bar = screen.container.querySelector('.progress-bar') as HTMLElement;
+    return getComputedStyle(bar).backgroundColor;
+  };
+
+  it('bg-success fills as the vivid lime (the switch-ON green), not the dark olive', async () => {
+    // Would this pass if the bug were present? No — Bootstrap's .bg-success
+    // paints the $success emphasis #4d7c0f, which this rejects.
+    expect(await paintedBar('bg-success')).toBe(rgb('#84cc16'));
+  });
+
+  it('bg-warning fills as the bright amber solid, not the dark amber emphasis', async () => {
+    expect(await paintedBar('bg-warning')).toBe(rgb('#f59e0b'));
+  });
+
+  it('the default (variant-less) bar stays the brand navy', async () => {
+    expect(await paintedBar('')).toBe(rgb('#151e2d'));
+  });
+});
