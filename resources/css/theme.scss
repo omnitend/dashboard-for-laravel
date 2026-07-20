@@ -599,14 +599,17 @@ $dx-switch-thumb-white: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/
 // A red thumb reads better than white on the light-red OFF track.
 $dx-switch-thumb-red: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23dc2626'/%3e%3c/svg%3e");
 
-// Switch fill tokens — a punchier green than the soft badge tint (matches the
-// house filled-switch control) and a LIGHT red (not the plum danger-soft) for
-// off. Derived from the base success/danger so one edit moves them together.
-// Used by the DXSwitch filled box; the light-red OFF track below reuses them too.
+// Switch fill tokens. The ON fill is the SAME soft green as the success
+// badge/button (its `soft-bg`), so a switch and a success badge read as one
+// green — not a separate, punchier lime. OFF is a LIGHT red (a light tint of the
+// danger solid, NOT the plum `danger` soft — a switch off wants to read "red /
+// stop", which the plum status tint doesn't). Derived from the base tokens so
+// one edit moves them. Used by the DXSwitch filled box; the OFF track reuses them.
+$dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cdf9b2
 :root {
-  --dx-switch-on-bg: #{color.mix($dx-switch-on, #fff, 50%)};
-  --dx-switch-on-well: #{color.mix($dx-switch-on, #fff, 30%)};
-  --dx-switch-on-line: #{color.mix($dx-switch-on, #fff, 15%)};
+  --dx-switch-on-bg: #{$dx-switch-on-soft};
+  --dx-switch-on-well: #{color.mix($dx-switch-on-soft, #fff, 55%)};
+  --dx-switch-on-line: #{color.mix($dx-switch-on-soft, $dx-switch-on, 55%)};
   --dx-switch-on-ink: #{map.get(map.get($dx-variants, "success"), "soft-text")};
   --dx-switch-off-bg: #{color.mix($dx-switch-off, #fff, 20%)};
   --dx-switch-off-well: #{color.mix($dx-switch-off, #fff, 10%)};

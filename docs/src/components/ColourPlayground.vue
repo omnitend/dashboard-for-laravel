@@ -109,12 +109,14 @@ const mix = (a: string, b: string, weightA: number) => {
 const WHITE = '#ffffff';
 const BLACK = '#000000';
 const switchFills = computed(() => {
-  const on = variants.success.solidBg;
+  // ON fill IS the success soft green (matches the success badge/button); OFF is
+  // a light tint of the danger solid (a "red/stop", not the plum danger soft).
+  const onSoft = variants.success.softBg;
   const off = variants.danger.solidBg;
   return {
-    onBg: mix(on, WHITE, 50),
-    onWell: mix(on, WHITE, 30),
-    onLine: mix(on, WHITE, 15),
+    onBg: onSoft,
+    onWell: mix(onSoft, WHITE, 55),
+    onLine: mix(onSoft, variants.success.solidBg, 55),
     onInk: variants.success.softText,
     offBg: mix(off, WHITE, 20),
     offWell: mix(off, WHITE, 10),
