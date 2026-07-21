@@ -59,7 +59,71 @@ function ancestorHasScopeId(el: Element, scopeAttr: string): boolean {
 // gets a real DOM-level check (see the audits below) before merging.
 //
 // Component -> the plain CSS class/selector each :deep() rule targets.
+//
+// Detecting a scoped `:deep()` site is the `hasScopedDeepRule` predicate below.
 // ---------------------------------------------------------------------------
+
+/**
+ * Strip comments from a style block's body before looking for `:deep(`.
+ *
+ * `/* … *\/` is a comment in plain CSS and in every preprocessor, so it is
+ * always stripped. `//` to end-of-line is a comment ONLY in SCSS/Sass/Less/
+ * Stylus, and stripping it from plain CSS would risk eating a real rule that
+ * happens to follow a protocol-relative `url(//cdn…)` on the same line — a
+ * FALSE NEGATIVE, which for this guard is the dangerous direction. So it is
+ * gated on the block declaring such a `lang`.
+ */
+function stripStyleComments(body: string, lang: string | null): string {
+  const withoutBlockComments = body.replace(/\/\*[\s\S]*?\*\//g, '');
+  if (lang === null || /^(scss|sass|less|stylus|styl)$/.test(lang) === false) {
+    return withoutBlockComments;
+  }
+  // Only treat `//` as a comment when it starts a token, so `https://` and
+  // `url(http://…)` are left alone.
+  return withoutBlockComments.replace(/(^|\s)\/\/[^\n]*/g, '$1');
+}
+
+/**
+ * Does this SFC source contain a `:deep()` rule inside a **scoped** style block?
+ *
+ * Exported (and fixture-tested below) because the obvious one-liner is wrong.
+ * The original was:
+ *
+ *   /<style[^>]*\bscoped\b[^>]*>[\s\S]*:deep\(/
+ *
+ * whose greedy, unanchored `[\s\S]*` runs from the FIRST `<style scoped>` tag
+ * to ANY later `:deep(` in the file — so it fired on a `:deep(` mentioned in a
+ * CSS comment, in a separate NON-scoped `<style>` block further down (the shape
+ * `DXTableShell.vue` has: a scoped block, then a global one), or in template
+ * text / a JS string. A guard that fires on comments trains people to reword the
+ * comment, which is exactly the wrong incentive (#167).
+ *
+ * Instead: walk each `<style>` block, ask whether *that block's own* opening tag
+ * carries `scoped`, and look for `:deep(` only in that block's comment-stripped
+ * body.
+ *
+ * Deliberately fail-CLOSED: an unterminated `<style>` (no closing tag) is
+ * scanned to end-of-file rather than skipped, so a malformed SFC can never
+ * silently opt out of the guard.
+ */
+export function hasScopedDeepRule(source: string): boolean {
+  const blocks = source.matchAll(/<style([^>]*)>([\s\S]*?)(?:<\/style>|$)/g);
+
+  for (const [, attrs, body] of blocks) {
+    // `scoped` must be a bare boolean attribute — a word boundary alone would
+    // also match e.g. `data-note="scoped"`.
+    const isScoped = /(?:^|\s)scoped(?=[\s=/]|$)/.test(attrs);
+    if (isScoped === false) continue;
+
+    const langMatch = attrs.match(/\blang\s*=\s*["']?([a-z]+)/i);
+    const lang = langMatch === null || langMatch === undefined ? null : langMatch[1].toLowerCase();
+
+    if (/:deep\(/.test(stripStyleComments(body, lang))) return true;
+  }
+
+  return false;
+}
+
 const KNOWN_DEEP_TARGETS: Record<string, string[]> = {
   'DAutocomplete.vue': ['.input-group', '.b-autocomplete-input-wrapper', '.b-autocomplete-trigger', '.b-autocomplete-clear.btn-close', '.input-group:focus-within', '.form-control', '.btn'],
   'DXSwitch.vue': ['.form-check', '.form-check-label', '.form-check-input'],
@@ -83,8 +147,18 @@ describe('scoped :deep() coverage guard (#58)', () => {
     }) as Record<string, string>;
 
     const filesWithDeep = Object.entries(glob)
-      .filter(([, source]) => /<style[^>]*\bscoped\b[^>]*>[\s\S]*:deep\(/.test(source))
+      .filter(([, source]) => hasScopedDeepRule(source))
       .map(([path]) => path.split('/').pop()!);
+
+    // Non-vacuity: an empty `filesWithDeep` would make the assertion below pass
+    // while detecting nothing at all — the exact failure mode a careless fix to
+    // the predicate introduces. Real :deep() sites exist (see KNOWN_DEEP_TARGETS),
+    // so finding none means the detector is broken, not that the code is clean.
+    expect(
+      filesWithDeep.length,
+      'The scoped :deep() detector found no sites at all — it has stopped ' +
+        'detecting rather than the components having stopped using :deep().',
+    ).toBeGreaterThan(0);
 
     const unknown = filesWithDeep.filter((name) => !(name in KNOWN_DEEP_TARGETS));
 
@@ -96,6 +170,150 @@ describe('scoped :deep() coverage guard (#58)', () => {
         `level against the built dist bundle (see the pattern in this file), ` +
         `then add the component + its targeted selector(s) to KNOWN_DEEP_TARGETS.`,
     ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fixture table for the detector itself (#167). The end-to-end guard above can
+// only ever exercise shapes some component happens to have today, so the shapes
+// that caused the false positives — and, more importantly, the shape that MUST
+// still be caught — are pinned here directly against the predicate.
+// ---------------------------------------------------------------------------
+const DETECTOR_FIXTURES: Array<{ name: string; expected: boolean; source: string }> = [
+  {
+    name: 'a real :deep() rule in a scoped block',
+    expected: true,
+    source: `<template><div class="x"><Child /></div></template>
+<style scoped>
+.x :deep(.child) { color: red; }
+</style>`,
+  },
+  {
+    name: 'a real :deep() rule in a scoped block declaring lang="scss"',
+    expected: true,
+    source: `<style lang="scss" scoped>
+.x { :deep(.child) { color: red; } }
+</style>`,
+  },
+  {
+    name: 'a real :deep() rule in a scoped block with other attributes (module)',
+    expected: true,
+    source: `<style module scoped>
+.x :deep(.child) { color: red; }
+</style>`,
+  },
+  {
+    name: 'a real :deep() rule in a SECOND scoped block',
+    expected: true,
+    source: `<style scoped>
+.a { color: red; }
+</style>
+
+<style scoped>
+.b :deep(.child) { color: blue; }
+</style>`,
+  },
+  {
+    name: 'a real :deep() rule alongside a comment that also mentions the token',
+    expected: true,
+    source: `<style scoped>
+/* Careful: :deep( is inert if the scope-id never reaches a host. */
+.x :deep(.child) { color: red; }
+</style>`,
+  },
+  {
+    name: 'an unterminated scoped block containing a real :deep() rule (fail closed)',
+    expected: true,
+    source: `<style scoped>
+.x :deep(.child) { color: red; }`,
+  },
+  {
+    name: 'ONLY a mention inside a CSS block comment in a scoped block',
+    expected: false,
+    source: `<style scoped>
+/* A scoped :deep(.child) here would be inert, so this is global instead. */
+.x { color: red; }
+</style>`,
+  },
+  {
+    name: 'ONLY a mention inside a MULTI-LINE CSS block comment in a scoped block',
+    expected: false,
+    source: `<style scoped>
+/*
+  Why this is not written as
+  .x :deep(.child)
+  — the scope-id would not reach the host.
+*/
+.x { color: red; }
+</style>`,
+  },
+  {
+    name: 'ONLY a mention inside a // comment in a scoped lang="scss" block',
+    expected: false,
+    source: `<style lang="scss" scoped>
+// .x :deep(.child) would be inert here
+.x { color: red; }
+</style>`,
+  },
+  {
+    name: 'a real :deep() rule in a NON-scoped block that FOLLOWS a scoped one',
+    expected: false,
+    source: `<style scoped>
+.x { color: red; }
+</style>
+
+<style>
+.dx-table-card :deep(.child) { color: blue; }
+</style>`,
+  },
+  {
+    name: 'a real :deep() rule in a NON-scoped block that PRECEDES a scoped one',
+    expected: false,
+    source: `<style>
+.dx-table-card :deep(.child) { color: blue; }
+</style>
+
+<style scoped>
+.x { color: red; }
+</style>`,
+  },
+  {
+    name: 'a :deep( in template text, with a scoped block present',
+    expected: false,
+    source: `<template><code>.x :deep(.child)</code></template>
+<style scoped>
+.x { color: red; }
+</style>`,
+  },
+  {
+    name: 'a :deep( in a JS string, with a scoped block present',
+    expected: false,
+    source: `<script setup lang="ts">
+const hint = 'use :deep(.child) only when the scope-id reaches a host';
+</script>
+<style scoped>
+.x { color: red; }
+</style>`,
+  },
+  {
+    name: 'a non-scoped block whose attribute VALUE contains the word scoped',
+    expected: false,
+    source: `<style data-note="not-scoped-on-purpose">
+.x :deep(.child) { color: red; }
+</style>`,
+  },
+  {
+    name: 'no style block at all, :deep( only in a script comment (DButton.vue shape)',
+    expected: false,
+    source: `<script setup lang="ts">
+// Bootstrap utilities are global, avoiding the scoped \`:deep()\`-on-a-B-root trap.
+</script>`,
+  },
+];
+
+describe('scoped :deep() detector fixtures (#167)', () => {
+  it.each(DETECTOR_FIXTURES)('$expected for: $name', ({ source, expected }) => {
+    expect(hasScopedDeepRule(source)).toBe(expected);
   });
 });
 
