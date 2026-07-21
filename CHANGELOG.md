@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`DXTable` edit/create-modal form controls.** New props forwarded to the
+  modal's `DXForm`: `edit-layout` (`"vertical"` | `"horizontal"`, **defaults to
+  `"horizontal"`** — see Changed), `edit-label-cols` (label width for the
+  horizontal layout), and `edit-card` (opt-in bordered card around the modal
+  form, off by default). Also `save-text` / `create-text` / `delete-text` to
+  override the modal's action-button labels.
 - **Strict, discriminated field types (#131)** — `FieldDef` (a union keyed on
   `type`) and its per-type members (`CurrencyFieldDef`, `SwitchFieldDef`,
   `RepeaterFieldDef`, …) are exported alongside the existing permissive
@@ -33,6 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`DXTable`'s edit/create modal now defaults to a HORIZONTAL form layout**
+  (label-left), matching the Omni Tend form convention — previously it fell back
+  to `DXForm`'s vertical default, which read as out of place. Pass
+  `edit-layout="vertical"` to restore the old look.
+- **`DXTable`'s edit/create-modal buttons are now item-named.** "Save Changes" /
+  "Create" / "Delete" become "Save {item}" / "Create {item}" / "Delete {item}"
+  (e.g. "Save Customer"), using `item-name` (title-cased; falls back to "Item").
+  Override any of them with `save-text` / `create-text` / `delete-text`.
 - **`DXTable`'s `editFields` is now typed `FieldDefinition[]` (was `any[]`)
   (#131).** A minor type-tightening: if you passed a separately-declared,
   un-annotated field array (where TypeScript infers `type` as `string`), your

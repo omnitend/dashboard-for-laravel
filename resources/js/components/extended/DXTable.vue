@@ -239,6 +239,13 @@
             :is-create-mode="isCreateMode"
             :pending-action="pendingAction"
             :delete-url="deleteUrl"
+            :layout="editLayout"
+            :label-cols="editLabelCols"
+            :card="editCard"
+            :item-name="itemName"
+            :save-text="saveText"
+            :create-text="createText"
+            :delete-text="deleteText"
             @save="handleEditSave"
             @cancel="handleEditCancel"
             @delete="handleDelete"
@@ -266,7 +273,7 @@ import { api } from "../../utils/api";
 import pluralize from "pluralize";
 import { useResourceEditor } from "../../composables/useResourceEditor";
 import { getByPath } from "../../utils/objectPath";
-import type { FieldDefinition } from "../../types";
+import type { FieldDefinition, LabelCols } from "../../types";
 import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
 import DCol from "../base/DCol.vue";
@@ -572,6 +579,38 @@ export interface Props<TItem = any> {
     /** Edit modal size */
     editModalSize?: 'sm' | 'md' | 'lg' | 'xl';
 
+    /**
+     * Field layout for the edit/create modal's form, forwarded to its `DXForm`
+     * ("vertical" = label above input, "horizontal" = label left). Defaults to
+     * **"horizontal"** to match the Omni Tend form convention (a raw modal form
+     * previously fell back to DXForm's vertical default, which looked out of
+     * place next to horizontal page forms). Pass `"vertical"` to opt out.
+     */
+    editLayout?: 'vertical' | 'horizontal';
+
+    /**
+     * Label column width for the edit modal's horizontal layout, forwarded to
+     * `DXForm`'s `labelCols` (a single width or a per-breakpoint object). Only
+     * meaningful when `editLayout` is "horizontal".
+     */
+    editLabelCols?: LabelCols;
+
+    /**
+     * Wrap the edit/create modal's form in a bordered card. Off by default (the
+     * modal body already provides a boundary); opt in for a more contained,
+     * panelled look around a tabbed edit form.
+     */
+    editCard?: boolean;
+
+    /** Override the modal's Save button label (default: "Save {item}"). */
+    saveText?: string;
+
+    /** Override the modal's Create button label (default: "Create {item}"). */
+    createText?: string;
+
+    /** Override the modal's Delete button label (default: "Delete {item}"). */
+    deleteText?: string;
+
     /** API endpoint pattern for updates (e.g., "/api/products/:id") */
     editUrl?: string;
 
@@ -697,6 +736,8 @@ const props = withDefaults(defineProps<Props<T>>(), {
     columnSize: "12",
     card: true,
     editModalSize: "lg",
+    editLayout: "horizontal",
+    editCard: false,
     showCreateButton: true,
     footClone: false,
     showEmpty: true,

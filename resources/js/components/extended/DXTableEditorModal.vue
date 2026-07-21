@@ -47,6 +47,9 @@
             :form="form"
             :fields="fields"
             :tabs="tabs"
+            :layout="layout"
+            :label-cols="labelCols"
+            :card="card"
             :card-tabs="false"
             :context="item ?? undefined"
             :show-submit="false"
@@ -147,7 +150,7 @@
                         :disabled="form?.processing || loading"
                         @click="emit('delete')"
                     >
-                        Delete
+                        {{ deleteLabel }}
                     </DButton>
                 </div>
                 <div class="d-flex gap-2">
@@ -161,7 +164,7 @@
                         :disabled="form?.processing || loading"
                         @click="emit('save')"
                     >
-                        {{ isCreateMode ? 'Create' : 'Save Changes' }}
+                        {{ isCreateMode ? createLabel : saveLabel }}
                     </DButton>
                 </div>
             </div>
@@ -176,6 +179,7 @@ import DButton from "../base/DButton.vue";
 import DSpinner from "../base/DSpinner.vue";
 import DXForm from "./DXForm.vue";
 import type { EditTab } from "./DXTable.vue";
+import type { LabelCols } from "../../types";
 
 interface Props {
     /** Whether the modal is open (v-model:show). */
@@ -204,9 +208,37 @@ interface Props {
     pendingAction: 'save' | 'delete' | null;
     /** Delete endpoint — gates the Delete button. */
     deleteUrl?: string;
+    /** Field layout forwarded to the modal's DXForm (defaults handled upstream). */
+    layout?: 'vertical' | 'horizontal';
+    /** Label column width forwarded to DXForm (horizontal layout). */
+    labelCols?: LabelCols;
+    /** Wrap the modal form in a card (opt-in — off by default). */
+    card?: boolean;
+    /** Singular item noun for the default button labels (e.g. "customer"). */
+    itemName?: string;
+    /** Override the Save button label (edit mode). */
+    saveText?: string;
+    /** Override the Create button label (create mode). */
+    createText?: string;
+    /** Override the Delete button label. */
+    deleteText?: string;
 }
 
 const props = defineProps<Props>();
+
+// Title-case the singular item noun for button labels ("customer" → "Customer",
+// "sales order" → "Sales Order") — capitalize the first letter of each word.
+const capitalizedItem = computed(() => {
+    const noun = props.itemName?.trim() || 'item';
+    return noun.replace(/\b\w/g, (char) => char.toUpperCase());
+});
+
+// Buttons default to item-named copy ("Save Customer" / "Create Customer" /
+// "Delete Customer") — clearer than a generic "Save Changes" — overridable per
+// action. Falls back to "Save Item" etc. when no `itemName` is set.
+const saveLabel = computed(() => props.saveText ?? `Save ${capitalizedItem.value}`);
+const createLabel = computed(() => props.createText ?? `Create ${capitalizedItem.value}`);
+const deleteLabel = computed(() => props.deleteText ?? `Delete ${capitalizedItem.value}`);
 
 const emit = defineEmits<{
     /** v-model:show — the modal open state changed. */

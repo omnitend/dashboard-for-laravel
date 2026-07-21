@@ -387,7 +387,7 @@ describe('DXTable', () => {
       await wait(60);
 
       const deleteBtn = Array.from(document.querySelectorAll('button')).find(
-        (b) => b.textContent?.trim() === 'Delete',
+        (b) => b.textContent?.trim()?.startsWith('Delete'),
       ) as HTMLButtonElement | undefined;
       expect(deleteBtn).toBeTruthy();
       expect(deleteBtn!.disabled).toBe(true);
@@ -446,7 +446,7 @@ describe('DXTable', () => {
 
         const deleteBtn = Array.from(
           document.querySelectorAll('button'),
-        ).find((b) => b.textContent?.trim() === 'Delete') as HTMLElement | undefined;
+        ).find((b) => b.textContent?.trim()?.startsWith('Delete')) as HTMLElement | undefined;
         expect(deleteBtn).toBeTruthy();
         deleteBtn!.click();
         await new Promise((resolve) => setTimeout(resolve, 50));
@@ -1463,7 +1463,7 @@ describe('DXTable presentational edit fields (#110)', () => {
     await wait(150);
 
     const saveButton = [...document.querySelectorAll('button')].find((button) =>
-      button.textContent?.match(/save changes/i),
+      button.textContent?.match(/save/i),
     ) as HTMLElement;
     expect(saveButton).toBeTruthy();
     saveButton.click();
@@ -1788,7 +1788,7 @@ describe('DXTable review fixes (#106, #110)', () => {
     await wait(60);
 
     const saveButton = [...document.querySelectorAll('button')].find((button) =>
-      button.textContent?.match(/save changes/i),
+      button.textContent?.match(/save/i),
     ) as HTMLElement;
     saveButton.click();
     await wait(150);
@@ -1951,7 +1951,7 @@ describe('DXTable edit modal does not write hidden fields (#117)', () => {
     await wait(150);
 
     const save = [...document.querySelectorAll('button')].find((button) =>
-      button.textContent?.match(/save changes/i),
+      button.textContent?.match(/save/i),
     ) as HTMLElement;
     save.click();
     await wait(150);
@@ -2076,7 +2076,7 @@ describe('DXTable create modal seeds a null default as null (#122)', () => {
     await wait(150);
 
     const create = [...document.querySelectorAll('button')].find((button) =>
-      button.textContent?.trim().match(/^create$/i),
+      button.textContent?.trim().match(/^create\b/i),
     ) as HTMLElement;
     create.click();
     await wait(150);
