@@ -35,6 +35,10 @@ export default defineConfig({
       headless: false, // Set to true for CI, false for local development to see tests
     },
     setupFiles: ['./tests/setup.ts'],
+    // Generates the gitignored docs/public/llms.txt the #136 guard reads, so
+    // that test is self-contained (CI builds dist but not the docs; local
+    // ignore-scripts disables the pre-test hooks). See tests/global-setup.ts.
+    globalSetup: ['./tests/global-setup.ts'],
   },
   resolve: {
     alias: {
