@@ -44,7 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   was inset 24px by `.card-body`, leaving a white gutter between the striped rows
   and the border. `DXTableShell` now uses `DCard no-body` and clips the card, so
   rows reach the edge while the header and pagination keep their padding.
-  `:card="false"` is unchanged.
+  `:card="false"` is unchanged. **Because the card now clips (`overflow:
+  hidden`), slot content that positions itself outside the card and does not
+  teleport is cut off at the edge.** Library components are unaffected —
+  `DDropdown` teleports to `<body>`, and the column-filter menus position
+  themselves `fixed` — so this only affects a hand-rolled `position: absolute`
+  overlay in a `cell(<key>)` or `#header` slot. Teleport it, or use
+  `:card="false"`. Narrowing the clip to the table region is tracked as #166.
 - **`.nav-tabs` inactive links are muted** rather than the saturated link-blue —
   chrome recedes, content leads, matching the muted table headers. The active tab
   is unchanged. Re-louden per tab set by overriding `--bs-nav-link-color`.

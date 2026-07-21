@@ -19,6 +19,14 @@ inset 24px each side, now 0. `DXTable.vue` was not touched. Guarded by
 `getBoundingClientRect()` against the card's border box — verified red (24px)
 against the unfixed component. The consuming app can drop the interim CSS below.
 
+**Known limitation from the review pass (#166):** clipping the whole card means
+a consumer's own non-teleported `position: absolute` overlay in a slot is cut
+off at the card edge. dfl's own components are unaffected (`DDropdown` teleports
+to `<body>`; the filter menus are `fixed`), so the residual case is a hand-rolled
+popover. Documented on the `card` prop and in the changelog; the fix is to move
+the radius clipping onto the flush table region, which `.table-responsive`'s
+`overflow-x: auto` and the `:responsive="false"` case both complicate.
+
 
 ### Problem
 

@@ -88,6 +88,13 @@ withDefaults(defineProps<Props>(), {
   chain), but that forwarding is the exact thing CLAUDE.md records as unreliable
   across build pipelines, and a silently-unclipped card is invisible in review.
   The lower specificity also leaves consumers free to override it.
+
+  KNOWN LIMITATION (#166): this clips the WHOLE card, so a consumer's own
+  non-teleported `position: absolute` overlay in a slot is cut off at the card
+  edge. dfl's own components are fine — DDropdown teleports to <body>, the
+  filter menus are `fixed` — so the residual case is a hand-rolled popover.
+  The fix is to move the radius clipping onto the flush table region, which
+  `.table-responsive`'s `overflow-x: auto` complicates; see the issue.
 */
 .dx-table-card {
   overflow: hidden;
