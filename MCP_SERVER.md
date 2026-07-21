@@ -152,7 +152,7 @@ Point directly to this repository from another project.
     "dashboard-for-laravel-docs": {
       "command": "node",
       "args": [
-        "/Users/jamespickard/Code/omni-tend/dashboard-for-laravel/scripts/mcp-server.mjs"
+        "/absolute/path/to/dashboard-for-laravel/scripts/mcp-server.mjs"
       ]
     }
   }
