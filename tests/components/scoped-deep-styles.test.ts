@@ -106,21 +106,48 @@ function stripStyleComments(body: string, lang: string | null): string {
  * scanned to end-of-file rather than skipped, so a malformed SFC can never
  * silently opt out of the guard.
  */
-export function hasScopedDeepRule(source: string): boolean {
-  const blocks = source.matchAll(/<style([^>]*)>([\s\S]*?)(?:<\/style>|$)/g);
-
-  for (const [, attrs, body] of blocks) {
+function* styleBlocks(source: string): Generator<{ isScoped: boolean; body: string }> {
+  for (const [, attrs, body] of source.matchAll(/<style([^>]*)>([\s\S]*?)(?:<\/style>|$)/g)) {
     // `scoped` must be a bare boolean attribute — a word boundary alone would
     // also match e.g. `data-note="scoped"`.
     const isScoped = /(?:^|\s)scoped(?=[\s=/]|$)/.test(attrs);
-    if (isScoped === false) continue;
 
     const langMatch = attrs.match(/\blang\s*=\s*["']?([a-z]+)/i);
     const lang = langMatch === null || langMatch === undefined ? null : langMatch[1].toLowerCase();
 
-    if (/:deep\(/.test(stripStyleComments(body, lang))) return true;
+    yield { isScoped, body: stripStyleComments(body, lang) };
   }
+}
 
+export function hasScopedDeepRule(source: string): boolean {
+  for (const { isScoped, body } of styleBlocks(source)) {
+    if (isScoped && /:deep\(/.test(body)) return true;
+  }
+  return false;
+}
+
+/**
+ * The INVERSE site (#168): a `:deep()` in a block that is NOT scoped.
+ *
+ * `:deep()` is a scoped-CSS feature — Vue only transforms it inside a
+ * `<style scoped>` block. In a plain `<style>` it is emitted VERBATIM, and the
+ * browser then discards the whole rule because `:deep(...)` is not a valid
+ * selector. Measured against a real build: the rule reaches `dist/style.css`
+ * as bytes, `ruleParsedIntoCSSOM` is false, and the computed style is the
+ * inherited value. Same silent-inertness class as #53/#58 — greppable, and
+ * completely without effect.
+ *
+ * There is deliberately **no allowlist** for this, unlike `KNOWN_DEEP_TARGETS`:
+ * a global block already pierces scoping, so wrapping a selector in `:deep()`
+ * there is never right — the fix is always to drop the wrapper.
+ *
+ * Kept as a separate predicate (rather than folded into the one above) because
+ * the two need opposite advice, and a site must report as exactly one of them.
+ */
+export function hasNonScopedDeepRule(source: string): boolean {
+  for (const { isScoped, body } of styleBlocks(source)) {
+    if (isScoped === false && /:deep\(/.test(body)) return true;
+  }
   return false;
 }
 
@@ -170,6 +197,43 @@ describe('scoped :deep() coverage guard (#58)', () => {
         `level against the built dist bundle (see the pattern in this file), ` +
         `then add the component + its targeted selector(s) to KNOWN_DEEP_TARGETS.`,
     ).toEqual([]);
+  });
+});
+
+describe('non-scoped :deep() guard (#168)', () => {
+  it('no component wraps a selector in :deep() inside a NON-scoped style block', async () => {
+    const glob = import.meta.glob('/resources/js/components/**/*.vue', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }) as Record<string, string>;
+
+    const offenders = Object.entries(glob)
+      .filter(([, source]) => hasNonScopedDeepRule(source))
+      .map(([path]) => path.split('/').pop()!);
+
+    // No allowlist on purpose — a global block already pierces scoping, so
+    // `:deep()` there is never correct, only inert.
+    expect(
+      offenders,
+      `:deep() found in a NON-scoped <style> block in: ${offenders.join(', ')}. ` +
+        `Vue only transforms :deep() inside a scoped block; in a global block it ` +
+        `is emitted verbatim and the browser drops the whole rule as an invalid ` +
+        `selector — it ships in dist/style.css and does nothing (#168). A global ` +
+        `block already pierces scoping, so remove the :deep() wrapper and write ` +
+        `the plain selector.`,
+    ).toEqual([]);
+  });
+
+  it('reports a site as exactly one of the two guards, never both', () => {
+    // The two predicates partition :deep() sites by their block's scoped-ness.
+    // If a shared refactor ever let one leak into the other's domain, a real
+    // offender could be reported twice — or, worse, the wrong advice given.
+    const scopedOnly = `<style scoped>\n.x :deep(.c) { color: red; }\n</style>`;
+    const globalOnly = `<style>\n.x :deep(.c) { color: red; }\n</style>`;
+
+    expect([hasScopedDeepRule(scopedOnly), hasNonScopedDeepRule(scopedOnly)]).toEqual([true, false]);
+    expect([hasScopedDeepRule(globalOnly), hasNonScopedDeepRule(globalOnly)]).toEqual([false, true]);
   });
 });
 
@@ -310,6 +374,48 @@ const hint = 'use :deep(.child) only when the scope-id reaches a host';
 </script>`,
   },
 ];
+
+// Fixtures for the INVERSE predicate (#168). Same reasoning as the table above:
+// no component has a non-scoped :deep() today (that is the point of the guard),
+// so the shapes it must and must not catch are pinned directly.
+const NON_SCOPED_FIXTURES: Array<{ name: string; expected: boolean; source: string }> = [
+  {
+    name: 'a :deep() rule in a plain (non-scoped) block',
+    expected: true,
+    source: `<style>\n.x :deep(.child) { color: red; }\n</style>`,
+  },
+  {
+    name: 'a :deep() rule in a global block that FOLLOWS a scoped one (the DXTableShell shape)',
+    expected: true,
+    source: `<style scoped>\n.a { color: red; }\n</style>\n\n<style>\n.b :deep(.child) { color: blue; }\n</style>`,
+  },
+  {
+    name: 'a :deep() mentioned only in a comment in a non-scoped block',
+    expected: false,
+    source: `<style>\n/* :deep( does nothing here — see #168. */\n.x { color: red; }\n</style>`,
+  },
+  {
+    name: 'a plain selector in a non-scoped block',
+    expected: false,
+    source: `<style>\n.dx-table-card > .table-responsive { border-radius: 4px; }\n</style>`,
+  },
+  {
+    name: 'a :deep() rule in a SCOPED block (belongs to the other guard, not this one)',
+    expected: false,
+    source: `<style scoped>\n.x :deep(.child) { color: red; }\n</style>`,
+  },
+  {
+    name: 'an unterminated non-scoped block containing a :deep() rule (fail closed)',
+    expected: true,
+    source: `<style>\n.x :deep(.child) { color: red; }`,
+  },
+];
+
+describe('non-scoped :deep() detector fixtures (#168)', () => {
+  it.each(NON_SCOPED_FIXTURES)('$name → $expected', ({ source, expected }) => {
+    expect(hasNonScopedDeepRule(source)).toBe(expected);
+  });
+});
 
 describe('scoped :deep() detector fixtures (#167)', () => {
   it.each(DETECTOR_FIXTURES)('$expected for: $name', ({ source, expected }) => {
