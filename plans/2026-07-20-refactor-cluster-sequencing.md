@@ -1,11 +1,21 @@
 # Refactor cluster sequencing plan (#130 #131 #134 #135 #136 #137)
 
 **Date:** 2026-07-20
-**Status:** Phases 1 & 2 COMPLETE (2026-07-20), all green — 575 tests,
-typecheck clean, `docs:build` passing. Phase 3 (the breaking tail) deferred to
-a deliberate major, pending James's calls on the three open decisions below.
-Sequencing + risk framing for the six factoring/maintainability issues Codex
-surfaced in the 2026-07-15 whole-repo review.
+**Status:** Phases 1 & 2 SHIPPED in **v0.34.0** (2026-07-21) — all green (588
+tests, typecheck, `docs:build`), reviewed across three independent Codex passes
+(final two at gpt-5.6-sol, xhigh). Merged to `main` (PR #163) and published to
+npm. Phase 3 (the breaking tail) deferred to a deliberate major, pending James's
+calls on the three open decisions below. Sequencing + risk framing for the six
+factoring/maintainability issues Codex surfaced in the 2026-07-15 whole-repo
+review.
+
+Review fixes folded in during merge: lossy `cloneDefault` → structuredClone-first;
+optional→required `component` variant; stale/superseded provider-error handling;
+`DateFieldDef`/`CheckboxGroupFieldDef`/`SwitchListFieldDef` missing valid options;
+runtime mode-switch "No items found" (table remounts on mode change via `:key`);
+and a CI-only failure — the #136 `llms.txt` guard read a gitignored generated
+file the test job never produced, fixed with a vitest `globalSetup` that
+regenerates it (`tests/global-setup.ts`).
 
 ## Outcome (Phases 1 & 2)
 
@@ -33,9 +43,10 @@ surfaced in the 2026-07-15 whole-repo review.
   `export {default as}`-only registry removed; `DTab`/`DCarousel` now present
   (`tests/docs/llms-txt.test.ts`).
 
-Known follow-up: `tests/components/soft-badges.test.ts` is intermittently flaky
-under full-suite load (passes isolated + on re-run) — a pre-existing
-`getComputedStyle`/test-isolation wart, not from this work. Capture as an issue.
+Resolved in-session: `tests/components/soft-badges.test.ts` was intermittently
+flaky under full-suite load — its `getComputedStyle` poll could read Bootstrap's
+opaque default before `dist/style.css` applied. Fixed to poll on a theme
+sentinel (`--dx-chart-1`, present only in the built theme) before reading.
 
 ## Why a sequencing plan (not six independent fixes)
 

@@ -994,6 +994,19 @@ the test run (release.sh now does this explicitly). CI is unaffected (hooks
 run there). Explicitly-named scripts themselves still run — only their
 `pre`/`post` companions are dropped.
 
+**A test that reads a GENERATED, gitignored artifact must regenerate it in a
+vitest `globalSetup`, not assume it's on disk.** `tests/docs/llms-txt.test.ts`
+(#136) reads `docs/public/llms.txt` via Vite `?raw`, but that file is generated
+by `docs:generate:ai` and gitignored (shipped only via the `files` list). The CI
+test job builds `dist` (so `dist`-reading guards like the icon-font test work)
+but does NOT generate the docs, and local `ignore-scripts` skips the pretest
+hook — so the file was stale/absent and the guard went **red on CI while green
+locally** (where `docs:build` had run). Fixed with `tests/global-setup.ts`
+(wired via `test.globalSetup` in `vitest.config.ts`), which regenerates it (~0.6s)
+before the browser suite. Cost a CI-red at the v0.34.0 merge, 2026-07-21. Any
+future test reading a generated artifact should do the same — don't rely on
+`dist`-style pretest builds to cover docs-derived files.
+
 ### The icon webfont must never be inlined again (#77)
 
 `dist/style.css` used to be ~191 KB gzip, and **137 KB of that was one base64
