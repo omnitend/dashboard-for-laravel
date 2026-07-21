@@ -177,6 +177,7 @@ DXTable's own slots:
 
 <SlotsTable client:load slots={[
   { name: 'header', description: 'Custom card header content (overrides the title and the built-in New button)' },
+  { name: 'head-end(<key>)', props: 'field, label', description: 'Additive content at the end of a column\'s header — a period total, a badge — keeping the sort indicator and hint' },
   { name: 'edit-value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s control in the edit modal' },
   { name: 'edit-span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for an edit-modal field marked span: true' },
   { name: 'tab-content(<key>) / tab-before(<key>) / tab-after(<key>)', props: 'tab, model', description: 'Edit-modal tab content slots (see DXForm)' },
@@ -204,6 +205,30 @@ Give it `<tr>`s.
 One table slot is **not** available at all, because DXTable renders it itself:
 `head(<key>)` — it draws the column headers, with sort indicators and field
 hints, and a forwarded one would silently drop those.
+
+## A value in a column's header (`head-end`)
+
+To put a single value at the top-right of a column — a period total above the
+amounts, a count, a small badge — use `#head-end(<key>)`. It renders **inside**
+DXTable's own header cell, after the label and before the sort arrows, so the
+sort indicator and the field `hint` survive:
+
+```vue
+<DXTable :items="lines" :fields="fields">
+  <template #head-end(amount)>
+    <strong>{{ periodTotal }}</strong>
+  </template>
+</DXTable>
+```
+
+The slot scope gives you `field` (the column definition) and `label` (the
+resolved header label). The wrapper element carries the class `dx-head-end` if
+you need to style it.
+
+This is deliberately *additive* rather than a `head(<key>)` override: an override
+would replace the whole header cell and take the sort indicator and hint with it.
+For a per-column total **under** the data instead, use `foot(<key>)` below —
+the two compose, and a column can have both.
 
 ## Totals row
 
@@ -280,6 +305,45 @@ const fields = [
 
 A field with `label: ''` renders an **empty** header (for an actions column, say)
 — only a field with no label at all falls back to its key.
+
+### Where a `select` filter's options come from
+
+A `select` filter resolves its option list in this order:
+
+1. **`filterOptions`** on the field — an explicit `{ value, text }[]`.
+2. **Server-supplied values** — the `filter-values` prop, or the `filterValues`
+   block a dfl API response returns for the columns that asked for it.
+3. **The loaded rows** — *client-side mode only*: DXTable derives the options
+   from the distinct values present in the data.
+
+Step 3 means a client-side table needs no option list at all:
+
+```js
+// clientSide: rows are all loaded, so the Status filter fills itself in
+const fields = [
+  { key: 'reference', label: 'Reference' },
+  { key: 'status', label: 'Status', filter: 'select' },
+];
+```
+
+Details worth knowing:
+
+- Options come from the **full loaded row set**, never the filtered rows or the
+  current page — otherwise picking a value would collapse the list to that one
+  value with no way back.
+- Values are de-duplicated and sorted naturally (numbers numerically, strings by
+  locale, so `Lane 2` precedes `Lane 10`).
+- `null`, `undefined` and `''` are skipped: "has no value" is expressed by
+  `filterNullText`, which gives that case a real label.
+- A column `formatter` labels the option (`19.99` → `$19.99`); the option's
+  underlying **value stays raw**, so the filter still matches.
+- Dot-path keys (`paid_by.card`) work.
+- Opt a column out with **`deriveFilterOptions: false`** — useful when the raw
+  values are opaque ids you would rather label yourself via `filterOptions`.
+
+Provider/API and Inertia modes never derive: they hold one page of rows, so the
+options would silently change as you page. Give those columns `filterOptions`,
+or return `filterValues` from the endpoint.
 
 ## Nested values (dot-path keys)
 
@@ -754,6 +818,10 @@ The same filter types work in client-side mode:
 - `'number'` - Exact numeric match
 - `'date'` - Exact date match
 
+A `'select'` column needs no `filterOptions` here: client-side, DXTable fills the
+dropdown from the distinct values in the loaded rows. See
+[Where a select filter's options come from](#where-a-select-filters-options-come-from).
+
 ### Performance Considerations
 
 - Client-side mode loads all data into memory
@@ -890,6 +958,7 @@ interface TableField {
   filter?: FilterType;            // Filter type: 'text' | 'select' | 'number' | 'date' | false
   filterMultiple?: boolean;       // 'select' filters only: allow several values (array filter entry, ANY-match)
   filterOptions?: FilterOption[]; // Options for select filters
+  deriveFilterOptions?: boolean;  // Client-side 'select' filters: derive options from the loaded rows (default true)
   filterPlaceholder?: string;     // Placeholder for filter input
   formatter?: (value: any, key: string, item: any) => string; // Custom formatter function
   width?: string | number;        // Fixed column width via <colgroup> (number → px). Pair with fixedLayout (#156)

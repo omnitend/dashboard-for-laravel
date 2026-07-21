@@ -1882,11 +1882,18 @@ describe('DXTable select filter offers a way back to unfiltered', () => {
   });
 
   it('offers no lone "All x" when the column has no values to filter by', async () => {
+    // The rows carry NO status at all. This used to be any client-side column
+    // without `filterOptions`, but such a column now derives its options from
+    // the loaded rows (B2) — so "nothing to filter by" has to mean the data
+    // really is empty, which is the case the invariant was always about.
     const screen = render({
       render: () =>
         h(BApp, {}, () =>
           h(DXTable, {
-            items,
+            items: [
+              { id: 1, status: null },
+              { id: 2, status: '' },
+            ],
             fields: [{ key: 'status', label: 'statuses', filter: 'select' }],
             clientSide: true,
           }),

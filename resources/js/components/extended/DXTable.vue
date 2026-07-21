@@ -163,6 +163,35 @@
                                     <div class="fw-semibold">{{ headerLabel(field, label) }}</div>
                                     <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
                                 </div>
+
+                                <!-- ADDITIVE per-column header content (#99), rendered
+                                     INSIDE DXTable's own header cell rather than as a
+                                     `head(<key>)` override — an override would silently
+                                     drop the sort indicator and the field hint, which is
+                                     exactly why `head(...)` is not forwarded (see
+                                     `isTableSlot`). Placed after the label block and
+                                     BEFORE the sort indicator so a period total sits at
+                                     the top-right of the text area without displacing the
+                                     sort arrows, and lands in the same place whether or
+                                     not the column happens to be sortable. The wrapper is
+                                     only emitted when the slot exists, so a table without
+                                     one renders exactly as before. -->
+                                <div
+                                    v-if="$slots[`head-end(${field.key})`]"
+                                    class="dx-head-end flex-shrink-0 text-end"
+                                >
+                                    <!--
+                                      @slot head-end(<fieldKey>) Additive content at the end of a column's own header — a period total above a numeric column, a small badge — keeping DXTable's sort indicator and field hint. Not a `head()` override.
+                                      @binding {object} field The column's field definition.
+                                      @binding {string} label The column's resolved header label.
+                                    -->
+                                    <slot
+                                        :name="`head-end(${field.key})`"
+                                        :field="field"
+                                        :label="headerLabel(field, label)"
+                                    />
+                                </div>
+
                                 <div v-if="field.sortable" class="sort-indicator text-muted flex-shrink-0" style="font-size: 0.75rem; line-height: 1.1; display: flex; flex-direction: column; align-items: center;">
                                     <span :style="{ opacity: getFieldSortState(field.key) === 'asc' ? 1 : 0.3 }">▲</span>
                                     <span :style="{ opacity: getFieldSortState(field.key) === 'desc' ? 1 : 0.3 }">▼</span>
@@ -358,6 +387,22 @@ export interface TableField {
     filter?: FilterType;
     filterOptions?: FilterOption[];
     filterPlaceholder?: string;
+
+    /**
+     * For a `select` filter on a **client-side** table: derive the dropdown's
+     * options from the distinct values present in the loaded rows. Defaults to
+     * `true` — with no `filterOptions` and no server `filterValues` the
+     * alternative is an empty dropdown, which can only ever be a bug.
+     *
+     * Set `false` to opt out (e.g. a column whose raw values are opaque ids you
+     * would rather label yourself via `filterOptions`).
+     *
+     * Explicit `filterOptions` and server-supplied `filterValues` still WIN, in
+     * that order. Provider/API and Inertia modes ignore this flag: they only
+     * ever hold one page of rows, so there is no complete value set to derive
+     * from (see `getFieldFilterOptions`).
+     */
+    deriveFilterOptions?: boolean;
 
     /**
      * Fixed width for this column, applied via a `<colgroup>` `<col>`. A number
@@ -1020,16 +1065,7 @@ const clientSideFilteredItems = computed<T[]>(() => {
         return filterKeys.every(key => {
             // Resolve by the FILTER key, which may differ from the column's key.
             const field = props.fields.find(f => filterKeyFor(f) === key);
-            // `filterKey` names the param the SERVER filters on; a local row may
-            // not carry it at all (a `customer_name` row filtered on
-            // `customer_id`). Match on the filter key when the row has it,
-            // otherwise fall back to the column's own value — which is also the
-            // one the user can actually see and type against.
-            // Both lookups are dot-path aware, so a nested payload filters (#121).
-            const itemValue =
-                field && hasFieldValue(item, key)
-                    ? fieldValueOf(item, key)
-                    : fieldValueOf(item, field?.key ?? key);
+            const itemValue = clientSideFilterValueOf(item, field, key);
 
             const matchesCandidate = (candidate: string): boolean => {
                 // The "no value" option (e.g. Unassigned) is the one filter that
@@ -1152,6 +1188,28 @@ const hasFieldValue = (item: unknown, key: string): boolean => {
 };
 
 /*
+ * The value a client-side filter compares against, for one row and one column.
+ *
+ * `filterKey` names the param the SERVER filters on; a local row may not carry
+ * it at all (a `customer_name` row filtered on `customer_id`). Read the filter
+ * key when the row has it, otherwise fall back to the column's own value —
+ * which is also the one the user can actually see and type against. Both
+ * lookups are dot-path aware, so a nested payload filters (#121).
+ *
+ * Extracted so the client-side row filter and the DERIVED select options (see
+ * `derivedFilterOptions`) resolve values through exactly the same rule — a
+ * derived option must never be a value the filter then fails to match.
+ */
+const clientSideFilterValueOf = (
+    item: unknown,
+    field: TableField | undefined,
+    filterKey: string,
+): any =>
+    field && hasFieldValue(item, filterKey)
+        ? fieldValueOf(item, filterKey)
+        : fieldValueOf(item, field?.key ?? filterKey);
+
+/*
  * Dotted-key columns DXTable must render itself, because bvn renders them empty
  * (see `fieldValueOf`). A consumer's own `cell(<key>)` slot always wins — it is
  * forwarded separately, and declaring the same slot name twice would clobber it.
@@ -1235,6 +1293,97 @@ const filterAllLabelFor = (field: TableField): string =>
 const headerLabel = (field: TableField, slotLabel?: string): string =>
     field.label !== undefined ? field.label : (slotLabel || field.key);
 
+/**
+ * A select filter option's LABEL, honouring the column's own value→label
+ * formatting so the dropdown reads the way the column does (a `formatter`
+ * turning `19.99` into `$19.99`). The option's `value` stays RAW — that is what
+ * the client-side filter compares against (`String(itemValue) === candidate`),
+ * so formatting must never leak into it.
+ *
+ * `formatter` is bootstrap-vue-next's field formatter, `(value, key, item)`.
+ */
+const formattedFilterLabel = (field: TableField, value: any, item: unknown): string | null => {
+    if (typeof field.formatter !== 'function') return null;
+    const formatted = field.formatter(value, field.key, item);
+    if (formatted === null || formatted === undefined) return null;
+    return String(formatted);
+};
+
+/**
+ * Client-side auto-derived `filter: "select"` options, keyed by field key.
+ *
+ * Without this a client-side select column with no `filterOptions` and no
+ * server `filterValues` rendered an EMPTY dropdown — dead UI that can only be a
+ * bug — so this is on by default (opt out per column with
+ * `deriveFilterOptions: false`).
+ *
+ * It derives from `resolvedItems` (the FULL loaded row set) and deliberately
+ * NOT from `clientSideFilteredItems` or `clientSidePaginatedItems`:
+ *  - filtered set → picking a value would collapse the dropdown to that one
+ *    value, and the user could never get back to any other one;
+ *  - current page → the offered values would silently change as you page.
+ * Being a computed over `props.fields` + `resolvedItems` only, it is also
+ * structurally incapable of depending on the active filters — the cache is the
+ * guard, not just the comment.
+ */
+const derivedFilterOptions = computed<Record<string, FilterOption[]>>(() => {
+    // Only client-side mode has the complete row set. Provider/API and Inertia
+    // hold one page, so they take their options from the server instead.
+    if (!isClientSideMode.value) return {};
+
+    const rows = resolvedItems.value;
+    if (!rows || rows.length === 0) return {};
+
+    const optionsByFieldKey: Record<string, FilterOption[]> = {};
+
+    for (const field of props.fields) {
+        if (field.filter !== 'select') continue;
+        if (field.deriveFilterOptions === false) continue;
+        // Explicit options win outright (see `getFieldFilterOptions`), so don't
+        // spend a pass over every row producing a list nothing will read.
+        if (field.filterOptions && field.filterOptions.length > 0) continue;
+
+        const filterKey = filterKeyFor(field);
+
+        // Distinct values keyed by their STRING form, because that is exactly
+        // what the client-side select filter compares — so `1` and `"1"` are one
+        // option, and every option offered is one the filter can match. The
+        // first row carrying a value is kept alongside it, as the `item`
+        // argument the column's formatter expects.
+        const firstRowByValue = new Map<string, { rawValue: any; item: unknown }>();
+
+        for (const item of rows) {
+            const value = clientSideFilterValueOf(item, field, filterKey);
+            // null / undefined / '' are skipped deliberately: "has no value" is
+            // already a first-class, LABELLED option via `filterNullText`, and
+            // an unlabelled blank row in the list would be unusable.
+            if (value === null || value === undefined || value === '') continue;
+            const stringValue = String(value);
+            if (!firstRowByValue.has(stringValue)) {
+                firstRowByValue.set(stringValue, { rawValue: value, item });
+            }
+        }
+
+        const entries = [...firstRowByValue.entries()];
+
+        // Stable, human ordering: numeric when both values are numbers,
+        // otherwise a locale compare — the same rule the client-side sort uses,
+        // with `numeric: true` so "Item 2" precedes "Item 10".
+        entries.sort(([leftText, left], [rightText, right]) =>
+            typeof left.rawValue === 'number' && typeof right.rawValue === 'number'
+                ? left.rawValue - right.rawValue
+                : leftText.localeCompare(rightText, undefined, { numeric: true, sensitivity: 'base' }),
+        );
+
+        optionsByFieldKey[field.key] = entries.map(([stringValue, { rawValue, item }]) => ({
+            value: stringValue,
+            text: formattedFilterLabel(field, rawValue, item) ?? stringValue,
+        }));
+    }
+
+    return optionsByFieldKey;
+});
+
 const getFieldFilterOptions = (field: TableField): FilterOption[] => {
     const options: FilterOption[] = [];
 
@@ -1272,6 +1421,15 @@ const getFieldFilterOptions = (field: TableField): FilterOption[] => {
 
     if (serverValues && serverValues.length > 0) {
         return [...options, ...serverValues.map(value => ({ value, text: value }))];
+    }
+
+    // Last resort, CLIENT-SIDE only: the distinct values present in the loaded
+    // rows. Precedence is deliberate — explicit `filterOptions`, then the
+    // server's `filterValues`, then what the data itself says. See
+    // `derivedFilterOptions` for why it derives from the unfiltered row set.
+    const derived = derivedFilterOptions.value[field.key];
+    if (derived && derived.length > 0) {
+        return [...options, ...derived];
     }
 
     // No values to choose from — don't offer a lone "All x" that filters nothing.
@@ -1549,7 +1707,12 @@ const shouldShowPerPageSelector = computed(() => {
     return total >= smallestOption;
 });
 
-// Detect which fields need server filter values
+// Detect which fields need server filter values.
+//
+// Client-side derived options (`derivedFilterOptions`) deliberately do NOT
+// shrink this list: it is only ever read by `internalProvider`, i.e. API mode,
+// and `isProviderMode` requires `!resolvedClientSide` — the two modes are
+// mutually exclusive, so a client-side derived column can never appear here.
 const fieldsNeedingFilterValues = computed(() => {
     return props.fields
         .filter(field => field.filter === 'select' && (!field.filterOptions || field.filterOptions.length === 0))
@@ -1956,6 +2119,12 @@ const refresh = () => {
  * - `head(<key>)` — DXTable draws its own column headers (sort indicators,
  *   field hints). Forwarding a consumer's would silently drop those.
  * - `thead-top`   — DXTable renders the inline filter row there.
+ *
+ * `head-end(<key>)` is DXTable's OWN additive header slot (#99) and is likewise
+ * not forwarded: the inner table has no such slot, and the prefixes below are
+ * matched with `startsWith`, so it must not begin with `cell(`/`foot(` either —
+ * `head-end(` satisfies both. It is also excluded from `tableSlotSignature`
+ * (which filters on `isTableSlot`), so adding one never remounts the table.
  */
 const TABLE_SLOT_PREFIXES = ['cell(', 'foot('];
 const TABLE_SLOT_NAMES = new Set([
