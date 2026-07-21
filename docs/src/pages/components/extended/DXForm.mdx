@@ -45,7 +45,8 @@ accepts either a `useForm` return or a `defineForm` return (with the latter,
   { name: 'showSubmit', type: 'boolean', required: 'No', default: 'true', description: 'Show the submit button.' },
   { name: 'card', type: 'boolean', required: 'No', default: 'false', description: 'Wrap a FLAT form in a card for a visual boundary (mirrors DXTable\'s card prop). Also forces the tabbed card on even when cardTabs is false. Off by default since DXForm is commonly embedded in a page card or modal already.' },
   { name: 'cardTabs', type: 'boolean', required: 'No', default: 'true', description: 'Wrap a TABBED form\'s content in a card panel so the active tab reads as a finished panel connected to the tab strip (the standard Bootstrap card-with-tabs pattern) rather than floating on the bare page. Set false for bare tabs (e.g. inside a modal that already provides a boundary). Ignored for flat forms — use card for those.' },
-  { name: 'layout', type: '"vertical" | "horizontal"', required: 'No', default: '"vertical"', description: 'Form-wide field layout. "horizontal" puts the label to the left of the input. Overridable per-field via field.layout.' },
+  { name: 'layout', type: '"vertical" | "horizontal" | "auto"', required: 'No', default: '"vertical"', description: 'Form-wide field layout. "horizontal" puts the label to the left of the input, always. "auto" picks horizontal or vertical from the width of the form\'s own container (see Container-driven layout below). Overridable per-field via field.layout.' },
+  { name: 'layoutThreshold', type: 'number', required: 'No', default: '640', description: 'Container width (px) at or above which layout: "auto" goes horizontal. Ignored for the explicit layouts.' },
   { name: 'labelCols', type: 'number | { sm?, md?, lg?, xl? }', required: 'No', default: '3', description: 'Label column width for horizontal layout (mirrors BFormGroup\'s labelCols). Overridable per-field via field.labelCols. Omitted breakpoints collapse to vertical below that width.' },
 ]} />
 
@@ -80,6 +81,44 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
   { name: 'tab-after(<key>)', props: 'tab, model', description: 'Content rendered after a tab\'s fields.' },
   { name: 'footer', props: 'form', description: 'Content rendered after the form body.' },
 ]} />
+
+## Container-driven layout
+
+`layout="horizontal"` is unconditional, and that is a problem on a dashboard:
+Bootstrap's breakpoints are **media** queries, so they only ever see the
+*window*. A page narrowed by the persistent sidebar — or a form inside a modal —
+can have very little room while the viewport is wide, and no breakpoint fires.
+The label/input split then cramps the labels and truncates the controls.
+
+`layout="auto"` measures the form's **own container** instead and stacks to
+vertical below `layoutThreshold`:
+
+```vue
+<DXForm :form="form" :fields="fields" layout="auto" />
+```
+
+The default threshold is `640`px. With the default 3-column label, the label's
+text area is roughly `containerWidth / 4 - 18`px, so 640 leaves it ~142px —
+enough for a 20-character label such as "Unit price (ex VAT)" to stay on one
+line, with the control column still ~474px. Raise `layoutThreshold` if your
+labels run longer, or lower `labelCols` instead.
+
+Notes:
+
+- `vertical` (the default) and `horizontal` are unchanged and unconditional. No
+  existing form changes appearance; `auto` is opt-in.
+- Before the first measurement — and when server-rendering — the form renders
+  **vertical**. A stacked form is legible at any width, so it is the safe thing
+  to show when the width is not yet known.
+- The crossing has a small hysteresis band, so a form that gains a scrollbar
+  when it stacks cannot flip back and forth at the boundary.
+- Per-field `field.layout` still wins, and a `span: true` field is always
+  full-width.
+
+The measurement itself is available on its own — see
+[useContainerWidth](/guide/forms#usecontainerwidth) if you need to drive
+something else (a table that becomes cards, a column that collapses) off the
+same signal.
 
 ## Field definitions
 

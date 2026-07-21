@@ -13,8 +13,9 @@
 -->
 <template>
     <BForm
+        ref="formRoot"
         @submit.prevent="handleSubmit"
-        :class="{ 'dx-form--horizontal': layout === 'horizontal' }"
+        :class="{ 'dx-form--horizontal': resolvedLayout === 'horizontal' }"
     >
         <!-- Form-level error message -->
         <DAlert
@@ -71,7 +72,7 @@
                             :field="field"
                             :form="resolvedForm"
                             :model="model"
-                            :layout="layout"
+                            :layout="resolvedLayout"
                             :label-cols="labelCols"
                         >
                             <!-- Forward every DXForm slot so the field can render
@@ -105,7 +106,7 @@
                     :field="field"
                     :form="resolvedForm"
                     :model="model"
-                    :layout="layout"
+                    :layout="resolvedLayout"
                     :label-cols="labelCols"
                 >
                     <!-- Forward every DXForm slot so the field can render its
@@ -166,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch, type ComponentPublicInstance } from "vue";
 import { BForm } from "bootstrap-vue-next";
 import DAlert from "../base/DAlert.vue";
 import DButton from "../base/DButton.vue";
@@ -176,6 +177,7 @@ import { BTab as DTab } from "bootstrap-vue-next"; // raw BTab: BTabs scans slot
 import DXFormField from "./DXFormField.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { DefineFormReturn } from "../../composables/defineForm";
+import { useContainerWidth } from "../../composables/useContainerWidth";
 import type { FieldDefinition, FormTab, LabelCols, MaybeFn } from "../../types";
 import {
     resolvePredicate as resolvePredicateFor,
@@ -235,12 +237,34 @@ interface Props {
     cardTabs?: boolean;
 
     /**
-     * Form-wide field layout: "vertical" (default, label above input) or
-     * "horizontal" (label left, input right). Overridable per-field via
-     * `field.layout`. A field with `span: true` always renders full-width,
-     * regardless of layout.
+     * Form-wide field layout:
+     *
+     * - `"vertical"` (default) — label above input, always.
+     * - `"horizontal"` — label left, input right, always.
+     * - `"auto"` — horizontal when the form's **own container** is at least
+     *   `layoutThreshold` px wide, vertical below that. Container-driven, not
+     *   viewport-driven: a page narrowed by the dashboard sidebar, or a form
+     *   inside a modal, stacks even though the window is wide (which no
+     *   Bootstrap media query can see).
+     *
+     * Overridable per-field via `field.layout`. A field with `span: true`
+     * always renders full-width, regardless of layout.
      */
-    layout?: "vertical" | "horizontal";
+    layout?: "vertical" | "horizontal" | "auto";
+
+    /**
+     * Container width (px) at or above which `layout: "auto"` goes horizontal.
+     * Ignored for the explicit `"vertical"`/`"horizontal"` layouts.
+     *
+     * Default 640, measured rather than guessed: with the default 3-column
+     * label the label's text area is `containerWidth / 4 - 18` px, so 640 gives
+     * it 142px — enough for a ~20-character label ("Unit price (ex VAT)"
+     * measures 128px at the theme's label font) to stay on one line, with the
+     * control column still 474px. Below ~584px that label starts wrapping,
+     * which is the cramped-label symptom this exists to avoid. Raise it if your
+     * labels run longer, or lower `labelCols` instead.
+     */
+    layoutThreshold?: number;
 
     /**
      * Label column width for horizontal layout (mirrors BFormGroup's
@@ -258,6 +282,7 @@ const props = withDefaults(defineProps<Props>(), {
     card: false,
     cardTabs: true,
     layout: "vertical",
+    layoutThreshold: 640,
 });
 
 const emit = defineEmits<{
@@ -269,6 +294,55 @@ const slots = defineSlots<Record<string, (props: any) => any>>();
 
 /** v-model for the active tab index. */
 const activeTab = defineModel<number>("activeTab", { default: 0 });
+
+// ————————————————— container-driven layout (`layout: "auto"`)
+
+const formRoot = ref<ComponentPublicInstance | HTMLElement | null>(null);
+
+/**
+ * The `<form>` element BForm renders. A template ref on a component yields the
+ * component instance, so unwrap `$el` — and tolerate either shape rather than
+ * assuming one, so a future BForm change (or a functional re-implementation)
+ * can't silently leave us observing nothing.
+ */
+function resolveFormElement(): HTMLElement | null {
+    const rootValue = formRoot.value;
+    if (rootValue === null || rootValue === undefined) return null;
+    if (rootValue instanceof HTMLElement) return rootValue;
+    const element = (rootValue as ComponentPublicInstance).$el;
+    return element instanceof HTMLElement ? element : null;
+}
+
+// Observe ONLY in auto mode. Returning null for the other layouts means no
+// ResizeObserver is ever attached for the (overwhelmingly common) explicit
+// layouts — existing consumers pay nothing and behave identically.
+const { isBelow: containerIsNarrow } = useContainerWidth(
+    () => (props.layout === "auto" ? resolveFormElement() : null),
+    {
+        // Getter, so a consumer binding `:layout-threshold` to something
+        // reactive re-evaluates instead of latching the mount-time value.
+        threshold: () => props.layoutThreshold,
+        // Guard against an observer feedback loop at the boundary: the vertical
+        // layout is TALLER, so a form inside an `overflow:auto` ancestor can
+        // gain a scrollbar when it stacks, shrinking its own container by
+        // ~15-17px — straight back over the threshold, and it flips forever.
+        // A band wider than any scrollbar (24px) makes the crossing one-way
+        // until the container genuinely grows.
+        hysteresis: 24,
+    },
+);
+
+/**
+ * The layout actually rendered. `vertical`/`horizontal` pass through
+ * unconditionally (unchanged behaviour); `auto` resolves from the measured
+ * container width, defaulting to `vertical` before the first measurement and
+ * under SSR — the stacked layout is legible at any width, so it is the safe
+ * thing to render when the width is unknown.
+ */
+const resolvedLayout = computed<"vertical" | "horizontal">(() => {
+    if (props.layout !== "auto") return props.layout;
+    return containerIsNarrow.value ? "vertical" : "horizontal";
+});
 
 // ————————————————— resolve form / fields (accept useForm or defineForm)
 

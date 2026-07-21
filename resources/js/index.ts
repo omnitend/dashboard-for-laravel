@@ -110,6 +110,7 @@ export { default as DTooltip } from "./components/base/DTooltip.vue";
 export { useForm } from "./composables/useForm";
 export { defineForm } from "./composables/defineForm";
 export { useToast } from "./composables/useToast";
+export { useContainerWidth } from "./composables/useContainerWidth";
 
 // Utils
 export { api } from "./utils/api";
@@ -167,6 +168,12 @@ export type {
     FormFieldDefinition,
     DefineFormReturn,
 } from "./composables/defineForm";
+
+export type {
+    ContainerWidthTarget,
+    UseContainerWidthOptions,
+    UseContainerWidthReturn,
+} from "./composables/useContainerWidth";
 
 export type {
     ApiError,

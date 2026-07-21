@@ -481,6 +481,83 @@ count:
 The full prop and slot reference lives on the
 [DXForm component page](/components/extended/DXForm).
 
+## useContainerWidth
+
+Bootstrap's breakpoints are **media** queries — they only ever see the window.
+On a dashboard that is often the wrong measurement: a page narrowed by the
+persistent sidebar, or a form inside a modal, has very little room while the
+viewport is wide, so no breakpoint fires and a horizontal form cramps itself.
+
+`useContainerWidth` closes that gap. It observes an element's **own rendered
+width** with a `ResizeObserver` and exposes it reactively, so a template can
+choose a layout from the space it actually has:
+
+```vue
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useContainerWidth } from '@omnitend/dashboard-for-laravel'
+
+const { containerRef, width, isBelow, isNarrowerThan } = useContainerWidth({
+  threshold: 640,
+})
+
+// One observer can drive several independent decisions.
+const stackRows = computed(() => isNarrowerThan(576))
+const hideDetailColumn = computed(() => isNarrowerThan(900))
+</script>
+
+<template>
+  <div ref="containerRef">
+    <p>{{ width }}px — {{ isBelow ? 'narrow' : 'wide' }}</p>
+  </div>
+</template>
+```
+
+`DXForm`'s [`layout="auto"`](/components/extended/DXForm) is built on it.
+
+You can also hand it an existing ref or a getter, which is how you observe
+*conditionally* — return `null` and nothing is observed at all:
+
+```ts
+const formEl = ref<HTMLElement | null>(null)
+const { isBelow } = useContainerWidth(
+  () => (props.responsive ? formEl.value : null),
+  { threshold: 640 },
+)
+```
+
+### Options
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `threshold` | – | Width `isBelow` compares against. Pass a getter if it changes at runtime. |
+| `hysteresis` | `0` | Band that stops `isBelow` flipping back and forth at the boundary (see below). |
+| `initialWidth` | `0` | Width assumed before the first measurement and under SSR. |
+| `box` | `'content-box'` | Which box to report. `'border-box'` matches `getBoundingClientRect()`. |
+| `debounce` | `0` | Extra delay before publishing a width. Rarely needed. |
+
+### Returns
+
+`containerRef`, `width`, `hasMeasured`, `isBelow`, `isNarrowerThan(px)`, and
+`stop()` (called automatically when the owning scope is disposed).
+
+### Two things worth knowing
+
+**It degrades to the narrow layout.** With no `ResizeObserver` — server
+rendering, or a very old browser — `width` stays at `initialWidth` (`0`), so
+`isBelow` is `true` and `hasMeasured` is `false`. Unknown width therefore means
+"assume the narrowest", which is the safe direction: a stacked layout is legible
+at any width, whereas a wide layout guessed wrongly truncates content. It also
+keeps the server-rendered markup identical to the first client render.
+
+**Mind the feedback loop.** Whatever you render from `isBelow` can change the
+observed width, and then you have an oscillation: the narrow layout is taller →
+an ancestor with `overflow: auto` gains a vertical scrollbar → the container
+loses ~15-17px → it crosses back over the threshold → repeat, forever. Set
+`hysteresis` wider than a scrollbar (24px is comfortable) whenever the layout
+you drive can affect the container's width. `isNarrowerThan` is deliberately raw
+— it keeps no state, so apply your own margin if you need one.
+
 ## Laravel Integration
 
 ### Form Requests
