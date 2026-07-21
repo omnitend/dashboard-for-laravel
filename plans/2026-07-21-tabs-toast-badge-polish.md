@@ -14,7 +14,7 @@ All three downstream interims can now be dropped.
 
 ---
 
-## 1. nav-tabs inactive links are too heavy (greendragon B4, product page Q4)
+## 1. nav-tabs inactive links are too heavy (B4, product page Q4)
 
 **Problem.** `.nav-tabs .nav-link` inactive colour is the saturated link-blue
 (`--bs-nav-link-color`), which reads heavy on a tabbed form (the product page's
@@ -43,14 +43,14 @@ the only strong colour in the row.
 
 ---
 
-## 2. header-less toast is misaligned (greendragon B5, product page Q6)
+## 2. header-less toast is misaligned (B5, product page Q6)
 
 **Problem.** A toast created with only a `body` (no `title`) renders
 `.toast > .d-flex > (.toast-body + .btn-close)` where the flex row is
 `align-items: normal` (not centred) and `.toast-body` keeps the reduced TOP
 padding (`4px 12px 12px`) meant for sitting under a `.toast-header`. So the
 message hugs the top while the close X sits centred — it reads as misaligned.
-Every app-next toast hits this: the greendragon toast bridge always passes
+Every app-next toast hits this: the consuming app's toast bridge always passes
 `body`, never `title`.
 
 **Ask.** For a header-less toast, centre the body/close row (`align-items:
@@ -86,15 +86,15 @@ Firefox 121+); a browser without it just keeps today's slightly-off alignment.
 
 ---
 
-## 3. soft `.text-bg-*` overrides are hard to override (greendragon SA8)
+## 3. soft `.text-bg-*` overrides are hard to override (SA8)
 
 **Problem.** The soft-colour system's `.text-bg-secondary:not(.toast)` (and
 siblings) set `background-color` with **`!important` at specificity 0,2,0** (the
 `:not()` adds a class-weight). A consumer that needs a fully custom-coloured
-badge — e.g. greendragon's `ot-sale-paid-by-badge`, which paints cash green /
+badge — e.g. the consuming app's `ot-sale-paid-by-badge`, which paints cash green /
 card grey / etc. from a per-value palette — cannot override with a normal
 `.my-badge { background: … !important }` (0,1,0 or 0,2,0): it *ties or loses* the
-`!important` cascade and the pale soft colour wins. greendragon had to escalate
+`!important` cascade and the pale soft colour wins. The consuming app had to escalate
 to a repeated-class 0,3,0 selector to win, which is a smell.
 
 **Ask (either or both):**

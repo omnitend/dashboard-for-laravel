@@ -1,12 +1,12 @@
 # DXTable — flush card-table + column-header / footer slots
 
-Status: PROPOSED 2026-07-21. Origin: greendragon app-next cutover, `/next/sales`
+Status: PROPOSED 2026-07-21. Origin: the consuming app's cutover, `/next/sales`
 review (findings SA6 + SA4). Two independent asks on `DXTable`, both about how a
 data table sits inside a card and how legacy showed per-column chrome.
 
 ---
 
-## Part A — card mode should render the table FLUSH (greendragon B13, SA6)
+## Part A — card mode should render the table FLUSH (B13, SA6)
 **Status: DONE 2026-07-21.** `DXTableShell` now renders `DCard` in `no-body`
 mode with `overflow: hidden`, so DXTable's children (alert / spinner / table /
 pagination) are direct children of `.card` — the card is already a flex column,
@@ -17,7 +17,7 @@ the trailing margin of the card's last child. Measured: the table region was
 inset 24px each side, now 0. `DXTable.vue` was not touched. Guarded by
 `tests/components/DXTable-CardFlush.test.ts`, which measures
 `getBoundingClientRect()` against the card's border box — verified red (24px)
-against the unfixed component. greendragon can drop the interim CSS below.
+against the unfixed component. The consuming app can drop the interim CSS below.
 
 
 ### Problem
@@ -59,7 +59,7 @@ Bootstrap already rounds a table that is a card's first child; matching that
 (header absent → table is first, top corners rounded; header present → header
 rounds the top) gives the legacy look with no consumer CSS.
 
-### greendragon interim (retire on adoption)
+### Consuming-app interim (retire on adoption)
 
 `ot-sales.vue` scopes, on a wrapper around the table:
 
@@ -81,7 +81,7 @@ with #99; item 2 (the additive header-end slot) landed 2026-07-21.
 `DXTable` draws its own column headers and has **no** per-column header slot and
 **no** footer/totals row. Legacy's All Sales report put the **period total in the
 Total column's header** (top-right, where the column title would be) AND in a
-`foot(total)` row. With neither available, greendragon had to move the total to a
+`foot(total)` row. With neither available, the consuming app had to move the total to a
 separate summary bar **above** the table — it reads as detached from the column
 it totals, and there's nowhere to put a real table footer.
 
@@ -125,6 +125,6 @@ it totals, and there's nowhere to put a real table footer.
 
 - These are independent; Part A is higher-value and simpler. Part B's footer is
   the more broadly useful half (any numeric table wants column totals).
-- greendragon's `ot-sales` `sumSaleLinesTotal` is computed page-side already, so
+- The consuming app's `ot-sales` `sumSaleLinesTotal` is computed page-side already, so
   it only needs a *slot to render into*, not aggregate support (that's a separate
   ask — see the select-filter-options spec's B3).

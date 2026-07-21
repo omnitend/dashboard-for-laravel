@@ -135,7 +135,7 @@ const emit = defineEmits<{
 // except a single-page gap which shows the page itself (an ellipsis hiding one
 // page is silly). Client-computed from current + last page so it works in every
 // DXTable mode (provider / client-side / inertia) — not just where a server
-// `links` array exists. Reproduces custard's `1 2 … 8 9 10 [11] 12 13 14 … 44 45`.
+// `links` array exists. Reproduces the house style: `1 2 … 8 9 10 [11] 12 13 14 … 44 45`.
 const BOUNDARY = 2;
 const AROUND = 3;
 
@@ -209,8 +209,8 @@ const goToPage = (page: number) => {
 }
 
 /* Windowed pager (#155). The buttons are DButtons; give the numbered ones a
-   consistent min-width so they read as an even row of keys (like the house
-   custard pager), and let the whole row wrap on narrow widths rather than
+   consistent min-width so they read as an even row of keys (the house pager
+   style), and let the whole row wrap on narrow widths rather than
    overflow. `:deep(.btn)` is anchored on the plain `.dx-pager` host, so the
    scope-id has a deterministic element to attach to. */
 .dx-pager :deep(.btn) {

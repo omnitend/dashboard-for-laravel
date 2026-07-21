@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-07-21
+
+### Added
+
+- **Container-driven form layout — `DXForm layout="auto"`.** Renders horizontal
+  while the form's own container is wide enough and stacks to vertical below
+  `layout-threshold` (default `640`px). This is a *container* query, not a media
+  query: a form narrowed by a sidebar or a modal stacks even when the viewport is
+  wide, which a Bootstrap breakpoint cannot see. `layout="horizontal"` keeps its
+  unconditional meaning and `vertical` stays the default, so no existing form
+  changes. `DXTable`'s `edit-layout` accepts `"auto"` too, for the modal case.
+- **`useContainerWidth` composable** (exported) — the `ResizeObserver` primitive
+  behind the above: `{ containerRef, width, hasMeasured, isBelow,
+  isNarrowerThan(px), stop }`, with a `hysteresis` band so a layout that changes
+  its own container width (a stacked form is taller → an ancestor gains a
+  scrollbar → the container narrows) cannot oscillate at the threshold. SSR-safe:
+  with no `ResizeObserver` it reports width `0`, i.e. "assume narrowest".
+- **`DXTable` `#head-end(<fieldKey>)` slot** — additive content at the end of a
+  column's own header (a period total above a numeric column, a small badge),
+  scoped `{ field, label }`. Unlike a `head()` override it *keeps* DXTable's sort
+  indicator and field hint. Not forwarded to the inner table.
+
+### Changed
+
+- **`DXTable` derives client-side `filter: "select"` options from the loaded
+  rows.** A client-side select column with no `filterOptions` and no server
+  `filterValues` previously rendered an **empty dropdown**; it now offers the
+  distinct values present in the data. Options are derived from the full loaded
+  row set (never the filtered or paginated set, which would let a chosen value
+  collapse the list to itself). Explicit `filterOptions` and server
+  `filterValues` still win, in that order. Provider/API and Inertia modes are
+  unchanged — they hold one page, so there is nothing complete to derive from.
+  Opt out per column with `deriveFilterOptions: false`.
+- **Card-mode `DXTable` renders the table flush to the card border.** The table
+  was inset 24px by `.card-body`, leaving a white gutter between the striped rows
+  and the border. `DXTableShell` now uses `DCard no-body` and clips the card, so
+  rows reach the edge while the header and pagination keep their padding.
+  `:card="false"` is unchanged.
+- **`.nav-tabs` inactive links are muted** rather than the saturated link-blue —
+  chrome recedes, content leads, matching the muted table headers. The active tab
+  is unchanged. Re-louden per tab set by overriding `--bs-nav-link-color`.
+- **Soft `.text-bg-*` and `.progress-bar.bg-*` overrides no longer inflate
+  specificity.** They matched at `0,2,0 !important`, so a consumer's
+  single-class `!important` rule lost and a custom-coloured badge had to escalate
+  to a repeated-class selector. Both now use `:where()` — identical matching at
+  `0,1,0`, so a normal consumer override wins.
+
+### Fixed
+
+- **Header-less toasts are no longer misaligned.** A toast with a `body` and no
+  `title` left the message hugging the top while the close button sat centred
+  (measured 8.5px out), because the body kept the reduced top padding meant for
+  sitting under a `.toast-header`, and bvn's close button uses an `auto` margin
+  that outranks `align-items`. Header-less toasts now centre their row and use
+  symmetric padding; the with-header case is untouched.
+
+### Docs
+
+- `DBadge`: documented that **`:variant="null"` emits no `text-bg-*` class**, for
+  a badge whose colour is entirely custom. This already worked — `undefined` does
+  *not* (Vue applies the prop default) — and is now guarded by a test.
+
 ## [0.34.0] - 2026-07-21
 
 ### Added
@@ -242,7 +304,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`DXTable` pagination is now a windowed pager** (#155) — clearer **« Previous**
   / **Next »** text buttons (not `‹ ›` arrows), the **first/last page numbers**
   always shown, and a wider run of pages with ellipses:
-  `1 2 … 8 9 10 [11] 12 13 14 … 44 45`. Adopts the house (custard) style. The
+  `1 2 … 8 9 10 [11] 12 13 14 … 44 45`. Adopts the house style. The
   window is computed client-side from the current/last page, so it works in every
   DXTable mode (provider / client-side / inertia), and the row wraps on narrow
   widths. The active page is the brand primary; the rest are outline buttons.

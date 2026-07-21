@@ -1,4 +1,4 @@
-# DXTable — `filter: "select"` option sourcing (greendragon B2 + B3)
+# DXTable — `filter: "select"` option sourcing (B2 + B3)
 
 Status: **B2 DONE 2026-07-21** (shipped in DXTable; see below). **B3 DEFERRED** —
 it needs `api-adapter` contract design and is not started. Origin: list pages
@@ -69,7 +69,7 @@ is a bigger decision than B2 and shouldn't ride along with it.
 
 
 For a **server-side** table (`api-url`), the faceted-filter options can't be
-derived from the current page of rows. Today greendragon fetches them with a
+derived from the current page of rows. Today the consuming app fetches them with a
 **separate `onMounted` `vapi.get(… aggregates …)`** in the page
 (`ot-accounts.vue`), because DXTable's own `api-url` fetch neither sends an
 `aggregates` param nor exposes the `aggregates` block the API returns.
@@ -91,7 +91,7 @@ Removes the page-level fetch entirely.
 
 - Both are additive and opt-in; explicit `filterOptions` remains supported.
 - B3 must route through `DXTableApiAdapter` so it works for LTApiController
-  (greendragon) and any other backend — the adapter already owns request/response
+  (the consuming app) and any other backend — the adapter already owns request/response
   translation as of 0.33.1, so aggregates should ride the same path.
-- greendragon reference for B3's page-side pattern: `ot-accounts.vue`'s
+- Consuming-app reference for B3's page-side pattern: `ot-accounts.vue`'s
   `onMounted` aggregates fetch (the thing this removes).

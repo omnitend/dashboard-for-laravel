@@ -426,7 +426,7 @@ watch(activeGroupIndex, () => {
   overflow-x: hidden;
 }
 
-/* Dense rhythm (#95): greendragon's cutover values, adopted as the default —
+/* Dense rhythm (#95): values proven in a production dashboard, adopted as the default —
    natural-case headers at 0.875rem (no uppercase/letter-spacing), tight group
    spacing. */
 .nav-group {

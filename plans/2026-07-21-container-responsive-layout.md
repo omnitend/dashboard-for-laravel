@@ -1,8 +1,8 @@
-# DXForm / DXTable — container-based responsive layout (greendragon B8)
+# DXForm / DXTable — container-based responsive layout (B8)
 
 Status: **PARTIALLY DONE 2026-07-21** — the composable and the `DXForm` half
 shipped; the `DXTable` stacked-card half is **DEFERRED** (see below). Origin:
-greendragon app-next cutover — the product detail page and the editable
+the consuming app's cutover — the product detail page and the editable
 product-lines table, narrowed by the app sidebar (not the viewport).
 
 ## What shipped
@@ -70,7 +70,7 @@ because the viewport is wide; only the *container* is narrow.
 
 This is the classic media-query vs container-query gap. Legacy omnitend's
 lt-ajax-form used a `ResizeObserver` to switch layout on the element's own width;
-that was dropped in the cutover and greendragon re-added it as a shared composable.
+that was dropped in the cutover and the consuming app re-added it as a shared composable.
 
 ## Ask
 
@@ -85,7 +85,7 @@ queries where support allows), not the viewport:
 - **DXTable**: a stack-on-narrow / card-per-row mode when the table's container
   is below a threshold, instead of horizontal scroll only.
 
-## greendragon reference implementation (retire on adoption)
+## Consuming-app reference implementation (retire on adoption)
 
 `resources/js/lib-next/useContainerWidth.js` — a `ResizeObserver` composable that
 reports the element's width and a boolean threshold crossing. It currently drives
