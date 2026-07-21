@@ -1,6 +1,9 @@
 # DXTable — flush card-table + column-header / footer slots
 
-Status: PROPOSED 2026-07-21. Origin: the consuming app's cutover, `/next/sales`
+Status: **DONE 2026-07-21** — Part A shipped (flush card table, with a known
+clipping limitation tracked as #166); Part B's footer half was already
+implemented before this plan was written (`footClone` + `foot(<key>)`, #99), and
+its header half shipped as the additive `head-end(<key>)` slot. Origin: the consuming app's cutover, `/next/sales`
 review (findings SA6 + SA4). Two independent asks on `DXTable`, both about how a
 data table sits inside a card and how legacy showed per-column chrome.
 
