@@ -630,8 +630,13 @@ export interface Props<TItem = any> {
      * **"horizontal"** to match the Omni Tend form convention (a raw modal form
      * previously fell back to DXForm's vertical default, which looked out of
      * place next to horizontal page forms). Pass `"vertical"` to opt out.
+     *
+     * `"auto"` hands the decision to `DXForm`'s container-width observer, which
+     * measures the FORM rather than the window — so a modal narrowed by its own
+     * breakpoint stacks to vertical even on a wide viewport, where a media query
+     * would still report "plenty of room". See `useContainerWidth`.
      */
-    editLayout?: 'vertical' | 'horizontal';
+    editLayout?: 'vertical' | 'horizontal' | 'auto';
 
     /**
      * Label column width for the edit modal's horizontal layout, forwarded to

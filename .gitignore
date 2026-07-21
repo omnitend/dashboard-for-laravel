@@ -1,5 +1,8 @@
 # Dependencies
-node_modules/
+# No trailing slash: parallel-agent git worktrees symlink `node_modules` back to
+# the primary checkout, and `node_modules/` matches only a real directory — so a
+# symlink stayed untracked-but-visible, one `git add -A` away from being committed.
+node_modules
 /vendor
 composer.lock
 

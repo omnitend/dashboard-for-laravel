@@ -208,8 +208,13 @@ interface Props {
     pendingAction: 'save' | 'delete' | null;
     /** Delete endpoint — gates the Delete button. */
     deleteUrl?: string;
-    /** Field layout forwarded to the modal's DXForm (defaults handled upstream). */
-    layout?: 'vertical' | 'horizontal';
+    /**
+     * Field layout forwarded to the modal's DXForm (defaults handled upstream).
+     * Includes `"auto"`, which lets the form stack to vertical when the MODAL is
+     * narrow even though the viewport is wide — the container-query case a
+     * viewport media query cannot see.
+     */
+    layout?: 'vertical' | 'horizontal' | 'auto';
     /** Label column width forwarded to DXForm (horizontal layout). */
     labelCols?: LabelCols;
     /** Wrap the modal form in a card (opt-in — off by default). */
