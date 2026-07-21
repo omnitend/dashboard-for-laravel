@@ -192,6 +192,22 @@ const goToPage = (page: number) => {
 </script>
 
 <style scoped>
+/*
+  In `DXTable`'s card mode the card is rendered `no-body` so the table can sit
+  flush against the card border, which makes this footer a direct child of
+  `.card` — it no longer inherits any `.card-body` padding. Re-instate the inset
+  the card body used to give it, so the pager lines up with the padded card
+  header above it and keeps a bottom margin inside the (clipped) card.
+
+  Top padding is deliberately 0: the `mt-3` on the root already separates the
+  footer from the table above. `.dx-table-card` is DXTableShell's element and
+  needs no scope id — a scoped selector only stamps its LAST compound selector,
+  which here is this component's own root.
+*/
+.dx-table-card > .dx-table-pagination {
+    padding: 0 var(--bs-card-spacer-x) var(--bs-card-spacer-y);
+}
+
 /* Windowed pager (#155). The buttons are DButtons; give the numbered ones a
    consistent min-width so they read as an even row of keys (like the house
    custard pager), and let the whole row wrap on narrow widths rather than

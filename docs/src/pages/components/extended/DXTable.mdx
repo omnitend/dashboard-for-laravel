@@ -134,7 +134,7 @@ const items = ref([
   { name: 'fluid', type: 'boolean', required: 'No', default: 'false', description: 'Fluid container' },
   { name: 'containerClass', type: 'string', required: 'No', default: 'py-5', description: 'Container CSS class' },
   { name: 'columnSize', type: 'string | number', required: 'No', default: '12', description: 'Column size (Bootstrap grid)' },
-  { name: 'card', type: 'boolean', required: 'No', default: 'true', description: 'Wrap the table in a card. Set false for a plain, borderless variant on the page background.' },
+  { name: 'card', type: 'boolean', required: 'No', default: 'true', description: 'Wrap the table in a card. The table renders flush to the card border (rows and stripes reach the edge) while the header and pagination stay padded; the card clips to its radius. Set false for a plain, borderless variant on the page background.' },
   { name: 'editFields', type: 'FieldDefinition[]', required: 'No', default: '-', description: 'Form fields for edit modal (enables edit on row click)' },
   { name: 'editTabs', type: 'EditTab[]', required: 'No', default: '-', description: 'Tab definitions for organizing edit modal content' },
   { name: 'editModalTitle', type: 'string | ((item: any) => string)', required: 'No', default: '-', description: 'Edit modal title (string or function)' },

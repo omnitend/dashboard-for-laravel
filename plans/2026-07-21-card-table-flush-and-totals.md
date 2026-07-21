@@ -7,6 +7,18 @@ data table sits inside a card and how legacy showed per-column chrome.
 ---
 
 ## Part A — card mode should render the table FLUSH (greendragon B13, SA6)
+**Status: DONE 2026-07-21.** `DXTableShell` now renders `DCard` in `no-body`
+mode with `overflow: hidden`, so DXTable's children (alert / spinner / table /
+pagination) are direct children of `.card` — the card is already a flex column,
+so they still stack in order. `DXTablePagination` re-instates its own
+card-spacer inset, and a small GLOBAL block in `DXTableShell` (scoped CSS cannot
+reach slot content compiled in DXTable's scope) insets the error alert and drops
+the trailing margin of the card's last child. Measured: the table region was
+inset 24px each side, now 0. `DXTable.vue` was not touched. Guarded by
+`tests/components/DXTable-CardFlush.test.ts`, which measures
+`getBoundingClientRect()` against the card's border box — verified red (24px)
+against the unfixed component. greendragon can drop the interim CSS below.
+
 
 ### Problem
 
