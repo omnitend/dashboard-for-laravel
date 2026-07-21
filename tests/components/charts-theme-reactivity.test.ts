@@ -155,6 +155,35 @@ describe('charts resolve the palette from their own colour-mode scope (#161)', (
   });
 });
 
+describe('a LIGHT scope nested under a dark root resolves the light palette (#161)', () => {
+  /*
+   * The end-to-end half of the light-scope rule below. It needs BOTH sides of
+   * the fix at once: the runtime resolving from the container, AND the built
+   * stylesheet carrying `[data-bs-theme="light"]`. Custom properties inherit,
+   * so without that CSS block a light container under a dark root keeps the
+   * DARK values however correctly the JS reads its scope.
+   *
+   * That dependency on the BUILT `dist/style.css` (loaded by tests/setup.ts) is
+   * why this assertion is separate from the ones above: it can only pass once
+   * `dist` has been rebuilt from the current Sass. If this goes red with the
+   * source-level guard below still green, suspect a stale `dist` before
+   * suspecting the code — rebuild with `npm run build:lib` and re-run. (Local
+   * runs skip the pretest build entirely, see CLAUDE.md on `ignore-scripts`.)
+   */
+  it('a chart in a nested data-bs-theme=light container ignores the dark root', async () => {
+    document.documentElement.setAttribute('data-bs-theme', 'dark');
+
+    const Nested = wrappedIn({ 'data-bs-theme': 'light' }, DXLineChart, lineProps);
+    const screen = render(Nested);
+    await wait(120);
+
+    const resolved = chartIn(screen.container).data.datasets[0].borderColor;
+    expect(resolved).toBe(LIGHT_SLOT_1);
+    // Named explicitly: inheriting the root's dark value is the exact bug.
+    expect(resolved).not.toBe(DARK_SLOT_1);
+  });
+});
+
 describe('theme.scss publishes the palette in a light scope too (#161)', () => {
   // The runtime fix alone isn't enough for a LIGHT container nested under a
   // dark root: custom properties inherit, so the `[data-bs-theme=dark]` block
