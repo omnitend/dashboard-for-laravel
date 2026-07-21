@@ -23,5 +23,40 @@ DBadge - A type-safe wrapper around Bootstrap Vue Next's BBadge component. Small
   example="DBadgeExample"
 />
 
+## Custom colours: opting out of the variant
+
+Every variant paints a **soft** tint from the theme's semantic colour system
+(`.text-bg-secondary` by default). If you want a badge whose colour is entirely
+your own — a per-value palette, say, where each payment method gets its own
+swatch — don't fight the tint. Turn it off by passing `null`:
+
+```vue
+<!-- No text-bg-* class at all; your class owns the colours -->
+<DBadge :variant="null" class="payment-method-badge">Cash</DBadge>
+```
+
+```css
+.payment-method-badge {
+  background-color: var(--my-cash-bg);
+  color: var(--my-cash-text);
+}
+```
+
+Two things to know:
+
+- **`null`, not `undefined`.** Vue substitutes a prop's default for `undefined`,
+  so `:variant="undefined"` (and omitting the prop) still gives you
+  `text-bg-secondary`. Only an explicit `null` opts out.
+- **You no longer need `!important`.** The theme's soft `.text-bg-*` rules are
+  deliberately kept to single-class specificity, so even when a badge *does*
+  carry a variant, a plain `.my-badge { background-color: … !important }` in
+  your stylesheet overrides them. `:variant="null"` is the cleaner route —
+  nothing to override in the first place.
+
+One gotcha that isn't about `DBadge` itself: if the **template root** of your
+wrapper component is `<DBadge>`, a `<style scoped>` rule cannot style it — the
+`data-v-*` scope id doesn't reach the child component's rendered root across the
+built bundle. Either use a non-scoped rule, or wrap the badge in a plain element
+you own.
 
 <BootstrapVueNextReference client:load componentName="DBadge" />

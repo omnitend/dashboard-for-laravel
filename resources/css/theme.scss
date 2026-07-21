@@ -314,6 +314,32 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 }
 
 // ----------------------------------------------------------------------------
+// Nav tabs
+// ----------------------------------------------------------------------------
+// Chrome recedes, content leads — the same ethos as the muted table headers
+// (#157). Bootstrap gives an INACTIVE tab `--bs-nav-link-color:
+// var(--bs-link-color)`, i.e. the saturated link-blue, so a row of tabs above a
+// form reads as a row of links competing with the fields below. Mute the
+// inactive tabs and let the ACTIVE one (Bootstrap's
+// `--bs-nav-tabs-link-active-color`, the near-black emphasis colour) carry the
+// selection on its own.
+//
+// Driven through Bootstrap's own `--bs-nav-*` variables rather than a raw
+// `color:` — so a consumer can re-louden one tab set by resetting the same
+// variable, `[data-bs-theme="dark"]` remaps the tokens for free, and Bootstrap
+// keeps ownership of the `.active`/`.disabled` resolution order.
+//
+// `--bs-secondary-color` is `rgba(var(--bs-body-color-rgb), .75)` → ~#585b5e on
+// white: 6.83:1, comfortably AA (AAA for body text); 6.53:1 on the theme's
+// `$light` #f8fafc panel. Hover goes to the full body colour (#212529, 16.1:1)
+// so hovering reads as "heading toward selected" rather than "turning into a
+// link".
+.nav-tabs {
+  --bs-nav-link-color: var(--bs-secondary-color);
+  --bs-nav-link-hover-color: var(--bs-body-color);
+}
+
+// ----------------------------------------------------------------------------
 // Dashboard Custom Styles
 // ----------------------------------------------------------------------------
 
@@ -433,6 +459,40 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     color: $secondary; // muted message text
   }
 
+  // HEADER-LESS toast (`body` but no `title` — the shape every toast created
+  // through `useToast().create({ body })` takes). BVN renders it as
+  //   .toast > .d-flex > (.toast-body + .btn-close)
+  // and BVN's own `.toast .btn-close-custom { margin: <pad> <pad> auto }` pins
+  // the close X to the TOP of that row, while the `.toast-body` above still
+  // carries the reduced `padding-top` that only makes sense when it sits under
+  // a `.toast-header`. Result: the message rides high, the X sits lower, and a
+  // one-line toast reads as misaligned.
+  //
+  // With no header there is nothing above the body, so restore symmetric
+  // padding (Bootstrap's `.toast-body` is `padding: var(--bs-toast-padding-x)`
+  // all round) and centre the row. The `margin-bottom: auto` has to go too —
+  // an auto margin outranks `align-items` in flex alignment, so centring alone
+  // would leave the X pinned; `margin-block: 0` hands alignment back to the
+  // container while keeping BVN's horizontal margin.
+  //
+  // `:has()` is the structural test — it is the only way to key off "this toast
+  // has no header" from CSS, and it is supported in every evergreen browser
+  // (Chrome/Edge 105+, Safari 15.4+, Firefox 121+). A browser without it simply
+  // keeps today's slightly-off alignment; nothing breaks.
+  &:not(:has(.toast-header)) {
+    > .d-flex {
+      align-items: center;
+    }
+
+    .toast-body {
+      padding-top: var(--bs-toast-padding-x);
+    }
+
+    .btn-close-custom {
+      margin-block: 0;
+    }
+  }
+
   // Hide the auto-dismiss countdown bar — the ticking animation reads as
   // stressful/urgent, which is wrong for a passive notification. Auto-dismiss
   // still works; only its visual indicator is removed.
@@ -530,7 +590,18 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   // (which sets its colours `!important` by design). `.toast` is excluded: it
   // has its own soft handling (a fainter 50%-white mix via `--bs-toast-bg` for
   // its large surface) and themed toasts don't carry `.text-bg-*` anyway.
-  .text-bg-#{$name}:not(.toast) {
+  //
+  // The exclusion is wrapped in `:where()` DELIBERATELY: `:where()` always
+  // contributes ZERO specificity, so this stays a single-class 0,1,0 selector
+  // while matching exactly what a bare `:not(.toast)` would. Written bare it is
+  // 0,2,0 — and because the declarations are `!important`, a consumer painting
+  // a fully custom badge (`.my-status-badge { background: …; }`) could not win
+  // with a single-class `!important` rule and had to escalate to a
+  // repeated-class hack. One class in, one class out: a consumer's own
+  // `!important` single-class rule now overrides us on source order, as it
+  // should. (Everything Bootstrap defines for `.text-bg-*` is also 0,1,0
+  // `!important` and is imported ABOVE this block, so we still win it.)
+  .text-bg-#{$name}:where(:not(.toast)) {
     background-color: #{$soft-bg} !important;
     color: #{$soft-text} !important;
   }
@@ -551,7 +622,14 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   // (danger/info's solid IS their emphasis). The variant-less default bar
   // stays `$progress-bar-bg` (brand navy). `!important` beats the `.bg-*`
   // utility, which sets its colour `!important` by design.
-  .progress-bar.bg-#{$name} {
+  //
+  // `.progress-bar` is only here to SCOPE the rule (large fills, not every
+  // `.bg-*` element), so it goes in `:where()` — zero specificity, same
+  // matching, and the selector stays 0,1,0 like Bootstrap's own `.bg-*`. Same
+  // reasoning as the `.text-bg-*` rule above: at 0,2,0 `!important` a consumer
+  // recolouring one bar had to out-specify us instead of just writing
+  // `.my-bar { background-color: … !important }`.
+  :where(.progress-bar).bg-#{$name} {
     background-color: #{$solid-bg} !important;
     color: #{$solid-text};
   }
