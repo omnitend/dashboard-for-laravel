@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-07-21
+
+### Fixed
+
+- **Charts now follow a colour-mode change while mounted (#161).** Palette
+  colours were copied into the Chart.js data inside a computed whose only
+  dependencies were component props — a `data-bs-theme` flip changes a DOM
+  attribute and a computed CSS value, neither of which is a reactive dependency,
+  so an already-mounted chart kept the old palette until a prop changed or it
+  remounted. A single ref-counted `MutationObserver` (SSR-guarded, torn down with
+  its effect scope) now drives a repaint.
+- **Charts resolve the palette from their own colour-mode scope (#161).**
+  Resolution always read `document.documentElement`, so a chart inside a nested
+  `data-bs-theme` container (a dark card on a light page, or the reverse) got the
+  root's palette. It now reads from the chart's own container. `theme.scss` also
+  declares the palette under `[data-bs-theme="light"]`, without which a light
+  scope nested under a dark root would inherit the dark values.
+- **Card-mode `DXTable` no longer clips the whole card (#166).** Rendering the
+  table flush required clipping to the card radius, which also cut off any
+  non-teleported positioned content in a slot. The clipping now applies to the
+  flush table region alone, so the card itself no longer clips. `.table-responsive`
+  needs no `overflow` of its own — Bootstrap's `overflow-x: auto` already makes it
+  a clipping context, and adding `overflow: hidden` there would kill horizontal
+  scrolling. A `:responsive="false"` table wider than its card once again
+  overflows visibly rather than being silently cut off; that mode opts out of a
+  scroll container by definition.
+  - **Residual, unchanged by this:** `.table-responsive` is a scroll container, so
+    an overlay in a `cell(<key>)` slot is bounded by it either way. Teleport it.
+
+### Changed
+
+- **The `DXTable` pager collapses to `« Previous · 11 / 45 · Next »` when its row
+  is too narrow for the full window (#162).** The decision is container-driven,
+  not viewport-driven — a table squeezed by a sidebar is cramped at any viewport
+  width. It is also page-count aware: a pager that already fits is left alone, so
+  a three-page pager on a phone keeps its numbers rather than becoming a worse
+  `2 / 3`. Compact mode announces position through a polite live region, since
+  there is no page button to carry `aria-current`.
+
+### Internal
+
+- The scoped `:deep()` coverage guard now parses per style block and strips
+  comments (#167). It previously matched greedily from the first `<style scoped>`
+  to any `:deep(` later in the file, flagging mentions in comments and in
+  non-scoped blocks. Also hardened against a `scoped` substring inside a quoted
+  attribute value and against an unterminated `<style>` block silently opting out.
+
 ## [0.35.0] - 2026-07-21
 
 ### Added
