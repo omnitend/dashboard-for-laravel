@@ -15,17 +15,32 @@
   once it lives in a child component — the scope-id doesn't cross the boundary.
   Anchoring the rules on this component's own `.dx-table-pagination` root (a
   plain element it owns) gives the scope-id a deterministic host.
+
+  In a row too narrow for the full windowed pager, the number strip collapses to
+  a "current / last" status with Previous/Next either side (#162). The decision
+  is CONTAINER-driven, not viewport-driven — see `compactThreshold`.
 -->
 <template>
     <div class="dx-table-pagination mt-3">
-        <!-- Top row: Pagination and Per-page selector -->
-        <div class="dx-pager-row d-flex justify-content-between align-items-center gap-2 mb-2">
+        <!-- Top row: Pagination and Per-page selector.
+             `containerRef` measures THIS row (the space the pager actually
+             competes for with the per-page selector) rather than the window —
+             a table narrowed by a sidebar or a modal is cramped even on a wide
+             viewport, which no media query can see. See `useContainerWidth`. -->
+        <div
+            ref="containerRef"
+            class="dx-pager-row d-flex justify-content-between align-items-center gap-2 mb-2"
+        >
             <!-- Windowed pager (#155): «Previous / leading / … / window / … /
                  trailing / Next». Client-computed from current + last page, so it
-                 works in every DXTable mode. Only shown when >1 page. -->
+                 works in every DXTable mode. Only shown when >1 page.
+                 In a row too narrow to lay the whole thing out, the number
+                 window collapses to a "current / last" status (#162) — see
+                 `isCompact`. -->
             <nav
                 v-if="showPagination && pagination.total > pagination.per_page"
                 class="dx-pager d-flex flex-wrap align-items-center gap-1"
+                :class="{ 'dx-pager--compact': isCompact }"
                 aria-label="Pagination"
             >
                 <DButton
@@ -35,7 +50,28 @@
                     @click="goToPage(currentPage - 1)"
                 >&laquo; Previous</DButton>
 
-                <template v-for="(item, index) in pageItems" :key="item.type === 'page' ? `p${item.page}` : `e${index}`">
+                <!-- Compact: one status in place of the whole number window.
+                     With no page buttons there is no `aria-current` to carry
+                     "you are here", so the position becomes a live `status`
+                     region — it is announced when paging changes it, which the
+                     numbered pager achieved through focus moving to the newly
+                     active button. The terse "11 / 45" is for the eye only
+                     (a screen reader would say "eleven slash forty-five"); the
+                     announced text is the visually-hidden long form. -->
+                <span
+                    v-if="isCompact"
+                    class="dx-pager-status small"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <span class="visually-hidden">Page {{ currentPage }} of {{ lastPage }}</span>
+                    <span aria-hidden="true">{{ currentPage }} / {{ lastPage }}</span>
+                </span>
+
+                <template
+                    v-for="(item, index) in visiblePageItems"
+                    :key="item.type === 'page' ? `p${item.page}` : `e${index}`"
+                >
                     <DButton
                         v-if="item.type === 'page'"
                         size="sm"
@@ -94,6 +130,7 @@
 import { computed } from "vue";
 import DButton from "../base/DButton.vue";
 import DFormSelect from "../base/DFormSelect.vue";
+import { useContainerWidth } from "../../composables/useContainerWidth";
 import type { PaginationData } from "./DXTable.vue";
 
 interface Props {
@@ -115,9 +152,31 @@ interface Props {
     pluralItemName: string;
     /** Whether a column filter is active — gates the "Filtered from N" note. */
     hasActiveFilters: boolean;
+
+    /**
+     * Upper bound (px) on the pager ROW width at which the number window may
+     * collapse to the compact "current / last" status (#162). At or above it
+     * the full windowed pager always renders, whatever the page count.
+     *
+     * Default **576** — Bootstrap's `sm` breakpoint, i.e. the width the rest of
+     * the design system already treats as phone-sized. Its job is to GUARANTEE
+     * that a desktop-width table is never quietly downgraded: a 45-page window
+     * that doesn't quite fit at 800px should wrap (today's behaviour), not lose
+     * its numbers.
+     *
+     * Below it, compact engages only when the full pager genuinely would not
+     * fit on one line (see `fullPagerWidth`) — so a three-page pager still
+     * shows `1 2 3` on a phone, where "2 / 3" would be strictly worse.
+     *
+     * Measured on the ROW, not the viewport, so a table squeezed by a sidebar
+     * or inside a modal collapses even though the window is wide.
+     */
+    compactThreshold?: number;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    compactThreshold: 576,
+});
 
 const emit = defineEmits<{
     /** The user picked a page. Payload is the new 1-based page number. */
@@ -182,6 +241,71 @@ const pageItems = computed<PageItem[]>(() => {
   return items;
 });
 
+// Compact pager (#162). Container-driven, not viewport-driven — see the
+// `compactThreshold` prop.
+//
+// Approximate intrinsic widths of the pager's parts, in rem, mirroring this
+// component's own CSS and button labels: a page key is `min-width: 2.5rem`, the
+// row is `gap-1` (0.25rem), the ellipsis is a glyph plus 0.15rem side padding,
+// and "« Previous" + "Next »" together come to about 10rem at `.btn-sm`.
+// Deliberately an ESTIMATE, not a measurement: being wrong by a few px only
+// shifts the collapse by one page key, which is cosmetic — whereas measuring
+// the rendered strip would mean measuring the very thing this decision
+// removes, i.e. a feedback loop.
+const PAGE_KEY_REM = 2.5;
+const ITEM_GAP_REM = 0.25;
+const ELLIPSIS_REM = 1;
+const PREV_NEXT_REM = 10;
+
+/** px per rem, so a consumer scaling the root font size is tracked. */
+function rootFontSizePx(): number {
+  // Only ever reached in a browser (see `isCompact`), but stay SSR-safe.
+  if (typeof document === "undefined") return 16;
+  const size = Number.parseFloat(
+    getComputedStyle(document.documentElement).fontSize,
+  );
+  return Number.isFinite(size) && size > 0 ? size : 16;
+}
+
+/** Width the row needs to lay the full windowed pager out on ONE line. */
+const fullPagerWidth = computed(() => {
+  const remPx = rootFontSizePx();
+  let widthRem = PREV_NEXT_REM;
+  for (const item of pageItems.value) {
+    widthRem +=
+      (item.type === "page" ? PAGE_KEY_REM : ELLIPSIS_REM) + ITEM_GAP_REM;
+  }
+  return widthRem * remPx;
+});
+
+const { containerRef, hasMeasured, isBelow } = useContainerWidth({
+  // Compact means "narrower than the breakpoint AND too narrow for the full
+  // pager", which is exactly `width < min(threshold, needed)` — expressing it
+  // as one threshold rather than two conditions keeps the hysteresis below
+  // applied to the WHOLE decision instead of just half of it. A getter, so
+  // both a reactive `compactThreshold` and a changing page count re-evaluate
+  // instead of latching the mount-time value.
+  threshold: () => Math.min(props.compactThreshold, fullPagerWidth.value),
+  // The compact row is SHORTER than the wrapped full pager, so an ancestor with
+  // `overflow:auto` can lose its vertical scrollbar when we collapse, widening
+  // this row by ~15-17px, back over the threshold, and it flips forever. A band
+  // wider than any scrollbar makes the crossing one-way.
+  hysteresis: 24,
+});
+
+/**
+ * Gated on `hasMeasured` so an UNMEASURED render (the first frame, and every
+ * SSR render, where there is no `ResizeObserver`) is byte-identical to the
+ * pre-#162 full pager. `initialWidth` defaults to 0, i.e. "assume narrowest",
+ * which would otherwise make every desktop render start compact and flip.
+ */
+const isCompact = computed(() => hasMeasured.value && isBelow.value);
+
+/** Empty in compact mode — the status replaces the whole number window. */
+const visiblePageItems = computed<PageItem[]>(() =>
+  isCompact.value ? [] : pageItems.value,
+);
+
 const canPrev = computed(() => currentPage.value > 1);
 const canNext = computed(() => currentPage.value < lastPage.value);
 
@@ -221,6 +345,23 @@ const goToPage = (page: number) => {
 .dx-pager :deep(.btn):first-child,
 .dx-pager :deep(.btn):last-child {
     min-width: auto;
+}
+
+/* Compact pager status (#162): "11 / 45" standing in for the number window.
+   A plain element this component owns, so it needs no `:deep()`. It is not a
+   button — deliberately, since there is nothing to click — so it is styled to
+   read as a label rather than a disabled key. */
+.dx-pager--compact .dx-pager-status {
+    padding: 0 0.35rem;
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* Nothing can wrap in compact mode — the row is three items wide by design, and
+   a wrap here would defeat the whole point of collapsing it. */
+.dx-pager--compact {
+    flex-wrap: nowrap;
 }
 
 .dx-pager-ellipsis {
