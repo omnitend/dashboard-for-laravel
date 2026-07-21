@@ -18,6 +18,17 @@ import { customerData, customerFields } from '../fixtures/tableData';
  * the card's edge (24px of `.card-body` padding), so that distance is what is
  * measured. Verified red against the unfixed component: the flush assertions
  * reported ~24px.
+ *
+ * #166 then moved the radius clipping OFF the card and onto the flush table
+ * region, so the card no longer cuts off a consumer's non-teleported overlay in
+ * a slot. Geometry can't see that at all — an overlay's rect is identical
+ * clipped or not — so those assertions hit-test with `elementFromPoint` instead.
+ *
+ * One thing deliberately NOT asserted: an absolutely-positioned overlay in a
+ * `cell(<key>)` slot escaping the table. Bootstrap's `.table-responsive` is a
+ * scroll container (`overflow-x: auto`), so it clipped cell content before this
+ * change and still does; only `:responsive="false"` ever let a cell overlay out,
+ * and there the flush table now clips at its own (card-width) box instead.
  */
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -27,21 +38,65 @@ interface TableProps {
   title?: string;
   clientSide?: boolean;
   error?: string;
+  responsive?: boolean;
 }
 
-const renderTable = (props: TableProps) =>
+const renderTable = (props: TableProps, slots?: Record<string, () => unknown>) =>
   render({
     render: () =>
-      h(BApp, {}, () =>
-        h(DXTable, {
-          items: customerData,
-          fields: customerFields,
-          clientSide: true,
-          striped: true,
-          ...props,
-        }),
-      ),
+      // The margin guarantees viewport room on every side of the card, so the
+      // hit-tests below can probe points OUTSIDE it without falling off-screen
+      // (elementFromPoint returns null for negative coordinates, which would
+      // make an "is it reachable?" assertion fail for the wrong reason).
+      h('div', { style: 'margin: 120px' }, [
+        h(BApp, {}, () =>
+          h(
+            DXTable,
+            {
+              items: customerData,
+              fields: customerFields,
+              clientSide: true,
+              striped: true,
+              ...props,
+            },
+            slots,
+          ),
+        ),
+      ]),
   });
+
+/*
+ * The theme's card radius is 0.5rem (8px), whose corner arc is too shallow to
+ * hit-test against sub-pixel geometry: a point 3px in from the corner still
+ * falls INSIDE an 8px arc. So the probe inflates the two Bootstrap card tokens
+ * the rules under test actually read — `--bs-card-border-radius` for the card
+ * and `--bs-card-inner-border-radius` for the flush table region — leaving the
+ * rules themselves untouched. (Setting `--bs-border-radius` does nothing here:
+ * Bootstrap compiles the card tokens from Sass values, not from that variable.)
+ */
+const PROBE_RADIUS = 24;
+const PROBE_INNER_RADIUS = 23; // radius minus the card's 1px border
+
+/**
+ * Hit-test a point 3px inside a card corner — comfortably OUTSIDE a 24px arc
+ * (distance from the arc centre is ~29.7px). Returns the topmost element
+ * painted there.
+ *
+ * Presence would prove nothing here (the table is in the DOM clipped or not),
+ * so this asks the question that actually differs: is the table region still
+ * *reachable* in the corner the card border curves away from?
+ */
+const cornerHit = (card: HTMLElement, corner: 'top' | 'bottom' = 'top') => {
+  card.style.setProperty('--bs-card-border-radius', `${PROBE_RADIUS}px`);
+  card.style.setProperty('--bs-card-inner-border-radius', `${PROBE_INNER_RADIUS}px`);
+  const rect = card.getBoundingClientRect();
+  const y = corner === 'top' ? rect.top + 3 : rect.bottom - 3;
+  return document.elementFromPoint(rect.left + 3, y);
+};
+
+/** True when `element` is the hit target or an ancestor of it. */
+const hitLandsInside = (hit: Element | null, element: Element | null) =>
+  Boolean(hit && element && (hit === element || element.contains(hit)));
 
 /** Distance from an element's left edge to the *inside* of the card's left border. */
 const insetFromCardLeft = (card: HTMLElement, element: HTMLElement) =>
@@ -118,12 +173,88 @@ describe('DXTable card mode renders the table flush to the card border', () => {
     expect(card.querySelector(':scope > .card-body')).toBeNull();
   });
 
-  it('clips the card so the flush table follows the border radius', async () => {
-    const screen = renderTable({ card: true, title: 'Customers' });
+  it('the flush table region follows the card radius (responsive)', async () => {
+    // No title => no `.card-header`, so the table region IS the card's first
+    // child and therefore the thing sitting on the rounded top corners.
+    const screen = renderTable({ card: true });
     await flush();
 
     const card = screen.container.querySelector('.card') as HTMLElement;
-    expect(getComputedStyle(card).overflow).toBe('hidden');
+    const region = screen.container.querySelector('.table-responsive') as HTMLElement;
+    expect(card.firstElementChild).toBe(region);
+
+    // Unrounded, the table's square corner paints over the card border and this
+    // hit-test lands on a <th>. Measured: `TH` unrounded, `DIV.card` rounded.
+    expect(hitLandsInside(cornerHit(card), region)).toBe(false);
+  });
+
+  it('the flush table region follows the card radius with :responsive="false"', async () => {
+    const screen = renderTable({ card: true, responsive: false });
+    await flush();
+
+    const card = screen.container.querySelector('.card') as HTMLElement;
+    const table = screen.container.querySelector('table') as HTMLElement;
+    // With responsive off there is no `.table-responsive` wrapper — the bare
+    // table sits at the card edge, and `border-radius` alone does NOT round the
+    // collapsed-border cell backgrounds, so the shell has to clip it explicitly.
+    expect(screen.container.querySelector('.table-responsive')).toBeNull();
+    expect(card.firstElementChild).toBe(table);
+
+    expect(hitLandsInside(cornerHit(card), table)).toBe(false);
+  });
+
+  it('the card itself does not clip — slot overlays stay reachable (#166)', async () => {
+    const screen = renderTable({ card: true, title: 'Customers' }, {
+      header: () =>
+        h('div', { style: 'position: relative' }, [
+          h('div', {
+            class: 'flush-probe-overlay',
+            style:
+              'position: absolute; top: 0; left: -80px; width: 60px; height: 40px; background: red',
+          }),
+        ]),
+    });
+    await flush();
+
+    const card = screen.container.querySelector('.card') as HTMLElement;
+    const overlay = screen.container.querySelector('.flush-probe-overlay') as HTMLElement;
+    expect(overlay).toBeTruthy();
+
+    // The rect is IDENTICAL clipped or not, so geometry alone proves nothing —
+    // and `querySelector` finding the overlay proves less than nothing. What
+    // differs is whether the overlay is painted/hit-testable outside the card,
+    // so probe its centre, first checking that centre really is outside.
+    const overlayRect = overlay.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const probeX = overlayRect.left + overlayRect.width / 2;
+    const probeY = overlayRect.top + overlayRect.height / 2;
+    expect(probeX).toBeGreaterThan(0);
+    expect(probeX).toBeLessThan(cardRect.left);
+
+    expect(hitLandsInside(document.elementFromPoint(probeX, probeY), overlay)).toBe(true);
+    expect(getComputedStyle(card).overflow).not.toBe('hidden');
+  });
+
+  it('the flush table region still scrolls horizontally', async () => {
+    // Trap in #166: `.table-responsive` carries `overflow-x: auto`, so clipping
+    // the radius by adding `overflow: hidden` there would kill scrolling — and
+    // the flush look would survive, hiding the breakage. Assert the scroll.
+    const screen = renderTable({ card: true, title: 'Customers' });
+    await flush();
+
+    const region = screen.container.querySelector('.table-responsive') as HTMLElement;
+    const table = screen.container.querySelector('table') as HTMLElement;
+    table.style.width = '3000px';
+
+    expect(region.scrollWidth).toBeGreaterThan(region.clientWidth);
+    region.scrollLeft = 50;
+    expect(region.scrollLeft).toBe(50);
+    // The load-bearing assertion: `scrollLeft` is settable on an
+    // `overflow: hidden` box too, so the two lines above stay GREEN if the
+    // radius is ever "fixed" by clipping here. Only the computed overflow
+    // distinguishes a scrollable region from a clipped one. Verified: adding
+    // `overflow: hidden` to `.table-responsive` fails this line and no other.
+    expect(getComputedStyle(region).overflowX).toBe('auto');
   });
 
   it('the card header keeps its padding', async () => {
@@ -184,8 +315,9 @@ describe('DXTable plain mode (:card="false") is unchanged', () => {
     const table = screen.container.querySelector('table') as HTMLElement;
 
     expect(table.getBoundingClientRect().left - plain.getBoundingClientRect().left).toBeLessThan(1);
-    // The card-only `overflow: hidden` must not leak into the plain variant.
+    // No card, no corners to follow — nothing in the plain variant may clip.
     expect(getComputedStyle(plain).overflow).toBe('visible');
+    expect(getComputedStyle(table).overflow).toBe('visible');
   });
 
   it('the pagination footer gains no card padding', async () => {
@@ -229,5 +361,25 @@ describe('DXTableShell card mode leaves no trailing margin at the card bottom', 
       parseFloat(getComputedStyle(card).borderBottomWidth) -
       region.getBoundingClientRect().bottom;
     expect(bottomGap).toBeLessThan(1);
+  });
+
+  it('rounds the BOTTOM corners when the table region is the last child', async () => {
+    const screen = render({
+      render: () =>
+        h('div', { style: 'margin: 120px' }, [
+          h(BApp, {}, () =>
+            h(DXTableShell, { card: true }, () => [
+              h('div', { class: 'table-responsive' }, [
+                h('table', { class: 'table' }, [h('tbody', [h('tr', [h('td', 'x')])])]),
+              ]),
+            ]),
+          ),
+        ]),
+    });
+    await flush();
+
+    const card = screen.container.querySelector('.card') as HTMLElement;
+    const region = screen.container.querySelector('.table-responsive') as HTMLElement;
+    expect(hitLandsInside(cornerHit(card, 'bottom'), region)).toBe(false);
   });
 });

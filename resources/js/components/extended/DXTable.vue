@@ -606,17 +606,16 @@ export interface Props<TItem = any> {
      * data-heavy admin index pages that read as busy inside a card.
      *
      * The table renders FLUSH to the card border (rows and stripes reach the
-     * edge) while the header and pagination stay padded, which requires the card
-     * to clip to its radius (`overflow: hidden`).
+     * edge) while the header and pagination stay padded. Only the table region
+     * is rounded to follow the card's corners — the card itself does not clip
+     * (#166), so a `position: absolute` popover you render into `#header` or
+     * any other slot is free to overhang the card.
      *
-     * **Consequence for slot content:** anything you render into a slot that
-     * positions itself OUTSIDE the card and does not teleport is clipped at the
-     * card edge. Library components are unaffected — `DDropdown` teleports to
-     * `<body>` by default, and the column-filter menus position themselves
-     * `fixed` — so this only bites a hand-rolled `position: absolute` overlay
-     * (a custom popover in a `cell(<key>)` or `#header` slot). Teleport it, or
-     * use `:card="false"`. Narrowing the clip to the table region is tracked
-     * as #166.
+     * The one place content is still clipped is INSIDE the table: Bootstrap's
+     * `.table-responsive` is a horizontal scroll container, so an overlay in a
+     * `cell(<key>)` slot is bounded by it. Teleport it (bvn's own menus already
+     * do — `DDropdown` teleports to `<body>`, the column-filter menus are
+     * `fixed`), or pass `:responsive="false"`.
      */
     card?: boolean;
 

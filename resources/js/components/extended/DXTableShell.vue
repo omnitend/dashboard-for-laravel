@@ -17,16 +17,16 @@
   block, table, pagination — become direct children of `.card`, which is already
   a `flex-direction: column` container, so they still stack in order:
 
-      .card (overflow: hidden)
+      .card
       ├─ .card-header          (padded by Bootstrap's card-cap padding)
-      ├─ .table-responsive     ← FLUSH
+      ├─ .table-responsive     ← FLUSH, rounded when it is at a card corner
       │   └─ table
       └─ .dx-table-pagination  (pads itself — see DXTablePagination.vue)
 
   Bootstrap 5 has no `.card > .table` rounding rules (that was BS4), so the
-  clipping is done with `overflow: hidden` on the card: the flush table's square
-  top corners then follow the card's radius whether or not a header is present.
-  bvn's popups position `fixed` by default, so they are not clipped by it.
+  flush table's square corners have to be rounded here. The rounding is applied
+  to the TABLE REGION, never to the card: clipping the whole card would cut off
+  any non-teleported positioned content a consumer puts in a slot (#166).
 -->
 <template>
   <DCard v-if="card" no-body class="dx-table-card">
@@ -82,21 +82,56 @@ withDefaults(defineProps<Props>(), {
 */
 
 /*
-  Clip the card to its radius so the flush table's square corners follow the
-  border. Kept in this global block with the rest of the card-mode layout: a
+  Round the flush table region so its square corners follow the card border.
+
+  This used to be `overflow: hidden` on the WHOLE card, which clipped every
+  non-teleported positioned descendant — including a consumer's own
+  `position: absolute` popover in a `#header` or `cell(<key>)` slot (#166).
+  The clip now sits on the table region itself, and only on the corners the
+  region actually occupies: `.card-header` and `.dx-table-pagination` round the
+  corners themselves when they are present, so the radius is applied via
+  `:first-child` / `:last-child` rather than unconditionally. Vue renders a
+  false `v-if` as a comment node, which `:first-child` ignores, so the error
+  alert and spinner branches don't disturb the match.
+
+  These rules stay in this global block with the rest of the card-mode layout: a
   scoped rule WOULD reach DCard's root (the renderer walks the component-root
   chain), but that forwarding is the exact thing CLAUDE.md records as unreliable
   across build pipelines, and a silently-unclipped card is invisible in review.
   The lower specificity also leaves consumers free to override it.
-
-  KNOWN LIMITATION (#166): this clips the WHOLE card, so a consumer's own
-  non-teleported `position: absolute` overlay in a slot is cut off at the card
-  edge. dfl's own components are fine — DDropdown teleports to <body>, the
-  filter menus are `fixed` — so the residual case is a hand-rolled popover.
-  The fix is to move the radius clipping onto the flush table region, which
-  `.table-responsive`'s `overflow-x: auto` complicates; see the issue.
 */
-.dx-table-card {
+.dx-table-card > .table-responsive:first-child,
+.dx-table-card > .table:first-child {
+  border-top-left-radius: var(--bs-card-inner-border-radius);
+  border-top-right-radius: var(--bs-card-inner-border-radius);
+}
+
+.dx-table-card > .table-responsive:last-child,
+.dx-table-card > .table:last-child {
+  border-bottom-left-radius: var(--bs-card-inner-border-radius);
+  border-bottom-right-radius: var(--bs-card-inner-border-radius);
+}
+
+/*
+  `.table-responsive` needs NO `overflow` of its own: Bootstrap already gives it
+  `overflow-x: auto`, which computes `overflow-y` to `auto` as well, so it is
+  already a clipping context and the radius above rounds that clip. Measured in
+  a real browser (see DXTable-CardFlush.test.ts): without the radius a hit-test
+  3px inside the card's corner lands on a `<th>`; with it, on the card.
+  Do NOT add `overflow: hidden` here — it would kill the horizontal scrolling
+  that makes a wide table usable, and the flush look would survive to hide it.
+
+  A bare `<table>` (`:responsive="false"`) is a different story: it is not a
+  clipping context, and `border-radius` on it leaves the collapsed-border cell
+  backgrounds square (measured — the corner still hit-tests to a `<th>`). That
+  one needs an explicit clip, scoped to the flush table so it is the table
+  region and not the card that clips. Note this restores the pre-0.35 behaviour
+  where a `:responsive="false"` table too wide for its card overflows visibly
+  rather than being silently cut off — that mode opts out of a scroll container
+  by definition.
+*/
+.dx-table-card > .table:first-child,
+.dx-table-card > .table:last-child {
   overflow: hidden;
 }
 
