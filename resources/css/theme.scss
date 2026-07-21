@@ -794,8 +794,10 @@ $dx-chart-palette: (#2563eb, #65a30d, #7c3aed, #0d9488, #ea580c, #0891b2, #d9770
 // same method as the light set (OKLab ΔE ×100, Viénot protan/deutan): min
 // adjacent CVD ΔE 15.1 (light set: 13.8), min normal ΔE 25.3, contrast
 // 5.67–10.23:1 on #212529. Swapping a step needs that validation re-run.
-// getPalette() reads the CSS variables live, so charts follow the theme with
-// no JS change; the TS fallbacks stay the light set (SSR/no-CSS default).
+// getPalette() reads these CSS variables live — off the CHART'S OWN container,
+// so nested colour-mode scopes resolve correctly, and re-read on every
+// `data-bs-theme` change so mounted charts repaint (#161). The TS fallbacks
+// stay the light set (SSR/no-CSS default).
 $dx-chart-palette-dark: (#60a5fa, #a3e635, #a78bfa, #2dd4bf, #fb923c, #22d3ee, #fbbf24, #f472b6);
 
 :root {
@@ -807,6 +809,18 @@ $dx-chart-palette-dark: (#60a5fa, #a3e635, #a78bfa, #2dd4bf, #fb923c, #22d3ee, #
 [data-bs-theme="dark"] {
   @for $i from 1 through list.length($dx-chart-palette-dark) {
     --dx-chart-#{$i}: #{list.nth($dx-chart-palette-dark, $i)};
+  }
+}
+
+// Bootstrap allows `data-bs-theme` on ANY container, so colour-mode scopes
+// nest — and custom properties inherit. Without this re-declaration a LIGHT
+// scope inside a dark root (a light card on a dark page) would inherit the dark
+// palette, because only `:root` publishes the light values and the dark block
+// above overrides it for the whole subtree (#161). Same list as `:root`, so the
+// two can't drift.
+[data-bs-theme="light"] {
+  @for $i from 1 through list.length($dx-chart-palette) {
+    --dx-chart-#{$i}: #{list.nth($dx-chart-palette, $i)};
   }
 }
 

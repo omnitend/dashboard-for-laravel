@@ -8,12 +8,13 @@
   Requires the optional peer deps `chart.js` and `vue-chartjs`.
 -->
 <template>
-  <div class="dx-chart">
+  <div ref="host" class="dx-chart">
     <Bar :data="chartData" :options="mergedOptions" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from "vue";
 import { Bar } from "vue-chartjs";
 import { registerCharts } from "./chartTheme";
 import { useThemedChart, type ThemedChartProps } from "./useThemedChart";
@@ -27,5 +28,9 @@ const props = withDefaults(defineProps<ThemedChartProps<"bar">>(), {
   showLegend: undefined,
 });
 
-const { chartData, mergedOptions } = useThemedChart("bar", props);
+// The container is the `data-bs-theme` scope the palette resolves against, so a
+// chart inside a dark card on a light page themes from the card (#161).
+const host = ref<HTMLElement | null>(null);
+
+const { chartData, mergedOptions } = useThemedChart("bar", props, host);
 </script>

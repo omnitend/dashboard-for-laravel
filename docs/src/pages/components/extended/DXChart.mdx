@@ -78,6 +78,27 @@ To retheme charts, override the variables in your own CSS:
 }
 ```
 
+### Dark mode and nested colour-mode scopes
+
+The palette is resolved from the **chart container's own computed style**, not
+from `<html>`. So it follows Bootstrap's colour mode wherever that mode is set:
+`data-bs-theme` on the root themes every chart, and `data-bs-theme` on a single
+card themes only the charts inside it — a dark panel on a light page charts in
+the dark palette, and a light panel on a dark page charts in the light one.
+
+The same applies to a variable override: setting `--dx-chart-*` on a container
+rethemes only the charts within it.
+
+```html
+<div data-bs-theme="dark" class="card p-3">
+  <!-- charts here use the dark palette even on a light page -->
+</div>
+```
+
+Mounted charts **repaint when the colour mode changes** — no remount or key
+bump needed. The components watch `data-bs-theme` and re-resolve the variables,
+so a theme toggle updates every visible chart in place.
+
 ## Optional peer dependencies
 
 Charts require `chart.js` and `vue-chartjs`, which are **optional** peer

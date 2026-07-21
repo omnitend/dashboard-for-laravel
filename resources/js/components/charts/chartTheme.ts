@@ -5,6 +5,7 @@
  * registration. chart.js / vue-chartjs are OPTIONAL peer deps.
  */
 import { Chart, registerables } from "chart.js";
+import { getCurrentScope, onScopeDispose, ref, type Ref } from "vue";
 
 export type ChartValueFormat = "number" | "currency" | "percent";
 
@@ -59,12 +60,37 @@ export const PALETTE_VARS: Array<[string, string]> = [
     ["--dx-chart-8", "#db2777"], // pink
 ];
 
-/** Resolve the themed categorical palette from the document root. */
-export function getPalette(): string[] {
+/**
+ * The element whose computed style the theme variables are read from.
+ *
+ * Bootstrap 5.3 allows `data-bs-theme` on ANY container, not just `<html>` — a
+ * dark card on a light page is a supported pattern. Reading the variables off
+ * `document.documentElement` therefore gives a *nested* scope the wrong palette
+ * (#161), so every resolver takes the chart's own container and only falls back
+ * to the root when it has none (SSR, a caller outside a component).
+ */
+function themeScope(scope?: Element | null): Element | null {
     if (typeof document === "undefined" || typeof getComputedStyle === "undefined") {
+        return null;
+    }
+    if (scope !== undefined && scope !== null) return scope;
+    return document.documentElement;
+}
+
+/**
+ * Resolve the themed categorical palette.
+ *
+ * @param scope The chart's container element; its computed style decides which
+ *   `data-bs-theme` scope applies. Omit (or pass null) to read the document
+ *   root — the pre-#161 behaviour, kept so the exported signature stays
+ *   backward compatible.
+ */
+export function getPalette(scope?: Element | null): string[] {
+    const host = themeScope(scope);
+    if (host === null) {
         return PALETTE_VARS.map(([, fallback]) => fallback);
     }
-    const styles = getComputedStyle(document.documentElement);
+    const styles = getComputedStyle(host);
     return PALETTE_VARS.map(([name, fallback]) => {
         const value = styles.getPropertyValue(name).trim();
         return value || fallback;
@@ -72,14 +98,71 @@ export function getPalette(): string[] {
 }
 
 /** Read a single theme colour (e.g. the body text colour) with a fallback. */
-function themeColor(name: string, fallback: string): string {
-    if (typeof document === "undefined" || typeof getComputedStyle === "undefined") {
+function themeColor(name: string, fallback: string, scope?: Element | null): string {
+    const host = themeScope(scope);
+    if (host === null) {
         return fallback;
     }
-    const value = getComputedStyle(document.documentElement)
-        .getPropertyValue(name)
-        .trim();
+    const value = getComputedStyle(host).getPropertyValue(name).trim();
     return value || fallback;
+}
+
+// ---------------------------------------------------------------------------
+// Colour-mode reactivity (#161)
+//
+// The palette lives in CSS variables, which Vue cannot track: a computed that
+// calls getPalette() depends only on the props it also reads, so flipping
+// `data-bs-theme` repaints the page but leaves every MOUNTED chart on the old
+// palette until a prop changes or it remounts. One shared MutationObserver
+// bumps a version ref that the chart computeds read, which re-resolves the
+// variables. `subtree: true` because the attribute can sit on any container,
+// and `attributeFilter` keeps the observer from firing on unrelated mutations.
+// ---------------------------------------------------------------------------
+
+const colorModeVersion = ref(0);
+let colorModeObserver: MutationObserver | null = null;
+let colorModeWatchers = 0;
+
+/**
+ * A version ref that increments whenever a `data-bs-theme` attribute changes
+ * anywhere in the document. Read it inside a computed that resolves theme
+ * variables to make that computed re-run on a colour-mode switch.
+ *
+ * The observer is started on first use and disconnected when the last consumer's
+ * effect scope is disposed, so nothing leaks after the charts unmount. Called
+ * outside an effect scope (or without a DOM) it is a no-op returning a static
+ * ref — there would be no teardown hook to disconnect the observer.
+ */
+export function useColorModeVersion(): Ref<number> {
+    if (
+        typeof document === "undefined" ||
+        typeof MutationObserver === "undefined" ||
+        getCurrentScope() === undefined
+    ) {
+        return colorModeVersion;
+    }
+
+    colorModeWatchers += 1;
+    if (colorModeObserver === null) {
+        colorModeObserver = new MutationObserver(() => {
+            colorModeVersion.value += 1;
+        });
+        colorModeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["data-bs-theme"],
+            subtree: true,
+        });
+    }
+
+    onScopeDispose(() => {
+        colorModeWatchers -= 1;
+        if (colorModeWatchers === 0 && colorModeObserver !== null) {
+            colorModeObserver.disconnect();
+            colorModeObserver = null;
+        }
+    });
+
+    return colorModeVersion;
 }
 
 /** Add an alpha channel to a hex or rgb() colour (best-effort). */
@@ -122,6 +205,9 @@ export interface BaseOptionArgs {
     showLegend?: boolean;
     /** Whether the chart has value axes (bar/line) vs none (doughnut). */
     hasValueAxis?: boolean;
+    /** The chart's container element — decides which `data-bs-theme` scope the
+     *  grid/tick colours resolve against (#161). Defaults to the document root. */
+    scope?: Element | null;
 }
 
 /** Dashboard default Chart.js options merged under any consumer `options`. */
@@ -132,10 +218,14 @@ export function baseOptions(args: BaseOptionArgs): Record<string, any> {
         locale,
         showLegend = false,
         hasValueAxis = true,
+        scope,
     } = args;
 
-    const gridColor = withAlpha(themeColor("--bs-border-color", "#dee2e6"), 0.6);
-    const tickColor = themeColor("--bs-secondary-color", "#6c757d");
+    const gridColor = withAlpha(
+        themeColor("--bs-border-color", "#dee2e6", scope),
+        0.6,
+    );
+    const tickColor = themeColor("--bs-secondary-color", "#6c757d", scope);
 
     const options: Record<string, any> = {
         responsive: true,
@@ -185,13 +275,18 @@ export function baseOptions(args: BaseOptionArgs): Record<string, any> {
  * Apply the themed palette to any dataset that doesn't set its own colours.
  * Bar: one colour per dataset (or per bar for a single dataset). Line: a themed
  * stroke + translucent fill. Doughnut/pie: one colour per slice.
+ *
+ * `scope` is the chart's container element; the palette is resolved from its
+ * computed style so a nested `data-bs-theme` container themes correctly (#161).
+ * Omit it to resolve against the document root.
  */
 export function applyPalette(
     datasets: any[],
     kind: "bar" | "line" | "doughnut",
     labelsCount: number,
+    scope?: Element | null,
 ): any[] {
-    const palette = getPalette();
+    const palette = getPalette(scope);
     const single = datasets.length === 1;
 
     return datasets.map((dataset, index) => {
