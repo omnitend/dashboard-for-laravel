@@ -1305,11 +1305,18 @@ const headerLabel = (field: TableField, slotLabel?: string): string =>
  * the client-side filter compares against (`String(itemValue) === candidate`),
  * so formatting must never leak into it.
  *
- * `formatter` is bootstrap-vue-next's field formatter, `(value, key, item)`.
+ * `formatter` is bootstrap-vue-next's field formatter, `(value, key, item)`, and
+ * its first argument is by contract the value of `field.key` — the DISPLAYED
+ * column value. That matters when `filterKey` names a different property: the
+ * option's value must stay the FILTER value (that is what the row filter
+ * compares), but the formatter must still be handed the display value it was
+ * written against. Passing the filter value here fed a `customer` column's
+ * `(customer) => customer.name` formatter a numeric `customer_id`, which
+ * mislabels at best and throws at worst.
  */
-const formattedFilterLabel = (field: TableField, value: any, item: unknown): string | null => {
+const formattedFilterLabel = (field: TableField, item: unknown): string | null => {
     if (typeof field.formatter !== 'function') return null;
-    const formatted = field.formatter(value, field.key, item);
+    const formatted = field.formatter(fieldValueOf(item, field.key), field.key, item);
     if (formatted === null || formatted === undefined) return null;
     return String(formatted);
 };
@@ -1357,6 +1364,16 @@ const derivedFilterOptions = computed<Record<string, FilterOption[]>>(() => {
         // argument the column's formatter expects.
         const firstRowByValue = new Map<string, { rawValue: any; item: unknown }>();
 
+        // Candidates the filter reads as CONTROL values rather than data, so a
+        // row whose value collides with one can never be matched by selecting it
+        // (`handleSelectFilterChange` turns the "all" sentinel back into "no
+        // filter", and the null sentinel is intercepted upstream of the select's
+        // exact-match arm, where it means "has no value"). Offering such an
+        // option would be a dropdown entry that returns zero rows, and the null
+        // one would also duplicate the `filterNullText` entry's value.
+        const reservedCandidates = new Set<string>([FILTER_ALL_VALUE]);
+        if (field.filterNullText) reservedCandidates.add(filterNullValueFor(field));
+
         for (const item of rows) {
             const value = clientSideFilterValueOf(item, field, filterKey);
             // null / undefined / '' are skipped deliberately: "has no value" is
@@ -1364,6 +1381,7 @@ const derivedFilterOptions = computed<Record<string, FilterOption[]>>(() => {
             // an unlabelled blank row in the list would be unusable.
             if (value === null || value === undefined || value === '') continue;
             const stringValue = String(value);
+            if (reservedCandidates.has(stringValue)) continue;
             if (!firstRowByValue.has(stringValue)) {
                 firstRowByValue.set(stringValue, { rawValue: value, item });
             }
@@ -1380,9 +1398,9 @@ const derivedFilterOptions = computed<Record<string, FilterOption[]>>(() => {
                 : leftText.localeCompare(rightText, undefined, { numeric: true, sensitivity: 'base' }),
         );
 
-        optionsByFieldKey[field.key] = entries.map(([stringValue, { rawValue, item }]) => ({
+        optionsByFieldKey[field.key] = entries.map(([stringValue, { item }]) => ({
             value: stringValue,
-            text: formattedFilterLabel(field, rawValue, item) ?? stringValue,
+            text: formattedFilterLabel(field, item) ?? stringValue,
         }));
     }
 

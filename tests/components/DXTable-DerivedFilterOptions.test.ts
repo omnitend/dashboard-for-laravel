@@ -314,4 +314,85 @@ describe('DXTable client-side derived select-filter options (B2)', () => {
 
     expect(texts).toEqual([]);
   });
+
+  /*
+   * Both cases below were found by an independent review pass, not by the
+   * feature work — each is a derived option that LOOKS right in the dropdown
+   * but cannot do what the user expects when clicked.
+   */
+
+  it('omits a row value that collides with the "no value" sentinel', async () => {
+    // `filterNullValue` defaults to the string "null". A row whose real value is
+    // also "null" used to be derived as an ordinary option — but the row filter
+    // intercepts that candidate ABOVE the select's exact-match arm and reads it
+    // as "has no value", so selecting it returns only value-less rows. Here
+    // every row HAS a value, so the offered option would match nothing at all.
+    const items = [
+      { id: 1, name: 'Alpha', access: 'null' },
+      { id: 2, name: 'Beta', access: 'nas' },
+    ];
+    const fields = [
+      { key: 'name', label: 'Name' },
+      {
+        key: 'access',
+        label: 'Access',
+        filter: 'select' as const,
+        filterNullText: 'Unassigned',
+      },
+    ];
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () => h(DXTable, { items, clientSide: true, fields })),
+    });
+    await flush();
+
+    const texts = await openOptionTexts(screen.container, 1, 'n');
+
+    // "nas" is a real, selectable value and must still be offered.
+    expect(valueOptionTexts(texts, ['Unassigned'])).toEqual(['nas']);
+
+    // Exactly ONE entry may carry the sentinel's meaning: the labelled
+    // "Unassigned" row. A second, raw "null" entry would be a duplicate value
+    // in the same dropdown as well as a dead option.
+    expect(texts.filter((text) => text === 'null')).toEqual([]);
+  });
+
+  it('formats a derived label from the DISPLAY value when filterKey differs', async () => {
+    // The formatter contract's first argument is the value of `field.key`. When
+    // `filterKey` names a different property, the option's VALUE must stay the
+    // filter value (that is what the row filter compares) while the formatter
+    // still receives the display value it was written against. Feeding it the
+    // filter value mislabels the option, and throws for any formatter that
+    // reaches into the display value's shape.
+    const items = [
+      { id: 1, name: 'Alpha', customer_id: 42, customer: { label: 'Acme' } },
+      { id: 2, name: 'Beta', customer_id: 7, customer: { label: 'Aperture' } },
+    ];
+    const fields = [
+      { key: 'name', label: 'Name' },
+      {
+        key: 'customer',
+        label: 'Customer',
+        filter: 'select' as const,
+        filterKey: 'customer_id',
+        // Reaches into the display value's shape: handed a bare numeric id this
+        // throws rather than mislabelling, which is how the bug surfaced.
+        formatter: (value: any) => value.label,
+      },
+    ];
+
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () => h(DXTable, { items, clientSide: true, fields })),
+    });
+    await flush();
+
+    const texts = await openOptionTexts(screen.container, 1, 'a');
+
+    // Labels come from the display value. Order follows the FILTER values,
+    // which are numbers here, so the numeric sort puts 7 (Aperture) before
+    // 42 (Acme) — not the lexicographic order of their string forms.
+    expect(valueOptionTexts(texts)).toEqual(['Aperture', 'Acme']);
+  });
 });
