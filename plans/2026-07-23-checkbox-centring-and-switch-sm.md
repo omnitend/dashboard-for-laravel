@@ -48,3 +48,22 @@ wrapper div doesn't receive consumer classes today).
 **Downstream interim:** greendragon shell-global
 `.dx-switch .ot-menu-visible-switch.ot-menu-visible-switch.form-check` rule in
 `ot-menu-product.vue`. Retire on ship.
+
+## 3. Two height anchors: default buttons (43px) vs inputs/DXSwitch (35px)
+
+**Problem.** The theme gives default buttons `$btn-padding-y: 0.625rem` →
+~43px tall, while inputs and DXSwitch share `--dx-input-height` → 35px. Any
+row mixing a button with controls shows the 8px split (greendragon takings:
+the "Show days of week" DXSwitch next to a Reset button — James: "any idea why
+these controls are different heights?"). Inside an input-group Bootstrap
+equalises them; standalone rows don't.
+
+**Ask.** A design decision more than a patch: either (a) align the default
+button height to `--dx-input-height` (drops every button ~8px — a big visual
+change, James should sign off a screenshot), or (b) keep the tall button and
+ship a documented input-height button treatment (a class or size) for mixed
+control rows. The sized variants were already equalised in PO18; this is the
+DEFAULT size's split.
+
+**Downstream interim:** greendragon `ot-takings` filters set
+`.ot-takings__filters .btn { padding-block: 0.375rem }` to match the row.
