@@ -131,6 +131,23 @@
                                         @update:model-value="handleSelectFilterChange(field, $event)"
                                     />
 
+                                    <!-- Native Select Filter (S3b): a plain <select> for consumers who
+                                         want OS-native behaviour (full-height menu, native keyboard/scroll)
+                                         instead of the DAutocomplete typeahead. Shares the select filter's
+                                         option list (getFieldFilterOptions) and change handler
+                                         (handleSelectFilterChange) EXACTLY — so it behaves identically to
+                                         filter:"select" in every way but the control. Single-select only:
+                                         `filterMultiple` is ignored here. The model maps "no filter" to the
+                                         FILTER_ALL_VALUE sentinel (see nativeSelectFilterValue) so the "All …"
+                                         option shows selected in a native control. -->
+                                    <DFormSelect
+                                        v-else-if="field.filter === 'select-native'"
+                                        :model-value="nativeSelectFilterValue(field)"
+                                        :options="getFieldFilterOptions(field) as unknown as Record<string, unknown>[]"
+                                        size="sm"
+                                        @update:model-value="handleSelectFilterChange(field, $event)"
+                                    />
+
                                     <!-- Number Filter -->
                                     <DFormInput
                                         v-else-if="field.filter === 'number'"
@@ -310,11 +327,17 @@ import DXTableShell from "./DXTableShell.vue";
 import DSpinner from "../base/DSpinner.vue";
 import DTable from "../base/DTable.vue";
 import DFormInput from "../base/DFormInput.vue";
+import DFormSelect from "../base/DFormSelect.vue";
 import DAutocomplete from "../base/DAutocomplete.vue";
 import DButton from "../base/DButton.vue";
 import DXTablePagination from "./DXTablePagination.vue";
 import DXTableEditorModal from "./DXTableEditorModal.vue";
-export type FilterType = 'text' | 'select' | 'number' | 'date' | false;
+// 'select'        — DAutocomplete typeahead (browse-on-focus + type-to-narrow).
+// 'select-native' — a plain native <select> (DFormSelect). Same options, value
+//   semantics and client-side matching as 'select'; differs ONLY in the control,
+//   for consumers who want OS-native menu behaviour (full-height menu, native
+//   keyboard/scroll). Single-select only — `filterMultiple` is ignored for it.
+export type FilterType = 'text' | 'select' | 'select-native' | 'number' | 'date' | false;
 
 export interface FilterOption {
     value: string;
@@ -384,6 +407,12 @@ export interface TableField {
     filterAllText?: string;
     sortable?: boolean;
     hint?: string;
+    /**
+     * The inline filter control for this column, or `false`/omit for none. See
+     * `FilterType`. `'select'` (typeahead) and `'select-native'` (plain
+     * `<select>`) share the same options and value semantics — pick the native
+     * one when OS-native menu behaviour matters more than type-to-narrow.
+     */
     filter?: FilterType;
     filterOptions?: FilterOption[];
     filterPlaceholder?: string;
@@ -769,6 +798,19 @@ export interface Props<TItem = any> {
      * declared width share the remaining space equally.
      */
     fixedLayout?: boolean;
+
+    /**
+     * Field on each row whose value uniquely identifies it, forwarded to the
+     * inner bvn table's `primaryKey` (all three data modes). Without it bvn keys
+     * client-side rows by their INDEX, which mis-associates per-row STATEFUL cell
+     * components when a row is inserted/removed mid-interaction — a debounced
+     * edit in one row can end up saved against the wrong record after a
+     * concurrent delete of a row above. Set it (e.g. `primary-key="id"`) so bvn
+     * keys rows by that field's value and each row keeps its identity across
+     * data mutations. Non-breaking: omit it and rows key by index exactly as
+     * before.
+     */
+    primaryKey?: string;
 }
 
 const props = withDefaults(defineProps<Props<T>>(), {
@@ -1102,7 +1144,9 @@ const clientSideFilteredItems = computed<T[]>(() => {
                         // Case-insensitive contains search
                         return String(itemValue).toLowerCase().includes(filterValue);
 
+                    // Both select controls match identically (exact string match).
                     case 'select':
+                    case 'select-native':
                         // Exact match
                         return String(itemValue) === candidate;
 
@@ -1272,6 +1316,15 @@ const fieldsHaveWidths = computed(() => props.fields.some(hasDeclaredWidth));
 // key: a display column can filter on a different server param via `filterKey`.
 const filterKeyFor = (field: TableField): string => field.filterKey ?? field.key;
 
+// Both select-style filters — 'select' (DAutocomplete typeahead) and
+// 'select-native' (plain <select>) — share the SAME option list, value
+// semantics and client-side matching; they differ only in the rendered control.
+// This predicate keeps the two in lockstep everywhere the option-derivation and
+// server-value logic runs, so a `select-native` column gets identical options to
+// what `select` would offer.
+const isSelectFilter = (field: TableField): boolean =>
+    field.filter === 'select' || field.filter === 'select-native';
+
 // The value that means "has no value" for a select filter (#106).
 const filterNullValueFor = (field: TableField): string => field.filterNullValue ?? 'null';
 
@@ -1285,6 +1338,17 @@ const handleSelectFilterChange = (field: TableField, value: unknown) => {
     const selected = (value ?? '') as string;
     handleFilterChange(filterKeyFor(field), selected === FILTER_ALL_VALUE ? '' : selected);
 };
+
+// The model value for a `select-native` control. Unlike DAutocomplete (which
+// falls back to '' and shows its placeholder), a native <select> selects its
+// FIRST option when the bound value matches none — which would desync the
+// control from the model. So the "no filter" state must map to FILTER_ALL_VALUE,
+// the value carried by the "All …" option, so that option shows as selected.
+// This is the read-side mirror of the write-side translation
+// `handleSelectFilterChange` already does (FILTER_ALL_VALUE → '') — the sentinel
+// is handled in one conceptual place, not reinvented.
+const nativeSelectFilterValue = (field: TableField): string =>
+    (effectiveFilters.value[filterKeyFor(field)] as string) || FILTER_ALL_VALUE;
 
 // Multi-value select filter (#51): the autocomplete's array model maps
 // straight onto the filters entry; an emptied selection removes the entry.
@@ -1361,7 +1425,7 @@ const derivedFilterOptions = computed<Record<string, FilterOption[]>>(() => {
     const optionsByFieldKey: Record<string, FilterOption[]> = {};
 
     for (const field of props.fields) {
-        if (field.filter !== 'select') continue;
+        if (!isSelectFilter(field)) continue;
         if (field.deriveFilterOptions === false) continue;
         // Explicit options win outright (see `getFieldFilterOptions`), so don't
         // spend a pass over every row producing a list nothing will read.
@@ -1434,8 +1498,10 @@ const getFieldFilterOptions = (field: TableField): FilterOption[] => {
     //
     // A `filterMultiple` column omits it (#51): "no filter" inside a
     // multi-select reads as a selectable value, and clearing is already
-    // discoverable there — remove the chips, or the ✕.
-    if (!field.filterMultiple) {
+    // discoverable there — remove the chips, or the ✕. `select-native` is the
+    // exception: it is ALWAYS single-select (it ignores `filterMultiple`), so it
+    // still needs the "All" reset option even when `filterMultiple` is set.
+    if (!field.filterMultiple || field.filter === 'select-native') {
         options.push({ value: FILTER_ALL_VALUE, text: filterAllLabelFor(field) });
     }
 
@@ -1750,7 +1816,7 @@ const shouldShowPerPageSelector = computed(() => {
 // mutually exclusive, so a client-side derived column can never appear here.
 const fieldsNeedingFilterValues = computed(() => {
     return props.fields
-        .filter(field => field.filter === 'select' && (!field.filterOptions || field.filterOptions.length === 0))
+        .filter(field => isSelectFilter(field) && (!field.filterOptions || field.filterOptions.length === 0))
         .map(field => filterKeyFor(field));
 });
 
@@ -2243,6 +2309,13 @@ const tablePassthroughProps = computed(() => ({
             ? `No ${pluralItemName.value} match your filters`
             : `No ${pluralItemName.value} found`),
     expandedItems: props.expandedItems,
+    // Row identity (#B16). Forwarded here rather than in `tableModeBindings`
+    // because it is mode-INDEPENDENT — it must key rows by value in provider,
+    // client-side AND inertia mode alike. `undefined` when unset, so bvn falls
+    // back to index keys (its default) and nothing changes for tables that don't
+    // opt in. Reaches BTable through DTable's `v-bind="$attrs"` (its prop is
+    // `primaryKey`); DTable needs no change.
+    primaryKey: props.primaryKey,
 }));
 // Computed: Singular and plural item names
 const singularItemName = computed(() => props.itemName);

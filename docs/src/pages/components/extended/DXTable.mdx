@@ -131,6 +131,7 @@ const items = ref([
   { name: 'hover', type: 'boolean', required: 'No', default: 'true', description: 'Hover effect on rows' },
   { name: 'responsive', type: 'boolean', required: 'No', default: 'true', description: 'Responsive table' },
   { name: 'fixedLayout', type: 'boolean', required: 'No', default: 'false', description: 'Apply table-layout: fixed so column widths stop depending on cell content and no longer reshuffle when a filter narrows the rows. Off by default. Combine with per-field width/minWidth to control proportions; undeclared columns share the rest equally' },
+  { name: 'primaryKey', type: 'string', required: 'No', default: 'undefined', description: 'Field whose value uniquely identifies each row, forwarded to the inner table so bvn keys rows by value instead of by index (all three data modes). Without it a stateful cell component (a debounced input, an inline editor) can re-associate to the wrong record when a row is inserted/removed mid-interaction — e.g. a concurrent delete of a row above. Set it (e.g. primaryKey="id") to keep each row bound to its record across data mutations. Non-breaking: omit it and rows key by index as before' },
   { name: 'fluid', type: 'boolean', required: 'No', default: 'false', description: 'Fluid container' },
   { name: 'containerClass', type: 'string', required: 'No', default: 'py-5', description: 'Container CSS class' },
   { name: 'columnSize', type: 'string | number', required: 'No', default: '12', description: 'Column size (Bootstrap grid)' },
@@ -275,9 +276,16 @@ content **under** a row, instead of pushing every per-row detail into a modal:
 
 ## Column filters
 
-Set `filter` on a field (`'text' | 'select' | 'number' | 'date'`) to give the
-column an inline filter. Three options matter beyond that:
+Set `filter` on a field (`'text' | 'select' | 'select-native' | 'number' | 'date'`)
+to give the column an inline filter. Beyond the type, these options matter:
 
+- **`select` vs `select-native`** — both are single-select dropdowns sharing the
+  *same* options and value semantics; they differ only in the control.
+  `'select'` is a typeahead (browse-on-focus, type-to-narrow); `'select-native'`
+  renders a plain native `<select>` (`DFormSelect`) for consumers who prefer
+  OS-native menu behaviour — a full-height menu and native keyboard/scroll. Pick
+  `select-native` when native feel matters more than type-to-filter.
+  `filterMultiple` is **ignored** for `select-native` (it is always single-select).
 - **`filterKey`** — the key the filter is *sent* under, when it differs from the
   column's own key. A "Customer" column can render a name and filter on
   `customer_id`, instead of the column having to be named after the server's
@@ -308,7 +316,7 @@ A field with `label: ''` renders an **empty** header (for an actions column, say
 
 ### Where a `select` filter's options come from
 
-A `select` filter resolves its option list in this order:
+A `select` (and `select-native`) filter resolves its option list in this order:
 
 1. **`filterOptions`** on the field — an explicit `{ value, text }[]`.
 2. **Server-supplied values** — the `filter-values` prop, or the `filterValues`
@@ -640,7 +648,8 @@ const fields = [
 
 **Filter Types:**
 - `'text'` - Text input with 300ms debounce for LIKE searches
-- `'select'` - Dropdown with options (automatically adds "All" option)
+- `'select'` - Typeahead dropdown with options (automatically adds "All" option)
+- `'select-native'` - Plain native `<select>` (same options/values as `'select'`, OS-native menu; single-select only)
 - `'number'` - Number input for exact matches
 - `'date'` - Date input for date filtering
 - `false` or omit - No filter for this column
@@ -814,12 +823,14 @@ const items = ref([
 The same filter types work in client-side mode:
 
 - `'text'` - Case-insensitive contains search
-- `'select'` - Exact match dropdown (`filterMultiple: true` matches ANY of the chosen values)
+- `'select'` - Exact match typeahead dropdown (`filterMultiple: true` matches ANY of the chosen values)
+- `'select-native'` - Exact match via a native `<select>` (single-select; same derived options as `'select'`)
 - `'number'` - Exact numeric match
 - `'date'` - Exact date match
 
-A `'select'` column needs no `filterOptions` here: client-side, DXTable fills the
-dropdown from the distinct values in the loaded rows. See
+A `'select'` (or `'select-native'`) column needs no `filterOptions` here:
+client-side, DXTable fills the dropdown from the distinct values in the loaded
+rows. See
 [Where a select filter's options come from](#where-a-select-filters-options-come-from).
 
 ### Performance Considerations
@@ -955,8 +966,8 @@ interface TableField {
   label?: string;                 // Column header label
   sortable?: boolean;             // Enable sorting for this column
   hint?: string;                  // Hint text below column header
-  filter?: FilterType;            // Filter type: 'text' | 'select' | 'number' | 'date' | false
-  filterMultiple?: boolean;       // 'select' filters only: allow several values (array filter entry, ANY-match)
+  filter?: FilterType;            // Filter type: 'text' | 'select' | 'select-native' | 'number' | 'date' | false
+  filterMultiple?: boolean;       // 'select' filters only: allow several values (array filter entry, ANY-match); ignored by 'select-native'
   filterOptions?: FilterOption[]; // Options for select filters
   deriveFilterOptions?: boolean;  // Client-side 'select' filters: derive options from the loaded rows (default true)
   filterPlaceholder?: string;     // Placeholder for filter input

@@ -40,7 +40,16 @@ notes should say "declare `variant="primary"` where you mean it".
 so the change is non-breaking there and retires nothing — it prevents the
 class recurring in every future page.
 
-## 2. B16 — DXTable should forward `primary-key` to the inner BTable
+## 2. B16 — DXTable should forward `primary-key` to the inner BTable — DONE
+
+Shipped: a `primaryKey?: string` prop on DXTable, forwarded to the inner
+`<DTable>` via `tablePassthroughProps` (mode-independent, so it applies in
+provider / client-side / inertia alike). DTable already spreads `$attrs` onto
+BTable, so no change was needed there. Non-breaking (omit → index keys as
+before). Guarded by `tests/components/DXTable-PrimaryKey.test.ts`, which proves
+the stateful-cell mis-association is gone (a marked input stays bound to its
+record when a row above is spliced out) — with a companion test documenting the
+index-key bug the prop fixes.
 
 **Problem.** bvn's BTable keys client-side rows by INDEX unless `primaryKey`
 is set, and DXTable doesn't forward it (no `$attrs` spread onto `<DTable>`;
@@ -197,7 +206,20 @@ an inner scrollbar.
 3. Consider an opt-in `filter: "select-native"` (or a DXTable-level flag)
    rendering a plain `<select>` for consumers who want OS-native behaviour —
    the fallback if the autocomplete can't be brought to parity. Relates to the
-   original S3 reservation about BAutocomplete filters (#138 era).
+   original S3 reservation about BAutocomplete filters (#138 era). — **DONE.**
+   Added `'select-native'` to `FilterType`; a column with `filter:
+   "select-native"` renders `DFormSelect` (native `<select>`) in the filter row.
+   It reuses the SAME plumbing as `filter: "select"` — `getFieldFilterOptions`
+   (incl. derived options + `filterNullText`), `handleSelectFilterChange`, the
+   client-side exact-match arm, and server `filterValues` derivation — so it
+   behaves identically bar the control. Sentinel: `handleSelectFilterChange`
+   already translates `FILTER_ALL_VALUE`→`''` on the way out (write side); the
+   read-side mirror `nativeSelectFilterValue` maps "no filter"→`FILTER_ALL_VALUE`
+   so the "All …" option shows selected (a native `<select>` desyncs from the
+   model when the bound value matches no option). Single-select only —
+   `filterMultiple` is ignored (still renders one `<select>` and keeps the "All"
+   reset). Guarded by `tests/components/DXTable-SelectNativeFilter.test.ts`.
+   Items 1 (menu max-height) and 2 (caret) are handled/deferred in other lanes.
 
 **Downstream interim:** shell.css `.b-autocomplete-content { max-height:
 min(70vh, 42rem) }`.
