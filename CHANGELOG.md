@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-07-23
+
+### Breaking
+
+- **`DButton`'s default `variant` is now `secondary`, not `primary` (B15).** Under
+  the soft-first system `primary` is the single emphatic action per screen, so a
+  variant-less `<DButton>` should not be emphatic. Every button in this library
+  already declares its variant explicitly, so nothing here changes; the break is
+  only for consumers who relied on the implicit primary. **Declare
+  `variant="primary"` where you mean the emphatic action.** `DDropdown` is
+  unaffected (bvn already defaults its toggle to secondary).
+
+### Added
+
+- **`DXTable` `primary-key` prop (B16).** Forwarded to the inner table so rows are
+  keyed by a field's value instead of by index (bvn's default). Index keys
+  mis-associate *stateful* cell components when a row is inserted or removed
+  mid-interaction — a debounced edit in one row could save against the wrong
+  record after a concurrent delete above it. Set `primary-key` on any table whose
+  rows carry per-row state. No change without it.
+- **`DXTable` `filter: "select-native"` (S3b).** An opt-in column filter that
+  renders a plain native `<select>` instead of the autocomplete, for facets where
+  OS-native behaviour and a full-height option list beat the typeahead. It reuses
+  the same option sourcing (including client-side derivation and the "no value"
+  option) and value semantics as `filter: "select"` — only the control differs.
+  Single-select only.
+
+### Changed
+
+- **Dropdown carets use the bootstrap-icons chevron (B14).** Bootstrap's CSS
+  border-triangle read crude against the theme; replaced with an optically-centred
+  chevron glyph. Uses the icon font the theme already ships — no new dependency.
+- **`DXTable` header titles default to a lighter grey (S5b).** The muted header
+  colour (`--dx-table-header-color`, #157) moves from `--bs-secondary-color` to a
+  lighter slate. Still on the same token, so re-louden by overriding it.
+- **`DXTable` text and number filter inputs carry a search glyph (PL1)** — a
+  magnifier affordance so the filter row reads as searchable at a glance.
+- **The autocomplete filter menu drops further down the viewport (S3b).**
+  `.b-autocomplete-content` max-height is now `min(70vh, 42rem)` instead of bvn's
+  300px, so a long facet list shows far more before scrolling.
+
+### Fixed
+
+- **Table header labels no longer sit on mixed baselines (B17).** A non-sortable
+  column's label was floored by `thead { vertical-align: bottom }` while sortable
+  neighbours' taller sort-icon stacks held their text higher. Headers now align on
+  the middle.
+- **Small and large input-groups match the button height beside them (PO18).**
+  `$input-padding-y-sm` / `$input-padding-y-lg` were inherited from Bootstrap and
+  sat shorter than the theme's sized buttons, so an sm/lg input-group was a few px
+  short of an adjacent sm/lg button. (The default-size compact input is
+  deliberate and unchanged.)
+
 ## [0.36.0] - 2026-07-21
 
 ### Fixed
