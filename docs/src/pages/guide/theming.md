@@ -126,7 +126,15 @@ stylesheet, loaded **after** `theme.css`:
   --bs-alert-bg: #d8f7c4;
   --bs-alert-color: #203b0e;
 }
+
+/* Re-louden DXTable's (deliberately muted) header labels */
+:root {
+  --dx-table-header-color: var(--bs-body-color);
+}
 ```
+
+DXTable header labels default to a muted slate (`#7c8293`) so the table's
+*content* is the loud layer; override `--dx-table-header-color` to darken them.
 
 **Badges are the exception**: Bootstrap's `.text-bg-*` helper sets its colours
 with `!important` by design (and the theme's soft re-tint does too), so a badge

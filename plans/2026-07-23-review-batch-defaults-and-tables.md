@@ -59,6 +59,12 @@ a fake-timers test). Worth keeping as defence in depth even after this ships.
 
 ## 3. B14 — dropdown caret: chevron glyph, optically centred (PO5)
 
+**Status: DONE** (theme lane, 2026-07-23). `.dropdown-toggle::after` in theme.scss
+now uses the bootstrap-icons chevron (`\F282` / `\F286` for `.dropup`), metrics
+tunable via `$dx-dropdown-caret-*`. The font is already shipped (theme imports
+`bootstrap-icons/font/bootstrap-icons`; #77 extraction bundles the woff2) — no
+new dependency, no data-URI. Guard: `tests/components/theme-review-batch.test.ts`.
+
 **Problem.** Bootstrap's `.dropdown-toggle::after` CSS border-triangle sits
 high against Poppins' line box and reads crude next to the rest of the theme.
 
@@ -89,6 +95,11 @@ Note dfl doesn't currently ship bootstrap-icons — either take the dependency
 
 ## 4. B17 — header labels shouldn't drop when a column has no sort icons (RC3)
 
+**Status: DONE** (theme lane, 2026-07-23). Theme: `.table > thead {
+vertical-align: middle }` (cells inherit it via the UA `td,th{vertical-align:
+inherit}` default, the same mechanism Bootstrap's `bottom` relies on). Guarded by
+a geometric label-centreline test, not a proxy.
+
 **Problem.** Bootstrap's `thead { vertical-align: bottom }` floors a
 non-sortable column's label while sortable neighbours' taller sort-icon stacks
 hold their text higher — one header row, mixed baselines ("Linked transaction"
@@ -102,6 +113,12 @@ alignment-sensitive).
 **Downstream interim:** shell.css `.table > thead { vertical-align: middle }`.
 
 ## 5. S5b — `--dx-table-header-color` default should be LIGHTER
+
+**Status: DONE** (theme lane, 2026-07-23). Token set to `#7c8293` (~3.6:1 on
+white — above the 3:1 large/bold bar the semibold header text sits at, below the
+4.5:1 body bar; James's explicit call). Third adjustment to this token (#157
+muted it to `--bs-secondary-color`; now lighter). Still the same token, so
+consumers can re-louden.
 
 **Problem.** #157 muted DXTable headers to `--bs-secondary-color`
 (`rgba(33,37,41,.75)`), but that still reads near-black next to legacy
@@ -117,6 +134,18 @@ re-louden.
 
 ## 6. PO18 — theme `$input-padding-y-sm` to match `$btn-padding-y-sm`
 
+**Status: DONE** (theme lane, 2026-07-23). Set `$input-padding-y-sm: 0.5rem`
+AND `$input-padding-y-lg: 0.75rem`. **md/lg finding:** lg had the SAME class of
+bug (undocumented Bootstrap-default `0.5rem` input vs the theme's explicit
+`0.75rem` button → ~4px short in an `.input-group-lg`) so it was fixed too. The
+BASE md `$input-padding-y: 0.375rem` is DELIBERATELY more compact than
+`$btn-padding-y: 0.625rem` (documented: "0.625rem read oversized"), so it was
+LEFT as-is — changing it would make every standalone input chunkier. Only the
+sized variants leak input padding onto grouped buttons, so only those are
+equalised. (Residual: a default-size `.input-group` still sizes grouped buttons
+to the compact md input padding — an accepted consequence of the deliberate
+compact-input choice.)
+
 **Problem.** The theme sets `$btn-padding-y-sm: 0.5rem` but leaves
 `$input-padding-y-sm` at Bootstrap's `0.25rem`, and Bootstrap sizes
 `.input-group-sm` children (inputs AND buttons) with the INPUT sm padding — so
@@ -130,6 +159,14 @@ the same skew) so sm controls share one height by construction.
 padding locally.
 
 ## 7. PL1 — DXTable text/number filter inputs get a search glyph
+
+**Status: DONE** (theme lane, 2026-07-23). `.filter-row > th > input.form-control
+:not([type="date"])` gets a bootstrap-icons "search" SVG data-URI
+(`background-image`, tinted `#7c8293`) + `padding-left: 1.9rem`. A
+`background-image` (not `::before`, which an `<input>` can't host). Direct-child
+selector naturally excludes the select filter's nested DAutocomplete input;
+`:not([type="date"])` excludes the date filter. Test asserts the glyph is present
+on text/number, absent on date, the nested input, and ordinary form inputs.
 
 **Problem.** The filter row's text inputs are bare; legacy lt-table's filter
 inputs carried a magnifier, which reads as "this searches" at a glance.
@@ -152,8 +189,9 @@ as good as a regular select, we should just use a regular select."** bvn's
 an inner scrollbar.
 
 **Asks**, in order of appetite:
-1. Default the menu max-height to viewport-relative (greendragon interim:
-   `min(70vh, 42rem)` — James reviewing; adopt whatever survives).
+1. **DONE** (theme lane, 2026-07-23). `.b-autocomplete-content { max-height:
+   min(70vh, 42rem) }` in theme.scss, overriding bvn's 300px cap. Guarded (both
+   the compiled rule and a computed-style override of the 300px default).
 2. A clearer closed-state affordance (the toggle's caret reads ambiguous next
    to a native select's).
 3. Consider an opt-in `filter: "select-native"` (or a DXTable-level flag)
