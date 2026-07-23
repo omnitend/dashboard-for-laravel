@@ -37,8 +37,13 @@ type LinkVariant =
 
 interface Props {
   /**
-   * The visual style variant of the button
-   * @default 'primary'
+   * The visual style variant of the button.
+   *
+   * Defaults to `'secondary'` (soft, non-emphatic). Under the soft-first
+   * house rule, `primary` is THE single emphatic action per page/modal, so a
+   * variant-less button must NOT be emphatic by default — declare
+   * `variant="primary"` explicitly where you mean the one loud action.
+   * @default 'secondary'
    */
   variant?: ButtonVariant | LinkVariant | null;
 
@@ -105,7 +110,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  variant: "primary",
+  variant: "secondary",
   disabled: false,
   loading: false,
   block: false,

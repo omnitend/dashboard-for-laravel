@@ -11,7 +11,18 @@ test).
 
 ---
 
-## 1. B15 — DButton's DEFAULT variant should be `secondary`, not `primary`
+## 1. B15 — DButton's DEFAULT variant should be `secondary`, not `primary` — DONE
+
+**Status: DONE** (2026-07-23). `DButton`'s `withDefaults` default changed
+`variant: "primary"` → `"secondary"` (JSDoc `@default` updated). `DDropdown`
+needed no change — it sets no variant default and forwards `$attrs` to
+`BDropdown`, whose own default is already `secondary`. All dfl-internal
+`<DButton>` sites already declare a variant explicitly (verified across
+DXTable, DXForm, DXTableEditorModal, DXField, DXRepeater, DXRepeaterCards,
+DXTablePagination, DXDashboardNavbar), so no dfl component changes visually.
+Guarded by `tests/components/DButton-default-variant.test.ts` (watched fail
+against the old `primary` default first). Docs: `DButton.mdx` documents the
+new default.
 
 **Problem.** A variant-less `<d-button>` renders the solid-navy primary. Under
 the house rule (primary = THE one emphatic action per page/modal), a default

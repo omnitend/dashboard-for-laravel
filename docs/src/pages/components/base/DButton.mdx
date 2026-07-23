@@ -30,6 +30,7 @@ button behaviours:
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
+| `variant` | `ButtonVariant \| LinkVariant \| null` | `'secondary'` | Visual style. Defaults to the soft `secondary` — **not** `primary`. Under the soft-first house rule, `primary` is the single emphatic action per page/modal, so a variant-less button is deliberately non-emphatic; declare `variant="primary"` explicitly where you mean the one loud action. Pass `null` for no variant class. |
 | `loading` | `boolean` | `false` | Disables the button immediately and shows a trailing spinner while an async action runs. |
 | `loadingText` | `string` | — | Optional label shown in place of the default slot while the spinner is visible. |
 | `icon` | `string` | — | Leading [Bootstrap Icons](https://icons.getbootstrap.com/) glyph name, e.g. `icon="save"` renders `<i class="bi bi-save">`. |
