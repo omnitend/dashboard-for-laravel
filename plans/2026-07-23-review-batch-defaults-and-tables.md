@@ -1,6 +1,10 @@
 # Review batch — button/table defaults, header polish, filter UX (B14–B17+)
 
-Status: OPEN. Origin: greendragon app-next cutover review, 2026-07-22/23
+Status: **DONE (v0.37.0, 2026-07-23).** All eight asks shipped across three
+lanes. The one exception is item 8 part 2 (a clearer closed-state caret on the
+autocomplete): superseded rather than built — B14 gave dropdowns a chevron and
+S3b.3 shipped the native-`<select>` escape hatch, which is the real answer to
+"if we can't get parity, use a real select." Origin: greendragon app-next cutover review, 2026-07-22/23
 (findings PO5/PO18, B14–B17, S5b, PL1, PL4/S3b in
 `greendragon-omnitend/plans/2026-07-19-next-review-log.md`).
 
