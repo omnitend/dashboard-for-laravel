@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-07-23
+
+### Added
+
+- **`DXSwitch size="sm"`** — a compact box (~31px vs the default ~35px input
+  height) for dense rows that repeat the switch per item, e.g. a per-line
+  visibility toggle in a modal. Omit for the standard size, which matches the
+  input height so a switch lines up with fields beside it.
+
+### Fixed
+
+- **Check/radio/switch boxes are optically centred against their labels.**
+  Bootstrap's `0.25em` top margin is mathematically right for a 1em box in a
+  1.5em line box, but Poppins seats its glyphs low in the line box, so the box
+  read visibly high beside the text. `.form-check-input` now uses a `0.325em`
+  top margin (judged against a rendered Poppins filmstrip, not the maths). A top
+  margin aligns to the first line, so a multi-line label keeps the box on line
+  one. `DXSwitch` is unaffected — it flex-centres its own box.
+
 ## [0.37.0] - 2026-07-23
 
 ### Breaking
