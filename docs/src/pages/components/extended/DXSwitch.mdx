@@ -48,6 +48,7 @@ the on-state colour there with the `switchVariant` field option) — reach for
   { name: 'textWhenTrue', type: 'string', required: 'No', default: '-', description: 'Text shown when on — overrides label in the on state (e.g. "Product is current").' },
   { name: 'textWhenFalse', type: 'string', required: 'No', default: '-', description: 'Text shown when off — overrides label in the off state (e.g. "Product is not current").' },
   { name: 'onVariant', type: '"success" | "neutral"', required: 'No', default: '"success"', description: 'On-state colour. "success" (default) is green-on / red-off for an active/enabled/good switch; "neutral" is brand primary-on / grey-off for mixed-semantics switches that should not imply good/bad.' },
+  { name: 'size', type: '"sm"', required: 'No', default: '-', description: 'Compact box (~31px vs the default ~35px input height) for dense rows that repeat the switch per item, e.g. a per-line visibility toggle in a modal. Omit for the standard size, which matches the input height so a switch lines up with fields beside it.' },
 ]} />
 
 Any other attributes (`disabled`, `id`, `name`, `aria-*`, …) are forwarded to

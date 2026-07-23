@@ -21,7 +21,7 @@
   `label` prop for simple text, or the default slot for richer label content.
 -->
 <template>
-  <div class="dx-switch" :class="[`dx-switch--${onVariant}`, { 'dx-switch--on': isOn }]">
+  <div class="dx-switch" :class="[`dx-switch--${onVariant}`, { 'dx-switch--on': isOn, 'dx-switch--sm': size === 'sm' }]">
     <!-- For the neutral variant, tag the inner `.form-switch` with
          `switch-neutral` so the global theme restores grey-off / primary-on for
          the toggle itself (the box styling below handles the wrapper). -->
@@ -63,6 +63,13 @@ interface Props {
    * shouldn't imply good/bad — it uses the brand primary on / grey off (#158).
    */
   onVariant?: "success" | "neutral";
+  /**
+   * `"sm"` renders a compact box (~31px vs the default ~35px input height) for
+   * dense rows that repeat the switch per item (a per-line visibility toggle in
+   * a modal). Omit for the standard size, which matches the `.form-control`
+   * height so a switch lines up with inputs beside it.
+   */
+  size?: "sm";
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -129,6 +136,17 @@ defineOptions({
   border-radius: var(--bs-border-radius);
   background-color: var(--bs-body-bg);
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+/* Compact size (#… size="sm"): a shorter box for dense rows that repeat the
+   switch per item. `min-height: auto` drops the input-height floor so the box
+   shrinks to its padded content (~31px vs ~35px); the smaller font pulls the
+   label in to match. The fixed-rem toggle itself is unchanged — only the box
+   chrome tightens. */
+.dx-switch--sm :deep(.form-check) {
+  font-size: 0.875rem;
+  min-height: auto;
+  padding: 0.25rem 0.625rem;
 }
 
 /* Label on the left, toggle on the right (DOM order is input then label). */

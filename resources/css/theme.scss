@@ -804,6 +804,21 @@ $dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cd
   --dx-switch-pill: var(--bs-gray-400, #ced4da); // neutral pill in both states
 }
 
+// Optically centre the check/radio/switch box against its label's FIRST line.
+// Bootstrap's `.25em` top margin is mathematically right for a 1em box in a
+// 1.5em line box, but Poppins seats its glyphs low in the line box, so the box
+// reads visibly HIGH beside the text (same optical-metrics issue as the B14
+// dropdown caret). `0.325em` lands the box centre on Poppins' visual centre —
+// judged against a rendered filmstrip (0.25/0.30/0.325/0.35em) with Poppins
+// loaded, not from the maths. A top MARGIN (not flex-centring) is deliberate:
+// it aligns to the first line, so a multi-line label keeps the box on line one
+// rather than floating to the block's vertical centre. DXSwitch is unaffected —
+// it flex-centres and zeroes this margin on its inner input at higher
+// specificity (`.dx-switch :deep(.form-check-input) { margin: 0 }`).
+.form-check-input {
+  margin-top: 0.325em;
+}
+
 .form-switch .form-check-input {
   // OFF: light-red track, red thumb (left).
   background-color: var(--dx-switch-off-bg);

@@ -1,6 +1,13 @@
 # Checkbox optical centring + DXSwitch small size
 
-Status: OPEN. Origin: greendragon /menus review round 2, 2026-07-23 (the
+Status: **items 1+2 DONE (2026-07-23); item 3 deferred (decision).** Item 1
+shipped as a global `.form-check-input { margin-top: 0.325em }` (judged against a
+Poppins filmstrip); item 2 as a `DXSwitch size="sm"` prop. Item 3 (the default
+43px-button vs 35px-input/switch height split) is a design call awaiting a
+before/after screenshot — the `size="sm"` sibling of PO18. The attrs-forwarding
+footgun was NOT changed: `size="sm"` removes the need to target the box with a
+class for the common case, and re-routing where a consumer's class lands is a
+separate breaking change. Origin: greendragon /menus review round 2, 2026-07-23 (the
 menu-product modal's per-line controls).
 
 ## 1. Checkbox/radio boxes read HIGH beside their labels (theme)
