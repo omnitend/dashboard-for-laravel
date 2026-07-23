@@ -13,12 +13,25 @@ heights, chips) stayed the same physical size — controls read proportionally
 oversized, text reads miniaturised. This is app-wide, including pages already
 reviewed; a per-page fix is the wrong altitude.
 
-## James's steer
+## James's steer (refined 2026-07-23)
 
-"I think **16px is probably a good default, at desktop screen sizes anyway**."
-The desktop caveat matters: consider whether the base should be responsive
-(e.g. 16px at ≥lg, 14–15px below) or a flat 16px — call it out in the
-comparison rather than assuming.
+A three-tier type scale, not just a base bump:
+
+- **16px — the default** for most content ("it has to be 16px for most
+  stuff"): body text, table cells, form controls, buttons.
+- **14px — the small tier**: secondary text that today uses `.small`/
+  `<small>` (sub-lines under names, hints, muted meta).
+- **12px — the extra-small tier**: fine print (badge text, eyebrow labels,
+  WC-style annotations, table footnote captions).
+
+In Bootstrap terms roughly: `$font-size-base: 1rem` (16), `$small-font-size:
+.875em` (14), and a deliberate 12px (`.75rem`) tier for the smallest chrome —
+today's badges land near 10.5px, which is too small at the new base; they
+should sit on the 12px tier, matching legacy's 12px badges.
+
+Earlier caveat still stands: "at desktop screen sizes anyway" — consider
+whether the base should be responsive (16px at ≥lg, smaller below) or flat;
+show it in the comparison rather than assuming.
 
 ## Ask
 
