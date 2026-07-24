@@ -48,7 +48,11 @@ $color-contrast-light: #fff; // Light text color (for dark backgrounds)
 // ----------------------------------------------------------------------------
 
 $font-family-base: "Poppins", sans-serif;
-$font-size-base: 0.875rem; // 14px
+$font-size-base: 1rem; // 16px — the default tier. Legacy omnitend rendered body
+// and table text at 16px; the earlier 0.875rem (14px) shrank every ported page's
+// text ~12% while rem-fixed chrome stayed put, so controls read oversized and
+// text miniaturised (PO20). The small tier is Bootstrap's `.875em` (14px) via
+// `.small`/`<small>`; the extra-small tier is `.75em` (12px, badges/fine print).
 $font-weight-base: 400;
 $line-height-base: 1.5;
 

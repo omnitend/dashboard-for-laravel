@@ -64,9 +64,10 @@ interface Props {
    */
   onVariant?: "success" | "neutral";
   /**
-   * `"sm"` renders a compact box (~31px vs the default ~35px input height) for
-   * dense rows that repeat the switch per item (a per-line visibility toggle in
-   * a modal). Omit for the standard size, which matches the `.form-control`
+   * `"sm"` renders a compact box (a few px shorter than the default, which
+   * matches the input height) for dense rows that repeat the switch per item (a
+   * per-line visibility toggle in a modal). Omit for the standard size, which
+   * lines the switch up with the `.form-control`
    * height so a switch lines up with inputs beside it.
    */
   size?: "sm";
@@ -140,7 +141,8 @@ defineOptions({
 
 /* Compact size (#… size="sm"): a shorter box for dense rows that repeat the
    switch per item. `min-height: auto` drops the input-height floor so the box
-   shrinks to its padded content (~31px vs ~35px); the smaller font pulls the
+   shrinks to its padded content, a few px under the input-height default;
+   the smaller font pulls the
    label in to match. The fixed-rem toggle itself is unchanged — only the box
    chrome tightens. */
 .dx-switch--sm :deep(.form-check) {

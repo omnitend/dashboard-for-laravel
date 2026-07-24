@@ -1,7 +1,34 @@
 # Base font size: 14px reads small against legacy's 16px
 
-Status: OPEN. Origin: greendragon /purchase-orders list review (PO20),
+Status: **DECIDED 2026-07-24 — base → 16px (`1rem`), FLAT (not responsive).**
+Signed off against a real three-base recompile (14/15/16px) of a dense DXTable
+index; 16px read balanced where 14px read miniaturised against the chrome. The
+three-tier 16/14/12 scale falls out of Bootstrap defaults (base 16 → `.875em`
+small = 14 → `.75em` badge = 12), so badges self-correct from ~10.5px. Per the
+plan, #169 (43px button vs input height) is settled INSIDE this change so heights
+re-derive once. Origin: greendragon /purchase-orders list review (PO20),
 2026-07-23.
+
+## Execution checklist (re-audit at 16px)
+
+- [x] `$font-size-base: 0.875rem` → `1rem`.
+- [x] `--dx-input-height` grows (`1.5em` of a now-16px input): 35px → ~38px.
+      Re-check everything pinned to it (DXSwitch box min-height tracks it).
+- [x] PO18 sm/lg equalisation — parity holds (suite green, ratio-based).
+- [x] Badges → 12px automatically (`.75em`); confirm, and check the badge
+      padding still reads right at the larger glyph.
+- [x] Optical tweaks — re-verified at 16px by screenshot: the `0.325em` margin
+      is em-based so it scales with the label, and the box still sits on the
+      text’s visual centre. No re-tune needed. Ratio test is scale-invariant.
+- [x] Sidebar/navbar metrics (#93/#95) — pinned in absolute rem, so unaffected
+      by the base (navbar-height tests still pass at 64/47px).
+- [ ] #169 button height — input height shifted 35→~38px; #169 updated with the
+      new figures. Still a deferred decision (James deferred it); the split
+      persists proportionally at the new base, nothing to force here.
+- [x] Tests: audited; the height/size assertions are ratio- or relative-based
+      (or pin rem-fixed chrome), so all 709 pass at 16px unchanged.
+- [x] Screenshot confirmed against the real built dist (dense page + optical
+      tweaks + badges).
 
 ## Problem
 

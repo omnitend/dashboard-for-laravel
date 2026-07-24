@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-07-24
+
+### Changed
+
+- **Base font size is now 16px (`1rem`), up from 14px (`0.875rem`).** This is a
+  deliberate, app-wide visual change every consumer will see on upgrade: body
+  text, table cells, form-control and button labels all grow ~14%. The prior
+  14px shrank all text while rem-fixed chrome (control padding, input heights)
+  stayed the same physical size, so controls read oversized and text
+  miniaturised. At 16px, text and chrome are back in balance (matching the
+  omnitend house scale). Verified against a three-base recompile (14/15/16px) of
+  a dense table page.
+  - **A three-tier type scale falls out of this:** 16px default, 14px small
+    (`.small` / `<small>`, via Bootstrap's `.875em`), 12px extra-small (badges
+    and fine print, via `.75em`). Badges move from ~10.5px to 12px automatically.
+  - `--dx-input-height` grows from ~35px to ~38px; `DXSwitch`'s box tracks it.
+    The optical-centring margins and the sized-control equalisation are ratio- or
+    rem-based, so they hold at the new base with no change.
+  - **If you pinned layout to dfl's 14px text** (fixed heights, line-clamp counts,
+    truncation widths), re-check those spots — everything text-derived is now
+    larger. A consumer that wants the old size can set `--bs-body-font-size` /
+    `$font-size-base` back to `0.875rem`.
+
 ## [0.38.0] - 2026-07-23
 
 ### Added
