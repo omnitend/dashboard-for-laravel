@@ -1,6 +1,7 @@
 # Base font size: 14px reads small against legacy's 16px
 
-Status: **DECIDED 2026-07-24 — base → 16px (`1rem`), FLAT (not responsive).**
+Status: **SHIPPED in v0.39.0 (2026-07-24) — base → 16px (`1rem`), FLAT (not
+responsive).** All checklist items done bar #169 (button height, deferred).
 Signed off against a real three-base recompile (14/15/16px) of a dense DXTable
 index; 16px read balanced where 14px read miniaturised against the chrome. The
 three-tier 16/14/12 scale falls out of Bootstrap defaults (base 16 → `.875em`

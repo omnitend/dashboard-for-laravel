@@ -565,6 +565,20 @@ interface FormSubmitOptions {
 
 ## Styling Guidelines
 
+### Type scale (base 16px, three-tier, since v0.39.0)
+
+`$font-size-base` is **`1rem` (16px)** — the default tier for body text, table
+cells, form controls and buttons. Two smaller tiers fall out of Bootstrap
+defaults: **14px small** (`.small` / `<small>`, Bootstrap's `.875em`) for
+sub-lines, hints and muted meta; **12px extra-small** (`.75em`) for badges and
+fine print. Badges self-land at 12px. It was 14px until 0.39.0, which read
+miniaturised against rem-fixed chrome; 16px matches legacy omnitend. `--dx-input-height`
+is ~38px at this base. When judging an optical spacing tweak (a check-box margin,
+a caret offset), prefer an **em** value (scales with the tier) and judge it
+against a rendered screenshot at 16px, not the maths — Poppins seats glyphs low
+in the line box. The dense **sidebar** metrics (#95, `0.875rem` headers) are
+rem-pinned and intentionally stay 14px regardless of the base.
+
 ### Semantic colour system (soft-first, since v0.27.0)
 
 The library uses a **soft-first** semantic colour system built on the Omni Tend
