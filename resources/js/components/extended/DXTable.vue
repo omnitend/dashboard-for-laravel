@@ -2182,10 +2182,20 @@ const handleFilterChange = (fieldKey: string, value: string | string[]) => {
             );
         }
 
-        // For API mode, provider will be called automatically by BTable
-        // when we trigger a refresh
+        // API mode: a changed filter is a fresh result set — go back to page 1,
+        // exactly as the Inertia branch above does. Without this, typing a
+        // filter while on page 3 of the unfiltered set requests page 3 of the
+        // NARROWED set, which is usually past its end: the server returns an
+        // empty page and the table shows "no rows match your filters" over a
+        // non-zero total. Same exactly-one-fetch dance as the apiUrl/provider
+        // swap watchers: a page change re-invokes the provider on its own;
+        // only when already on page 1 does refresh() need to force it.
         if (isProviderMode.value && tableRef.value) {
-            refresh();
+            const wasOnFirstPage = apiCurrentPage.value === 1;
+            apiCurrentPage.value = 1;
+            if (wasOnFirstPage) {
+                refresh();
+            }
         }
 
         // Emit filterChange event for backward compatibility
