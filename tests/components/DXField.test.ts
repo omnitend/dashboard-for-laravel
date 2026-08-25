@@ -348,6 +348,31 @@ describe('DXField currency display formatting (#69)', () => {
     expect(input.value).toBe('1200');
   });
 
+  it('reaches DXCurrencyInput\'s append affix through the field\'s inputProps', async () => {
+    // The documented route for a unit affix on a form field ("£ [4.50] per
+    // case"): `append` is a declared prop on the leaf, so an inputProps entry
+    // binds to it rather than landing on the <input> as a stray attribute.
+    const { screen } = renderField(
+      {
+        key: 'price',
+        type: 'currency',
+        label: 'Price',
+        inputProps: { append: 'per case' },
+      },
+      { price: 4.5 },
+    );
+    await flush();
+
+    const affixes = Array.from(
+      screen.container.querySelectorAll('.input-group-text'),
+    ).map((el) => el.textContent?.trim());
+    expect(affixes).toEqual(['£', 'per case']);
+
+    const input = screen.container.querySelector<HTMLInputElement>('input[type="number"]')!;
+    expect(input.hasAttribute('append')).toBe(false);
+    expect(input.value).toBe('4.50');
+  });
+
   it('leaves the display blank for an empty seed value rather than forcing "0.00"', async () => {
     const { screen } = renderField(
       { key: 'price', type: 'currency', label: 'Price' },

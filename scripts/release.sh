@@ -85,8 +85,11 @@ print_step "Regenerating AI docs..."
 npm run docs:generate:ai
 
 # Step 5: Commit version bump
+# `npm version` writes the new version into package-lock.json too. Stage BOTH,
+# or the lock keeps the previous version and drifts a little further every
+# release — it sat at 0.34.0 while package.json read 0.39.1.
 print_step "Committing version bump..."
-/usr/bin/git add package.json
+/usr/bin/git add package.json package-lock.json
 /usr/bin/git commit -m "Bump version to ${VERSION}"
 
 # Step 6: Create git tag

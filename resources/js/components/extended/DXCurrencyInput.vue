@@ -12,9 +12,18 @@
   `min`/`max`/`step` and the displayed text are always in MAJOR units — only
   the model is scaled.
 
+  `append` puts a trailing affix after the input — the unit the price is per
+  ("Pint", "per case", "each"). Without it a consumer needing a unit beside the
+  amount has to hand-roll a `DInputGroup` + bare number input, which puts every
+  foot-gun above straight back. A plain string covers most cases; the `#append`
+  slot takes arbitrary content (a unit picker, a button) and wins over the prop,
+  the same prop-with-slot-fallback shape `DXFieldShell` uses for `hint`.
+
   DXField's `currency` field type renders this leaf; it exists standalone so a
   money input outside a form (an inline table correction, a quick filter)
-  doesn't re-inline the `£`-prefix + toFixed + parse foot-guns.
+  doesn't re-inline the `£`-prefix + toFixed + parse foot-guns. On a DXField,
+  reach the affix through the field's `inputProps` (`{ append: 'per case' }`) —
+  it binds to this prop like any other.
 -->
 <template>
     <DInputGroup>
@@ -30,6 +39,14 @@
             @focus="handleFocus"
             @blur="handleBlur"
         />
+        <!-- Trailing affix. Conditional so an input with no unit renders the
+             exact same markup as before (one prepend, no trailing cell). -->
+        <template v-if="append || $slots.append" #append>
+            <!-- @slot Trailing content after the input — arbitrary markup, overriding the `append` prop. -->
+            <slot name="append">
+                <span class="input-group-text">{{ append }}</span>
+            </slot>
+        </template>
     </DInputGroup>
 </template>
 
@@ -54,6 +71,10 @@ interface Props {
     minorUnits?: boolean;
     /** Input step in MAJOR units (default: one minor unit, e.g. 0.01). */
     step?: string | number;
+    /** Trailing affix shown after the input — the unit the amount is per
+     *  ("Pint", "per case", "each"). Omit for no trailing cell. The `#append`
+     *  slot overrides it when the affix needs to be more than a string. */
+    append?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -62,6 +83,7 @@ const props = withDefaults(defineProps<Props>(), {
     decimals: 2,
     minorUnits: false,
     step: undefined,
+    append: undefined,
 });
 
 const emit = defineEmits<{

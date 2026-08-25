@@ -149,7 +149,8 @@ const items = ref([
   { name: 'editUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for updates (e.g., "/api/products/:id")' },
   { name: 'deleteUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for deletions (e.g., "/api/products/:id")' },
   { name: 'showUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern to fetch the FULL record for the edit modal (e.g., "/api/products/:id"). Seeds the form from this fetch (with a loading state) instead of the thin list row. Unwraps data.data or uses the response as-is' },
-  { name: 'deleteGuard', type: '(item) => string | null', required: 'No', default: '-', description: 'Run when Delete is clicked, before the confirm and request. Return a message to block the delete and show it immediately (skips confirm + request); return null to proceed normally' },
+  { name: 'deleteGuard', type: '(item) => string | null | Promise<string | null>', required: 'No', default: '-', description: 'Run when Delete is clicked, before the confirm and request. Return a message to block the delete and show it immediately (skips confirm + request); return null to proceed normally. Awaited, like saveGuard, so an async guard works; a guard that throws also blocks' },
+  { name: 'saveGuard', type: '(item, data) => string | null | Promise<string | null>', required: 'No', default: '-', description: 'Run when the modal Save/Create is clicked, before the request (both the editUrl and createUrl paths). Return a message to abort the save and show it immediately; return null to proceed. AWAITED (as deleteGuard is), so it can wait for an async control that has not finished — an image upload still in flight would otherwise submit the previous media map, succeed, toast "saved" and close the modal with the image silently lost. item is null in create mode; data is the live form data. Aborting leaves the modal open with edits intact; a guard that throws also aborts' },
   { name: 'createUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint for creating new items (e.g. "/api/products"). Enables the create modal and the built-in "New {item}" button' },
   { name: 'showCreateButton', type: 'boolean', required: 'No', default: 'true', description: 'Render the built-in "New {item}" button in the card header (only relevant when createUrl is set). Set false to drive the create modal from your own trigger elsewhere via the exposed openCreate(). With no title and no header slot, the card header is then dropped entirely rather than left empty' },
 ]} />
@@ -1015,6 +1016,54 @@ const editFields = [
 - Success/error toasts shown automatically
 - Table refreshes after successful save
 - Validation errors displayed inline
+
+### Guarding a save (`saveGuard`)
+
+`saveGuard` runs when Save/Create is clicked, **before** the request. Return a
+message to abort — it is shown as a toast, no request is made, and the modal
+stays open with the user's edits intact. Return `null` to proceed. It covers
+both the `editUrl` and `createUrl` paths.
+
+It is the Save-side twin of `deleteGuard`. Both are **awaited**, so either can
+return a promise — and that is the point of this one. An async
+control in an `edit-value` slot — an image upload — that has not finished when
+Save is clicked will otherwise submit the *previous* media map; the request
+succeeds, the toast says saved, the modal closes, and the image is gone with no
+error anywhere, because every individual step worked.
+
+```vue
+<script setup>
+const uploader = ref(null);
+
+// Wait for an in-flight upload rather than saving without it.
+const saveGuard = async (item, data) => {
+  await uploader.value?.whenIdle();
+  if (uploader.value?.failed) return 'The image failed to upload — try again.';
+  return null;
+};
+</script>
+
+<template>
+  <DXTable
+    :items="products.data"
+    :fields="fields"
+    :edit-fields="editFields"
+    edit-url="/api/products/:id"
+    create-url="/api/products"
+    :save-guard="saveGuard"
+  >
+    <template #edit-value(image)="{ value, update }">
+      <ImageUploader ref="uploader" :model-value="value" @update:model-value="update" />
+    </template>
+  </DXTable>
+</template>
+```
+
+`item` is the row being edited, `null` in create mode (same as the
+`edit-value` slot's binding); `data` is the live form data. Save is not
+re-entrant while the guard is pending, so a second click cannot fire a second
+request. A guard that *throws* also aborts, surfacing its message — a guard
+that could not decide is not permission to save.
 
 ## Delete Functionality
 
