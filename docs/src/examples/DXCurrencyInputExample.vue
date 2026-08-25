@@ -13,6 +13,12 @@
     </div>
 
     <div class="example-section">
+      <h5>append — the unit the price is per</h5>
+      <DXCurrencyInput v-model="unitPrice" append="Pint" style="max-width: 14rem" />
+      <p class="state-display">model: {{ unitPrice === null ? 'null' : unitPrice }} — a plain string affix after the input</p>
+    </div>
+
+    <div class="example-section">
       <h5>minorUnits — edit an integer-pence column as pounds</h5>
       <DXCurrencyInput v-model="pence" minor-units style="max-width: 14rem" />
       <p class="state-display">stored model (pence): {{ pence === null ? 'null' : pence }} — type 19.99 and the model is exactly 1999</p>
@@ -26,6 +32,7 @@ import { DXCurrencyInput } from '@omnitend/dashboard-for-laravel';
 
 const price = ref<number | null>(3.8);
 const yen = ref<number | null>(500);
+const unitPrice = ref<number | null>(4.5);
 const pence = ref<number | null>(1999);
 </script>
 

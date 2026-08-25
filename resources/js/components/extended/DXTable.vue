@@ -728,6 +728,30 @@ export interface Props<TItem = any> {
      */
     deleteGuard?: (item: TItem) => string | null | undefined;
 
+    /**
+     * Guard run when the modal's Save/Create is clicked, before the request.
+     * Return a message to abort the save — it is shown immediately (as a toast)
+     * and no request is made; return `null`/`undefined` to proceed. Covers both
+     * the `editUrl` and `createUrl` paths.
+     *
+     * Unlike `deleteGuard` it is AWAITED, so it may return a promise: the case
+     * it exists for is an async control in an `edit-value` slot — an image
+     * upload — that has not finished when Save is clicked. Without the guard the
+     * form submits the previous media map, the save SUCCEEDS, the toast says
+     * saved and the modal closes: the image is lost with no error anywhere,
+     * because every individual step worked. Await the upload here and the save
+     * simply waits for it.
+     *
+     * `item` is the row being edited, `null` in create mode (as in the
+     * `edit-value` slot's binding); `data` is the live form data. Aborting
+     * leaves the modal open with the user's edits intact. A guard that throws
+     * also aborts, surfacing its message.
+     */
+    saveGuard?: (
+        item: TItem | null,
+        data: Record<string, any>,
+    ) => string | null | undefined | Promise<string | null | undefined>;
+
     /** API endpoint for creating new items (e.g., "/api/products") — enables "New" button */
     createUrl?: string;
 

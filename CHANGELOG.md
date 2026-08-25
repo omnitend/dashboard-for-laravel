@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`DXCurrencyInput` takes a trailing affix** — `append="Pint"` renders the
+  unit the amount is *per* after the input (`£ [ 12.60 ] Pint`,
+  `£ [ 4.50 ] per case`). Without one, a price that needs a unit beside it had
+  to be hand-rolled as a `DInputGroup` + bare number input, which reintroduced
+  exactly the `toFixed`/parse foot-guns this leaf exists to remove. An `#append`
+  slot takes arbitrary content (a unit picker, a button) and wins over the prop
+  — the same prop-with-slot-fallback shape `DXFieldShell` uses for `hint`. On a
+  `DXField`, reach it through the field's `inputProps`
+  (`{ append: 'per case' }`). Purely additive: an input with no affix renders
+  the same markup as before.
+- **`DXTable` `saveGuard`** — the Save-side twin of `deleteGuard`, run when the
+  edit/create modal's Save is clicked, before the request. Return a message to
+  abort (shown as a toast, no request, modal left open with the user's edits
+  intact); return `null` to proceed. Covers both the `editUrl` and `createUrl`
+  paths. Unlike `deleteGuard` it is **awaited**, which is the point of it: an
+  async control in an `edit-value` slot — an image upload — that has not
+  finished when Save is clicked otherwise submits the previous media map, the
+  request SUCCEEDS, the toast says saved and the modal closes, and the image is
+  gone with no error anywhere because every individual step worked. Signature
+  `(item, data) => string | null | Promise<string | null>`, where `item` is the
+  edited row (`null` in create mode) and `data` is the live form data. Save is
+  no longer re-entrant while a save (or its guard) is in flight, so a second
+  click cannot fire a second request.
+
 ## [0.39.0] - 2026-07-24
 
 ### Changed

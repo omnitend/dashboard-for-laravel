@@ -32,6 +32,11 @@ export interface ResourceEditorProps<T = any> {
     createUrl?: string;
     /** Guard run before delete — a message short-circuits with a toast. */
     deleteGuard?: (item: T) => string | null | undefined;
+    /** Guard run before save — a message aborts with a toast. Awaited. */
+    saveGuard?: (
+        item: T | null,
+        data: Record<string, any>,
+    ) => string | null | undefined | Promise<string | null | undefined>;
 }
 
 /**
@@ -299,16 +304,59 @@ export function useResourceEditor<T = any>(
         showEditModal.value = true;
     };
 
-    // Save from the edit modal
+    // Save from the edit modal (create or edit).
     const save = async () => {
         if (!editForm.value) return;
 
+        // Not re-entrant. The footer button disables itself while
+        // `pendingAction` is set, but DXForm's own submit (Enter in a field)
+        // reaches here directly — and with an AWAITED save guard there is now a
+        // real window in which a second Save would fire a second request.
+        if (pendingAction.value) return;
+
         pendingAction.value = 'save';
         try {
+            if (!(await passesSaveGuard())) return;
             await performSave();
         } finally {
             pendingAction.value = null;
         }
+    };
+
+    /*
+     * The save guard (the Save-side twin of `deleteGuard`). Unlike that one it
+     * is AWAITED, because the case it exists for is a control that has not
+     * finished yet — an image upload still in flight when Save is clicked. The
+     * form would submit the previous media map, the request would SUCCEED, the
+     * toast would say saved and the modal would close: the image lost with no
+     * error anywhere, because every individual step worked.
+     *
+     * Returns true to proceed. Aborting leaves the modal open and the form
+     * untouched — the user's edits are the thing being protected, so nothing is
+     * closed or reset on the way out. A guard that THROWS also aborts: a guard
+     * that could not decide is not permission to save.
+     */
+    const passesSaveGuard = async (): Promise<boolean> => {
+        if (!props.saveGuard) return true;
+
+        let message: string | null | undefined;
+        try {
+            message = await props.saveGuard(
+                isCreateMode.value ? null : (selectedItem.value as T | null),
+                editForm.value.data,
+            );
+        } catch (error: any) {
+            message = error?.message ?? 'Could not save. Please try again.';
+        }
+        if (!message) return true;
+
+        createToast?.({
+            title: 'Cannot save',
+            body: message,
+            variant: 'danger',
+            modelValue: 5000,
+        });
+        return false;
     };
 
     const performSave = async () => {

@@ -7,20 +7,32 @@ import DXCurrencyInput from '../../resources/js/components/extended/DXCurrencyIn
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /** Render the input bound to a ref model; returns the input el + model. */
-function mount(props: Record<string, unknown> = {}, initial: number | null = null) {
+function mount(
+  props: Record<string, unknown> = {},
+  initial: number | null = null,
+  slots?: Record<string, () => unknown>,
+) {
   const model = ref<number | null>(initial);
   const screen = render({
     render: () =>
       h(BApp, {}, () =>
-        h(DXCurrencyInput, {
-          modelValue: model.value,
-          'onUpdate:modelValue': (v: number | null) => (model.value = v),
-          ...props,
-        }),
+        h(
+          DXCurrencyInput,
+          {
+            modelValue: model.value,
+            'onUpdate:modelValue': (v: number | null) => (model.value = v),
+            ...props,
+          },
+          slots as any,
+        ),
       ),
   });
   const input = () => screen.container.querySelector('input') as HTMLInputElement;
-  return { screen, model, input };
+  const affixes = () =>
+    Array.from(screen.container.querySelectorAll('.input-group-text')).map((el) =>
+      el.textContent?.trim(),
+    );
+  return { screen, model, input, affixes };
 }
 
 const type = async (input: HTMLInputElement, text: string) => {
@@ -149,5 +161,74 @@ describe('DXCurrencyInput minorUnits mode (#116)', () => {
     expect(frac().value).toBe('1.99');
     await type(frac(), '2.50');
     expect(model.value).toBe(250);
+  });
+});
+
+
+/*
+ * The trailing affix (#152 follow-up). A money input very often needs a unit
+ * beside the amount — "£ [12.60] Pint", "£ [4.50] per case" — and without one
+ * consumers hand-roll a DInputGroup + bare number input, which puts every
+ * toFixed/parse foot-gun this leaf exists to remove straight back.
+ */
+describe('DXCurrencyInput append affix', () => {
+  it('renders the `append` prop AFTER the input, keeping the currency prepend first', async () => {
+    const { screen, affixes } = mount({ append: 'Pint' }, 12.6);
+    await flush();
+
+    expect(affixes()).toEqual(['£', 'Pint']);
+
+    // Order on the page, not just presence: the symbol leads, the unit trails.
+    const group = screen.container.querySelector('.input-group')!;
+    const parts = Array.from(group.children).map((el) => el.tagName.toLowerCase());
+    expect(parts.indexOf('input')).toBeGreaterThan(0);
+    expect(parts.indexOf('input')).toBeLessThan(parts.length - 1);
+  });
+
+  it('renders arbitrary #append slot content, which wins over the prop', async () => {
+    const { screen } = mount({ append: 'ignored' }, 4.5, {
+      append: () => h('button', { type: 'button', class: 'unit-picker' }, 'per case'),
+    });
+    await flush();
+
+    const picker = screen.container.querySelector('button.unit-picker');
+    expect(picker).toBeTruthy();
+    expect(picker!.textContent).toBe('per case');
+    // The prop's default affix is replaced, not rendered alongside.
+    expect(screen.container.textContent).not.toContain('ignored');
+  });
+
+  it('does not disturb the display/model split — typing, blur padding and null', async () => {
+    const { model, input, affixes } = mount({ append: 'each' });
+    await flush();
+    expect(affixes()).toEqual(['£', 'each']);
+
+    await type(input(), '12.5');
+    expect(model.value).toBe(12.5);
+    expect(input().value).toBe('12.5');
+    await blur(input());
+    expect(input().value).toBe('12.50');
+
+    await type(input(), '');
+    expect(model.value).toBeNull();
+    expect(affixes()).toEqual(['£', 'each']);
+  });
+
+  it('works in minorUnits mode and still forwards $attrs to the inner input', async () => {
+    const { model, input, affixes } = mount(
+      { append: 'Pint', minorUnits: true, placeholder: 'Price', 'aria-label': 'Unit price' },
+      1260,
+    );
+    await flush();
+
+    expect(affixes()).toEqual(['£', 'Pint']);
+    expect(input().value).toBe('12.60');
+    expect(input().placeholder).toBe('Price');
+    expect(input().getAttribute('aria-label')).toBe('Unit price');
+    // `append` is a declared prop, so it must NOT leak onto the input element.
+    expect(input().hasAttribute('append')).toBe(false);
+
+    await type(input(), '19.99');
+    expect(model.value).toBe(1999);
   });
 });
