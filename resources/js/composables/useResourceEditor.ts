@@ -30,8 +30,10 @@ export interface ResourceEditorProps<T = any> {
     deleteUrl?: string;
     /** `POST` endpoint for creating new items, e.g. `/api/products`. */
     createUrl?: string;
-    /** Guard run before delete — a message short-circuits with a toast. */
-    deleteGuard?: (item: T) => string | null | undefined;
+    /** Guard run before delete — a message short-circuits with a toast. Awaited. */
+    deleteGuard?: (
+        item: T,
+    ) => string | null | undefined | Promise<string | null | undefined>;
     /** Guard run before save — a message aborts with a toast. Awaited. */
     saveGuard?: (
         item: T | null,
@@ -308,6 +310,13 @@ export function useResourceEditor<T = any>(
     const save = async () => {
         if (!editForm.value) return;
 
+        // Don't save — or evaluate the guard — until the full record has loaded
+        // (showUrl). The thin list row is missing fields the form and the guard
+        // may both depend on, so a guard keyed on one of them would see
+        // `undefined` and wave the save through, which is the silent success the
+        // guard exists to prevent. Same rule as `remove`.
+        if (editLoading.value) return;
+
         // Not re-entrant. The footer button disables itself while
         // `pendingAction` is set, but DXForm's own submit (Enter in a field)
         // reaches here directly — and with an AWAITED save guard there is now a
@@ -324,39 +333,67 @@ export function useResourceEditor<T = any>(
     };
 
     /*
-     * The save guard (the Save-side twin of `deleteGuard`). Unlike that one it
-     * is AWAITED, because the case it exists for is a control that has not
-     * finished yet — an image upload still in flight when Save is clicked. The
-     * form would submit the previous media map, the request would SUCCEED, the
-     * toast would say saved and the modal would close: the image lost with no
-     * error anywhere, because every individual step worked.
+     * BOTH guards run through here, which is the point of it: they must not
+     * diverge. Each is AWAITED. The case `saveGuard` exists for is a control
+     * that has not finished yet — an image upload still in flight when Save is
+     * clicked. The form would submit the previous media map, the request would
+     * SUCCEED, the toast would say saved and the modal would close: the image
+     * lost with no error anywhere, because every individual step worked.
+     * `deleteGuard` is awaited on the same path so an `async` guard does what
+     * its author expects — unawaited, its promise is merely truthy, which would
+     * block every delete with an unreadable message.
      *
      * Returns true to proceed. Aborting leaves the modal open and the form
      * untouched — the user's edits are the thing being protected, so nothing is
      * closed or reset on the way out. A guard that THROWS also aborts: a guard
-     * that could not decide is not permission to save.
+     * that could not decide is not permission to proceed.
      */
-    const passesSaveGuard = async (): Promise<boolean> => {
-        if (!props.saveGuard) return true;
-
+    const passesGuard = async (
+        run: () => string | null | undefined | Promise<string | null | undefined>,
+        title: string,
+        fallbackMessage: string,
+    ): Promise<boolean> => {
         let message: string | null | undefined;
         try {
-            message = await props.saveGuard(
-                isCreateMode.value ? null : (selectedItem.value as T | null),
-                editForm.value.data,
-            );
+            message = await run();
         } catch (error: any) {
-            message = error?.message ?? 'Could not save. Please try again.';
+            message = error?.message ?? fallbackMessage;
         }
         if (!message) return true;
 
         createToast?.({
-            title: 'Cannot save',
+            title,
             body: message,
             variant: 'danger',
             modelValue: 5000,
         });
         return false;
+    };
+
+    const passesSaveGuard = (): Promise<boolean> => {
+        const guard = props.saveGuard;
+        if (!guard) return Promise.resolve(true);
+
+        return passesGuard(
+            () =>
+                guard(
+                    isCreateMode.value ? null : (selectedItem.value as T | null),
+                    editForm.value.data,
+                ),
+            'Cannot save',
+            'Could not save. Please try again.',
+        );
+    };
+
+    const passesDeleteGuard = (): Promise<boolean> => {
+        const guard = props.deleteGuard;
+        if (!guard) return Promise.resolve(true);
+
+        return passesGuard(
+            () => guard(selectedItem.value as T),
+            'Cannot delete',
+            'Could not delete. Please try again.',
+        );
     };
 
     const performSave = async () => {
@@ -489,27 +526,23 @@ export function useResourceEditor<T = any>(
         // may depend on fields the thin list row doesn't carry.
         if (editLoading.value) return;
 
-        // Delete guard: a non-null message means this item can't be deleted — show
-        // it immediately and skip the confirm and the request entirely.
-        const guardMessage = props.deleteGuard?.(selectedItem.value as T);
-        if (guardMessage) {
-            createToast?.({
-                title: 'Cannot delete',
-                body: guardMessage,
-                variant: 'danger',
-                modelValue: 5000,
-            });
-            return;
-        }
-
-        // Confirm deletion
-        const itemName = (selectedItem.value as any).name || (selectedItem.value as any).title || singularItemName.value;
-        const confirmed = window.confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`);
-
-        if (!confirmed) return;
+        // Not re-entrant, for the same reason as `save`: the guard is awaited,
+        // so a second Delete arriving by a path that doesn't disable the button
+        // would run the guard — and the confirm — a second time.
+        if (pendingAction.value) return;
 
         pendingAction.value = 'delete';
         try {
+            // Delete guard: a non-null message means this item can't be deleted —
+            // show it immediately and skip the confirm and the request entirely.
+            if (!(await passesDeleteGuard())) return;
+
+            // Confirm deletion
+            const itemName = (selectedItem.value as any).name || (selectedItem.value as any).title || singularItemName.value;
+            const confirmed = window.confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`);
+
+            if (!confirmed) return;
+
             const itemId = (selectedItem.value as any).id;
             const url = props.deleteUrl.replace(':id', itemId);
 

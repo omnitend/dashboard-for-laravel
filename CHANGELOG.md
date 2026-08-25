@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edit/create modal's Save is clicked, before the request. Return a message to
   abort (shown as a toast, no request, modal left open with the user's edits
   intact); return `null` to proceed. Covers both the `editUrl` and `createUrl`
-  paths. Unlike `deleteGuard` it is **awaited**, which is the point of it: an
+  paths. It is **awaited**, which is the point of it: an
   async control in an `edit-value` slot — an image upload — that has not
   finished when Save is clicked otherwise submits the previous media map, the
   request SUCCEEDS, the toast says saved and the modal closes, and the image is
@@ -32,6 +32,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edited row (`null` in create mode) and `data` is the live form data. Save is
   no longer re-entrant while a save (or its guard) is in flight, so a second
   click cannot fire a second request.
+
+### Changed
+
+- **`deleteGuard` is now awaited too**, matching `saveGuard` — both guards run
+  through one path so they cannot diverge. Previously an `async deleteGuard`
+  returned a promise that was merely *truthy*, so it blocked **every** delete
+  and put `[object Promise]` in the toast. Existing synchronous guards are
+  unaffected (awaiting a non-promise is a no-op). A `deleteGuard` that throws
+  now aborts with its message rather than an unhandled rejection.
+- **The modal's Save waits for the `showUrl` fetch**, as Delete already did.
+  Submitting the form while the full record was still loading (Enter in a field
+  — the footer button is disabled throughout) saved the thin list row, and ran
+  `saveGuard` against it: a guard keyed on a field only the full record carries
+  saw `undefined` and allowed the save. Delete is likewise no longer re-entrant.
 
 ## [0.39.0] - 2026-07-24
 
