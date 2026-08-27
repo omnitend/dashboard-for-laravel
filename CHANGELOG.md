@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-08-27
+
+### Changed
+
+- **`DXDashboardSidebar` group spacing.** The gap between navigation groups is
+  1rem again (0.40.0's dense rhythm had 0.25rem, which left a group label
+  closer to the previous group's last item than to its own), and the nav's top
+  padding drops to 0.5rem so the first item sits nearer the header. Verified
+  by measuring the rendered rects.
+
 ### Fixed
 
 - **Dismissing the edit modal now abandons a pending guarded save or delete**

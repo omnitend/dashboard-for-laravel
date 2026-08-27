@@ -601,8 +601,12 @@ solid fill by reflex.
   `.progress-bar.bg-success` is the switch-ON lime `#84cc16`, not the dark
   olive emphasis. Emphasis shades stay for outlines/links/text.
 - **DXTable header titles are muted grey** by default (#157), token
-  `--dx-table-header-color`. Sidebar nav is dense with natural-case group
-  headers since #95 (0.25rem group gap, 0.875rem headers, 0.3rem link padding).
+  `--dx-table-header-color`. Sidebar nav has natural-case group headers since
+  #95 (0.875rem headers, 0.3rem link padding), with a **1rem** gap between
+  groups (#176) — #95's 0.25rem left a group label closer to the previous
+  group's last item than to its own, so the eye attached it to the wrong group.
+  Pinned by `tests/components/DXDashboardSidebar.spacing.test.ts`, which
+  measures rendered rects rather than class names.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
   `primary`; a save's green reward belongs in a "Saved" toast, not the button.
 - **Outline buttons / coloured links / `.text-*`** use each variant's *emphasis*
