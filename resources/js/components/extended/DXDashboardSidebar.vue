@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <nav ref="navRef" class="sidebar-nav p-3">
+    <nav ref="navRef" class="sidebar-nav px-3 pb-3 pt-2">
       <template v-for="(group, groupIndex) in navigation" :key="groupIndex">
         <div
           v-if="group.visible !== false"
@@ -426,11 +426,15 @@ watch(activeGroupIndex, () => {
   overflow-x: hidden;
 }
 
-/* Dense rhythm (#95): values proven in a production dashboard, adopted as the default —
-   natural-case headers at 0.875rem (no uppercase/letter-spacing), tight group
-   spacing. */
+/* Rhythm: natural-case headers at 0.875rem (no uppercase/letter-spacing, #95),
+   with a full 1rem between groups so each section reads as its own block.
+   The 0.25rem gap #95 shipped with left a group label 4px under the previous
+   group's last item — closer to that item than to its own — and the eye
+   attached the label to the wrong group. The nav's top padding is reduced to
+   match (pt-2), so the first item sits nearer the header than the groups sit
+   to each other. */
 .nav-group {
-  margin-bottom: 0.25rem;
+  margin-bottom: 1rem;
 }
 
 .nav-group-label {
