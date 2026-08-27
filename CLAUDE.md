@@ -921,16 +921,41 @@ Icons from unplugin-icons work differently in the library vs consuming apps:
 
 ## Version Management
 
-When releasing a new version:
+Releases go through **`npm run release <version>`** (`scripts/release.sh`), not
+by hand. It builds, runs the headless suite and `vue-tsc`, bumps `package.json`
++ `package-lock.json`, commits, tags, pushes, creates the GitHub release and
+publishes to npm — then *verifies all four artifacts exist* rather than trusting
+exit codes. Packagist picks up the tag on its own.
 
-1. Update version in `package.json`
-2. Update version in `composer.json` (if applicable)
-3. Run `npm run build`
-4. Test in your consuming applications
-5. Commit and tag: `git tag v0.1.1`
-6. Push: `git push --tags`
-7. Publish to NPM: `npm publish`
-8. Publish to Packagist (automatic if GitHub repo is registered)
+Two things to do first, both enforced by its preflight:
+
+1. **Cut the CHANGELOG.** Retitle `## [Unreleased]` to `## [<version>] - <date>`
+   and add a fresh empty `## [Unreleased]` above it. The script reads that
+   section as the release notes (tag annotation *and* GitHub release, so they
+   can't disagree) and refuses to release without it — 0.39.1 shipped with no
+   entry at all, back when nothing checked. Automating the cut is #178.
+2. **Be logged in to npm as the package owner.** `jamespickard` is the sole
+   owner of `@omnitend/dashboard-for-laravel`; other accounts fail with a
+   confusing `E404 Not Found` on PUT rather than a permission error, because npm
+   returns 404 for scopes you can't write to. `npm whoami` tells you who is
+   logged in *now*, which is not evidence about who published previously — use
+   `npm owner ls` for that.
+
+**It is resumable: if it stops half-way, run the exact same command again.**
+Every step checks whether it has already happened and skips if so, and the
+confirmation prompt shows real state (`[done]`/`[todo]` per step) rather than a
+fixed list. This matters because the irreversible steps come last, so a denied
+SSH prompt or a dropped OTP used to leave the version bumped, committed, tagged
+and pushed with nothing published — and re-running died at `npm version`. Both
+0.39.1 and 0.40.0 wedged that way before #173.
+
+The script is interactive (a confirm and npm's OTP), so an **agent cannot run
+it** — prepare the release and hand the command to James.
+
+Checking whether a publish landed: hit the registry directly
+(`curl -s https://registry.npmjs.org/@omnitend%2Fdashboard-for-laravel`), not
+`npm view` — the CLI caches, and a stale cache after a successful publish is
+indistinguishable from a failed one.
 
 ## Common Tasks
 
