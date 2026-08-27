@@ -1065,6 +1065,11 @@ re-entrant while the guard is pending, so a second click cannot fire a second
 request. A guard that *throws* also aborts, surfacing its message — a guard
 that could not decide is not permission to save.
 
+Because the guard is awaited, the modal can be dismissed *while it is pending*.
+Any dismissal — Cancel, the header close button, Escape or a backdrop click —
+abandons the save, so nothing is written for a record the user has closed. The
+same holds for `deleteGuard`.
+
 ## Delete Functionality
 
 Enable deletion with the `deleteUrl` prop:

@@ -360,6 +360,144 @@ describe('DXTable deleteGuard is awaited too', () => {
   });
 });
 
+/*
+ * #174 — dismissing the modal while an awaited guard is pending.
+ *
+ * There are two ways out of the modal and they did different things. The Cancel
+ * button (and the slot's `close` binding) emit `cancel`, which clears the
+ * selected record and so defuses a pending save. The header X, Escape and a
+ * backdrop click reach BModal directly and merely flip `show` — nothing
+ * invalidated the in-flight action, so when the guard resolved the request went
+ * out against a record the user had visibly closed.
+ *
+ * Silent in the direction that matters: the request SUCCEEDS, so nothing errors
+ * and nothing logs. The same outliving-of-intent the guard exists to prevent,
+ * reached by a different route.
+ */
+describe('DXTable — dismissing the modal invalidates a pending guarded action (#174)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  /** A guard that blocks until the test releases it. */
+  const pendingGuard = () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    return { release, guard: async () => { await gate; return null; } };
+  };
+
+  const headerCloseButton = () =>
+    document.querySelector('.modal .btn-close') as HTMLButtonElement | null;
+
+  /*
+   * On the MODAL element, not `document`. BModal's Escape handling does not see
+   * a document-level keydown — dispatching there leaves the modal open, and the
+   * save then proceeds correctly, so the test passes for the wrong reason and
+   * reports a bug that isn't there. Every dismissal below therefore asserts the
+   * modal actually closed before the guard is released.
+   */
+  const pressEscape = () => {
+    const modal = document.querySelector('.modal') as HTMLElement | null;
+    if (!modal) throw new Error('No modal to dismiss — the harness is not live.');
+    modal.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  };
+
+  it('the header X aborts a save whose guard is still pending', async () => {
+    const spy = stubFetch();
+    const { release, guard } = pendingGuard();
+    await openEdit({ saveGuard: guard });
+
+    await typeInto(nameInput()!, 'Edited name');
+    modalButton('Save')!.click();
+    await wait(80);
+    expect(writes(spy)).toHaveLength(0); // guard still pending
+
+    const close = headerCloseButton();
+    expect(close).toBeTruthy(); // the route under test must actually exist
+    close!.click();
+    await wait(60);
+    expect(modalIsOpen()).toBe(false); // the dismissal really happened
+
+    release();
+    await wait(250);
+
+    // The user closed the dialog: nothing may be written.
+    expect(writes(spy)).toHaveLength(0);
+    expect(modalIsOpen()).toBe(false);
+  });
+
+  it('Escape aborts a save whose guard is still pending', async () => {
+    const spy = stubFetch();
+    const { release, guard } = pendingGuard();
+    await openEdit({ saveGuard: guard });
+
+    modalButton('Save')!.click();
+    await wait(80);
+
+    pressEscape();
+    await wait(60);
+    expect(modalIsOpen()).toBe(false); // the dismissal really happened
+
+    release();
+    await wait(250);
+
+    expect(writes(spy)).toHaveLength(0);
+  });
+
+  it('Cancel aborts one too — the route that already worked, now pinned', async () => {
+    const spy = stubFetch();
+    const { release, guard } = pendingGuard();
+    await openEdit({ saveGuard: guard });
+
+    modalButton('Save')!.click();
+    await wait(80);
+    modalButton('Cancel')!.click();
+    await wait(60);
+    expect(modalIsOpen()).toBe(false); // the dismissal really happened
+
+    release();
+    await wait(250);
+
+    expect(writes(spy)).toHaveLength(0);
+  });
+
+  it('aborts a DELETE whose guard is still pending', async () => {
+    const spy = stubFetch();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { release, guard } = pendingGuard();
+    await openEdit({ deleteUrl: '/api/categories/:id', deleteGuard: guard });
+
+    modalButton('Delete')!.click();
+    await wait(80);
+    expect(writes(spy)).toHaveLength(0);
+
+    headerCloseButton()!.click();
+    await wait(60);
+    expect(modalIsOpen()).toBe(false); // the dismissal really happened
+
+    release();
+    await wait(250);
+
+    expect(writes(spy)).toHaveLength(0);
+  });
+
+  it('POSITIVE CONTROL: an undismissed modal still saves after the guard resolves', async () => {
+    // Without this, every assertion above would pass just as well against a
+    // build where the save never fires at all.
+    const spy = stubFetch();
+    const { release, guard } = pendingGuard();
+    await openEdit({ saveGuard: guard });
+
+    modalButton('Save')!.click();
+    await wait(80);
+    release();
+    await wait(250);
+
+    expect(writes(spy)).toHaveLength(1);
+    expect(String(writes(spy)[0][1].method).toUpperCase()).toBe('PUT');
+  });
+});
+
 describe('DXTable saveGuard — the unguarded path is unchanged', () => {
   afterEach(() => vi.restoreAllMocks());
 
