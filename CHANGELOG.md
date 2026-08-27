@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.40.1] - 2026-08-27
+## [0.41.0] - 2026-08-27
 
 ### Changed
 
@@ -16,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   closer to the previous group's last item than to its own), and the nav's top
   padding drops to 0.5rem so the first item sits nearer the header. Verified
   by measuring the rendered rects.
+
+### Fixed
+
+- **Dismissing the edit modal now abandons a pending guarded save or delete**
+  ([#174](https://github.com/omnitend/dashboard-for-laravel/issues/174)).
+  Because `saveGuard`/`deleteGuard` are awaited, the modal can be closed while
+  one is still pending — and only the Cancel button invalidated the in-flight
+  action. The header close button, Escape and a backdrop click reach the
+  underlying modal directly and merely flipped its visibility, so when the guard
+  resolved the request went out anyway, writing a record the user had visibly
+  abandoned. Silent in the direction that matters: the request succeeds, so
+  nothing errors and nothing logs. Every close route now invalidates the pending
+  action.
 
 ## [0.40.0] - 2026-08-25
 

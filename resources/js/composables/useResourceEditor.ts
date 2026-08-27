@@ -1,4 +1,4 @@
-import { computed, ref, type Ref } from "vue";
+import { computed, ref, watch, type Ref } from "vue";
 import { api } from "../utils/api";
 import { useForm } from "./useForm";
 import { useToast } from "./useToast";
@@ -101,6 +101,30 @@ export function useResourceEditor<T = any>(
 
     // True while the edit modal is fetching the full record via `showUrl`.
     const editLoading = ref(false);
+
+    // Bumped every time the modal closes. An action that AWAITS something —
+    // a save or delete guard — re-reads this before committing, so work begun
+    // in one modal session can never land after that session has ended (#174).
+    //
+    // A counter rather than a boolean because the modal reopens: by the time a
+    // slow guard resolves the user may already be editing a different row, and
+    // "is it open?" answers yes for the WRONG record. The generation only
+    // matches if this is still the same session that started the action.
+    //
+    // Watched rather than folded into `cancel()` because `cancel()` is not the
+    // only way out: the Cancel button and the slot's `close` binding route
+    // through it, but the header X, Escape and a backdrop click reach BModal
+    // directly and merely flip `show`. Watching the flag itself catches every
+    // route, including any added later. `flush: 'sync'` so the bump lands in
+    // the same tick as the dismissal, leaving no window of its own.
+    const editGeneration = ref(0);
+    watch(
+        showEditModal,
+        (isOpen) => {
+            if (!isOpen) editGeneration.value++;
+        },
+        { flush: 'sync' },
+    );
 
     // Monotonic token so a slow fetch for a previously-opened row can't overwrite
     // the form after the user has since opened a different row.
@@ -324,8 +348,17 @@ export function useResourceEditor<T = any>(
         if (pendingAction.value) return;
 
         pendingAction.value = 'save';
+        const generation = editGeneration.value;
         try {
             if (!(await passesSaveGuard())) return;
+
+            // Dismissed while the guard was pending. Saving now would write a
+            // record the user watched themselves close — the same silent
+            // outliving-of-intent the guard exists to prevent, reached by a
+            // different route (#174). The check sits HERE rather than inside
+            // performSave so it covers the whole class, not one call site.
+            if (editGeneration.value !== generation) return;
+
             await performSave();
         } finally {
             pendingAction.value = null;
@@ -532,6 +565,7 @@ export function useResourceEditor<T = any>(
         if (pendingAction.value) return;
 
         pendingAction.value = 'delete';
+        const generation = editGeneration.value;
         try {
             // Delete guard: a non-null message means this item can't be deleted —
             // show it immediately and skip the confirm and the request entirely.
@@ -542,6 +576,12 @@ export function useResourceEditor<T = any>(
             const confirmed = window.confirm(`Are you sure you want to delete "${itemName}"? This action cannot be undone.`);
 
             if (!confirmed) return;
+
+            // Same window as `save`, opened by awaiting the guard: the modal can
+            // be dismissed underneath a pending delete (#174). Checked after the
+            // confirm as well as the guard, though `window.confirm` blocks the
+            // event loop, so nothing can slip in during it.
+            if (editGeneration.value !== generation) return;
 
             const itemId = (selectedItem.value as any).id;
             const url = props.deleteUrl.replace(':id', itemId);

@@ -752,6 +752,9 @@ export interface Props<TItem = any> {
      * `edit-value` slot's binding); `data` is the live form data. Aborting
      * leaves the modal open with the user's edits intact. A guard that throws
      * also aborts, surfacing its message.
+     *
+     * Dismissing the modal while the guard is still pending — by any route —
+     * abandons the save; nothing is written for a record the user has closed.
      */
     saveGuard?: (
         item: TItem | null,
