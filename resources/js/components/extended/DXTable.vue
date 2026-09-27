@@ -72,8 +72,7 @@
                              supplied their own `table-colgroup` (forwarded generically) —
                              so a table with no widths gets no colgroup and renders exactly
                              as before. `<col>` widths are authoritative under
-                             `table-layout: fixed`, where the filter row (not the header)
-                             is the width-determining first row. -->
+                             `table-layout: fixed`, regardless of any consumer header banners. -->
                         <template
                             v-if="fieldsHaveWidths && !$slots['table-colgroup']"
                             #table-colgroup
@@ -85,92 +84,90 @@
                             />
                         </template>
 
-                        <!-- DXTable owns `thead-top` (its filter row lives there), so a
-                             consumer's own thead-top content is COMPOSED above it rather
-                             than being dropped: a grouped column-header banner or a pinned
-                             totals row sits above the headers where it belongs (#120). -->
-                        <template v-if="hasFilters || $slots['thead-top']" #thead-top="theadScope">
+                        <template v-if="$slots['thead-top']" #thead-top="theadScope">
                             <!--
-                              @slot A row rendered ABOVE the column headers — a grouped-column banner (a `<th colspan>` spanning several columns), or a pinned totals row. Renders above DXTable's own filter row. Give it `<tr>`s.
+                              @slot Rows above the column headers, such as grouped-column banners or pinned totals. Give it `<tr>`s.
                               @binding {object} columns The number of columns in the table.
                               @binding {object} fields The table's fields.
                             -->
                             <slot name="thead-top" v-bind="theadScope" />
+                        </template>
 
-                            <tr v-if="hasFilters" class="filter-row">
-                                <th v-for="field in fields" :key="`filter-${field.key}`" class="p-2">
-                                    <!-- Text Filter -->
-                                    <DFormInput
-                                        v-if="field.filter === 'text'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
+                        <!-- The table supplies the below-header row and one cell per field. -->
+                        <template v-if="hasFilters || $slots['thead-sub']" #thead-sub="{ field, ...filterScope }">
+                            <div v-if="hasFilters" class="dx-table-filter-cell">
+                                <!-- Text Filter -->
+                                <DFormInput
+                                    v-if="field.filter === 'text'"
+                                    :model-value="effectiveFilters[filterKeyFor(field)] || ''"
+                                    :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
+                                    size="sm"
+                                    @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
+                                />
 
-                                    <!-- Multi-value Select Filter (#51): several values at once; the filters entry is an array -->
-                                    <DAutocomplete
-                                        v-else-if="field.filter === 'select' && field.filterMultiple"
-                                        :model-value="multiFilterValueFor(field)"
-                                        :options="getFieldFilterOptions(field)"
-                                        :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
-                                        size="sm"
-                                        multiple
-                                        open-on-focus
-                                        @update:model-value="handleMultiSelectFilterChange(field, $event)"
-                                    />
+                                <!-- Multi-value Select Filter (#51): several values at once; the filters entry is an array -->
+                                <DAutocomplete
+                                    v-else-if="field.filter === 'select' && field.filterMultiple"
+                                    :model-value="multiFilterValueFor(field)"
+                                    :options="getFieldFilterOptions(field)"
+                                    :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
+                                    size="sm"
+                                    multiple
+                                    open-on-focus
+                                    @update:model-value="handleMultiSelectFilterChange(field, $event)"
+                                />
 
-                                    <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
-                                    <DAutocomplete
-                                        v-else-if="field.filter === 'select'"
-                                        :model-value="(effectiveFilters[filterKeyFor(field)] as string) || ''"
-                                        :options="getFieldFilterOptions(field)"
-                                        :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
-                                        size="sm"
-                                        open-on-focus
-                                        @update:model-value="handleSelectFilterChange(field, $event)"
-                                    />
+                                <!-- Select Filter: typeahead — browse the full list on focus, or type to narrow; clear (✕) resets to "no filter" -->
+                                <DAutocomplete
+                                    v-else-if="field.filter === 'select'"
+                                    :model-value="(effectiveFilters[filterKeyFor(field)] as string) || ''"
+                                    :options="getFieldFilterOptions(field)"
+                                    :placeholder="field.filterPlaceholder || filterAllLabelFor(field)"
+                                    size="sm"
+                                    open-on-focus
+                                    @update:model-value="handleSelectFilterChange(field, $event)"
+                                />
 
-                                    <!-- Native Select Filter (S3b): a plain <select> for consumers who
-                                         want OS-native behaviour (full-height menu, native keyboard/scroll)
-                                         instead of the DAutocomplete typeahead. Shares the select filter's
-                                         option list (getFieldFilterOptions) and change handler
-                                         (handleSelectFilterChange) EXACTLY — so it behaves identically to
-                                         filter:"select" in every way but the control. Single-select only:
-                                         `filterMultiple` is ignored here. The model maps "no filter" to the
-                                         FILTER_ALL_VALUE sentinel (see nativeSelectFilterValue) so the "All …"
-                                         option shows selected in a native control. -->
-                                    <DFormSelect
-                                        v-else-if="field.filter === 'select-native'"
-                                        :model-value="nativeSelectFilterValue(field)"
-                                        :options="getFieldFilterOptions(field) as unknown as Record<string, unknown>[]"
-                                        size="sm"
-                                        @update:model-value="handleSelectFilterChange(field, $event)"
-                                    />
+                                <!-- Native Select Filter (S3b): a plain <select> for consumers who
+                                     want OS-native behaviour (full-height menu, native keyboard/scroll)
+                                     instead of the DAutocomplete typeahead. Shares the select filter's
+                                     option list (getFieldFilterOptions) and change handler
+                                     (handleSelectFilterChange) EXACTLY — so it behaves identically to
+                                     filter:"select" in every way but the control. Single-select only:
+                                     `filterMultiple` is ignored here. The model maps "no filter" to the
+                                     FILTER_ALL_VALUE sentinel (see nativeSelectFilterValue) so the "All …"
+                                     option shows selected in a native control. -->
+                                <DFormSelect
+                                    v-else-if="field.filter === 'select-native'"
+                                    :model-value="nativeSelectFilterValue(field)"
+                                    :options="getFieldFilterOptions(field) as unknown as Record<string, unknown>[]"
+                                    size="sm"
+                                    @update:model-value="handleSelectFilterChange(field, $event)"
+                                />
 
-                                    <!-- Number Filter -->
-                                    <DFormInput
-                                        v-else-if="field.filter === 'number'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
-                                        type="number"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
+                                <!-- Number Filter -->
+                                <DFormInput
+                                    v-else-if="field.filter === 'number'"
+                                    :model-value="effectiveFilters[filterKeyFor(field)] || ''"
+                                    :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
+                                    type="number"
+                                    size="sm"
+                                    @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
+                                />
 
-                                    <!-- Date Filter -->
-                                    <DFormInput
-                                        v-else-if="field.filter === 'date'"
-                                        :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                        type="date"
-                                        size="sm"
-                                        @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
-                                    />
+                                <!-- Date Filter -->
+                                <DFormInput
+                                    v-else-if="field.filter === 'date'"
+                                    :model-value="effectiveFilters[filterKeyFor(field)] || ''"
+                                    type="date"
+                                    size="sm"
+                                    @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
+                                />
 
-                                    <!-- No filter for this column -->
-                                    <div v-else></div>
-                                </th>
-                            </tr>
+                                <!-- No filter for this column -->
+                                <div v-else></div>
+                            </div>
+                            <slot name="thead-sub" v-bind="{ ...filterScope, field }" />
                         </template>
 
                         <!-- Custom headers for all fields -->
@@ -1318,9 +1315,8 @@ const dottedCellFields = (slots: Record<string, unknown>): TableField[] =>
 /*
  * Per-column widths (#156). A field's `width`/`minWidth` is applied through a
  * `<colgroup>` `<col>`, NOT the header `<th>`: with `table-layout: fixed` the
- * column widths are taken from the FIRST row of cells, and DXTable's inline
- * filter row (`thead-top`) is that first row — so a width on the header `<th>`
- * would be ignored whenever filters are present. A `<col>` width is
+ * column widths are taken from the FIRST row of cells, which may be a
+ * consumer banner rather than the column labels. A `<col>` width is
  * authoritative regardless of row order, in both fixed and auto layout.
  */
 const sizeToCss = (value: string | number): string =>
@@ -2262,7 +2258,7 @@ const refresh = () => {
  *
  * - `head(<key>)` — DXTable draws its own column headers (sort indicators,
  *   field hints). Forwarding a consumer's would silently drop those.
- * - `thead-top`   — DXTable renders the inline filter row there.
+ * - `thead-top` / `thead-sub` — composed with the below-header filter cells.
  *
  * `head-end(<key>)` is DXTable's OWN additive header slot (#99) and is likewise
  * not forwarded: the inner table has no such slot, and the prefixes below are
@@ -2312,11 +2308,10 @@ const isTableSlot = (name: string) =>
  * invisible (#114). Called from the template, it re-evaluates every render.
  *
  * It also has to EXCLUDE the slots DXTable renders itself: declaring `#thead-top`
- * here (even rendering nothing into it) would override DXTable's own thead-top
- * template, silently dropping the filter row and the consumer's banner (#120).
+ * or `#thead-sub` here would override the composed header/filter slots.
  */
 const forwardableSlotNames = (slots: Record<string, unknown>): string[] =>
-    Object.keys(slots).filter((name) => isTableSlot(name));
+    Object.keys(slots).filter((name) => name !== 'thead-sub' && isTableSlot(name));
 
 const tableSlotSignature = (slots: Record<string, unknown>): string => {
     // DXTable's OWN dotted-cell slots count too (#121). bvn captures its cell

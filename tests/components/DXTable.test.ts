@@ -212,7 +212,7 @@ describe('DXTable', () => {
       });
       await flush();
 
-      const filterRow = screen.container.querySelector('.filter-row');
+      const filterRow = screen.container.querySelector('tr:has(.dx-table-filter-cell)');
       expect(filterRow).toBeTruthy();
       // The typeahead is a text input (combobox), not a native select.
       expect(filterRow!.querySelector('select')).toBeNull();
@@ -233,7 +233,7 @@ describe('DXTable', () => {
       expect(allRows).toBeGreaterThan(inactiveCount);
 
       // Open the typeahead (opens on focus) and pick "inactive".
-      const input = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+      const input = screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLInputElement;
       input.focus();
       await wait(50);
       const option = Array.from(document.querySelectorAll('[role="option"]')).find(
@@ -275,7 +275,7 @@ describe('DXTable', () => {
       await flush();
 
       // Open the typeahead popup (opens on focus).
-      const input = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+      const input = screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLInputElement;
       input.focus();
       await wait(80);
 
@@ -1165,7 +1165,7 @@ describe('DXTable forwards the inner table\'s slots (#99, #111, #112)', () => {
       expect(total?.textContent).toBe('42');
 
       // The point of a footer over a summary bar: the number sits under its column.
-      const headerCells = [...screen.container.querySelectorAll('thead tr:last-child th')];
+      const headerCells = [...screen.container.querySelectorAll('thead tr:not(:has(.dx-table-filter-cell)) th')];
       const footerCells = [...tfoot!.querySelectorAll('th, td')];
       const amountColumn = headerCells.findIndex((th) => th.textContent?.includes('Amount'));
       expect(amountColumn).toBeGreaterThanOrEqual(0);
@@ -1413,7 +1413,7 @@ describe('DXTable initial-value vs controlled props (#110)', () => {
 
     expect(screen.container.querySelectorAll('tbody tr').length).toBe(1);
 
-    const input = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+    const input = screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLInputElement;
     expect(input.value).toBe('Alpha');
 
     await userEvent.fill(input, 'Beta');
@@ -1563,7 +1563,7 @@ describe('DXTable filter and provider gaps (#106)', () => {
       await wait(80);
 
       await userEvent.fill(
-        screen.container.querySelector('.filter-row input') as HTMLElement,
+        screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLElement,
         '42',
       );
       await wait(400);
@@ -1593,7 +1593,7 @@ describe('DXTable filter and provider gaps (#106)', () => {
       await flush();
 
       await userEvent.fill(
-        screen.container.querySelector('.filter-row input') as HTMLElement,
+        screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLElement,
         '20',
       );
       await wait(80);
@@ -1626,7 +1626,7 @@ describe('DXTable filter and provider gaps (#106)', () => {
       });
       await flush();
 
-      const input = screen.container.querySelector('.filter-row input') as HTMLElement;
+      const input = screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLElement;
       await userEvent.click(input);
       await wait(80);
 
@@ -1737,7 +1737,7 @@ describe('DXTable review fixes (#106, #110)', () => {
     await flush();
 
     await userEvent.fill(
-      screen.container.querySelector('.filter-row input') as HTMLElement,
+      screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLElement,
       'Beta',
     );
     await wait(80);
@@ -1825,7 +1825,7 @@ describe('DXTable select filter offers a way back to unfiltered', () => {
   // bvn only mounts the option list once the user types into the control, so
   // that's how the options are surfaced here.
   const optionsMatching = async (screen: any, typed: string) => {
-    const input = screen.container.querySelector('.filter-row input') as HTMLElement;
+    const input = screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLElement;
     await userEvent.click(input);
     await userEvent.fill(input, typed);
     await wait(150);
@@ -1874,7 +1874,7 @@ describe('DXTable select filter offers a way back to unfiltered', () => {
     });
     await flush();
 
-    const input = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+    const input = screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLInputElement;
     expect(input.placeholder).toBe('Any status');
 
     const options = await optionsMatching(screen, 'Any');
@@ -2435,7 +2435,7 @@ describe('DXTable composes a consumer thead-top above its filter row (#120)', ()
 
     const headRows = [...screen.container.querySelectorAll('thead tr')];
     const bannerIndex = headRows.findIndex((row) => row.classList.contains('banner'));
-    const filterIndex = headRows.findIndex((row) => row.classList.contains('filter-row'));
+    const filterIndex = headRows.findIndex((row) => row.querySelector('.dx-table-filter-cell') !== null);
 
     expect(bannerIndex).toBeGreaterThanOrEqual(0);
     expect(filterIndex).toBeGreaterThanOrEqual(0);
@@ -2456,7 +2456,7 @@ describe('DXTable composes a consumer thead-top above its filter row (#120)', ()
     });
     await flush();
 
-    expect(screen.container.querySelector('thead .filter-row')).not.toBeNull();
+    expect(screen.container.querySelector('thead tr:has(.dx-table-filter-cell)')).not.toBeNull();
     expect(screen.container.querySelector('thead .banner')).toBeNull();
   });
 });
@@ -2502,7 +2502,7 @@ describe('DXTable Inertia filter-change keeps the selected perPage', () => {
     await flush();
 
     const filterInput = screen.container.querySelector(
-      '.filter-row input',
+      'tr:has(.dx-table-filter-cell) input',
     ) as HTMLInputElement;
     expect(filterInput).toBeTruthy();
 

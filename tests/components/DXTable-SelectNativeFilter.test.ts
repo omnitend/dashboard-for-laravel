@@ -24,13 +24,13 @@ const rowNames = (container: Element) =>
 /** The filter control's <select> for a column, by zero-based column index. */
 const nativeSelectFor = (container: Element, columnIndex: number) =>
   container
-    .querySelectorAll('.filter-row th')
+    .querySelectorAll('.dx-table-filter-cell')
     [columnIndex].querySelector('select') as HTMLSelectElement | null;
 
 /** The text input for a DAutocomplete select filter, by column index. */
 const autocompleteInputFor = (container: Element, columnIndex: number) =>
   container
-    .querySelectorAll('.filter-row th')
+    .querySelectorAll('.dx-table-filter-cell')
     [columnIndex].querySelector('input') as HTMLInputElement | null;
 
 const renderClientSide = (fields: any[], props: Record<string, any> = {}) =>

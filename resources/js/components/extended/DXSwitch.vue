@@ -5,8 +5,8 @@
   An opinionated switch built on `DFormCheckbox` (`switch`): a bordered box sized
   like a `.form-control` with the label on the left and the toggle on the right,
   colour-coding its state. By default (`onVariant="success"`) it reads the house
-  green-on / red-off style — a neutral box + red toggle when off, a soft-green
-  box + green toggle when on. `onVariant="neutral"` (brand primary on / grey off)
+  green-on / red-off style: a light-red box with a grey toggle when off, a
+  soft-green box with a muted green-grey toggle when on. `onVariant="neutral"` (brand primary on / grey off)
   is for semantically-mixed switches that shouldn't imply good/bad (#158). Used
   standalone or, internally, by `DXField`'s `switch` field type so a form switch
   and a lone switch share one look.
@@ -168,8 +168,8 @@ defineOptions({
   cursor: pointer;
 }
 
-/* Filled box (#158): the WHOLE control carries the colour and the pill stays a
-   neutral grey affordance — the box IS the state, so it reads strongest at a
+/* Filled box (#158): the WHOLE control carries the colour and the pill uses a
+   muted state tint — the box IS the state, so it reads strongest at a
    glance (the house style). `success` (default) is green ON / light-red OFF;
    `neutral` keeps a brand primary panel for mixed-semantics switches. Pair with
    `textWhenTrue`/`textWhenFalse` so the LABEL also names each state. */
@@ -192,9 +192,12 @@ defineOptions({
   font-weight: 500;
 }
 
-/* Neutral grey pill in BOTH states (white thumb, sliding) — overrides the global
-   green-on/red-off toggle colours within the box, so only the box carries the
-   state. Explicit `:checked`/`:focus` selectors so they out-specify the global
+.dx-switch--success.dx-switch--on {
+  --dx-switch-pill: var(--dx-switch-on-pill);
+}
+
+/* Muted pill with a white sliding thumb: green-grey ON, neutral grey OFF.
+   The stronger box colour and position continue to communicate the state. Explicit `:checked`/`:focus` selectors so they out-specify the global
    `.form-switch .form-check-input:checked` rule. */
 .dx-switch--success :deep(.form-check-input),
 .dx-switch--success :deep(.form-check-input:checked),

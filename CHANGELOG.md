@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.1] - 2026-09-27
+
+### Features
+
+- Add `DButton`'s `iconOnly` option for square icon controls at the standard
+  button height, including small/large input groups and loading states.
+
+### Bug Fixes
+
+- Match default input, select, input-group and button heights; align horizontal
+  form labels and vertically centre table cells. Explicit top alignment remains
+  available.
+- Place `DXTable` column filters beneath their headers while preserving custom
+  header/subheader slots. Keep magnifiers on text/number filters and dropdown
+  chevrons on select filters.
+- Match autocomplete arrow borders to form input borders.
+- Give enabled success switches a muted green-grey toggle pill.
+
+### Tests
+
+- Add browser regressions for icon-button dimensions/loading/group sizing,
+  control heights, label alignment, table alignment, filter order/slot composition,
+  filter icons, autocomplete borders and switch colours.
+
 ## [0.41.0] - 2026-08-27
 
 ### Changed

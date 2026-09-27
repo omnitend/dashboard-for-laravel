@@ -98,11 +98,11 @@ describe('DXSwitch', () => {
 
 /**
  * #158 — DXSwitch is the "filled box": the WHOLE box carries the state colour
- * (green ON / light-red OFF by default) and the pill stays a neutral grey
+ * (green ON / light-red OFF by default) and the pill uses a muted green-grey ON and neutral grey OFF
  * affordance. `neutral` keeps a brand primary panel for mixed-semantics
  * switches. Asserts the ACTUAL painted colours (from the built dist theme) by
  * channel dominance — robust to the exact soft-mix — so the property asked for
- * (green box / red box / grey pill) is what's tested, not a class.
+ * (green box / red box / state-tinted pill) is what's tested, not a class.
  */
 describe('DXSwitch filled box (green-on / light-red-off default, #158)', () => {
   const chans = (rgb: string): [number, number, number] => {
@@ -124,14 +124,38 @@ describe('DXSwitch filled box (green-on / light-red-off default, #158)', () => {
   };
   const isGrey = ([r, g, b]: [number, number, number]) => Math.abs(r - g) <= 10 && Math.abs(g - b) <= 10;
 
-  it('default ON: the whole box is green and the pill is a neutral grey', async () => {
+  it('default ON: the whole box is green and the pill is a muted green-grey', async () => {
     const { box, pill, root } = await painted({ modelValue: true, label: 'Current' });
     // Green box: green channel dominates.
     expect(box[1]).toBeGreaterThan(box[0]);
     expect(box[1]).toBeGreaterThan(box[2]);
     expect(root.classList.contains('dx-switch--success')).toBe(true);
-    // Pill is neutral grey (not green/red).
-    expect(isGrey(pill)).toBe(true);
+    // The track harmonises with the green box without repeating its bright fill.
+    expect(pill[1]).toBeGreaterThan(pill[0]);
+    expect(pill[0]).toBeGreaterThan(pill[2]);
+    expect(pill[1]).toBeLessThan(box[1]);
+  });
+
+  it('keeps the ON tint under keyboard focus and when disabled', async () => {
+    const { pill, screen } = await painted({ modelValue: true, label: 'Current' });
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    input.focus();
+    expect(document.activeElement).toBe(input);
+    expect(chans(getComputedStyle(input).backgroundColor)).toEqual(pill);
+    expect(getComputedStyle(input).boxShadow).not.toBe('none');
+
+    const disabled = await painted({ modelValue: true, label: 'Locked', disabled: true });
+    const disabledInput = disabled.screen.container.querySelector('input') as HTMLInputElement;
+    expect(disabledInput.disabled).toBe(true);
+    expect(disabledInput.checked).toBe(true);
+    expect(disabled.pill).toEqual(pill);
+  });
+
+  it('allows the ON track token to be overridden independently', async () => {
+    const { root, screen } = await painted({ modelValue: true, label: 'Current' });
+    root.style.setProperty('--dx-switch-on-pill', '#445544');
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    await expect.poll(() => getComputedStyle(input).backgroundColor).toBe('rgb(68, 85, 68)');
   });
 
   it('default OFF: the whole box is light red (red channel dominates)', async () => {

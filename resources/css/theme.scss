@@ -100,20 +100,12 @@ $btn-padding-x-lg: 1.5rem; // 24px
 // Forms
 // ----------------------------------------------------------------------------
 
-$input-padding-y: 0.375rem; // compact fields (Bootstrap's default; 0.625rem read oversized)
+// Inputs, selects, input-group labels and buttons share one height at each
+// size. Otherwise adding a button stretches a default input group by 8px.
+$input-padding-y: $btn-padding-y;
 $input-padding-x: 1rem;
-
-// Match the sm/lg INPUT vertical padding to the sm/lg BUTTON padding above
-// (PO18). Bootstrap sizes every child of an `.input-group-sm`/`-lg` — buttons
-// INCLUDED — with the INPUT's sized padding, so leaving these at Bootstrap's
-// defaults (0.25rem / 0.5rem) made a sized input-group sit ~8px / ~4px shorter
-// than a `.btn-sm`/`.btn-lg` beside it. Aligning them makes sized controls share
-// one height by construction. NB: the BASE `$input-padding-y` (0.375rem) stays
-// deliberately more compact than `$btn-padding-y` (0.625rem) — see the comment
-// above ("0.625rem read oversized"); only the SIZED variants are equalised,
-// because those are the ones whose padding Bootstrap leaks onto grouped buttons.
-$input-padding-y-sm: 0.5rem; // == $btn-padding-y-sm (was Bootstrap's 0.25rem)
-$input-padding-y-lg: 0.75rem; // == $btn-padding-y-lg (was Bootstrap's 0.5rem)
+$input-padding-y-sm: $btn-padding-y-sm;
+$input-padding-y-lg: $btn-padding-y-lg;
 $input-border-radius: $border-radius;
 $input-border-color: #d1d5db; // Gray-300
 $input-focus-border-color: $primary;
@@ -288,11 +280,22 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // and expose it as a var so such components can reference the single source
 // of truth instead of duplicating the formula.
 :root {
+  --d-input-border-color: #{$input-border-color};
   // $input-border-width resolves to a CSS var() (Bootstrap 5.3+), which Sass
   // can't multiply directly — fold the *2 into the calc() itself instead.
   --dx-input-height: calc(
     #{$input-line-height * 1em} + #{$input-padding-y * 2} + (2 * #{$input-border-width})
   );
+}
+
+// Bootstrap sizes grouped buttons with padding properties, but leaves their
+// padding variables unchanged. Keep computed icon-only dimensions in sync.
+.input-group-sm > .btn {
+  --bs-btn-padding-y: #{$input-padding-y-sm};
+}
+
+.input-group-lg > .btn {
+  --bs-btn-padding-y: #{$input-padding-y-lg};
 }
 
 // Horizontal ("label-left") forms: a compact settings-form rhythm, with the
@@ -305,12 +308,8 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     align-items: flex-start;
   }
 
-  .col-form-label {
-    padding-top: 0.4rem;
-  }
-
   .form-check {
-    margin-top: 0.4rem;
+    margin-top: calc(#{$input-padding-y} + #{$input-border-width});
   }
 
   .mb-3 {
@@ -689,6 +688,12 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // independent of the sort indicator's presence. Scoped to `.table > thead` so a
 // consumer who genuinely wants bottom-aligned headers can still opt back in on a
 // specific table.
+// Body cells inherit this alignment; explicit .align-top remains available
+// on a table, row or cell for long-form content that needs top alignment.
+.table {
+  vertical-align: middle;
+}
+
 .table > thead {
   vertical-align: middle;
 }
@@ -702,13 +707,9 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // as the header token above), sized and inset with `padding-left` so text
 // clears it.
 //
-// Direct-child selector (`> th > input.form-control`) is deliberate: DXTable's
-// text/number/date filters render a bare `.form-control` straight inside the
-// `<th>`, whereas the `select` filter's DAutocomplete nests its input inside
-// `.d-autocomplete .input-group .b-autocomplete-input-wrapper` — so it is not a
-// direct child and correctly gets NO glyph (it has its own chevron affordance).
-// `:not([type="date"])` further excludes the date filter (its own picker icon).
-.filter-row > th > input.form-control:not([type="date"]) {
+// Select filters keep their chevron without a second icon or extra text inset.
+// Date inputs keep their own picker affordance.
+.dx-table-filter-cell > input.form-control:not([type="date"]) {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%237c8293' viewBox='0 0 16 16'%3e%3cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: left 0.65rem center;
@@ -805,7 +806,8 @@ $dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cd
   --dx-switch-off-well: #{color.mix($dx-switch-off, #fff, 10%)};
   --dx-switch-off-line: #{color.mix($dx-switch-off, #fff, 45%)};
   --dx-switch-off-ink: #{color.mix($dx-switch-off, #000, 30%)};
-  --dx-switch-pill: var(--bs-gray-400, #ced4da); // neutral pill in both states
+  --dx-switch-pill: var(--bs-gray-400, #ced4da); // neutral OFF pill
+  --dx-switch-on-pill: #{color.mix(map.get(map.get($dx-variants, "success"), "soft-text"), $gray-400, 50%)};
 }
 
 // Optically centre the check/radio/switch box against its label's FIRST line.
@@ -1045,4 +1047,9 @@ $dx-chart-palette-dark: (#60a5fa, #a3e635, #a78bfa, #2dd4bf, #fb923c, #22d3ee, #
   .dashboard-navbar__actions ~ .dashboard-navbar__end {
     margin-left: 0;
   }
+}
+
+// Keep the compact filter-cell spacing when BTable supplies the subheader row.
+thead tr:has(.dx-table-filter-cell) > td {
+  padding: 0.5rem;
 }

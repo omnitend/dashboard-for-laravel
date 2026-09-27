@@ -88,7 +88,7 @@ describe('B17: thead labels share a centreline across sortable/non-sortable colu
         h('table', { class: 'table' }, [
           h('thead', [
             h('tr', [
-              h('th', [
+              h('th', { class: 'dx-table-filter-cell' }, [
                 h('div', { class: 'd-flex align-items-center' }, [
                   h('span', { class: 'lbl-sortable' }, 'Amount'),
                   h(
@@ -101,7 +101,7 @@ describe('B17: thead labels share a centreline across sortable/non-sortable colu
                   ),
                 ]),
               ]),
-              h('th', [
+              h('th', { class: 'dx-table-filter-cell' }, [
                 h('div', { class: 'd-flex align-items-center' }, [
                   h('span', { class: 'lbl-plain' }, 'Linked transaction'),
                 ]),
@@ -209,18 +209,18 @@ describe('PO18: sized input padding matches sized button padding', () => {
 
 describe('PL1: filter-row text/number inputs carry a search glyph', () => {
   // Mirror DXTable's filter row: `tr.filter-row > th > input.form-control`. The
-  // select filter's input is nested (not a direct th child) so it must NOT match.
+  // select filter's nested input shares the same searchable affordance.
   const renderFilterRow = () =>
     render({
       render: () =>
         h('table', { class: 'table' }, [
           h('thead', [
             h('tr', { class: 'filter-row' }, [
-              h('th', [h('input', { class: 'form-control', type: 'text' })]),
-              h('th', [h('input', { class: 'form-control', type: 'number' })]),
-              h('th', [h('input', { class: 'form-control', type: 'date' })]),
+              h('th', { class: 'dx-table-filter-cell' }, [h('input', { class: 'form-control', type: 'text' })]),
+              h('th', { class: 'dx-table-filter-cell' }, [h('input', { class: 'form-control', type: 'number' })]),
+              h('th', { class: 'dx-table-filter-cell' }, [h('input', { class: 'form-control', type: 'date' })]),
               // select-filter shape: input nested inside the autocomplete wrapper
-              h('th', [
+              h('th', { class: 'dx-table-filter-cell' }, [
                 h('div', { class: 'd-autocomplete' }, [
                   h('div', { class: 'input-group' }, [
                     h('div', { class: 'b-autocomplete-input-wrapper' }, [
@@ -234,7 +234,7 @@ describe('PL1: filter-row text/number inputs carry a search glyph', () => {
         ]),
     });
 
-  it('paints a background-image + left padding on text and number filters only', async () => {
+  it('paints a search glyph on text, number and searchable select filters', async () => {
     const screen = renderFilterRow();
     await settled(() => screen.container.querySelectorAll('.filter-row input').length >= 4);
 
@@ -254,7 +254,7 @@ describe('PL1: filter-row text/number inputs carry a search glyph', () => {
     expect(getComputedStyle(number).backgroundImage).not.toBe('none');
     expect(parseFloat(getComputedStyle(number).paddingLeft)).toBeGreaterThan(24);
 
-    // Scope guards: the date filter and the nested (select-filter) input get NO glyph.
+    // Dates keep their picker; searchable selects use their dropdown chevron.
     expect(getComputedStyle(date).backgroundImage).toBe('none');
     expect(getComputedStyle(nested).backgroundImage).toBe('none');
   });

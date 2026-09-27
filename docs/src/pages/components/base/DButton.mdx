@@ -25,7 +25,7 @@ DButton - A type-safe wrapper around Bootstrap Vue Next's BButton component
 
 ## Extended props
 
-On top of everything `BButton` supports, `DButton` adds three base-level
+On top of everything `BButton` supports, `DButton` adds base-level
 button behaviours:
 
 | Prop | Type | Default | Description |
@@ -34,6 +34,7 @@ button behaviours:
 | `loading` | `boolean` | `false` | Disables the button immediately and shows a trailing spinner while an async action runs. |
 | `loadingText` | `string` | — | Optional label shown in place of the default slot while the spinner is visible. |
 | `icon` | `string` | — | Leading [Bootstrap Icons](https://icons.getbootstrap.com/) glyph name, e.g. `icon="save"` renders `<i class="bi bi-save">`. |
+| `iconOnly` | `boolean` | `false` | Square icon control at the standard height for its size, including inherited input-group sizing. Provide `aria-label`. Takes precedence over `block`; loading replaces the icon without changing dimensions. |
 | `block` | `boolean` | `false` | Full-width button (the BS5 replacement for the dropped `.btn-block`). |
 | `spinnerDelay` | `number` | `500` | Anti-flash: how long `loading` must hold before the spinner appears, so fast actions never flicker one in. |
 | `minSpinnerTime` | `number` | `100` | Anti-flash: minimum time the spinner stays once shown, so it never strobes. |

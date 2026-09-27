@@ -34,7 +34,7 @@ const rowNames = (container: Element) =>
 
 /** The filter input belonging to a column, by its zero-based column index. */
 const filterInputFor = (container: Element, columnIndex: number) =>
-  container.querySelectorAll('.filter-row th')[columnIndex].querySelector(
+  container.querySelectorAll('.dx-table-filter-cell')[columnIndex].querySelector(
     'input',
   ) as HTMLInputElement;
 

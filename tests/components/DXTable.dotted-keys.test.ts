@@ -19,7 +19,7 @@ const columnText = (container: HTMLElement, columnIndex: number) =>
   );
 
 const clickHeader = async (container: HTMLElement, label: string) => {
-  const header = [...container.querySelectorAll('thead tr:last-child th')].find((th) =>
+  const header = [...container.querySelectorAll('thead tr:not(:has(.dx-table-filter-cell)) th')].find((th) =>
     th.textContent?.includes(label),
   ) as HTMLElement;
   header.click();
@@ -104,7 +104,7 @@ describe('DXTable client-side dotted field keys (#121)', () => {
     const screen = renderTable();
     await flush();
 
-    const filterInput = screen.container.querySelector('.filter-row input') as HTMLInputElement;
+    const filterInput = screen.container.querySelector('tr:has(.dx-table-filter-cell) input') as HTMLInputElement;
     filterInput.value = 'ma';
     filterInput.dispatchEvent(new Event('input', { bubbles: true }));
     await wait(60);

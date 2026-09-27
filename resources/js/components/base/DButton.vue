@@ -2,11 +2,12 @@
 /**
  * DButton - A type-safe wrapper around Bootstrap Vue Next's BButton component
  *
- * Adds three base-level button behaviours on top of `variant`/`size`:
+ * Adds base-level button behaviours on top of `variant`/`size`:
  * - `loading` — disables the button and shows a trailing spinner while an async
  *   action is in flight, with anti-flash timing (no spinner for sub-`spinnerDelay`
  *   actions; a `minSpinnerTime` floor once shown so it never strobes).
  * - `icon` — a leading Bootstrap Icons glyph (e.g. `icon="save"` → `bi bi-save`).
+ * - `iconOnly` — square icon control at the standard height for its size.
  * - `block` — full-width button (the BS5 replacement for the dropped `.btn-block`).
  *
  * @component
@@ -15,6 +16,7 @@
  * <DButton variant="primary" size="lg">Click Me</DButton>
  * <DButton icon="save" variant="primary">Save</DButton>
  * <DButton :loading="isSaving" loading-text="Saving…">Save</DButton>
+ * <DButton icon="trash" icon-only aria-label="Delete" />
  * <DButton block>Continue</DButton>
  * ```
  */
@@ -89,6 +91,15 @@ interface Props {
   icon?: string;
 
   /**
+   * Square icon control at the same height as a normal button of this size.
+   * Use `icon` or an icon in the default slot, and provide `aria-label`.
+   * Takes precedence over `block`. While loading, the spinner replaces the
+   * icon/slot without changing dimensions; `loadingText` is not shown.
+   * @default false
+   */
+  iconOnly?: boolean;
+
+  /**
    * Full-width button (BS5 `w-100` idiom, replacing the dropped `.btn-block`).
    * @default false
    */
@@ -114,6 +125,7 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   loading: false,
   block: false,
+  iconOnly: false,
   spinnerDelay: 500,
   minSpinnerTime: 100,
 });
@@ -189,7 +201,7 @@ const passthroughSlotNames = computed(() =>
 // `:deep()`-on-a-B-root trap. Only add the flex row when there's an adornment
 // to space out.
 const hasAdornment = computed(
-  () => Boolean(props.icon) || showSpinner.value,
+  () => props.iconOnly || Boolean(props.icon) || showSpinner.value,
 );
 </script>
 
@@ -201,7 +213,7 @@ const hasAdornment = computed(
     :aria-busy="loading || showSpinner || undefined"
     :class="[
       { 'd-inline-flex align-items-center justify-content-center gap-2': hasAdornment },
-      { 'w-100': block },
+      { 'w-100': block && !iconOnly, 'd-button--icon-only': iconOnly },
     ]"
     v-bind="$attrs"
   >
@@ -210,8 +222,8 @@ const hasAdornment = computed(
       :class="['bi', `bi-${icon}`]"
       aria-hidden="true"
     ></i>
-    <template v-if="showSpinner && loadingText">{{ loadingText }}</template>
-    <slot v-else />
+    <template v-if="showSpinner && loadingText && !iconOnly">{{ loadingText }}</template>
+    <slot v-else-if="!iconOnly || !showSpinner" />
     <DSpinner v-if="showSpinner" small />
 
     <!-- Forward any other named slots untouched, with their slot props. -->
@@ -224,3 +236,25 @@ const hasAdornment = computed(
     </template>
   </BButton>
 </template>
+
+<style scoped>
+.d-button--icon-only {
+  --d-button-icon-size: calc(
+    1em * var(--bs-btn-line-height) + 2 * var(--bs-btn-padding-y) +
+      2 * var(--bs-btn-border-width)
+  );
+  width: var(--d-button-icon-size);
+  height: var(--d-button-icon-size);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.input-group > .d-button--icon-only {
+  padding: 0;
+}
+
+.d-button--icon-only > .bi {
+  font-size: 1.25em;
+  line-height: 1;
+}
+</style>

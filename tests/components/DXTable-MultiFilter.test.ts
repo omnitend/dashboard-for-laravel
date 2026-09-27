@@ -117,7 +117,7 @@ describe('DXTable multi-value select filters (#51)', () => {
     await flush();
 
     const filterInput = screen.container.querySelector(
-      '.filter-row input',
+      'tr:has(.dx-table-filter-cell) input',
     ) as HTMLInputElement;
     expect(filterInput).not.toBeNull();
 
@@ -192,7 +192,7 @@ describe('DXTable multi-value select filters (#51)', () => {
     await flush();
 
     const filterInput = screen.container.querySelector(
-      '.filter-row input',
+      'tr:has(.dx-table-filter-cell) input',
     ) as HTMLInputElement;
     await userEvent.click(filterInput);
     await userEvent.fill(filterInput, 'a');

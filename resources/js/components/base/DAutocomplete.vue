@@ -203,13 +203,13 @@ const noClearButton = computed(
 */
 .d-autocomplete :deep(.b-autocomplete-trigger) {
   --bs-btn-bg: var(--bs-body-bg);
-  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-border-color: var(--d-input-border-color, var(--bs-border-color));
   --bs-btn-color: var(--bs-secondary-color);
   --bs-btn-hover-bg: var(--bs-tertiary-bg);
-  --bs-btn-hover-border-color: var(--bs-border-color);
+  --bs-btn-hover-border-color: var(--d-input-border-color, var(--bs-border-color));
   --bs-btn-hover-color: var(--bs-body-color);
   --bs-btn-active-bg: var(--bs-secondary-bg);
-  --bs-btn-active-border-color: var(--bs-border-color);
+  --bs-btn-active-border-color: var(--d-input-border-color, var(--bs-border-color));
   --bs-btn-active-color: var(--bs-body-color);
   flex: 0 0 auto;
 }

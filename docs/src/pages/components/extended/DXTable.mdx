@@ -194,15 +194,16 @@ Every slot the **underlying table** supports is forwarded with its scope:
   { name: 'empty', props: 'items, fields', description: 'Replaces the no-rows message entirely' },
   { name: 'row-expansion', props: 'item, index, fields', description: 'Detail content rendered under an expanded row (pair with v-model:expanded-items)' },
   { name: 'top-row / bottom-row', props: 'fields', description: 'An extra row pinned above / below the data rows' },
-  { name: 'thead-sub', props: 'items, fields', description: 'A second header row beneath the column headers' },
+  { name: 'thead-sub', props: 'items, fields, field', description: 'Content for each column beneath its filter in the below-header row' },
   { name: 'table-caption / table-colgroup / table-busy', props: '-', description: 'Caption, colgroup and busy-state slots' },
 ]} />
 
-`thead-top` is **composed**, not forwarded: DXTable renders its filter row there,
-and a consumer's `thead-top` content is placed **above** it — so a grouped
-column-header banner (a `<th colspan>` spanning several columns) or a pinned
-totals row sits above the headers where it belongs, with the filter row beneath.
-Give it `<tr>`s.
+Column filters appear beneath the column headers. `thead-sub` is composed
+with those filters: its content renders below the filter in each column and
+receives `items`, `fields`, and the current `field`.
+
+`thead-top` remains above the column headers for grouped-column banners or
+pinned totals. Give it `<tr>`s.
 
 One table slot is **not** available at all, because DXTable renders it itself:
 `head(<key>)` — it draws the column headers, with sort indicators and field
