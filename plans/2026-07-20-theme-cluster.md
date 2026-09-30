@@ -14,7 +14,7 @@ citing the shipped design — it was decided via James's own decision artifacts.
 
 ## 2. #95 — sidebar density (James's call, from the issue comment)
 
-Adopt greendragon's trialled values as the DEFAULT theme (back-compat not a
+Adopt the downstream app's trialled values as the DEFAULT theme (back-compat not a
 concern pre-1.0):
 
 - nav group `margin-bottom`: `mb-3` → 0.25rem

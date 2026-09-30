@@ -2,9 +2,9 @@
 
 Status: RESOLVED 2026-07-20 — root cause corrected below (§Root cause,
 corrected) and fixed by the new `api-adapter` prop + bare-array grace, shipping
-in 0.33.1. Originally: REPORTED 2026-07-20 by greendragon. Severity: HIGH — every provider-mode
+in 0.33.1. Originally: REPORTED 2026-07-20 by a downstream app. Severity: HIGH — every provider-mode
 DXTable list page renders **empty** ("No accounts found") against a backend that
-worked on 0.32. greendragon has **rolled back to 0.32** and is blocked from
+worked on 0.32. The downstream app has **rolled back to 0.32** and is blocked from
 adopting 0.33 (theme #157/#154/#95, switch-list, DXCurrencyInput) until resolved.
 
 ## Symptom
@@ -55,7 +55,7 @@ convention), or (c) called out loudly in the CHANGELOG with a migration note. At
 minimum: keep sending `paginate=true` (or document the new pagination trigger),
 keep `sort` (or make it configurable), and make `filterValues` opt-in / graceful.
 
-## greendragon side
+## Downstream app side
 
 Holding at **0.32** (`^0.32.0`) — all list pages load. Will re-bump once the
 provider contract is restored or an adapter option lands. The desirable 0.33

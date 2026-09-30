@@ -934,7 +934,7 @@ Two things to do first, both enforced by its preflight:
    section as the release notes (tag annotation *and* GitHub release, so they
    can't disagree) and refuses to release without it — 0.39.1 shipped with no
    entry at all, back when nothing checked. Automating the cut is #178.
-2. **Be logged in to npm as the package owner.** `jamespickard` is the sole
+2. **Be logged in to npm as the package owner.** The designated publishing account is the sole
    owner of `@omnitend/dashboard-for-laravel`; other accounts fail with a
    confusing `E404 Not Found` on PUT rather than a permission error, because npm
    returns 404 for scopes you can't write to. `npm whoami` tells you who is

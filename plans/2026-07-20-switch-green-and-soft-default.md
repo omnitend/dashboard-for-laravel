@@ -7,7 +7,7 @@ Two related theme-system changes, both from James's steer (2026-07-20).
 **Problem:** dfl 0.27's soft-first system only softens `.text-bg-*` on `.badge`
 (the `$dx-variants` loop rule `.badge.text-bg-#{$name}`). Everywhere else
 `.text-bg-success` is still Bootstrap's bold solid dark green. Measured on
-greendragon: a "kegs in stock" `.input-group-text.text-bg-success` renders
+the downstream app: a "kegs in stock" `.input-group-text.text-bg-success` renders
 `rgb(77,124,15)` (solid dark) while the "current" `.badge.text-bg-success`
 renders `rgb(205,249,178)` (soft) — a stock bar can't match the badge without
 hardcoding.

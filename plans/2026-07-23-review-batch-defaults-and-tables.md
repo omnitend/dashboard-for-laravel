@@ -4,11 +4,11 @@ Status: **DONE (v0.37.0, 2026-07-23).** All eight asks shipped across three
 lanes. The one exception is item 8 part 2 (a clearer closed-state caret on the
 autocomplete): superseded rather than built — B14 gave dropdowns a chevron and
 S3b.3 shipped the native-`<select>` escape hatch, which is the real answer to
-"if we can't get parity, use a real select." Origin: greendragon app-next cutover review, 2026-07-22/23
+"if we can't get parity, use a real select." Origin: the downstream app app-next cutover review, 2026-07-22/23
 (findings PO5/PO18, B14–B17, S5b, PL1, PL4/S3b in
-`greendragon-omnitend/plans/2026-07-19-next-review-log.md`).
+`downstream-app/plans/2026-07-19-next-review-log.md`).
 
-Eight small, mostly independent asks. Each lists the greendragon interim to
+Eight small, mostly independent asks. Each lists the the downstream app interim to
 retire once shipped. The theme ones follow the same pattern as
 `2026-07-21-tabs-toast-badge-polish.md` (theme.scss + a source-compiled guard
 test).
@@ -31,16 +31,16 @@ new default.
 **Problem.** A variant-less `<d-button>` renders the solid-navy primary. Under
 the house rule (primary = THE one emphatic action per page/modal), a default
 should not produce emphasis — yet every mechanically-ported button silently
-became emphatic. The greendragon purchase-order page had ~50 solid-navy
+became emphatic. The the downstream app purchase-order page had ~50 solid-navy
 buttons from this alone (quantity steppers, per-row Add buttons); a sweep
 found 24 more variant-less sites across 14 pages.
 
 **Ask.** Default `DButton` (and the `DDropdown` toggle/split button) variant →
-`secondary`. Per the dfl defaults policy (greendragon-trialled values become
+`secondary`. Per the dfl defaults policy (the downstream app-trialled values become
 defaults). Breaking for consumers relying on the implicit primary — release
 notes should say "declare `variant="primary"` where you mean it".
 
-**Downstream:** greendragon has already made every button's variant explicit,
+**Downstream:** the downstream app has already made every button's variant explicit,
 so the change is non-breaking there and retires nothing — it prevents the
 class recurring in every future page.
 
@@ -82,7 +82,7 @@ new dependency, no data-URI. Guard: `tests/components/theme-review-batch.test.ts
 high against Poppins' line box and reads crude next to the rest of the theme.
 
 **Ask.** Replace it in the theme with the bootstrap-icons chevron, optically
-centred, with breathing room from the label. The greendragon interim's values,
+centred, with breathing room from the label. The the downstream app interim's values,
 which James signed off after one padding iteration:
 
 ```css
@@ -102,9 +102,9 @@ which James signed off after one padding iteration:
 ```
 
 Note dfl doesn't currently ship bootstrap-icons — either take the dependency
-(greendragon already loads it) or inline the chevron as a data-URI mask.
+(the downstream app already loads it) or inline the chevron as a data-URI mask.
 
-**Downstream interim:** the same rules in greendragon shell.css.
+**Downstream interim:** the same rules in the downstream app shell.css.
 
 ## 4. B17 — header labels shouldn't drop when a column has no sort icons (RC3)
 
@@ -138,7 +138,7 @@ consumers can re-louden.
 omnitend's light slate headers. James: "the table headers need to be even
 lighter."
 
-**Ask.** Lighten the default — greendragon settled on legacy's
+**Ask.** Lighten the default — the downstream app settled on legacy's
 `$text-secondary` **`#7c8293`** (signed off on the receipts/products pages).
 Keep it on the existing `--dx-table-header-color` token so consumers can still
 re-louden.

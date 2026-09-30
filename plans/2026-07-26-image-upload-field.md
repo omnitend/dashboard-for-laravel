@@ -8,7 +8,7 @@ Origin: a consumer's /employees review (EM3), 2026-07-26.
 ## Problem
 
 Consumers keep hitting form fields that are files, not scalars. Concrete
-case: greendragon's legacy employee form let you upload a name-badge image
+case: the downstream app's legacy employee form let you upload a name-badge image
 (a Spatie media-library collection on the Employee model). The app-next port
 had to drop the field — DXForm/edit-fields have no file or image type — so
 the cutover has a functional regression on that page (and the same gap will
@@ -40,7 +40,7 @@ already owns the transport (useForm's fetch), so it can own multipart too.
    unchanged (it already funnels through DXField).
 
 The consumer then handles the request server-side however it likes —
-greendragon will pass the uploaded file to Spatie
+the downstream app will pass the uploaded file to Spatie
 (`$model->addMediaFromRequest(...)->toMediaCollection(...)`); another app
 could `Storage::put`. No Spatie coupling in dfl.
 
@@ -49,7 +49,7 @@ could `Storage::put`. No Spatie coupling in dfl.
 - Deletion/replacement semantics: simplest v1 contract is "absent = leave
   alone, File = replace, explicit null via a remove checkbox = delete" —
   document whichever is chosen.
-- greendragon consumer wiring (EmployeeApiController + the employees page
+- the downstream app consumer wiring (EmployeeApiController + the employees page
   edit-fields) lands there once this ships; the legacy reference is
   lt-employees' name_badge_media field.
 

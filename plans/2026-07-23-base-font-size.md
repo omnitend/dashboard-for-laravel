@@ -7,7 +7,7 @@ index; 16px read balanced where 14px read miniaturised against the chrome. The
 three-tier 16/14/12 scale falls out of Bootstrap defaults (base 16 → `.875em`
 small = 14 → `.75em` badge = 12), so badges self-correct from ~10.5px. Per the
 plan, #169 (43px button vs input height) is settled INSIDE this change so heights
-re-derive once. Origin: greendragon /purchase-orders list review (PO20),
+re-derive once. Origin: the downstream app /purchase-orders list review (PO20),
 2026-07-23.
 
 ## Execution checklist (re-audit at 16px)
@@ -66,7 +66,7 @@ show it in the comparison rather than assuming.
 1. **A properly-themed comparison** — recompile the theme at 14 / 15 / 16px
    `$font-size-base` and screenshot a representative dense page (a DXTable
    index with badges, filters and buttons). A body-font-override simulation
-   exists in greendragon (scratchpad `font-comparison.html`) but it
+   exists in the downstream app (scratchpad `font-comparison.html`) but it
    UNDERCOUNTS: rem-derived control text (inputs, buttons, some headings)
    doesn't scale in the simulation, while a real base change moves it.
 2. **Then the change itself** (pending James's screenshot sign-off): bump
@@ -82,5 +82,5 @@ show it in the comparison rather than assuming.
 
 ## Downstream
 
-greendragon takes the change via a normal dfl bump; no interim exists (a page-
+the downstream app takes the change via a normal dfl bump; no interim exists (a page-
 level font override would fork the system). The review-log entry is PO20.

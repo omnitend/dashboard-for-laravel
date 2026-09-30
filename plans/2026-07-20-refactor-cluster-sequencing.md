@@ -201,4 +201,4 @@ fast correctness signal. Hold Phase 3 for an explicit "cut a major" decision.
    a standing project rule — needs sign-off before any code.
 3. **Codemod investment**: worth building (jscodeshift/ts-morph) for legacy-prop
    → `source` and wrapper-import rewrites, or document manual migration given the
-   small known consumer set (Omni Tend apps + greendragon)?
+   small known consumer set (Omni Tend apps + the downstream app)?

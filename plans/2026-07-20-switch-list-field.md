@@ -1,10 +1,10 @@
 # DXForm `type: "switch-list"` field
 
 Status: SHIPPED 2026-07-20 (#160) — implemented as spec'd; see Outcome at the
-end. Origin: greendragon app-next cutover — the
+end. Origin: the downstream app app-next cutover — the
 product "Allergens" tab is a list of ~14 labelled toggles that was hand-rolled
 as a `#span` slot and drifted from the form's label/input grid (rows not
-vertically centred, over-tall, labels/switches unaligned). greendragon shipped a
+vertically centred, over-tall, labels/switches unaligned). The downstream app shipped a
 house `OtSwitchList` as a stopgap; this promotes it to a first-class DXForm field
 so consumers write **config, not markup**. Retires `OtSwitchList` on adoption.
 
@@ -59,7 +59,7 @@ treatment so it inherits the exact label/content column split:
   wrapping rows — see "Label" below), so each row's label sits in the label
   column (`col-sm-5 col-md-4` etc., right-aligned) and the switch in the content
   column. This is the ONLY correct source of the grid — do not hardcode col
-  classes (that is exactly the drift the greendragon stopgap has to carry).
+  classes (that is exactly the drift the the downstream app stopgap has to carry).
 - Each row: `#label` = `DXFieldLabel :label="option.text"` (+ `option.description`
   as the label `title`/tooltip); content = a **track** `DFormCheckbox switch`
   (NOT the filled-box `DXSwitch` — a dense list of filled boxes is too heavy;
@@ -105,7 +105,7 @@ Recommend supporting (2) but defaulting to (1) when `label` is absent.
 - Component docs page + `FieldType` reference.
 - CHANGELOG under Added.
 
-## Migration (greendragon)
+## Migration (the downstream app)
 Replace `OtSwitchList` + the `#span(allergens)` slot with:
 ```js
 { key: "allergens", type: "switch-list", label: "Allergens",
@@ -133,7 +133,7 @@ re-derived col classes:
 ```
 
 `#span` should be reserved for genuinely full-width, label-less blocks (a
-sub-table, an activity log). greendragon's `web_shop_availability` should move
+sub-table, an activity log). the downstream app's `web_shop_availability` should move
 from `#span` → labelled field + `#value` slot; no dfl change required. Worth a
 one-line docs note contrasting `#span` (full-width, no label) vs `#value`
 (keeps the label grid).

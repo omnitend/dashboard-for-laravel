@@ -8,7 +8,7 @@ import DAutocomplete from '../../resources/js/components/base/DAutocomplete.vue'
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * #153. greendragon's `ot-product-options.vue` carries a workaround —
+ * #153. the downstream app's `ot-product-options.vue` carries a workaround —
  * `value: String(productLine.id)` in, `Number(...)` out — added because an older
  * `DAutocomplete`/`BAutocomplete` was believed to round-trip an option's value
  * through the DOM as a string, so a numeric id came back stringified. That was

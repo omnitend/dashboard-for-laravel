@@ -7,7 +7,7 @@ Poppins filmstrip); item 2 as a `DXSwitch size="sm"` prop. Item 3 (the default
 before/after screenshot — the `size="sm"` sibling of PO18. The attrs-forwarding
 footgun was NOT changed: `size="sm"` removes the need to target the box with a
 class for the common case, and re-routing where a consumer's class lands is a
-separate breaking change. Origin: greendragon /menus review round 2, 2026-07-23 (the
+separate breaking change. Origin: the downstream app /menus review round 2, 2026-07-23 (the
 menu-product modal's per-line controls).
 
 ## 1. Checkbox/radio boxes read HIGH beside their labels (theme)
@@ -32,7 +32,7 @@ not the maths). Constraints:
 - DXSwitch is unaffected (its box flex-centres internally); this is about the
   plain checkbox/switch renders.
 
-**Downstream interim:** greendragon `ot-menu-product`'s `.ot-menu-price-toggle`
+**Downstream interim:** the downstream app `ot-menu-product`'s `.ot-menu-price-toggle`
 flex-centres one specific single-line checkbox. Retire on ship (and expect
 other pages' checkboxes to visibly improve).
 
@@ -40,19 +40,19 @@ other pages' checkboxes to visibly improve).
 
 **Problem.** DXSwitch's box matches full input height by design, which reads
 heavy when repeated — e.g. once per product line in the menu-product modal.
-greendragon needed a compact variant and had to hand-roll it, which also
+the downstream app needed a compact variant and had to hand-roll it, which also
 tripped an attrs-forwarding footgun: DXSwitch forwards `$attrs` INWARD, so a
 consumer's class lands on the `.form-check` box (not a wrapper), a descendant
 selector silently matches nothing, and the theme's own
 `.dx-switch .form-check[data-v]` rule outranks a plain class.
 
 **Ask.** A `size?: "sm"` prop on DXSwitch: ~`font-size: 0.875rem`,
-`min-height: auto`, `padding: 0.25rem 0.625rem` (the greendragon-trialled
+`min-height: auto`, `padding: 0.25rem 0.625rem` (the the downstream app-trialled
 values — a 31px box vs the standard 35px). While there, consider whether the
 class/attrs forwarding should keep a stable outer hook (the `.dx-switch`
 wrapper div doesn't receive consumer classes today).
 
-**Downstream interim:** greendragon shell-global
+**Downstream interim:** the downstream app shell-global
 `.dx-switch .ot-menu-visible-switch.ot-menu-visible-switch.form-check` rule in
 `ot-menu-product.vue`. Retire on ship.
 
@@ -60,7 +60,7 @@ wrapper div doesn't receive consumer classes today).
 
 **Problem.** The theme gives default buttons `$btn-padding-y: 0.625rem` →
 ~43px tall, while inputs and DXSwitch share `--dx-input-height` → 35px. Any
-row mixing a button with controls shows the 8px split (greendragon takings:
+row mixing a button with controls shows the 8px split (the downstream app takings:
 the "Show days of week" DXSwitch next to a Reset button — James: "any idea why
 these controls are different heights?"). Inside an input-group Bootstrap
 equalises them; standalone rows don't.
@@ -72,5 +72,5 @@ ship a documented input-height button treatment (a class or size) for mixed
 control rows. The sized variants were already equalised in PO18; this is the
 DEFAULT size's split.
 
-**Downstream interim:** greendragon `ot-takings` filters set
+**Downstream interim:** the downstream app `ot-takings` filters set
 `.ot-takings__filters .btn { padding-block: 0.375rem }` to match the row.
