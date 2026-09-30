@@ -25,3 +25,27 @@ DModal - A type-safe wrapper around Bootstrap Vue Next's BModal component. Modal
 
 
 <BootstrapVueNextReference client:load componentName="DModal" />
+
+## Additional actions
+
+Use the `actions` slot for secondary actions such as View Sales or Print. They
+stack at full width with consistent spacing; the normal modal footer is unchanged.
+The slot receives the same scope as the default slot.
+
+```vue
+<DModal v-model="shown" title="Report" ok-only ok-title="Close">
+  <ReportDetails />
+  <template #actions>
+    <DButton href="/sales">View sales</DButton>
+    <DButton @click="printReport">Print report</DButton>
+  </template>
+</DModal>
+```
+
+When the actions belong to an embedded detail component, wrap them in the exported
+`DXModalActions` component. It supplies the same layout without per-button `block`
+props. Icon-only buttons retain their explicit square size.
+
+DModal defaults to `size="lg"` (800px on desktop), giving embedded forms room
+for horizontal labels. Bootstrap keeps it within the mobile viewport. Pass an
+explicit `size` to override this, for example `size="sm"` for a short confirmation.

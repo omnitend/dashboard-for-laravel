@@ -5,7 +5,7 @@
   An opinionated switch built on `DFormCheckbox` (`switch`): a bordered box sized
   like a `.form-control` with the label on the left and the toggle on the right,
   colour-coding its state. By default (`onVariant="success"`) it reads the house
-  green-on / red-off style: a light-red box with a grey toggle when off, a
+  green-on / red-off style: a light-red box with a muted red-grey toggle when off, a
   soft-green box with a muted green-grey toggle when on. `onVariant="neutral"` (brand primary on / grey off)
   is for semantically-mixed switches that shouldn't imply good/bad (#158). Used
   standalone or, internally, by `DXField`'s `switch` field type so a form switch
@@ -64,7 +64,7 @@ interface Props {
    */
   onVariant?: "success" | "neutral";
   /**
-   * `"sm"` renders a compact box (a few px shorter than the default, which
+   * `"sm"` renders a compact rounded pill (a few px shorter than the default, which
    * matches the input height) for dense rows that repeat the switch per item (a
    * per-line visibility toggle in a modal). Omit for the standard size, which
    * lines the switch up with the `.form-control`
@@ -147,6 +147,7 @@ defineOptions({
    chrome tightens. */
 .dx-switch--sm :deep(.form-check) {
   font-size: 0.875rem;
+  border-radius: var(--bs-border-radius-pill, 50rem);
   min-height: auto;
   padding: 0.25rem 0.625rem;
 }
@@ -173,6 +174,10 @@ defineOptions({
    glance (the house style). `success` (default) is green ON / light-red OFF;
    `neutral` keeps a brand primary panel for mixed-semantics switches. Pair with
    `textWhenTrue`/`textWhenFalse` so the LABEL also names each state. */
+.dx-switch--success {
+  --dx-switch-pill: var(--dx-switch-off-pill);
+}
+
 .dx-switch--success :deep(.form-check) {
   background-color: var(--dx-switch-off-bg);
   border-color: var(--dx-switch-off-line);
@@ -189,14 +194,13 @@ defineOptions({
 
 .dx-switch--success.dx-switch--on :deep(.form-check-label) {
   color: var(--dx-switch-on-ink);
-  font-weight: 500;
 }
 
 .dx-switch--success.dx-switch--on {
   --dx-switch-pill: var(--dx-switch-on-pill);
 }
 
-/* Muted pill with a white sliding thumb: green-grey ON, neutral grey OFF.
+/* Muted pill with a white sliding thumb: green-grey ON, red-grey OFF.
    The stronger box colour and position continue to communicate the state. Explicit `:checked`/`:focus` selectors so they out-specify the global
    `.form-switch .form-check-input:checked` rule. */
 .dx-switch--success :deep(.form-check-input),
@@ -220,6 +224,5 @@ defineOptions({
 
 .dx-switch--neutral.dx-switch--on :deep(.form-check-label) {
   color: var(--bs-primary-text-emphasis);
-  font-weight: 500;
 }
 </style>

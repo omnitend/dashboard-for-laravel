@@ -174,7 +174,10 @@
                         <template v-for="field in fields" :key="`head-${field.key}`" #[`head(${field.key})`]="{ label }">
                             <div class="d-flex align-items-center justify-content-between gap-2">
                                 <div class="flex-grow-1">
-                                    <div class="fw-semibold">{{ headerLabel(field, label) }}</div>
+                                    <div class="fw-semibold">
+                                        <DXFieldLabel v-if="field.info" :label="headerLabel(field, label)" :info="field.info" />
+                                        <template v-else>{{ headerLabel(field, label) }}</template>
+                                    </div>
                                     <small v-if="field.hint" class="text-muted d-block" style="font-weight: normal;">{{ field.hint }}</small>
                                 </div>
 
@@ -326,6 +329,7 @@ import DTable from "../base/DTable.vue";
 import DFormInput from "../base/DFormInput.vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import DAutocomplete from "../base/DAutocomplete.vue";
+import DXFieldLabel from "./DXFieldLabel.vue";
 import DButton from "../base/DButton.vue";
 import DXTablePagination from "./DXTablePagination.vue";
 import DXTableEditorModal from "./DXTableEditorModal.vue";
@@ -404,6 +408,8 @@ export interface TableField {
     filterAllText?: string;
     sortable?: boolean;
     hint?: string;
+    /** Help revealed from a focusable info icon beside the column label. */
+    info?: string;
     /**
      * The inline filter control for this column, or `false`/omit for none. See
      * `FilterType`. `'select'` (typeahead) and `'select-native'` (plain
@@ -1767,6 +1773,7 @@ watch(clientSideLastPage, (lastPage) => {
 // Client-side paginated items (final output)
 const clientSidePaginatedItems = computed<T[]>(() => {
     if (!isClientSideMode.value) return [];
+    if (!props.showPagination) return clientSideSortedItems.value;
 
     const perPage = effectivePerPage.value;
     const start = (clientSidePage.value - 1) * perPage;
@@ -1783,19 +1790,19 @@ const clientSidePagination = computed<PaginationData>(() => {
     const lastPage = clientSideLastPage.value;
 
     // Same clamped page the slice uses — see `clientSidePage` (#118).
-    const validPage = clientSidePage.value;
+    const validPage = props.showPagination ? clientSidePage.value : 1;
 
-    const from = total > 0 ? (validPage - 1) * perPage + 1 : 0;
-    const to = Math.min(validPage * perPage, total);
+    const from = total > 0 ? (props.showPagination ? (validPage - 1) * perPage + 1 : 1) : 0;
+    const to = props.showPagination ? Math.min(validPage * perPage, total) : total;
 
     return {
         current_page: validPage,
-        per_page: perPage,
+        per_page: props.showPagination ? perPage : Math.max(1, total),
         total,
         total_unfiltered: totalUnfiltered !== total ? totalUnfiltered : undefined,
         from,
         to,
-        last_page: lastPage,
+        last_page: props.showPagination ? lastPage : 1,
     };
 });
 
@@ -1822,7 +1829,7 @@ const handleClientSidePageChange = (page: number) => {
 // Computed: determine if per-page selector should be shown
 // Hide it when total items is less than the smallest page size option
 const shouldShowPerPageSelector = computed(() => {
-    if (!props.showPerPageSelector) return false;
+    if (!props.showPagination || !props.showPerPageSelector) return false;
 
     const smallestOption = Math.min(...props.perPageOptions);
     const total = isClientSideMode.value

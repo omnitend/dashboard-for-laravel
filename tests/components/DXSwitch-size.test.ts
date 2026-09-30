@@ -59,3 +59,17 @@ describe('DXSwitch size="sm"', () => {
     expect(defaultHeight).toBeGreaterThan(32);
   });
 });
+
+it('uses a rounded compact shape with centred text and a muted track', async () => {
+  const screen = render({render: () => h(BApp, {}, () => h(DXSwitch, {modelValue:true,size:'sm',label:'Visible'}))});
+  const box = screen.container.querySelector('.form-check') as HTMLElement;
+  const input = screen.container.querySelector('input') as HTMLElement;
+  const label = screen.container.querySelector('label') as HTMLElement;
+  const centre = (element: HTMLElement) => element.getBoundingClientRect().top + element.getBoundingClientRect().height / 2;
+  expect(Math.abs(centre(input) - centre(label))).toBeLessThan(1);
+  expect(parseFloat(getComputedStyle(box).borderRadius)).toBeGreaterThanOrEqual(box.getBoundingClientRect().height / 2);
+  expect(box.getBoundingClientRect().height).toBeLessThan(36);
+  const track = getComputedStyle(input).backgroundColor.match(/\d+/g)!.map(Number);
+  expect(track[1]).toBeGreaterThan(track[0]);
+  expect(Math.max(...track) - Math.min(...track)).toBeLessThan(60);
+});

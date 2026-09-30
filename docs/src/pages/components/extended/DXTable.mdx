@@ -1120,3 +1120,16 @@ public function destroy(Product $product)
 
 This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
 providing additional functionality specific to Laravel dashboards.
+
+## Column help
+
+Set a field's `info` to show a focusable info icon beside its column label:
+
+```ts
+{ key: 'delete', label: 'Delete', info: 'Sold items must be retained for historical reporting.' }
+```
+
+Help appears on hover or focus, including focus from tapping the icon. Activating
+it does not sort the column. `hint` remains visible below the heading and can be
+used alongside `info`. Hand-written tables can reuse `DXFieldLabel` with the
+same `label` and `info` props.

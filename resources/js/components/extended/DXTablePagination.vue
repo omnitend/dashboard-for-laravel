@@ -1,6 +1,6 @@
 <!--
   @component
-  Internal pagination + per-page footer for `DXTable`. Renders the pager, the
+  Pagination + per-page footer shared by `DXTable` and standalone tables. Renders the pager, the
   per-page selector, and the "X to Y out of Z items" info line (with the
   "Filtered from N" note when a column filter is active).
 

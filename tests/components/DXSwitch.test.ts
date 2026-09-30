@@ -12,6 +12,16 @@ const mount = (props: Record<string, unknown>, slots?: Record<string, () => unkn
   });
 
 describe('DXSwitch', () => {
+  it('keeps enabled labels at regular weight in both switch variants', async () => {
+    for (const onVariant of ['success', 'neutral']) {
+      const screen = mount({ modelValue: true, label: 'Collection is enabled', onVariant });
+      await flush();
+
+      const label = screen.container.querySelector('.form-check-label') as HTMLElement;
+      expect(getComputedStyle(label).fontWeight).toBe('400');
+    }
+  });
+
   it('renders the filled-box switch with the label from the prop', async () => {
     const screen = mount({ modelValue: false, label: 'Auto-save' });
     await flush();
@@ -98,7 +108,7 @@ describe('DXSwitch', () => {
 
 /**
  * #158 — DXSwitch is the "filled box": the WHOLE box carries the state colour
- * (green ON / light-red OFF by default) and the pill uses a muted green-grey ON and neutral grey OFF
+ * (green ON / light-red OFF by default) and the pill uses a muted green-grey ON and red-grey OFF
  * affordance. `neutral` keeps a brand primary panel for mixed-semantics
  * switches. Asserts the ACTUAL painted colours (from the built dist theme) by
  * channel dominance — robust to the exact soft-mix — so the property asked for
@@ -122,7 +132,6 @@ describe('DXSwitch filled box (green-on / light-red-off default, #158)', () => {
       screen,
     };
   };
-  const isGrey = ([r, g, b]: [number, number, number]) => Math.abs(r - g) <= 10 && Math.abs(g - b) <= 10;
 
   it('default ON: the whole box is green and the pill is a muted green-grey', async () => {
     const { box, pill, root } = await painted({ modelValue: true, label: 'Current' });
@@ -162,7 +171,21 @@ describe('DXSwitch filled box (green-on / light-red-off default, #158)', () => {
     const { box, pill } = await painted({ modelValue: false, label: 'Current' });
     expect(box[0]).toBeGreaterThan(box[1]);
     expect(box[0]).toBeGreaterThan(box[2]);
-    expect(isGrey(pill)).toBe(true);
+    expect(pill[0]).toBeGreaterThan(pill[1]);
+    expect(pill[0]).toBeGreaterThan(pill[2]);
+    expect(pill[0]).toBeLessThan(box[0]);
+  });
+
+  it('keeps the OFF tint under focus and allows a separate OFF token override', async () => {
+    const { root, pill, screen } = await painted({ modelValue: false, label: 'Closed' });
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    input.focus();
+    expect(chans(getComputedStyle(input).backgroundColor)).toEqual(pill);
+    root.style.setProperty('--dx-switch-off-pill', '#996666');
+    await expect.poll(() => getComputedStyle(input).backgroundColor).toBe('rgb(153, 102, 102)');
+    const disabled = await painted({ modelValue: false, label: 'Closed', disabled: true });
+    expect((disabled.screen.container.querySelector('input') as HTMLInputElement).disabled).toBe(true);
+    expect(disabled.pill).toEqual(pill);
   });
 
   it('onVariant="neutral": box is not the success green and the toggle is switch-neutral', async () => {

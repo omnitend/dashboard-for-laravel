@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.2] - 2026-09-29
+
+### Added
+
+- Add `DXLoading`, a delayed, accessible page-loading indicator.
+- Add `DXModalActions` and a `DModal` actions slot for vertically spaced
+  secondary actions; export the shared `DXTablePagination` footer.
+- Add focusable help text to `DXTable` column headings through `field.info`.
+
+### Changed
+
+- Default `DModal` to the large width and use regular-weight labels on enabled
+  `DXSwitch` controls. Compact switches now use pill corners.
+- Give OFF success switches a muted red-grey track and centre checkboxes from
+  the actual line height and control size.
+
+### Bug Fixes
+
+- Show all client-side `DXTable` rows when pagination is disabled, and hide the
+  per-page selector with the pager.
+- Preserve the table-header colour around column help icons.
+
+### Tests
+
+- Cover loader timing and cancellation, modal actions and width, switch and
+  checkbox alignment, column help, and unpaginated client-side tables.
+
 ## [0.41.1] - 2026-09-27
 
 ### Features

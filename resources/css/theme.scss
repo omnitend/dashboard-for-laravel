@@ -694,6 +694,11 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   vertical-align: middle;
 }
 
+// Column help uses the table's header colour rather than the form-label ink.
+.table > thead th .dx-field-label__text {
+  color: inherit;
+}
+
 .table > thead {
   vertical-align: middle;
 }
@@ -750,7 +755,7 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // theme `@import`s `bootstrap-icons/font/bootstrap-icons` (declaring the
 // `@font-face`), and #77's post-build extraction ships that woff2 with the
 // stylesheet — so this needs no new dependency and no data-URI. Values signed
-// off after one padding iteration in the greendragon interim; the glyph metrics
+// off after one padding iteration in the interim UI; the glyph metrics
 // are tunable via the variables below.
 $dx-dropdown-caret-size: 0.75em; // glyph size relative to the label
 $dx-dropdown-caret-gap: 0.4em; // space between label and chevron
@@ -806,23 +811,16 @@ $dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cd
   --dx-switch-off-well: #{color.mix($dx-switch-off, #fff, 10%)};
   --dx-switch-off-line: #{color.mix($dx-switch-off, #fff, 45%)};
   --dx-switch-off-ink: #{color.mix($dx-switch-off, #000, 30%)};
-  --dx-switch-pill: var(--bs-gray-400, #ced4da); // neutral OFF pill
+  --dx-switch-pill: var(--bs-gray-400, #ced4da);
+  --dx-switch-off-pill: #{color.mix(map.get(map.get($dx-variants, "danger"), "soft-text"), $gray-400, 50%)};
   --dx-switch-on-pill: #{color.mix(map.get(map.get($dx-variants, "success"), "soft-text"), $gray-400, 50%)};
 }
 
-// Optically centre the check/radio/switch box against its label's FIRST line.
-// Bootstrap's `.25em` top margin is mathematically right for a 1em box in a
-// 1.5em line box, but Poppins seats its glyphs low in the line box, so the box
-// reads visibly HIGH beside the text (same optical-metrics issue as the B14
-// dropdown caret). `0.325em` lands the box centre on Poppins' visual centre —
-// judged against a rendered filmstrip (0.25/0.30/0.325/0.35em) with Poppins
-// loaded, not from the maths. A top MARGIN (not flex-centring) is deliberate:
-// it aligns to the first line, so a multi-line label keeps the box on line one
-// rather than floating to the block's vertical centre. DXSwitch is unaffected —
-// it flex-centres and zeroes this margin on its inner input at higher
-// specificity (`.dx-switch :deep(.form-check-input) { margin: 0 }`).
+// Centre checkboxes/radios on the first label line using their actual size.
+// The old em offset assumed a 1em box; these controls are now 1.25rem tall.
+// A margin keeps wrapped labels aligned to line one rather than the whole block.
 .form-check-input {
-  margin-top: 0.325em;
+  margin-top: calc((1lh - #{$form-check-input-width}) / 2);
 }
 
 .form-switch .form-check-input {

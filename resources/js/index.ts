@@ -9,6 +9,8 @@ export { default as DXDashboard } from "./components/extended/DXDashboard.vue";
 export { default as DXForm } from "./components/extended/DXForm.vue";
 export { default as DXField } from "./components/extended/DXField.vue";
 export { default as DXFieldLabel } from "./components/extended/DXFieldLabel.vue";
+export { default as DXModalActions } from "./components/extended/DXModalActions.vue";
+export { default as DXLoading } from "./components/extended/DXLoading.vue";
 export { default as DXSwitch } from "./components/extended/DXSwitch.vue";
 export { default as DXCurrencyInput } from "./components/extended/DXCurrencyInput.vue";
 export { default as DXStatCard } from "./components/extended/DXStatCard.vue";
@@ -23,6 +25,7 @@ export { default as DXRepeater } from "./components/extended/DXRepeater.vue";
  */
 export { default as DXBasicForm } from "./components/extended/DXBasicForm.vue";
 export { default as DXTable } from "./components/extended/DXTable.vue";
+export { default as DXTablePagination } from "./components/extended/DXTablePagination.vue";
 export { default as DXDashboardSidebar } from "./components/extended/DXDashboardSidebar.vue";
 export { default as DXDashboardNavbar } from "./components/extended/DXDashboardNavbar.vue";
 export { default as DXUserAvatar } from "./components/extended/DXUserAvatar.vue";
