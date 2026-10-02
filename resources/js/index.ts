@@ -10,6 +10,7 @@ export { default as DXForm } from "./components/extended/DXForm.vue";
 export { default as DXField } from "./components/extended/DXField.vue";
 export { default as DXFieldLabel } from "./components/extended/DXFieldLabel.vue";
 export { default as DXModalActions } from "./components/extended/DXModalActions.vue";
+export { default as DXSaveButton } from "./components/extended/DXSaveButton.vue";
 export { default as DXLoading } from "./components/extended/DXLoading.vue";
 export { default as DXSwitch } from "./components/extended/DXSwitch.vue";
 export { default as DXCurrencyInput } from "./components/extended/DXCurrencyInput.vue";

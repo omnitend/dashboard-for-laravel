@@ -549,7 +549,8 @@ await form.delete('/api/users/1', options);
 form.processing;          // boolean - is form submitting?
 form.errors;              // ValidationErrors object
 form.hasErrors;           // computed boolean
-form.recentlySuccessful;  // boolean - was last submit successful?
+form.recentlySuccessful;  // boolean - was last submit successful? (clears after 1.5s)
+form.wasSuccessful;       // boolean - latest submit succeeded (until the next submit; DXForm's saved state)
 
 // Form methods
 form.reset();             // Reset to initial values
@@ -608,7 +609,10 @@ solid fill by reflex.
   Pinned by `tests/components/DXDashboardSidebar.spacing.test.ts`, which
   measures rendered rects rather than class names.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
-  `primary`; a save's green reward belongs in a "Saved" toast, not the button.
+  `primary`. The one place a button turns green is `DXSaveButton`'s saved
+  state ("✓ Saved", disabled until the form changes): that reports the outcome
+  in place of the action, and it is what `DXForm`'s submit button does after a
+  successful save.
 - **Outline buttons / coloured links / `.text-*`** use each variant's *emphasis*
   shade (readable on white), which is also the base `$theme-color`.
 - Everything is driven by the **`$dx-variants` map in `resources/css/theme.scss`**

@@ -298,6 +298,15 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   --bs-btn-padding-y: #{$input-padding-y-lg};
 }
 
+// DXSaveButton's saved state is a disabled button, but it is a confirmation
+// ("✓ Saved"), not an unavailable action, so it keeps full contrast instead of
+// Bootstrap's 0.65 disabled fade (which also drops the soft-success pair below
+// WCAG AA).
+.btn.dx-save-button--saved:disabled,
+.btn.dx-save-button--saved.disabled {
+  opacity: 1;
+}
+
 // Horizontal ("label-left") forms: a compact settings-form rhythm, with the
 // label + control top-aligned so a checkbox/switch sits on the label's first
 // line rather than floating above it (the label column carries a top offset to

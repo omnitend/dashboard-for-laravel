@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `DXSaveButton`, a save button that confirms in place: busy while
+  saving, then a disabled "✓ Saved" (tick, soft success, full contrast,
+  announced through `aria-live`) until the form changes. Drive it with two
+  booleans, `saving` and `saved`.
+- `DXForm`'s submit button is now a `DXSaveButton`: after a successful
+  `form.post`/`put`/`patch` it reads "Saved" until any field changes. Writes
+  made by the save itself do not count as changes, and an edit made while the
+  request is in flight keeps the button as Save. New props `submitSavedText`
+  and `savedState` (set `false` for search or filter forms).
+- Add `useForm().wasSuccessful`: true once the latest submission succeeds,
+  false from the start of the next one or after a failure.
+
+### Tests
+
+- Cover the save button's states, DXForm's saved state (including in-flight
+  edits, writes from `onSuccess` and after `await`, failures and the tabbed
+  layout) and `wasSuccessful`.
+
 ## [0.41.2] - 2026-09-29
 
 ### Added
