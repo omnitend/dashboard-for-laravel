@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Honour `busy` on `DXTable` with `items` or `clientSide` rows (it was read
+  only in API/provider mode), and hide the empty text while busy, so a table
+  whose rows are still loading no longer says "No … found".
+
 ## [0.41.2] - 2026-09-29
 
 ### Added

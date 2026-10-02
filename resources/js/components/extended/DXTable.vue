@@ -989,8 +989,11 @@ if (
     console.warn('[DXTable] clientSide mode ignores provider, apiUrl and inertiaUrl props. Data is processed locally from items.');
 }
 
-// Computed for effective busy state (provider mode uses 'busy', inertia uses 'loading')
-const effectiveBusy = computed(() => isProviderMode.value ? props.busy : props.loading);
+// Effective busy state. Provider mode: `busy` (two-way with BTable's own
+// loading). Items and client-side modes: `busy`, the documented prop, or the
+// deprecated `loading`; these modes used to read only `loading`, so a page
+// passing `:busy` showed the empty text while its rows were still loading.
+const effectiveBusy = computed(() => isProviderMode.value ? props.busy : props.busy || props.loading);
 
 /*
  * `perPage`, `sortBy` and `filters` are dual-purpose: with a `v-model` they are
@@ -2023,9 +2026,10 @@ const handleApiPageChange = (page: number) => {
  *   `currentPage` and `perPage`; `busy` is the raw prop (two-way with BTable's
  *   provider loading via `@update:busy`).
  * - client-side: rows are pre-sliced by `clientSidePaginatedItems`, and local
- *   sorting is off (we sort in `clientSideSortedItems`).
+ *   sorting is off (we sort in `clientSideSortedItems`); `busy` is
+ *   `effectiveBusy`.
  * - inertia: server-paginated `items`, local sorting off, `busy` is
- *   `effectiveBusy` (the `loading` prop in this mode).
+ *   `effectiveBusy` (`busy` or the deprecated `loading` in this mode).
  *
  * A key absent from the returned object is simply not bound, which is what the
  * original blocks did (e.g. non-provider modes never set `provider`/`currentPage`,
@@ -2041,7 +2045,7 @@ const tableModeBindings = computed<Record<string, unknown>>(() => {
         };
     }
     if (isClientSideMode.value) {
-        return { items: clientSidePaginatedItems.value, noLocalSorting: true };
+        return { items: clientSidePaginatedItems.value, noLocalSorting: true, busy: effectiveBusy.value };
     }
     // inertia
     return { items: resolvedItems.value, noLocalSorting: true, busy: effectiveBusy.value };
@@ -2347,7 +2351,9 @@ const tableSlotSignature = (slots: Record<string, unknown>): string => {
 // three data modes from one place.
 const tablePassthroughProps = computed(() => ({
     footClone: props.footClone,
-    showEmpty: props.showEmpty,
+    // No empty text while rows are loading: "No … found" during a load reads as
+    // "there is no data". Provider mode is unchanged by this.
+    showEmpty: props.showEmpty && (isProviderMode.value || effectiveBusy.value === false),
     emptyText:
         props.emptyText ??
         (hasActiveFilters.value
