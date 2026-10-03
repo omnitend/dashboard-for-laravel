@@ -608,9 +608,23 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   `dist/assets/<source-name>-<hash>.woff2`, naming each by matching its bytes to
   `resources/fonts/**` or the bootstrap-icons font. Same reason and mechanism
   as the icon font (#77).
-- Poppins was converted from the TTF with fontTools (`flavor='woff2'`); the
-  Maven Pro files are the upstream woff2s, unmodified (Maven Pro has a Reserved
-  Font Name, so a modified copy could not keep the name).
+- **Poppins is subset to Latin** (about 12 KB a face, from 50 KB with
+  Devanagari) by `scripts/subset-poppins.py build <Poppins-Medium.ttf>
+  <Poppins-SemiBold.ttf>`, from the upstream TTFs. The kept ranges are literals
+  in the script: Basic Latin, Latin-1, Latin Extended-A and Additional, General
+  Punctuation, currency, letterlike and maths symbols. Poppins has no arrows or
+  check marks, so a UI arrow in a heading falls back to the next font. All
+  layout features and every name record (the OFL licence, IDs 0/13/14) are
+  kept. Poppins has no kerning to keep: its GPOS only positions Devanagari
+  marks. Subsetting is allowed because Poppins' OFL has no Reserved Font Name.
+  `scripts/subset-poppins.py check <files>` asserts the glyphs English/UK
+  headings and product names need (A–Z, a–z, 0–9, £ € & quotes, dashes,
+  ellipsis, bullets, é è à ç ñ ö ü ä), that Devanagari is gone and that the
+  licence records survive; `build` runs it on its output. woff2 output needs
+  the Python `brotli` module.
+- **Never subset or modify the Maven Pro files.** They are the upstream woff2s,
+  byte-identical, because Maven Pro's OFL has a Reserved Font Name: a modified
+  copy could not keep the name.
 - **Test the faces LOAD, not the names**: `tests/bundle/theme-fonts.test.ts`
   renders text in each face and asserts the `document.fonts` entry reached
   `status === "loaded"`. A `font-family` check passes with the font missing

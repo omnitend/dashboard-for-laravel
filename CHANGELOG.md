@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `font-display: swap`. Until now the theme named Poppins without shipping
   it, so it only rendered where it was installed. Poppins is exposed as
   `--dx-font-family-display` (`$dx-font-family-display`) and used for h1–h4.
+  Poppins is subset to Latin (about 12 KB per face, without its Devanagari).
 - Add a `pending` colour variant, a violet for "waiting, the next move is not
   yours" (awaiting payment, sent to a printer but not confirmed). It works on
   badges, soft and outline buttons, alerts, toasts, text and subtle
