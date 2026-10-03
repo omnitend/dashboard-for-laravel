@@ -118,17 +118,18 @@
                 </DXFormField>
 
                 <!-- Submit button -->
-                <DButton
+                <DXSaveButton
                     v-if="showSubmit"
                     type="submit"
-                    variant="primary"
                     block
-                    :loading="resolvedForm.processing"
-                    :loading-text="submitLoadingText"
+                    :saving="resolvedForm.processing"
+                    :saving-text="submitLoadingText"
+                    :saved="isSaved"
+                    :saved-text="submitSavedText"
                     class="mt-3"
                 >
                     {{ submitText }}
-                </DButton>
+                </DXSaveButton>
 
                 <!--
                   @slot Content rendered below the submit button (e.g. a cancel link or secondary actions).
@@ -145,17 +146,18 @@
              trailing form-level actions. -->
         <template v-else>
             <!-- Submit button -->
-            <DButton
+            <DXSaveButton
                 v-if="showSubmit"
                 type="submit"
-                variant="primary"
                 block
-                :loading="resolvedForm.processing"
-                :loading-text="submitLoadingText"
+                :saving="resolvedForm.processing"
+                :saving-text="submitLoadingText"
+                :saved="isSaved"
+                :saved-text="submitSavedText"
                 class="mt-3"
             >
                 {{ submitText }}
-            </DButton>
+            </DXSaveButton>
 
             <!--
               @slot Content rendered below the submit button (e.g. a cancel link or secondary actions).
@@ -167,14 +169,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, type ComponentPublicInstance } from "vue";
+import {
+    computed,
+    onBeforeUnmount,
+    ref,
+    watch,
+    type ComponentPublicInstance,
+} from "vue";
 import { BForm } from "bootstrap-vue-next";
 import DAlert from "../base/DAlert.vue";
-import DButton from "../base/DButton.vue";
 import DCard from "../base/DCard.vue";
 import DTabs from "../base/DTabs.vue";
 import { BTab as DTab } from "bootstrap-vue-next"; // raw BTab: BTabs scans slot vnodes for it (#119)
 import DXFormField from "./DXFormField.vue";
+import DXSaveButton from "./DXSaveButton.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { DefineFormReturn } from "../../composables/defineForm";
 import { useContainerWidth } from "../../composables/useContainerWidth";
@@ -210,6 +218,17 @@ interface Props {
 
     /** Submit button loading text */
     submitLoadingText?: string;
+
+    /** Submit button label once the form's contents are saved. */
+    submitSavedText?: string;
+
+    /**
+     * After a successful submission through the form (`form.post/put/…`,
+     * read from `form.wasSuccessful`), turn the submit button into a
+     * disabled "✓ Saved" until any field changes. On by default; set
+     * `false` for forms whose submit is not a save (search, filter).
+     */
+    savedState?: boolean;
 
     /** Show the submit button */
     showSubmit?: boolean;
@@ -282,6 +301,8 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     submitText: "Submit",
     submitLoadingText: "Submitting...",
+    submitSavedText: "Saved",
+    savedState: true,
     showSubmit: true,
     autoErrorTab: true,
     card: false,
@@ -484,6 +505,81 @@ watch(
     },
     { immediate: true },
 );
+
+// ————————————————— saved state (submit button shows "✓ Saved")
+
+/**
+ * True from a successful save until the form's data next changes.
+ *
+ * Three kinds of data write have to be told apart:
+ *
+ * - a user edit BEFORE the response (while the request is in flight) — not
+ *   in the payload, so the save must not be reported as covering it;
+ * - the save's own follow-up writes — `onSuccess` copying the response into
+ *   the form, `resetOnSuccess`, consumer code after `await form.post()` —
+ *   which all run in the response's macrotask and are not edits;
+ * - a user edit AFTER the save — clears the saved state.
+ *
+ * So the success (`wasSuccessful` turning true) opens a one-macrotask window
+ * in which writes are treated as part of the save, and `isSaved` is set when
+ * that window closes, unless the user edited between submit and response.
+ * All three watchers are synchronous so the ordering is exact, not dependent
+ * on Vue's scheduler.
+ */
+const isSaved = ref(false);
+let savedTimer: ReturnType<typeof setTimeout> | null = null;
+let isInSaveResponse = false;
+let wasEditedSinceSubmit = false;
+
+function cancelPendingSaved(): void {
+    if (savedTimer !== null) clearTimeout(savedTimer);
+    savedTimer = null;
+    isInSaveResponse = false;
+}
+
+watch(
+    () => resolvedForm.value.processing,
+    (isProcessing) => {
+        if (!isProcessing) return;
+        cancelPendingSaved();
+        isSaved.value = false;
+        wasEditedSinceSubmit = false;
+    },
+    { flush: "sync" },
+);
+
+watch(
+    () => resolvedForm.value.wasSuccessful,
+    (wasSuccessful) => {
+        if (!wasSuccessful || !props.savedState) return;
+        cancelPendingSaved();
+        isInSaveResponse = true;
+        savedTimer = setTimeout(() => {
+            savedTimer = null;
+            isInSaveResponse = false;
+            // A new submit or a form swap in the meantime cancels this timer.
+            if (!wasEditedSinceSubmit) isSaved.value = true;
+        }, 0);
+    },
+    { flush: "sync" },
+);
+
+watch(
+    () => resolvedForm.value.data,
+    () => {
+        isSaved.value = false;
+        if (!isInSaveResponse) wasEditedSinceSubmit = true;
+    },
+    { deep: true, flush: "sync" },
+);
+
+// A different form instance (or turning the feature off) starts unsaved.
+watch([resolvedForm, () => props.savedState], () => {
+    cancelPendingSaved();
+    isSaved.value = false;
+});
+
+onBeforeUnmount(cancelPendingSaved);
 
 function handleSubmit(): void {
     emit("submit");

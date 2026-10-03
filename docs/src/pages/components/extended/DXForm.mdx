@@ -42,6 +42,8 @@ accepts either a `useForm` return or a `defineForm` return (with the latter,
   { name: 'autoErrorTab', type: 'boolean', required: 'No', default: 'true', description: 'Auto-switch to the first tab containing a validation error.' },
   { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text.' },
   { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text.' },
+  { name: 'submitSavedText', type: 'string', required: 'No', default: 'Saved', description: 'Submit button label in the saved state (see Saved state below).' },
+  { name: 'savedState', type: 'boolean', required: 'No', default: 'true', description: 'After a successful form.post/put/patch, show the submit button as a disabled "✓ Saved" until any field changes. Set false for forms whose submit is not a save (search, filter).' },
   { name: 'showSubmit', type: 'boolean', required: 'No', default: 'true', description: 'Show the submit button.' },
   { name: 'card', type: 'boolean', required: 'No', default: 'false', description: 'Wrap a FLAT form in a card for a visual boundary (mirrors DXTable\'s card prop). Also forces the tabbed card on even when cardTabs is false. Off by default since DXForm is commonly embedded in a page card or modal already.' },
   { name: 'cardTabs', type: 'boolean', required: 'No', default: 'true', description: 'Wrap a TABBED form\'s content in a card panel so the active tab reads as a finished panel connected to the tab strip (the standard Bootstrap card-with-tabs pattern) rather than floating on the bare page. Set false for bare tabs (e.g. inside a modal that already provides a boundary). Ignored for flat forms — use card for those.' },
@@ -81,6 +83,26 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
   { name: 'tab-after(<key>)', props: 'tab, model', description: 'Content rendered after a tab\'s fields.' },
   { name: 'footer', props: 'form', description: 'Content rendered after the form body.' },
 ]} />
+
+## Saved state
+
+The submit button is a [DXSaveButton](/components/extended/DXSaveButton).
+After a successful submit through the form's own methods (`form.post`,
+`put`, `patch`…, read from `form.wasSuccessful`) it changes to a disabled
+**✓ Saved**, and changing any field turns it back into the normal Save button.
+While the request is in flight it shows the usual busy state
+(`submitLoadingText`).
+
+- Writes made by the save itself (an `onSuccess` that copies the response into
+  the form, `resetOnSuccess`, or code straight after `await form.post()`) do
+  not count as changes.
+- An edit made while the request is in flight is not in the payload, so the
+  button stays **Save** when that request succeeds.
+- A failed save leaves the normal Save button.
+- Forms that submit with something other than the form's own submit methods
+  never see a success, so they keep the plain button. Set
+  `:saved-state="false"` for a form whose submit is not a save, such as a
+  search.
 
 ## Container-driven layout
 

@@ -65,7 +65,8 @@ interface UseFormReturn<T> {
   processing: boolean                // Is form submitting?
   errors: ValidationErrors           // Validation errors
   hasErrors: ComputedRef<boolean>    // Are there any errors?
-  recentlySuccessful: boolean        // Was last submit successful?
+  recentlySuccessful: boolean        // Was last submit successful? (clears after 1.5s)
+  wasSuccessful: boolean             // Did the latest submit succeed? (until the next submit)
 
   // Methods
   post(url: string, options?: FormSubmitOptions): Promise<any>
