@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`--dx-chart-line-1..8`) and a 1px outline on bars and doughnut segments
   (`--dx-chart-edge`). Dark mode charts are unchanged. Rename the Sass
   variable `$dx-switch-thumb-red` to `$dx-switch-thumb-off`.
+- Give the dashboard one horizontal gutter, 20px (`$dashboard-gutter-x`,
+  `--dx-dashboard-gutter-x`): the navbar's padding and the page content's
+  edges both use it, so the menu toggle lines up with the page content.
+  Content used to start 36px in and the navbar 12px.
+- Make a horizontal field's label column 45% wide by default
+  (`$dx-form-label-width`, `--dx-form-label-width`) instead of 3 of 12
+  columns. It applies from `sm` up; below `sm` the label now stacks above
+  the input. An explicit `labelCols`, on the form or the field, still uses
+  the 12-column grid as before.
 
 ### Bug Fixes
 

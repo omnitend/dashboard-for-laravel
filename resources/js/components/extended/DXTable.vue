@@ -685,7 +685,8 @@ export interface Props<TItem = any> {
     /**
      * Label column width for the edit modal's horizontal layout, forwarded to
      * `DXForm`'s `labelCols` (a single width or a per-breakpoint object). Only
-     * meaningful when `editLayout` is "horizontal".
+     * meaningful when `editLayout` is "horizontal". Omitted: DXForm's default
+     * 45% label column.
      */
     editLabelCols?: LabelCols;
 

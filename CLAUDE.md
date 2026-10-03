@@ -579,6 +579,28 @@ against a rendered screenshot at 16px, not the maths — Poppins seats glyphs lo
 in the line box. The dense **sidebar** metrics (#95, `0.875rem` headers) are
 rem-pinned and intentionally stay 14px regardless of the base.
 
+### Layout tokens: dashboard gutter and form label column
+
+- **One dashboard gutter, 20px** (`$dashboard-gutter-x` →
+  `--dx-dashboard-gutter-x` on `:root`). theme.scss applies it as the
+  horizontal padding of the `.container-fluid` directly inside
+  `.dashboard-navbar` AND inside `.dashboard-main` (which keeps only `py-4`), so
+  the navbar's first item starts exactly where page content starts. In
+  DXDashboard's centred branch the `DRow`'s negative margins and the `DCol`'s
+  padding cancel, so the content edge is the gutter there too. Don't put
+  horizontal padding back on `<main>` or the navbar's container; pinned by
+  `tests/components/DXDashboard.gutter.test.ts` (rendered rects, both sidebar
+  states, both content branches, the wrapped navbar below `md`).
+- **Default horizontal label column is 45%** (`$dx-form-label-width` →
+  `--dx-form-label-width`). With no `labelCols` from the form or field,
+  DXField passes BFormGroup `labelColsSm: true` (a `col-sm`, so it stacks below
+  `sm`) plus the class `dx-field-label-col--default-width`, which theme.scss
+  sizes from `sm` up; the input is a plain `.col`. Any explicit `labelCols`
+  skips the modifier and uses the 12-column grid as before. Because the default
+  stacks below the `sm` VIEWPORT, a layout test of horizontal rows must set a
+  wide `page.viewport` (the runner's default window is 414px). Pinned by
+  `tests/components/DXForm-LabelWidth.test.ts`.
+
 ### Semantic colour system (soft-first, since v0.27.0)
 
 The library uses a **soft-first** semantic colour system built on the Omni Tend

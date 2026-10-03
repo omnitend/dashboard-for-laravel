@@ -240,7 +240,10 @@ interface Props {
      * Form-wide field layout:
      *
      * - `"vertical"` (default) — label above input, always.
-     * - `"horizontal"` — label left, input right, always.
+     * - `"horizontal"` — label left, input right, whatever the container
+     *   width. With the default label column that holds from the `sm`
+     *   viewport breakpoint up (the label stacks on a phone); a numeric
+     *   `labelCols` keeps the split at every width.
      * - `"auto"` — horizontal when the form's **own container** is at least
      *   `layoutThreshold` px wide, vertical below that. Container-driven, not
      *   viewport-driven: a page narrowed by the dashboard sidebar, or a form
@@ -256,20 +259,22 @@ interface Props {
      * Container width (px) at or above which `layout: "auto"` goes horizontal.
      * Ignored for the explicit `"vertical"`/`"horizontal"` layouts.
      *
-     * Default 640, measured rather than guessed: with the default 3-column
-     * label the label's text area is `containerWidth / 4 - 18` px, so 640 gives
-     * it 142px — enough for a ~20-character label ("Unit price (ex VAT)"
-     * measures 128px at the theme's label font) to stay on one line, with the
-     * control column still 474px. Below ~584px that label starts wrapping,
-     * which is the cramped-label symptom this exists to avoid. Raise it if your
-     * labels run longer, or lower `labelCols` instead.
+     * Default 640, measured when the default label was 3 columns: that gave
+     * the label 142px of text at 640px, just enough for a ~20-character label
+     * ("Unit price (ex VAT)" measures 128px at the theme's label font) to stay
+     * on one line. With the 45% default label column the same 640px gives the
+     * label ~275px and the control ~341px, so the threshold now mostly keeps
+     * the control column usable. Raise it if your controls need more room, or
+     * set a narrower `labelCols`.
      */
     layoutThreshold?: number;
 
     /**
      * Label column width for horizontal layout (mirrors BFormGroup's
      * `labelCols`/`labelCols*` props). Overridable per-field via
-     * `field.labelCols`. Ignored when `layout` is "vertical".
+     * `field.labelCols`. Ignored when `layout` is "vertical". Omitted (here
+     * and on the field): the label takes `--dx-form-label-width` (45%) from
+     * `sm` up and stacks above the input below `sm`.
      */
     labelCols?: LabelCols;
 }

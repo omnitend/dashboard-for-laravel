@@ -521,8 +521,12 @@ describe('DXField horizontal layout (#66)', () => {
     const label = screen.container.querySelector('.col-form-label');
     expect(label).toBeTruthy();
     expect(label?.textContent).toContain('Name');
-    // Defaults to a 3-column label when no labelCols is configured.
-    expect(label?.classList.contains('col-3')).toBe(true);
+    // With no labelCols, the label is the themed 45% column (a `col-sm` that
+    // stacks below sm, sized by theme.scss); its geometry is measured in
+    // DXForm-LabelWidth.test.ts.
+    expect(label?.classList.contains('col-sm')).toBe(true);
+    expect(label?.classList.contains('dx-field-label-col--default-width')).toBe(true);
+    expect(label?.classList.contains('col-3')).toBe(false);
   });
 
   it('honours a numeric labelCols for the label column width', async () => {

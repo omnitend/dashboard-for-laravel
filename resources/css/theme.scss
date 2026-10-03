@@ -266,6 +266,15 @@ $form-invalid-border-color: $dx-form-error;
 $form-feedback-invalid-color: $dx-form-error;
 $form-feedback-icon-invalid-color: $dx-form-error;
 
+// Width of a horizontal field's label column when the caller sets no
+// `labelCols` (DXField/DXForm). 45% sits between Bootstrap's 5/12 and 6/12
+// steps on purpose: chosen from rendered options, it lets a label with help
+// text wrap far less than the old 3/12 without starving the input. Applies
+// from `sm` up; below `sm` the label stacks. Published as
+// `--dx-form-label-width` so a consumer can retune it in CSS. An explicit
+// `labelCols` uses the 12-column grid instead and ignores this.
+$dx-form-label-width: 45%;
+
 // ----------------------------------------------------------------------------
 // Dashboard
 // ----------------------------------------------------------------------------
@@ -273,6 +282,14 @@ $form-feedback-icon-invalid-color: $dx-form-error;
 $dashboard-sidebar-width: 280px;
 $dashboard-sidebar-collapsed-width: 80px;
 $dashboard-navbar-height: 64px;
+
+// The shell's one horizontal gutter: the navbar's inner padding AND the page
+// content's left/right edge both come from it, so the navbar's first item (the
+// menu toggle, or whatever leads the bar) starts exactly where the page content
+// starts. They used to be 12px and 36px, so nothing on the bar lined up with
+// anything on the page. Published as `--dx-dashboard-gutter-x` on `:root`;
+// a consumer can retune both edges together by overriding that.
+$dashboard-gutter-x: 20px;
 
 // The bar's vertical padding, and the single-row CONTENT BUDGET that follows
 // from it. Everything on the bar's single row — the avatar toggle, whatever a
@@ -356,6 +373,18 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   --dx-input-height: calc(
     #{$input-line-height * 1em} + #{$input-padding-y * 2} + (2 * #{$input-border-width})
   );
+  --dx-form-label-width: #{$dx-form-label-width};
+}
+
+// The default horizontal label column. DXField renders it with BFormGroup's
+// `labelColsSm` (so it is a `col-sm` that stacks below `sm`, as any `labelCols`
+// breakpoint does) plus this modifier, which fixes its width; the input column
+// is a plain `.col` and takes the rest. `.row >` lifts it over `.col-sm`.
+@include media-breakpoint-up(sm) {
+  .row > .dx-field-label-col--default-width {
+    flex: 0 0 auto;
+    width: var(--dx-form-label-width);
+  }
 }
 
 // Bootstrap sizes grouped buttons with padding properties, but leaves their
@@ -428,6 +457,22 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // ----------------------------------------------------------------------------
 // Dashboard Custom Styles
 // ----------------------------------------------------------------------------
+
+:root {
+  --dx-dashboard-gutter-x: #{$dashboard-gutter-x};
+}
+
+// Both are the `DContainer fluid` directly inside the navbar header and the
+// <main> panel (which keeps only its vertical padding, `py-4`). In the main
+// panel's centred branch the DRow's negative margins and the DCol's padding
+// cancel, so the content edge is this padding in both branches. Two classes
+// so it outranks Bootstrap's own `.container-fluid` padding regardless of
+// stylesheet order.
+.dashboard-navbar > .container-fluid,
+.dashboard-main > .container-fluid {
+  padding-left: var(--dx-dashboard-gutter-x);
+  padding-right: var(--dx-dashboard-gutter-x);
+}
 
 .dashboard-sidebar {
   background-color: $dark;

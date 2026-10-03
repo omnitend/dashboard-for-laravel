@@ -70,8 +70,10 @@
         </template>
       </DXDashboardNavbar>
 
-      <!-- Page Content -->
-      <main class="dashboard-main p-4">
+      <!-- Page Content. Vertical padding only: the horizontal edge is the
+           shared dashboard gutter, applied to the container inside (see
+           `$dashboard-gutter-x` in theme.scss) so it matches the navbar's. -->
+      <main class="dashboard-main py-4">
         <!-- Fluid: full-width, left-aligned content (for wide tables / admin
              pages). Default: a centred reading-width column. -->
         <DContainer v-if="fluid" fluid :class="contentClass">
