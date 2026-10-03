@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   h2 1.15rem, h3 and h4 1.05rem, h5 and h6 1rem (was 2rem down to 1rem at
   600). Table body text is now `#212529` instead of black and table headers
   weight 500 instead of bold.
+- Give disabled buttons one neutral look whatever their variant: a light grey
+  fill and grey label at full opacity (outline and link buttons: grey border
+  or text, no fill), instead of Bootstrap's 65% opacity, which left a
+  disabled yellow or green button looking active. Tokens:
+  `--dx-btn-disabled-bg`, `--dx-btn-disabled-color`,
+  `--dx-btn-disabled-outline-border`.
 - Paint alerts with the subtle background, a `border-*-subtle` border and the
   soft text, instead of the full soft tint. A warning alert is no longer as
   loud as a solid yellow fill. Badges, soft buttons and toasts are unchanged.

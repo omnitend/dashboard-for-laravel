@@ -801,6 +801,7 @@ h6,
 //     active). secondary/success/danger/warning/info are SOFT (light tint bg +
 //     dark text, fully overridden incl. hover/active).
 //   - Outline buttons: the emphasis shade for border/label, the soft tint on hover.
+//   - Disabled buttons of every variant: the neutral grey set after this loop.
 //   - Badges: `.badge.text-bg-*` re-tinted soft — needs `!important` because
 //     Bootstrap's `.text-bg-*` helper sets its colours `!important` by design.
 //   - Alerts: the SUBTLE tint (70% white) with the subtle border.
@@ -822,7 +823,6 @@ h6,
       --bs-btn-color: #{$solid-text};
       --bs-btn-hover-color: #{$solid-text};
       --bs-btn-active-color: #{$solid-text};
-      --bs-btn-disabled-color: #{$solid-text};
     }
   } @else {
     // Soft button: light tint bg + dark same-hue label; darken the tint slightly
@@ -837,9 +837,6 @@ h6,
       --bs-btn-active-color: #{$soft-text};
       --bs-btn-active-bg: #{color.scale($soft-bg, $lightness: -10%)};
       --bs-btn-active-border-color: #{color.scale($soft-bg, $lightness: -10%)};
-      --bs-btn-disabled-color: #{$soft-text};
-      --bs-btn-disabled-bg: #{$soft-bg};
-      --bs-btn-disabled-border-color: #{$soft-bg};
     }
   }
 
@@ -1007,6 +1004,46 @@ h6,
 
   &:hover {
     background-color: var(--bs-light);
+  }
+}
+
+// Disabled buttons: one neutral treatment whatever the variant. Bootstrap's is
+// opacity alone (0.65), so a disabled butter-yellow warning or lime success
+// button kept its colour and still looked pressable. Light grey fill, grey
+// label, full opacity; outline and link buttons keep no fill (grey border /
+// grey text). The label is #6c757d on #e9ecef, 3.95:1: disabled controls are
+// exempt from WCAG 1.4.3, but it stays readable. Bootstrap already sets
+// `pointer-events: none` on a disabled `.btn`, so there is no hover state and a
+// `cursor` would never show. Published as `--dx-btn-disabled-*` so a consumer
+// can retune all three together.
+$dx-btn-disabled-bg: #e9ecef; // $gray-200
+$dx-btn-disabled-color: #6c757d; // $gray-600
+$dx-btn-disabled-outline-border: #ced4da; // $gray-400
+
+:root {
+  --dx-btn-disabled-bg: #{$dx-btn-disabled-bg};
+  --dx-btn-disabled-color: #{$dx-btn-disabled-color};
+  --dx-btn-disabled-outline-border: #{$dx-btn-disabled-outline-border};
+}
+
+// Drives Bootstrap's own `--bs-btn-disabled-*` variables, which its
+// `.btn:disabled` rule paints. Two classes (or `fieldset:disabled .btn`) so it
+// outranks the per-variant `.btn-*` rules that set the same variables.
+.btn:is(:disabled, .disabled),
+fieldset:disabled .btn {
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-disabled-bg: var(--dx-btn-disabled-bg);
+  --bs-btn-disabled-color: var(--dx-btn-disabled-color);
+  --bs-btn-disabled-border-color: var(--dx-btn-disabled-bg);
+
+  &:is([class*="btn-outline-"]) {
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: var(--dx-btn-disabled-outline-border);
+  }
+
+  &.btn-link {
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: transparent;
   }
 }
 

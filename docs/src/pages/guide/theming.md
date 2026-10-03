@@ -25,6 +25,11 @@ that:
 - **`secondary` / `success` / `danger` / `warning` / `info` / `pending`
   buttons are _soft_** — a light same-hue tint background with a dark same-hue label. A
   soft light-red "Delete" still reads as danger without a heavy fill.
+- **Disabled buttons are neutral.** Whatever the variant, a disabled button
+  is light grey with a grey label (outline and link buttons: grey border or
+  text, no fill), so it never looks pressable. Retune with
+  `--dx-btn-disabled-bg`, `--dx-btn-disabled-color` and
+  `--dx-btn-disabled-outline-border`.
 - **Tertiary actions are ghosts** — the `link` variant is restyled as a quiet
   button: body-colour text, no underline, a faint hover surface.
 - **All status colour is soft.** Badges and toasts use light tints, and alerts

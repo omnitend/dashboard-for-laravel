@@ -707,6 +707,16 @@ solid fill by reflex.
   group's last item than to its own, so the eye attached it to the wrong group.
   Pinned by `tests/components/DXDashboardSidebar.spacing.test.ts`, which
   measures rendered rects rather than class names.
+- **Disabled buttons are neutral grey, whatever the variant** (Bootstrap's is
+  opacity only, so a disabled warning/success still looked live): fill
+  `#e9ecef`, label `#6c757d` (3.95:1; disabled controls are WCAG-exempt),
+  opacity 1; outline = no fill + `#ced4da` border; link = grey text. Tokens
+  `--dx-btn-disabled-bg/-color/-outline-border`, applied through Bootstrap's
+  `--bs-btn-disabled-*` in a `.btn:is(:disabled, .disabled), fieldset:disabled
+  .btn` rule that outranks the per-variant classes. No `cursor`: Bootstrap's
+  `pointer-events: none` on disabled buttons means it would never show.
+  Form-control disabled styling is Bootstrap's (already neutral). Pinned by
+  `disabled-buttons.test.ts`.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
   `primary`; a save's green reward belongs in a "Saved" toast, not the button.
 - **Outline buttons / coloured links / `.text-*`** use each variant's *emphasis*
