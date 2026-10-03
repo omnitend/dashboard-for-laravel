@@ -577,7 +577,10 @@ export interface Props<TItem = any> {
     /** Error message */
     error?: string | null;
 
-    /** Pagination data (Inertia mode) */
+    /**
+     * Pagination data (Inertia mode). Omit it on a plain `items` table and the
+     * footer counts the rows given as one page.
+     */
     pagination?: PaginationData;
 
     /** Show pagination controls */
@@ -2055,13 +2058,32 @@ const tableModeBindings = computed<Record<string, unknown>>(() => {
 /*
  * The pagination metadata the single footer renders, by mode (#123). Null means
  * no footer: only provider mode has that case (a custom provider with no
- * `pagination` prop). Client-side always has a computed object; inertia's
- * `pagination` prop carries a default object, so both always render a footer —
- * matching the three original per-mode `v-if`s exactly.
+ * `pagination` prop). Client-side and inertia always render a footer.
+ *
+ * Inertia mode is also what a plain `:items` table with no `pagination` lands
+ * in. Its footer read the `withDefaults` placeholder (`total: 0`), so two
+ * rendered rows sat above "0 items.". With no `pagination` passed, the rows
+ * given ARE the whole set: describe them as one page.
  */
+const unpaginatedItemsPagination = computed<PaginationData>(() => {
+    const itemCount = resolvedItems.value?.length ?? 0;
+    return {
+        current_page: 1,
+        // One page holding every row, so the pager (shown only when
+        // total > per_page) never appears. Floor of 1 keeps the page
+        // maths away from a zero divisor.
+        per_page: Math.max(itemCount, 1),
+        total: itemCount,
+        from: itemCount > 0 ? 1 : 0,
+        to: itemCount,
+    };
+});
+
 const activePagination = computed<PaginationData | null>(() => {
     if (isClientSideMode.value) return clientSidePagination.value;
-    if (isInertiaMode.value) return props.pagination;
+    if (isInertiaMode.value) {
+        return paginationWasProvided ? props.pagination : unpaginatedItemsPagination.value;
+    }
     if (isProviderMode.value) return providerPagination.value;
     return null;
 });

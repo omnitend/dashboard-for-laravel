@@ -66,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Honour `busy` on `DXTable` with `items` or `clientSide` rows (it was read
   only in API/provider mode), and hide the empty text while busy, so a table
   whose rows are still loading no longer says "No … found".
+- Count the rows of a `DXTable` given plain `items` and no `pagination`: its
+  footer read the `pagination` default and said "0 items." under rows it was
+  showing. The rows given are now treated as one page ("2 items.", no pager).
+  A passed `pagination` drives the footer as before.
 
 ## [0.41.2] - 2026-09-29
 
