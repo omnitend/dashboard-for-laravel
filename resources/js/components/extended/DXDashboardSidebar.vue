@@ -213,34 +213,66 @@ const brandInitial = computed(() => {
 const normalizeUrl = (url: string): string =>
   url.toLowerCase().replace(/[?#].*$/, '').replace(/\/$/, '');
 
+// An item's query parameters, lowercased, as [name, value] pairs.
+const queryParams = (url: string): [string, string][] => {
+  const query = url.toLowerCase().split('#')[0].split('?')[1] ?? '';
+  return Array.from(new URLSearchParams(query).entries());
+};
+
+// Identity of a nav item for matching: its path plus its query, so items that
+// differ only by query string (`/tasks?business_unit_id=1`, `...=2`) are told
+// apart.
+const itemKey = (url: string): string =>
+  normalizeUrl(url) + '?' + queryParams(url).map(([name, value]) => `${name}=${value}`).sort().join('&');
+
 /**
- * The single best-matching nav item URL for the current route. Prefers an exact
- * match; otherwise the longest ancestor path, so a detail page like
- * `/rotas/507` activates the `/rotas` item. Root `/` only matches exactly — it
- * is a prefix of every path, so it is never treated as an ancestor.
- * Returns the normalized URL of the winning item, or null if nothing matches.
+ * The single best-matching nav item for the current route, as an `itemKey`.
+ * Paths first: an exact match, otherwise the longest ancestor path, so a detail
+ * page like `/rotas/507` activates the `/rotas` item. Root `/` only matches
+ * exactly — it is a prefix of every path, so it is never treated as an
+ * ancestor. Then, among items on that winning path, queries: an item whose
+ * query names parameters only matches when the current URL carries every one of
+ * them with the same value (extra current parameters such as `page` are fine),
+ * and the item naming the most such parameters wins. An item with no query
+ * matches whatever the current query is. If every item on the path names a
+ * query the current URL doesn't carry, nothing is active.
+ * Returns null if nothing matches.
  */
-const activeUrl = computed<string | null>(() => {
+const activeKey = computed<string | null>(() => {
   const current = normalizeUrl(props.currentUrl);
-  let best: string | null = null;
-  for (const group of props.navigation) {
-    if (group.visible === false) continue;
-    for (const item of group.items) {
-      if (item.visible === false) continue;
-      const candidate = normalizeUrl(item.url);
-      const matches =
-        candidate === current ||
-        (candidate !== '' && current.startsWith(candidate + '/'));
-      if (matches && (best === null || candidate.length > best.length)) {
-        best = candidate;
-      }
+  const currentParams = new URLSearchParams(
+    props.currentUrl.toLowerCase().split('#')[0].split('?')[1] ?? '',
+  );
+  const items = props.navigation
+    .filter((group) => group.visible !== false)
+    .flatMap((group) => group.items.filter((item) => item.visible !== false));
+
+  let bestPath: string | null = null;
+  for (const item of items) {
+    const candidate = normalizeUrl(item.url);
+    const matches =
+      candidate === current ||
+      (candidate !== '' && current.startsWith(candidate + '/'));
+    if (matches && (bestPath === null || candidate.length > bestPath.length)) {
+      bestPath = candidate;
     }
   }
-  return best;
+  if (bestPath === null) return null;
+
+  let best: { key: string; score: number } | null = null;
+  for (const item of items) {
+    if (normalizeUrl(item.url) !== bestPath) continue;
+    const params = queryParams(item.url);
+    const carried = params.every(([name, value]) => currentParams.getAll(name).includes(value));
+    if (carried && (best === null || params.length > best.score)) {
+      best = { key: itemKey(item.url), score: params.length };
+    }
+  }
+  return best?.key ?? null;
 });
 
 const isActive = (url: string): boolean =>
-  activeUrl.value !== null && normalizeUrl(url) === activeUrl.value;
+  activeKey.value !== null && itemKey(url) === activeKey.value;
 
 // Index of the group containing the active route (-1 if none).
 const activeGroupIndex = computed(() =>

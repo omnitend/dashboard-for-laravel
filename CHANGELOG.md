@@ -84,6 +84,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes
 
+- Tell sidebar items apart by query string: links that differ only by
+  their query (`/tasks?business_unit_id=1`, `...=2`) no longer all light up
+  together. The current URL must carry an item's query parameters; extra ones
+  such as `page` still match.
+
 - Honour `busy` on `DXTable` with `items` or `clientSide` rows (it was read
   only in API/provider mode), and hide the empty text while busy, so a table
   whose rows are still loading no longer says "No … found".
