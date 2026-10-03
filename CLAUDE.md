@@ -579,6 +579,16 @@ against a rendered screenshot at 16px, not the maths — glyphs seat
 differently in the line box per typeface. The dense **sidebar** metrics (#95, `0.875rem` headers) are
 rem-pinned and intentionally stay 14px regardless of the base.
 
+**Headings are small and weight 500** (legacy omnitend's weight): h1 1.25rem,
+h2 1.15rem, h3/h4 1.05rem, h5/h6 1rem (so neither outranks h4). h1 sits at
+Bootstrap's RFS threshold, so nothing rescales on narrow screens. Explicit
+weight utilities still win: DXDashboardNavbar's page title is an `h4
+fw-semibold` (Poppins 600, which is why that face is bundled). **Table text**:
+body cells `$table-color: var(--bs-body-color)` (#212529, not Bootstrap's
+pure-black emphasis colour), headers `$table-th-font-weight: 500` (was the
+browser's bold) in `--dx-table-header-color`. Pinned by
+`tests/components/typography.test.ts`.
+
 ### Typefaces (bundled, since the fruity-palette pass)
 
 - **Body: Maven Pro** (`$font-family-sans-serif`). **Display: Poppins**, a

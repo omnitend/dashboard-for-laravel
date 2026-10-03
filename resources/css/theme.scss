@@ -69,14 +69,19 @@ $font-size-base: 1rem; // 16px — the default tier. Legacy omnitend rendered bo
 $font-weight-base: 400;
 $line-height-base: 1.5;
 
-$h1-font-size: 2rem; // 32px
-$h2-font-size: 1.75rem; // 28px
-$h3-font-size: 1.5rem; // 24px
-$h4-font-size: 1.25rem; // 20px
-$h5-font-size: 1.125rem; // 18px
+// A compact, restrained heading scale for dense admin screens: chosen from
+// rendered comparisons against legacy omnitend, which set headings at weight
+// 500. The old 2rem…1.25rem at 600 shouted over the data. h1 is at Bootstrap's
+// RFS threshold (1.25rem), so no heading is rescaled on narrow viewports. h5
+// and h6 sit at body size so neither outranks h4.
+$h1-font-size: 1.25rem; // 20px
+$h2-font-size: 1.15rem; // 18.4px
+$h3-font-size: 1.05rem; // 16.8px
+$h4-font-size: 1.05rem; // 16.8px
+$h5-font-size: 1rem; // 16px
 $h6-font-size: 1rem; // 16px
 
-$headings-font-weight: 600;
+$headings-font-weight: 500;
 
 // ----------------------------------------------------------------------------
 // Spacing
@@ -158,6 +163,11 @@ $card-spacer-x: 1.5rem; // 24px horizontal padding
 // Tables
 // ----------------------------------------------------------------------------
 
+// Body cells take the body text colour (#212529) rather than Bootstrap's
+// `--bs-emphasis-color` (pure black), and header cells a medium weight instead
+// of the browser's bold. Header COLOUR is `--dx-table-header-color` (below).
+$table-color: var(--bs-body-color);
+$table-th-font-weight: 500;
 $table-cell-padding-y: 0.75rem;
 $table-cell-padding-x: 1rem;
 $table-striped-bg: #f9fafb; // Gray-50

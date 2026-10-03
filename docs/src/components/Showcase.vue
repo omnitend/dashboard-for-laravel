@@ -200,8 +200,8 @@ const baseComponents = gallery.filter((entry) => entry.category === 'base');
       <p class="section-note">
         Body text is <strong>Maven Pro</strong>; h1–h4 use the display face
         <strong>Poppins</strong> (<code>--dx-font-family-display</code>). Both ship
-        with the theme. Base size <strong>16px</strong> (1rem), body weight 400,
-        headings 600.
+        with the theme. Base size <strong>16px</strong> (1rem), body weight 400;
+        headings weight 500 at h1 1.25rem, h2 1.15rem, h3/h4 1.05rem, h5/h6 1rem.
       </p>
       <div class="type-scale">
         <div v-for="row in typeScale" :key="row.tag" class="type-row">

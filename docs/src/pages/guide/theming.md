@@ -67,6 +67,11 @@ renders in it):
 Bundled weights: Maven Pro 400, 500, 600 and 700; Poppins 500 and 600. Other
 weights are synthesised by the browser.
 
+Headings are compact and restrained, all at weight 500: `h1` 1.25rem, `h2`
+1.15rem, `h3` and `h4` 1.05rem, `h5` and `h6` 1rem (body size). Table body
+text is the body colour (`#212529`) and table headers are weight 500 in the
+muted `--dx-table-header-color`.
+
 ## The token model
 
 Each of the six variants carries three colour roles, defined in one Sass map

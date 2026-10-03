@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Derive Bootstrap's subtle colours (`.bg-*-subtle`, `.border-*-subtle`,
   `.text-*-emphasis`) and the `.table-*` row variants from the soft tints.
   The subtle backgrounds are the soft tint mixed to 70% white.
+- Shrink the heading scale and set every heading at weight 500: h1 1.25rem,
+  h2 1.15rem, h3 and h4 1.05rem, h5 and h6 1rem (was 2rem down to 1rem at
+  600). Table body text is now `#212529` instead of black and table headers
+  weight 500 instead of bold.
 - Paint alerts with the subtle background, a `border-*-subtle` border and the
   soft text, instead of the full soft tint. A warning alert is no longer as
   loud as a solid yellow fill. Badges, soft buttons and toasts are unchanged.
