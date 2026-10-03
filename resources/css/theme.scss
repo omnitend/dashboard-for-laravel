@@ -542,15 +542,6 @@ h6,
   --bs-btn-padding-y: #{$input-padding-y-lg};
 }
 
-// DXSaveButton's saved state is a disabled button, but it is a confirmation
-// ("✓ Saved"), not an unavailable action, so it keeps full contrast instead of
-// Bootstrap's 0.65 disabled fade (which also drops the soft-success pair below
-// WCAG AA).
-.btn.dx-save-button--saved:disabled,
-.btn.dx-save-button--saved.disabled {
-  opacity: 1;
-}
-
 // Horizontal ("label-left") forms: a compact settings-form rhythm, with the
 // label + control top-aligned so a checkbox/switch sits on the label's first
 // line rather than floating above it (the label column carries a top offset to
@@ -1056,6 +1047,18 @@ fieldset:disabled .btn {
     --bs-btn-disabled-bg: transparent;
     --bs-btn-disabled-border-color: transparent;
   }
+}
+
+// The one exception: DXSaveButton's saved state ("✓ Saved") is a REAL
+// disabled button, but it is a confirmation, not an unavailable action, so it
+// keeps its variant's own colours (success soft, #c3faaa / #153c04, 10.46:1) at
+// full opacity rather than the neutral grey above. Three classes plus the
+// state, so it outranks the neutral rule (and `fieldset:disabled .btn`).
+.btn.dx-save-button--saved:is(:disabled, .disabled) {
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-disabled-bg: var(--bs-btn-bg);
+  --bs-btn-disabled-color: var(--bs-btn-color);
+  --bs-btn-disabled-border-color: var(--bs-btn-border-color);
 }
 
 // ----------------------------------------------------------------------------

@@ -730,7 +730,11 @@ solid fill by reflex.
   `--bs-btn-disabled-*` in a `.btn:is(:disabled, .disabled), fieldset:disabled
   .btn` rule that outranks the per-variant classes. No `cursor`: Bootstrap's
   `pointer-events: none` on disabled buttons means it would never show.
-  Form-control disabled styling is Bootstrap's (already neutral). Pinned by
+  Form-control disabled styling is Bootstrap's (already neutral). **One
+  exception: DXSaveButton's saved state** (`.dx-save-button--saved`, a real
+  `disabled` button) keeps its success soft pair `#c3faaa`/`#153c04` (10.46:1)
+  through a three-class rule after the neutral one, because "✓ Saved" is a
+  confirmation, not an unavailable action. Pinned by
   `disabled-buttons.test.ts`.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
   `primary`. The one place a button turns green is `DXSaveButton`'s saved

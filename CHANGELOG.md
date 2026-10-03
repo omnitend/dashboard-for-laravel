@@ -52,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or text, no fill), instead of Bootstrap's 65% opacity, which left a
   disabled yellow or green button looking active. Tokens:
   `--dx-btn-disabled-bg`, `--dx-btn-disabled-color`,
-  `--dx-btn-disabled-outline-border`.
+  `--dx-btn-disabled-outline-border`. The one exception is `DXSaveButton`'s
+  "✓ Saved" state, which is disabled but keeps its success soft colours.
 - Paint alerts with the subtle background, a `border-*-subtle` border and the
   soft text, instead of the full soft tint. A warning alert is no longer as
   loud as a solid yellow fill. Badges, soft buttons and toasts are unchanged.
