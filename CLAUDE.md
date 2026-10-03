@@ -655,6 +655,22 @@ solid fill by reflex.
   magenta `#e46ab9`, butter `#efd574`, sky `#7fd7fd`; emphasis (= the base
   `$success/$danger/$warning/$info`) `#236b12`, `#a3247f`, `#8a6d00`,
   `#31586d`. Every label is a dark same-hue ink, never white.
+- **`pending` is a seventh variant** (waiting; the next move is not yours):
+  solid `#b9a3f0`/`#2a1260` (7.06:1), soft `#e3d3fb`/`#3b1a80` (9.10:1),
+  emphasis `#6a43c4` (6.54:1 on white), a violet from chart slot 5 kept clear
+  of info's slate blue. It is in `$dx-variants` AND in a pre-import
+  `$theme-colors`, so Bootstrap generates `.btn-pending`, `.text-bg-pending`,
+  `.alert-pending`, `.list-group-item-pending`, `.link-pending` etc. The subtle
+  maps (`$theme-colors-text/-bg-subtle/-border-subtle`, their `-dark` forms,
+  and `$utilities-text-emphasis-colors`/`-bg-subtle`/`-border-subtle`) list
+  the stock colours BY NAME and only exist after Bootstrap's variables load,
+  so theme.scss imports `functions`/`variables`/`variables-dark`/`maps`
+  first, merges `pending` in, then imports the whole of Bootstrap (all
+  `!default`, so the second read keeps the merged maps and emits nothing
+  twice). A new variant needs the same three places. TS: `types/index.ts`
+  augments bvn's `BaseColorVariant`, which flows to `ColorVariant`,
+  `ButtonVariant` (incl. `outline-pending`) and the subtle/emphasis unions.
+  `useToast`'s themed set includes it. Pinned by `pending-variant.test.ts`.
 - **Links are the brand navy `#151e2d` and stay underlined** (Bootstrap's
   default `$link-decoration`; only the ghost `.btn-link` drops it). The
   underline is what marks a navy link, so don't remove it.

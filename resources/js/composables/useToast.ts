@@ -13,7 +13,7 @@ import type {
 // class, driving Bootstrap's own `--bs-toast-*` variables cleanly. An
 // unrecognised variant (e.g. "primary", "dark", or none) falls through to
 // BVN's default `.text-bg-*` styling unchanged.
-const THEMED_TOAST_VARIANTS = new Set(["success", "danger", "warning", "info"]);
+const THEMED_TOAST_VARIANTS = new Set(["success", "danger", "warning", "info", "pending"]);
 
 function themeToastParam(param: Record<string, unknown>): Record<string, unknown> {
     const variant = param.variant as string | null | undefined;

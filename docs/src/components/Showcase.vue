@@ -26,8 +26,9 @@ const brandColors = [
   { name: 'secondary', bg: '--bs-secondary', role: 'Secondary actions, muted UI' },
   { name: 'success', bg: '--bs-success', role: 'Positive state, confirmations' },
   { name: 'danger', bg: '--bs-danger', role: 'Destructive, errors' },
-  { name: 'warning', bg: '--bs-warning', role: 'Caution, pending' },
+  { name: 'warning', bg: '--bs-warning', role: 'Caution' },
   { name: 'info', bg: '--bs-info', role: 'Informational' },
+  { name: 'pending', bg: '--bs-pending', role: 'Waiting on someone else' },
   { name: 'light', bg: '--bs-light', role: 'Subtle backgrounds' },
   { name: 'dark', bg: '--bs-dark', role: 'Sidebar, high-contrast surfaces' },
 ];

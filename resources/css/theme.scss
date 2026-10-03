@@ -219,6 +219,13 @@ $badge-font-weight: 500;
 // 9.93:1 to 14.56:1; emphasis on white 4.92:1 (warning) to 16.73:1. Warning's
 // soft pair IS its solid pair: the butter yellow is already light enough to be
 // the tint.
+//
+// PENDING is a status of its own: waiting, and the next move is not yours
+// ("awaiting payment", "sent to printer, not yet confirmed"). It is a violet
+// from the chart lavender (#b9a3f0 is chart slot 5), kept clear of info's
+// slate blue by hue and by its violet ink. Contrast: solid 7.06:1, soft
+// 9.10:1, emphasis 6.54:1 on white, soft text on its subtle (alert) tint
+// 11.58:1.
 $dx-variants: (
   "primary": (solid-bg: #151e2d, solid-text: #e9f0f8, soft-bg: #e9f0f8, soft-text: #151e2d, emphasis: #151e2d, button: "solid"),
   "secondary": (solid-bg: #475569, solid-text: #e6ebf2, soft-bg: #e6ebf2, soft-text: #29374a, emphasis: #475569, button: "soft"),
@@ -226,6 +233,25 @@ $dx-variants: (
   "danger": (solid-bg: #e46ab9, solid-text: #3d0a2f, soft-bg: #f9dff2, soft-text: #61124c, emphasis: #a3247f, button: "soft"),
   "warning": (solid-bg: #efd574, solid-text: #121419, soft-bg: #efd574, soft-text: #121419, emphasis: #8a6d00, button: "soft"),
   "info": (solid-bg: #7fd7fd, solid-text: #192547, soft-bg: #d5dcf0, soft-text: #192547, emphasis: #31586d, button: "soft"),
+  "pending": (solid-bg: #b9a3f0, solid-text: #2a1260, soft-bg: #e3d3fb, soft-text: #3b1a80, emphasis: #6a43c4, button: "soft"),
+);
+
+// Bootstrap's base map plus `pending` (its emphasis, like every other base
+// colour), so Bootstrap generates `.btn-pending`, `.btn-outline-pending`,
+// `.text-bg-pending`, `.text-pending`, `.link-pending`, `.border-pending`,
+// `.alert-pending` and `.list-group-item-pending` itself. The subtle maps get
+// their `pending` entries just before the Bootstrap import (they only exist
+// once Bootstrap's own variables and maps have been read).
+$theme-colors: (
+  "primary": $primary,
+  "secondary": $secondary,
+  "success": $success,
+  "info": $info,
+  "warning": $warning,
+  "danger": $danger,
+  "pending": map.get(map.get($dx-variants, "pending"), "emphasis"),
+  "light": $light,
+  "dark": $dark,
 );
 
 // Bootstrap's "subtle" family (`.bg-*-subtle`, `.border-*-subtle`,
@@ -280,6 +306,7 @@ $table-variants: (
   "danger": dx-subtle-bg("danger"),
   "warning": dx-subtle-bg("warning"),
   "info": dx-subtle-bg("info"),
+  "pending": dx-subtle-bg("pending"),
   "light": $light,
   "dark": $dark,
 );
@@ -350,6 +377,48 @@ $dashboard-navbar-content-height: calc(
 // ----------------------------------------------------------------------------
 // Import Bootstrap
 // ----------------------------------------------------------------------------
+
+// `pending` in the subtle family. Bootstrap's subtle maps, and the utility maps
+// behind `.bg-*-subtle`, `.border-*-subtle` and `.text-*-emphasis`, list the
+// eight stock colours by name and are defined from Bootstrap's own variables,
+// so they can only be extended after those are read. Import the configuration
+// layer first, merge, then import Bootstrap as a whole: every variable and map
+// in it is `!default`, so the second read keeps these values and the layer
+// emits no CSS. Dark mode follows Bootstrap's own derivation from the base
+// colour (text tint 40%, background shade 80%, border shade 40%).
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+
+$dx-pending-emphasis: map.get(map.get($dx-variants, "pending"), "emphasis");
+$theme-colors-text: map.merge($theme-colors-text, ("pending": dx-soft("pending", "soft-text")));
+$theme-colors-bg-subtle: map.merge($theme-colors-bg-subtle, ("pending": dx-subtle-bg("pending")));
+$theme-colors-border-subtle: map.merge(
+  $theme-colors-border-subtle,
+  ("pending": dx-subtle-border("pending"))
+);
+$theme-colors-text-dark: map.merge(
+  $theme-colors-text-dark,
+  ("pending": tint-color($dx-pending-emphasis, 40%))
+);
+$theme-colors-bg-subtle-dark: map.merge(
+  $theme-colors-bg-subtle-dark,
+  ("pending": shade-color($dx-pending-emphasis, 80%))
+);
+$theme-colors-border-subtle-dark: map.merge(
+  $theme-colors-border-subtle-dark,
+  ("pending": shade-color($dx-pending-emphasis, 40%))
+);
+$utilities-text-emphasis-colors: map.merge(
+  $utilities-text-emphasis-colors,
+  ("pending-emphasis": var(--bs-pending-text-emphasis))
+);
+$utilities-bg-subtle: map.merge($utilities-bg-subtle, ("pending-subtle": var(--bs-pending-bg-subtle)));
+$utilities-border-subtle: map.merge(
+  $utilities-border-subtle,
+  ("pending-subtle": var(--bs-pending-border-subtle))
+);
 
 @import "bootstrap/scss/bootstrap";
 
@@ -714,7 +783,7 @@ h6,
   // dark *emphasis* base colours (greyer success/warning) and danger's saturated
   // red (a pink, not the soft system's plum). Mixed 50% with white so a large
   // toast surface stays fainter than a small badge while keeping the hue.
-  @each $name in ("success", "danger", "warning", "info") {
+  @each $name in ("success", "danger", "warning", "info", "pending") {
     $variant: map.get($dx-variants, $name);
     &.toast-#{$name} {
       --bs-toast-bg: #{color.mix(map.get($variant, "soft-bg"), $white, 50%)};

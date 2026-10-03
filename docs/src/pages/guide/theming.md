@@ -22,8 +22,8 @@ that:
 
 - **Only `primary` is a bold solid button** (the brand navy) — one loud action
   per screen. Everything else stays quiet.
-- **`secondary` / `success` / `danger` / `warning` / `info` buttons are
-  _soft_** — a light same-hue tint background with a dark same-hue label. A
+- **`secondary` / `success` / `danger` / `warning` / `info` / `pending`
+  buttons are _soft_** — a light same-hue tint background with a dark same-hue label. A
   soft light-red "Delete" still reads as danger without a heavy fill.
 - **Tertiary actions are ghosts** — the `link` variant is restyled as a quiet
   button: body-colour text, no underline, a faint hover surface.
@@ -45,6 +45,13 @@ that:
   buttons stay magenta.
 - **Links are the brand navy** (`#151e2d`) and keep their underline, which is
   what marks them as links.
+- **`pending` means waiting, and the next move is not yours** ("awaiting
+  payment", "sent to printer, not yet confirmed"). It is a violet, distinct
+  from `info`'s slate blue. It works everywhere a stock variant does
+  (`variant="pending"` on badges and buttons, `outline-pending`,
+  `.alert-pending`, `.text-pending`, `.bg-pending-subtle`, `.table-pending`,
+  `.list-group-item-pending`, toasts), and the theme adds it to
+  bootstrap-vue-next's variant types.
 
 ## Typography
 
@@ -74,7 +81,7 @@ muted `--dx-table-header-color`.
 
 ## The token model
 
-Each of the six variants carries three colour roles, defined in one Sass map
+Each of the seven variants carries three colour roles, defined in one Sass map
 (`$dx-variants` in `resources/css/theme.scss`):
 
 | Token | Drives |
@@ -118,6 +125,7 @@ All colour pairs are WCAG AA verified.
 | `danger` | `#e46ab9` | `#3d0a2f` | `#f9dff2` | `#61124c` | `#a3247f` | soft |
 | `warning` | `#efd574` | `#121419` | `#efd574` | `#121419` | `#8a6d00` | soft |
 | `info` | `#7fd7fd` | `#192547` | `#d5dcf0` | `#192547` | `#31586d` | soft |
+| `pending` | `#b9a3f0` | `#2a1260` | `#e3d3fb` | `#3b1a80` | `#6a43c4` | soft |
 
 Default link colour: `#151e2d` (brand navy, underlined). Form error colour:
 `#c8102e` (crimson).

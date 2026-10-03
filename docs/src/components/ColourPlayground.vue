@@ -26,7 +26,7 @@ interface Pair {
   emphasis: string;
 }
 
-const order = ['primary', 'secondary', 'success', 'danger', 'warning', 'info'] as const;
+const order = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'pending'] as const;
 type Variant = (typeof order)[number];
 
 // Button text is a SAME-HUE tint of the fill (light-hue on dark fills, dark-hue
@@ -42,6 +42,7 @@ const seed: Record<Variant, Pair> = {
   danger: { solidBg: '#e46ab9', solidText: '#3d0a2f', softBg: '#f9dff2', softText: '#61124c', emphasis: '#a3247f' },
   warning: { solidBg: '#efd574', solidText: '#121419', softBg: '#efd574', softText: '#121419', emphasis: '#8a6d00' },
   info: { solidBg: '#7fd7fd', solidText: '#192547', softBg: '#d5dcf0', softText: '#192547', emphasis: '#31586d' },
+  pending: { solidBg: '#b9a3f0', solidText: '#2a1260', softBg: '#e3d3fb', softText: '#3b1a80', emphasis: '#6a43c4' },
 };
 
 const clone = (source: Record<Variant, Pair>): Record<Variant, Pair> =>

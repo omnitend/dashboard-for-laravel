@@ -638,3 +638,19 @@ export interface FormTab {
     /** Lazily mount tab content until first activated */
     lazy?: boolean;
 }
+
+/**
+ * The theme's extra colour variant, `pending`: waiting, and the next move is
+ * not yours ("awaiting payment", "sent to printer, not yet confirmed").
+ * theme.scss paints it everywhere a stock variant is painted (badge, soft and
+ * outline button, alert, text, subtle utilities, table row, list-group item,
+ * toast). Registering it on bootstrap-vue-next's `BaseColorVariant` adds it to
+ * every variant union derived from that interface (`ColorVariant`,
+ * `ButtonVariant` incl. `outline-pending`, the `-subtle` and `-emphasis`
+ * forms), so `<DBadge variant="pending">` type-checks.
+ */
+declare module "bootstrap-vue-next" {
+    interface BaseColorVariant {
+        pending: unknown;
+    }
+}
