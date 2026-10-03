@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stay underlined.
 - Derive Bootstrap's subtle colours (`.bg-*-subtle`, `.border-*-subtle`,
   `.text-*-emphasis`) and the `.table-*` row variants from the soft tints.
+  The subtle backgrounds are the soft tint mixed to 70% white.
+- Paint alerts with the subtle background, a `border-*-subtle` border and the
+  soft text, instead of the full soft tint. A warning alert is no longer as
+  loud as a solid yellow fill. Badges, soft buttons and toasts are unchanged.
 - Show form validation errors in crimson `#c8102e` rather than the danger
   colour. Switches follow the new danger colour when off.
 - Give charts a new light palette with a darker line shade per series

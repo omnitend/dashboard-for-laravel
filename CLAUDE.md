@@ -624,17 +624,25 @@ solid fill by reflex.
   `$form-invalid-*` / `$form-feedback-*-invalid-*` before the import), NOT the
   danger magenta, which stays on badges and buttons.
 - **Bootstrap's subtle family is derived from the soft tints** (set before the
-  import): `$X-bg-subtle` and the `$table-variants` rows = soft-bg mixed 50%
-  with white, `$X-border-subtle` = soft-bg 10% darker, `$X-text-emphasis` =
-  soft-text. Sass emits the 50% mix with fractional channels
-  (`rgb(225, 252.5, 212.5)`), so tests compare parsed channels, not strings.
-  The `*-dark` subtle variables are still Bootstrap's own derivation.
+  import): `$X-bg-subtle` and the `$table-variants` rows = soft-bg mixed with
+  white to **70% white** (`dx-subtle-bg()`; legacy omnitend's rows measure
+  about that, danger `#fdf6fb`, warning `#fbf3d8`; 50% read too strong),
+  `$X-border-subtle` = soft-bg 10% darker, `$X-text-emphasis` = soft-text.
+  Sass emits the mix with fractional channels (`rgb(237, 253.5, 229.5)`), so
+  tests compare parsed channels, not strings. The `*-dark` subtle variables are
+  still Bootstrap's own derivation.
+- **Alerts take the SUBTLE tint, not the soft one**: `.alert-*` = the 70% mix
+  background, the `border-subtle` shade as a visible border, soft-text. A soft
+  warning alert was the full butter-yellow solid. Badges, soft buttons and
+  toasts (their own 50% mix via `--bs-toast-bg`) keep their tints; pinned by
+  `soft-badges.test.ts`.
 - **Switches** default to the filled-box style (`DXSwitch` / `DXField
   type:'switch'`): the whole box is green when on (the success soft green) / light
   magenta when off (a tint of the danger solid; the bare `.form-switch` thumb is
   the danger emphasis `#a3247f`, `$dx-switch-thumb-off`), with a neutral grey
   pill; `on-variant="neutral"` for mixed cases (#158, v0.31.0).
-- **Status colours are soft** — badges, alerts, toasts all use the soft tint.
+- **Status colours are soft** — badges and toasts use the soft tint; alerts
+  the paler subtle step of it.
 - **Large FILLS use the vivid `solid-bg`, not the emphasis shade** (#154):
   `.progress-bar.bg-success` is the switch-ON lime `#7bf25a`, not the deep
   green emphasis. Emphasis shades stay for outlines/links/text.

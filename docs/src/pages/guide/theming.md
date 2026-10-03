@@ -27,8 +27,8 @@ that:
   soft light-red "Delete" still reads as danger without a heavy fill.
 - **Tertiary actions are ghosts** — the `link` variant is restyled as a quiet
   button: body-colour text, no underline, a faint hover surface.
-- **All status colour is soft.** Badges, alerts, and toasts use light tints,
-  never saturated fills.
+- **All status colour is soft.** Badges and toasts use light tints, and alerts
+  a paler step of the same tint with a border; never saturated fills.
 
 ### Semantic guidance
 
@@ -54,7 +54,7 @@ Each of the six variants carries three colour roles, defined in one Sass map
 | Token | Drives |
 |---|---|
 | **solid** (bg + text) | The `.btn-primary` fill and label, the switch-ON green, and large fills — `.progress-bar.bg-*` uses each variant's vivid solid, not the dark emphasis |
-| **soft** (bg + text) | Soft buttons (`.btn-secondary` etc.), all badges (`.text-bg-*`), alerts (`.alert-*`), toast tints |
+| **soft** (bg + text) | Soft buttons (`.btn-secondary` etc.), all badges (`.text-bg-*`), toast tints; alerts (`.alert-*`) take the soft text on the paler subtle tint |
 | **emphasis** | Outline buttons (`.btn-outline-*`), coloured links (`.link-*`), text utilities (`.text-*`) — the shade that reads on a white background |
 
 The map also records whether each variant's button renders **solid** or
@@ -72,9 +72,13 @@ Two details make the system cohesive:
   legible on white without any extra overrides. The solid fills and soft tints
   are applied after the Bootstrap import, from the map.
 - **Bootstrap's subtle family follows the soft tints.** `.bg-*-subtle` and the
-  `.table-*` row variants are the soft tint mixed 50% with white,
+  `.table-*` row variants are the soft tint mixed with white to 70% white,
   `.border-*-subtle` is the tint 10% darker, and `.text-*-emphasis` is the soft
   text, so a subtle surface is a paler step of the badge colour.
+- **Alerts use the subtle tint, with a border.** `.alert-*` paints the 70%-white
+  subtle background, the `border-*-subtle` shade as its border and the soft
+  text. A large box in the full soft tint is too loud (warning's soft tint is
+  its solid butter yellow).
 
 All colour pairs are WCAG AA verified.
 
@@ -183,7 +187,7 @@ $dx-variants: (
 ```
 
 A single loop after the Bootstrap import applies the whole system (buttons,
-outlines, badges, alerts) from this map, so a palette change is a map edit —
+outlines, badges, alerts, the subtle family) from this map, so a palette change is a map edit —
 there is no second place to update.
 
 **Check contrast when you change colours.** Every pair in the shipped palette

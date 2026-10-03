@@ -166,13 +166,15 @@ describe('progress-bar fills use the vivid solid-bg, not the dark emphasis (#154
 
 /**
  * Bootstrap's subtle family is derived from the soft tints (set before the
- * Bootstrap import): bg-subtle is the soft tint mixed 50% with white, the
- * border is the tint 10% darker, and text-emphasis is the soft text. Without
- * the overrides Bootstrap derives them from the dark emphasis base, a
- * different, greyer family, so every expectation below would fail.
+ * Bootstrap import): bg-subtle is the soft tint mixed with white so the result
+ * is 70% white (legacy omnitend's table rows measure about that; 50% read too
+ * strong), the border is the tint 10% darker, and text-emphasis is the soft
+ * text. Without the overrides Bootstrap derives them from the dark emphasis
+ * base, a different, greyer family, so every expectation below would fail; at
+ * the old 50% mix the tint expectations fail too.
  *
- * Sass emits the 50% mix with fractional channels (`rgb(225, 252.5, 212.5)`),
- * so the comparison parses the channels and allows half a unit of rounding.
+ * Sass emits the mix with fractional channels (`rgb(237, 253.5, 229.5)`), so
+ * the comparison parses the channels and allows half a unit of rounding.
  */
 const channels = (colour: string) => (colour.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
 
@@ -194,12 +196,12 @@ const paintedMarkup = (markup: () => any, selector: string) => {
   }));
 };
 
-// [variant, soft-bg mixed 50% with white, soft-text]
+// [variant, soft-bg mixed with white to 70% white, soft-text]
 const subtleTints: Array<[string, [number, number, number], string]> = [
-  ['success', [225, 252.5, 212.5], '#153c04'],
-  ['danger', [252, 239, 248.5], '#61124c'],
-  ['warning', [247, 234, 185.5], '#121419'],
-  ['info', [234, 237.5, 247.5], '#192547'],
+  ['success', [237, 253.5, 229.5], '#153c04'],
+  ['danger', [253.2, 245.4, 251.1], '#61124c'],
+  ['warning', [250.2, 242.4, 213.3], '#121419'],
+  ['info', [242.4, 244.5, 250.5], '#192547'],
 ];
 
 describe('Bootstrap subtle family follows the soft tints', () => {
@@ -238,6 +240,52 @@ describe('Bootstrap subtle family follows the soft tints', () => {
       'div.border',
     );
     expectColourNear(getComputedStyle(style.element).borderTopColor, [167, 247.67, 130.33]);
+  });
+});
+
+/**
+ * Alerts take the SUBTLE tint (the 70%-white mix) with a visible border, not
+ * the soft tint. Warning's soft-bg is its full butter-yellow solid, so a
+ * soft-tinted warning alert was as loud as a solid fill, and info's was a
+ * strong lavender. Badges and soft buttons keep the soft tint: the second block
+ * here would fail if the alert rule leaked into them.
+ *
+ * Would these pass with the bug present? No: before the change every alert
+ * painted its soft-bg (`#efd574` for warning), which the tint check rejects.
+ */
+// [variant, subtle tint, border-subtle (soft-bg 10% darker), soft-text]
+const alertTints: Array<[string, [number, number, number], [number, number, number], string]> = [
+  ['success', [237, 253.5, 229.5], [167, 247.67, 130.33], '#153c04'],
+  ['danger', [253.2, 245.4, 251.1], [241.55, 183.25, 225.85], '#61124c'],
+  ['warning', [250.2, 242.4, 213.3], [235.34, 203.38, 84.16], '#121419'],
+  ['info', [242.4, 244.5, 250.5], [179.62, 192.18, 228.08], '#192547'],
+];
+
+describe('alerts use the subtle tint with a border; badges and buttons stay soft', () => {
+  for (const [variant, tint, border, text] of alertTints) {
+    it(`.alert-${variant} paints the subtle tint, the subtle border and the soft text`, async () => {
+      const style = await paintedMarkup(
+        () => h('div', { class: `alert alert-${variant}` }, 'x'),
+        '.alert',
+      );
+      expectColourNear(style.background, tint);
+      expectColourNear(getComputedStyle(style.element).borderTopColor, border);
+      expect(style.color).toBe(rgb(text));
+    });
+  }
+
+  it('the warning badge and soft button keep the full soft tint', async () => {
+    expect((await paintedStyle(DBadge, 'warning', '.badge')).background).toBe(rgb('#efd574'));
+    expect((await paintedStyle(DButton, 'warning', '.btn')).background).toBe(rgb('#efd574'));
+  });
+
+  it('a themed toast keeps its own 50% mix, not the alert tint', async () => {
+    const style = await paintedMarkup(
+      () => h('div', { class: 'toast toast-warning show' }, [h('div', { class: 'toast-body' }, 'x')]),
+      '.toast',
+    );
+    // color.mix(#efd574, #fff, 50%)
+    expectColourNear(style.background, [247, 234, 185.5]);
   });
 });
 

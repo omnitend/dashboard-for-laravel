@@ -17,7 +17,7 @@
 // Base $theme-colors carry each hue's READABLE-ON-LIGHT identity (its "emphasis"
 // shade) — this is what `.text-*`, `.link-*`, `.border-*` and outline buttons
 // use, so every one must clear AA on white. The one bold solid FILL (the primary
-// button) and SOFT tints (soft buttons incl. danger, badges, alerts) are applied
+// button) and SOFT tints (soft buttons incl. danger, badges) are applied
 // as explicit overrides after the Bootstrap import, from the $dx-variants map. See
 // plans/2026-07-18-semantic-colour-system.md.
 $primary: #151e2d; // Omni Tend brand navy (16.73:1 on white)
@@ -179,8 +179,9 @@ $badge-font-weight: 500;
 
 // The ONE source of truth for the semantic colour system. Each variant carries
 // its SOLID fill + same-hue text (the primary button, solid fills), its SOFT
-// tint pair (soft buttons, badges, alerts, status), its EMPHASIS shade (outline
-// buttons, coloured links, .text-*), and whether its button is solid or soft.
+// tint pair (soft buttons, badges, status; alerts use its paler subtle mix),
+// its EMPHASIS shade (outline buttons, coloured links, .text-*), and whether
+// its button is solid or soft.
 // The overrides after the Bootstrap import loop over this map. All pairs are
 // WCAG AA verified. See plans/2026-07-18-semantic-colour-system.md.
 //
@@ -211,6 +212,11 @@ $dx-variants: (
 // soft tints, so a subtle surface is a paler cousin of the badge rather than a
 // separate, greyer family Bootstrap would otherwise mix from the dark emphasis
 // base. Set here, before the import, so Bootstrap's own maps pick them up.
+//
+// The subtle background is the soft tint mixed with white so the result is 70%
+// white. On real pages legacy omnitend's tinted table rows measure about that
+// (danger #fdf6fb, warning #fbf3d8); the earlier 50% mix read too strong for a
+// row or an alert, which are large surfaces.
 // Sass cannot create variables in a loop, hence one line per variable; the
 // functions keep the three formulas in one place. Dark mode's `*-dark`
 // variables are left to Bootstrap.
@@ -218,7 +224,7 @@ $dx-variants: (
   @return map.get(map.get($dx-variants, $name), $key);
 }
 @function dx-subtle-bg($name) {
-  @return color.mix(#fff, dx-soft($name, "soft-bg"), 50%);
+  @return color.mix(#fff, dx-soft($name, "soft-bg"), 70%);
 }
 @function dx-subtle-border($name) {
   @return color.scale(dx-soft($name, "soft-bg"), $lightness: -10%);
@@ -243,7 +249,7 @@ $info-bg-subtle: dx-subtle-bg("info");
 $info-border-subtle: dx-subtle-border("info");
 $info-text-emphasis: dx-soft("info", "soft-text");
 
-// Table row variants (`.table-success` etc.) use the same 50%-white tints.
+// Table row variants (`.table-success` etc.) use the same 70%-white tints.
 // Bootstrap would otherwise shift each base colour toward white, which for the
 // dark emphasis bases gives a muddy row tint.
 $table-variants: (
@@ -635,7 +641,7 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   // the base `.toast` rule (above, and Bootstrap's own) already reads.
   //
   // Sourced from each variant's `soft-bg` in $dx-variants (#143) — the same
-  // vivid-derived soft family badges/alerts use — so the toast hue tracks the
+  // vivid-derived soft family badges use — so the toast hue tracks the
   // palette and editing a `soft-bg` moves toasts too. Previously these mixed the
   // dark *emphasis* base colours (greyer success/warning) and danger's saturated
   // red (a pink, not the soft system's plum). Mixed 50% with white so a large
@@ -660,7 +666,7 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 //   - Outline buttons: the emphasis shade for border/label, the soft tint on hover.
 //   - Badges: `.badge.text-bg-*` re-tinted soft — needs `!important` because
 //     Bootstrap's `.text-bg-*` helper sets its colours `!important` by design.
-//   - Alerts: the soft tint.
+//   - Alerts: the SUBTLE tint (70% white) with the subtle border.
 //   - Links/text: `.link-*` and `.text-*` take the emphasis shade so they read
 //     on white (the base colours already carry emphasis for most variants; this
 //     pins the two — success/warning — whose base differs).
@@ -737,11 +743,16 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     color: #{$soft-text} !important;
   }
 
-  // Alert — soft tint, with the emphasis shade as the accent border.
+  // Alert — the SUBTLE tint (the 70%-white mix), the subtle border and the
+  // soft text. Not the soft tint: warning's soft-bg is its full butter-yellow
+  // solid, so a soft warning alert was as loud as a solid fill, and an alert is
+  // a large surface. The border (the soft tint 10% darker, the same shade as
+  // `$X-border-subtle`) is what keeps the paler box visible against a white
+  // card. Badges, soft buttons and toasts keep their own tints.
   .alert-#{$name} {
-    --bs-alert-bg: #{$soft-bg};
+    --bs-alert-bg: #{dx-subtle-bg($name)};
     --bs-alert-color: #{$soft-text};
-    --bs-alert-border-color: #{color.scale($soft-bg, $lightness: -8%)};
+    --bs-alert-border-color: #{dx-subtle-border($name)};
     --bs-alert-link-color: #{$emphasis};
   }
 
@@ -772,7 +783,7 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // Publish each variant's soft/emphasis shades as CSS variables so components
 // (e.g. DXSwitch's on-box) and consumers can reference the exact soft-first
 // tints on any element. Bootstrap's own `--bs-*-bg-subtle` are now derived
-// from these same tints (a 50% white mix, set before the import), so they are
+// from these same tints (a 70%-white mix, set before the import), so they are
 // a paler step of this family rather than a different one; use these when you
 // need the badge/alert tint itself. These are the values the $dx-variants loop paints.
 :root {
