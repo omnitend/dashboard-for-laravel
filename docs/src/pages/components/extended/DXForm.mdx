@@ -68,7 +68,7 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
 > genuinely full-width, label-less blocks (a sub-table, an activity log).
 
 <SlotsTable client:load slots={[
-  { name: 'value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s input control with custom markup.' },
+  { name: 'value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s input control with custom markup. On a plaintext field the content is wrapped in .dx-form-plaintext so display-only content lines up with the label (see Display-only values).' },
   { name: 'span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for a field marked span: true.' },
   { name: 'info(<key>)', props: 'field, model', description: 'Rich info block rendered always-visible below the field (not the label popover).' },
   { name: 'info-popover(<key>)', props: 'field, model', description: 'Rich body for the label’s hover/focus info popover (lists, bold, paragraphs). Overrides the plain field.info text.' },
@@ -83,6 +83,34 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
   { name: 'tab-after(<key>)', props: 'tab, model', description: 'Content rendered after a tab\'s fields.' },
   { name: 'footer', props: 'form', description: 'Content rendered after the form body.' },
 ]} />
+
+## Display-only values
+
+In a horizontal row the label column is padded so its text lines up with the
+text inside an input box. A value with no input box (a badge, a line of text, a
+timestamp, a short list) sits at the top of the row instead, about 11px above
+its label. Put such content in `.dx-form-plaintext`, which gives it the same
+top and bottom offset and line-height as the label (the offset Bootstrap's
+`.col-form-label` and `.form-control-plaintext` use), so its **first** line
+shares the label's centre:
+
+```vue
+<DXForm :form="form" :fields="fields" layout="horizontal">
+  <template #value(connection)>
+    <div class="dx-form-plaintext">
+      <span class="badge text-bg-secondary">Not connected</span>
+    </div>
+  </template>
+</DXForm>
+```
+
+- A field with `plaintext: true` gets this automatically: its `#value(<key>)`
+  slot is wrapped in `.dx-form-plaintext`, so the slot only needs the badge or
+  text itself. The built-in plaintext controls were already aligned.
+- A stack of lines aligns its first line; the rest follow below.
+- A badge inside is centred on the line rather than sitting on the baseline.
+- Inputs, checkboxes, switches, radios and file inputs need nothing; do not
+  wrap them.
 
 ## Saved state
 

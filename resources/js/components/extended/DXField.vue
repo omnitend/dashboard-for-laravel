@@ -69,15 +69,30 @@
 
         <!-- Custom value slot overrides the built-in control (checkbox / switch
              / standard types; not switch-list or repeater). -->
+        <!-- A `plaintext` field is display-only, so its value slot is wrapped
+             in `.dx-form-plaintext`: a badge or a line of text then shares
+             the label's centre line instead of sitting at the top of the row. -->
+        <div
+            v-if="showValueSlot && $slots.value && isPlaintext"
+            class="dx-form-plaintext"
+        >
+            <slot
+                name="value"
+                :field="field"
+                :model="model"
+                :value="fieldValue"
+                :update="setValue"
+            />
+        </div>
         <!--
-          @slot Replaces the built-in control with a custom value editor.
+          @slot Replaces the built-in control with a custom value editor. On a `plaintext` field the content is wrapped in `.dx-form-plaintext` so display-only content lines up with the label.
           @binding {FieldDefinition} field The field definition being rendered.
           @binding {any} model The model passed to field predicates (defaults to the live form data).
           @binding {any} value The current field value.
           @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
         -->
         <slot
-            v-if="showValueSlot && $slots.value"
+            v-else-if="showValueSlot && $slots.value"
             name="value"
             :field="field"
             :model="model"

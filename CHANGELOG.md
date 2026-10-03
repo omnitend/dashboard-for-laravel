@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `.dx-form-plaintext` for display-only values in a form row: a badge, a
+  line of text, a timestamp or a short list. It gives the content the label
+  column's offset, so its first line shares the label's centre line instead
+  of sitting about 11px higher. A `plaintext` field's `value` slot is wrapped
+  in it automatically.
 - Bundle the theme's fonts: Maven Pro (400, 500, 600, 700) for body text and
   Poppins (500, 600) as the display face, as woff2 files with `@font-face`
   and `font-display: swap`. Until now the theme named Poppins without shipping

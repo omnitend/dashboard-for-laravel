@@ -9,6 +9,7 @@
 @use "sass:color";
 @use "sass:list";
 @use "sass:map";
+@use "sass:math";
 
 // ----------------------------------------------------------------------------
 // Colors
@@ -558,6 +559,39 @@ h6,
 
   .mb-3 {
     margin-bottom: 0.5rem;
+  }
+}
+
+// A display-only value in a form row: a badge, a line of text, a short stack
+// of lines. It has no input box, so on its own it sits at the top of the row
+// while the label column (`.col-form-label`) is padded down to an input's text
+// line. This gives it the same offset and line-height Bootstrap gives
+// `.col-form-label` and `.form-control-plaintext`, so its FIRST line shares
+// the label's centre. DXField wraps a `plaintext` field's `value` slot in it;
+// consumers put it on their own display-only content. A `.form-control-
+// plaintext` inside already carries the offset, so it drops its own.
+.dx-form-plaintext {
+  padding-top: calc(#{$input-padding-y} + #{$input-border-width});
+  padding-bottom: calc(#{$input-padding-y} + #{$input-border-width});
+  line-height: $input-line-height;
+
+  > .form-control-plaintext {
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+  }
+
+  // A badge is an inline-block in a smaller font, so neither `baseline` nor
+  // `middle` centres it on the line (both land ~2px off, the way depending on
+  // the font's x-height). Pin it to the line's top and push it down by half
+  // the spare height: the line is `$input-line-height` parent-ems, the badge
+  // is 1em (Bootstrap's `line-height: 1`) plus its padding, in badge-ems.
+  .badge {
+    vertical-align: top;
+    margin-top: calc(
+      (#{math.div($input-line-height, math.div($badge-font-size, 1em)) * 1em} - 1em - #{$badge-padding-y * 2}) / 2
+    );
   }
 }
 

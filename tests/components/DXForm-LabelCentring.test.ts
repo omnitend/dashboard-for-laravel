@@ -146,3 +146,87 @@ describe('switch-list rows centre the label, switch and trailing control togethe
     expect(Math.abs(offset(root, 'Celery', '.notes'))).toBeLessThan(1);
   });
 });
+
+/**
+ * Display-only values (pilot note 29). A badge, a line of text or a short
+ * stack of lines has no input box, so without help it sits at the top of the
+ * row while the label column is padded down to an input's text line: "No PIN
+ * set" sat ~7px above "Employee PIN". `.dx-form-plaintext` gives the value
+ * the same top/bottom offset as `.col-form-label`, and DXField puts it round
+ * a `plaintext` field's `value` slot automatically.
+ */
+describe('display-only values share the label line', () => {
+  const mountDisplayRows = async () => {
+    await page.viewport(1200, 900);
+    const screen = render(DXForm, {
+      props: {
+        form: useForm({ pin: null, connection: null, history: null, status: null, created: 'Sat 18th Apr', bareBadge: null }),
+        showSubmit: false,
+        layout: 'horizontal',
+        fields: [
+          { key: 'pin', label: 'Employee PIN' },
+          { key: 'connection', label: 'Connection' },
+          { key: 'history', label: 'Cost history' },
+          // The automatic path: a plaintext field's value slot is wrapped.
+          { key: 'status', label: 'Printer status', plaintext: true },
+          // The built-in plaintext text control was already aligned.
+          { key: 'created', type: 'text', label: 'Created', plaintext: true },
+          // Positive control: the same badge with no wrapper must read as off.
+          { key: 'bareBadge', label: 'Bare badge' },
+        ],
+      },
+      slots: {
+        'value(pin)': () => h('div', { class: 'dx-form-plaintext' }, [h('span', { class: 'pin-text text-muted' }, 'No PIN set')]),
+        'value(connection)': () =>
+          h('div', { class: 'dx-form-plaintext' }, [h('span', { class: 'badge text-bg-secondary connection-badge' }, 'Not connected')]),
+        'value(history)': () =>
+          h('div', { class: 'dx-form-plaintext' }, [
+            h('div', { class: 'history-line' }, '£1.20 from 1 Apr'),
+            h('div', { class: 'history-line' }, '£1.10 from 1 Jan'),
+          ]),
+        'value(status)': () => h('span', { class: 'badge text-bg-success status-badge' }, 'Online'),
+        'value(bareBadge)': () => h('span', { class: 'badge text-bg-secondary bare-badge' }, 'Not connected'),
+      },
+    });
+    await expect.element(screen.getByText('Employee PIN')).toBeVisible();
+    await settled();
+    return screen.container;
+  };
+
+  /** Label first-line centre minus the value's first-line centre. */
+  const textOffset = (root: Element, labelText: string, valueSelector: string) => {
+    const { label, content } = rowFor(root, labelText);
+    const value = content.querySelector(valueSelector);
+    expect(value, `expected "${valueSelector}" beside "${labelText}"`).toBeTruthy();
+    return firstLineCentre(label) - firstLineCentre(value!);
+  };
+
+  it('plain text', async () => {
+    const root = await mountDisplayRows();
+    expect(Math.abs(textOffset(root, 'Employee PIN', '.pin-text'))).toBeLessThan(1);
+  });
+
+  it('a badge', async () => {
+    const root = await mountDisplayRows();
+    expect(Math.abs(offset(root, 'Connection', '.connection-badge'))).toBeLessThan(1);
+  });
+
+  it('the first line of a two-line stack', async () => {
+    const root = await mountDisplayRows();
+    const lines = rowFor(root, 'Cost history').content.querySelectorAll('.history-line');
+    expect(lines).toHaveLength(2);
+    expect(lines[1].getBoundingClientRect().top).toBeGreaterThan(lines[0].getBoundingClientRect().top);
+    expect(Math.abs(textOffset(root, 'Cost history', '.history-line'))).toBeLessThan(1);
+  });
+
+  it("a plaintext field's value slot, with no class from the consumer", async () => {
+    const root = await mountDisplayRows();
+    expect(Math.abs(offset(root, 'Printer status', '.status-badge'))).toBeLessThan(1);
+    expect(Math.abs(offset(root, 'Created', 'input'))).toBeLessThan(1);
+  });
+
+  it('positive control: an unwrapped badge in an ordinary value slot is off', async () => {
+    const root = await mountDisplayRows();
+    expect(Math.abs(offset(root, 'Bare badge', '.bare-badge'))).toBeGreaterThan(3);
+  });
+});

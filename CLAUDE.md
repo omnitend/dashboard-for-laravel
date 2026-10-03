@@ -661,7 +661,15 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   up too. A utility class on a `DFormGroup` lands on bvn's WRAPPER div, not
   the inner `.row`, so it cannot change the row's alignment. Consumer markup
   in a `value(key)` slot must follow the same rule (a bare native checkbox
-  sits 11px high; a `mt-2` wrapper pushes a control 8px low). Pinned by
+  sits 11px high; a `mt-2` wrapper pushes a control 8px low). Display-only
+  content (a badge, text, a short stack of lines) goes in
+  `.dx-form-plaintext`, which carries `.col-form-label`'s padding and
+  line-height so its FIRST line shares the label's centre; DXField wraps a
+  `plaintext` field's `value` slot in it automatically. Inside it a `.badge`
+  is `vertical-align: top` plus half the spare line height, because
+  `baseline` and `middle` both land ~2px off. The name reuses `plaintext` in
+  its existing meaning (the field option, Bootstrap's
+  `.form-control-plaintext`): a value shown without an input box. Pinned by
   `tests/components/DXForm-LabelCentring.test.ts`.
 
 ### Semantic colour system (soft-first, since v0.27.0)
