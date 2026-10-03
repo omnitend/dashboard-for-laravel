@@ -82,12 +82,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   footer read the `pagination` default and said "0 items." under rows it was
   showing. The rows given are now treated as one page ("2 items.", no pager).
   A passed `pagination` drives the footer as before.
+- Centre a `switch-list` row's label, switch and trailing control (such as a
+  notes input in `switch-list-item`) on one line. In a horizontal form the
+  label sat 11px below a lone switch, and 3.5px below the row once a notes
+  input appeared; the row's centring class landed on bootstrap-vue-next's
+  form-group wrapper instead of its `.row`.
 
 ### Tests
 
 - Cover the save button's states, DXForm's saved state (including in-flight
   edits, writes from `onSuccess` and after `await`, failures and the tabbed
   layout) and `wasSuccessful`.
+- Measure horizontal label centring against text, checkbox, switch, radio,
+  file and switch-list controls (`DXForm-LabelCentring.test.ts`).
 
 ## [0.41.2] - 2026-09-29
 

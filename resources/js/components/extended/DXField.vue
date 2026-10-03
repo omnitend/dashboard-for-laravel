@@ -154,7 +154,7 @@
                 >
                     <DFormGroup
                         v-bind="switchListRowAttrs"
-                        class="mb-0 align-items-center"
+                        class="mb-0"
                     >
                         <template #label>
                             <DXFieldLabel
@@ -879,9 +879,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* Switch-list rows (#160): compact rhythm with a divider between rows. The
-   vertical centring of label vs switch is the `align-items-center` utility on
-   each row's DFormGroup (its horizontal root IS the .row element), so no
-   deep selector into bvn internals is needed here. */
+   vertical centring of label, switch and trailing control is a global
+   `.dx-switch-list-row .row` rule in theme.scss: the `.row` is inside
+   bootstrap-vue-next's BFormGroup wrapper, so a class on the DFormGroup
+   lands on the wrapper, not the row. */
 .dx-switch-list-row {
     padding: 0.25rem 0;
     border-bottom: 1px solid var(--bs-border-color);

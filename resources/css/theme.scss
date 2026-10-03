@@ -561,6 +561,18 @@ h6,
   }
 }
 
+// Switch-list option rows (DXField `switch-list`) are one line each: a label,
+// a switch and an optional trailing control (a notes input in the
+// `switch-list-item` slot). Centre all three in the row, instead of the
+// top-aligned horizontal rhythm above, so the padded label column, the 24px
+// switch and a taller input share one centre whether or not the input is
+// showing. Comes after `.dx-form--horizontal .row` at the same specificity so
+// it wins. The `.row` is bootstrap-vue-next's, inside the BFormGroup wrapper,
+// so a utility class on the DFormGroup lands on the wrapper and does nothing.
+.dx-switch-list-row .row {
+  align-items: center;
+}
+
 // Bootstrap's `.input-group` defaults to `flex-wrap: wrap`, letting a
 // narrow container (e.g. a compact table cell, a small screen) stack the
 // prepend/append affix onto its own line below the input. That breaks the

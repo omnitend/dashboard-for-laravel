@@ -653,6 +653,16 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   stacks below the `sm` VIEWPORT, a layout test of horizontal rows must set a
   wide `page.viewport` (the runner's default window is 414px). Pinned by
   `tests/components/DXForm-LabelWidth.test.ts`.
+- **Horizontal label centring**: the label column carries a top padding equal
+  to a text input's, so its first line centres on a 1-line input; checkboxes,
+  radios and switches get the same top margin (`.dx-form--horizontal
+  .form-check`). Switch-list rows instead centre the whole `.row`
+  (`.dx-switch-list-row .row` in theme.scss) so a trailing notes input lines
+  up too. A utility class on a `DFormGroup` lands on bvn's WRAPPER div, not
+  the inner `.row`, so it cannot change the row's alignment. Consumer markup
+  in a `value(key)` slot must follow the same rule (a bare native checkbox
+  sits 11px high; a `mt-2` wrapper pushes a control 8px low). Pinned by
+  `tests/components/DXForm-LabelCentring.test.ts`.
 
 ### Semantic colour system (soft-first, since v0.27.0)
 
