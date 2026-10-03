@@ -149,7 +149,7 @@
                                 <DFormInput
                                     v-else-if="field.filter === 'number'"
                                     :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                    :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
+                                    :placeholder="field.filterPlaceholder || `${field.label || field.key}…`"
                                     type="number"
                                     size="sm"
                                     @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"

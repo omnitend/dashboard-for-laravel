@@ -108,6 +108,12 @@ describe('text filter placeholders', () => {
     ])).toEqual(['Name…', 'account_code…']);
   });
 
+  it('gives number filters the same label-plus-ellipsis default', async () => {
+    expect(await placeholdersFor([
+      { key: 'count', label: 'Count', filter: 'number' },
+    ])).toEqual(['Count…']);
+  });
+
   it('keeps a consumer-provided filterPlaceholder', async () => {
     expect(await placeholdersFor([
       { key: 'email', label: 'Email', filter: 'text', filterPlaceholder: 'Search by email address' },

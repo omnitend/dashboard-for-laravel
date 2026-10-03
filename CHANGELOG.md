@@ -72,9 +72,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   columns. It applies from `sm` up; below `sm` the label now stacks above
   the input. An explicit `labelCols`, on the form or the field, still uses
   the 12-column grid as before.
-- Default a `DXTable` text filter's placeholder to the column label and an
-  ellipsis ("Name…") instead of "Search Name...": the magnifier already says
-  search. A `filterPlaceholder` still wins.
+- Default a `DXTable` text or number filter's placeholder to the column label
+  and an ellipsis ("Name…", "Count…") instead of "Search Name..." or
+  "Filter Count...": the magnifier already says search. A
+  `filterPlaceholder` still wins.
 
 ### Bug Fixes
 
