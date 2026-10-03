@@ -404,3 +404,18 @@ describe('DBadge: :variant="null" opts out of the soft text-bg-* fill', () => {
     expect(await badgeClasses({ variant: undefined })).toContain('text-bg-secondary');
   });
 });
+
+describe('card headers sit on a quiet tinted cap', () => {
+  it('paints .card-header in the cap tint, not transparent', () => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<div class="card-header">Current stock levels</div><div class="card-body">Body</div>';
+    document.body.appendChild(card);
+    const header = card.querySelector('.card-header') as HTMLElement;
+    const body = card.querySelector('.card-body') as HTMLElement;
+    expect(getComputedStyle(header).backgroundColor).toBe('rgb(246, 248, 253)');
+    // Control: the body stays on the card's own white, so the cap is a distinct band.
+    expect(getComputedStyle(body).backgroundColor).not.toBe('rgb(246, 248, 253)');
+    card.remove();
+  });
+});

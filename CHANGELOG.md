@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Give card headers a quiet blue-tinted cap (`#f6f8fd`, legacy Omni Tend's)
+  instead of a transparent one, so a card's title reads as a band.
+
 - Switch the status colours to a lighter, fruitier palette: lime success,
   magenta danger, butter-yellow warning and sky info, each with a dark
   same-hue label and a deeper emphasis shade. Links are the brand navy and
