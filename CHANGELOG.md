@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Switch the status colours to a lighter, fruitier palette: lime success,
+  magenta danger, butter-yellow warning and sky info, each with a dark
+  same-hue label and a deeper emphasis shade. Links are the brand navy and
+  stay underlined.
+- Derive Bootstrap's subtle colours (`.bg-*-subtle`, `.border-*-subtle`,
+  `.text-*-emphasis`) and the `.table-*` row variants from the soft tints.
+- Show form validation errors in crimson `#c8102e` rather than the danger
+  colour. Switches follow the new danger colour when off.
+- Give charts a new light palette with a darker line shade per series
+  (`--dx-chart-line-1..8`) and a 1px outline on bars and doughnut segments
+  (`--dx-chart-edge`). Dark mode charts are unchanged. Rename the Sass
+  variable `$dx-switch-thumb-red` to `$dx-switch-thumb-off`.
+
 ### Bug Fixes
 
 - Honour `busy` on `DXTable` with `items` or `clientSide` rows (it was read

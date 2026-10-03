@@ -38,10 +38,13 @@ that:
   reward belongs in a "Saved ✓" toast or badge after it succeeds, not on the
   button itself.
 - **`danger` is for destructive actions** (delete, remove) and error states.
-  Since v0.31.0 it renders soft (light red + dark-red label), matching the
-  rest of the system; the emphasis red still carries outlines and links.
-- **Links are info-blue** (`#2563eb`), independent of the near-black brand
-  primary — a navy link would read as bold text, not a link.
+  It renders soft (light magenta + dark-magenta label), matching the rest of
+  the system; the deep-magenta emphasis carries outlines and links.
+- **Form errors are crimson** (`#c8102e`, 5.88:1 on white), not the danger
+  magenta: an invalid field must read as "wrong" at a glance. Danger badges and
+  buttons stay magenta.
+- **Links are the brand navy** (`#151e2d`) and keep their underline, which is
+  what marks them as links.
 
 ## The token model
 
@@ -63,12 +66,15 @@ no colour of its own.
 Two details make the system cohesive:
 
 - **Button text is a same-hue tint**, not plain black or white — light-hue text
-  on dark fills, dark-hue text on light tints. (`danger` is the one exception:
-  white, because a delete-red can't carry a same-hue tint at AA contrast.)
+  on dark fills, dark-hue text on light tints.
 - **The base `$theme-colors` carry each hue's _emphasis_ shade** — so
   `.text-success`, `.link-warning`, `.border-info` and outline buttons are
   legible on white without any extra overrides. The solid fills and soft tints
   are applied after the Bootstrap import, from the map.
+- **Bootstrap's subtle family follows the soft tints.** `.bg-*-subtle` and the
+  `.table-*` row variants are the soft tint mixed 50% with white,
+  `.border-*-subtle` is the tint 10% darker, and `.text-*-emphasis` is the soft
+  text, so a subtle surface is a paler step of the badge colour.
 
 All colour pairs are WCAG AA verified.
 
@@ -78,18 +84,21 @@ All colour pairs are WCAG AA verified.
 |---|---|---|---|---|---|---|
 | `primary` | `#151e2d` | `#e9f0f8` | `#e9f0f8` | `#151e2d` | `#151e2d` | **solid** |
 | `secondary` | `#475569` | `#e6ebf2` | `#e6ebf2` | `#29374a` | `#475569` | soft |
-| `success` | `#84cc16` | `#203b0e` | `#cdf9b2` | `#203b0e` | `#4d7c0f` | soft |
-| `danger` | `#dc2626` | `#ffffff` | `#f8d4d4` | `#7a1a1a` | `#dc2626` | soft |
-| `warning` | `#f59e0b` | `#512d05` | `#fce5c4` | `#512d05` | `#b45309` | soft |
-| `info` | `#2563eb` | `#eef4ff` | `#deebff` | `#12376c` | `#2563eb` | soft |
+| `success` | `#7bf25a` | `#153c04` | `#c3faaa` | `#153c04` | `#236b12` | soft |
+| `danger` | `#e46ab9` | `#3d0a2f` | `#f9dff2` | `#61124c` | `#a3247f` | soft |
+| `warning` | `#efd574` | `#121419` | `#efd574` | `#121419` | `#8a6d00` | soft |
+| `info` | `#7fd7fd` | `#192547` | `#d5dcf0` | `#192547` | `#31586d` | soft |
 
-Default link colour: `#2563eb` (info-blue).
+Default link colour: `#151e2d` (brand navy, underlined). Form error colour:
+`#c8102e` (crimson).
 
 ### Chart palette
 
-Data-viz gets its own palette — eight vivid hues published as `--dx-chart-1` …
-`--dx-chart-8`, separate from the semantic UI colours (whose emphasis shades are
-too muted for series, and whose status meanings shouldn't leak into "series 2").
+Data-viz gets its own palette — eight light, vivid fills published as
+`--dx-chart-1` … `--dx-chart-8`, a darker line shade per slot
+(`--dx-chart-line-1` … `--dx-chart-line-8`) and one outline colour
+(`--dx-chart-edge`), kept as their own lists rather than read from the semantic
+UI colours.
 The chart components read these variables at runtime, so overriding them
 rethemes every chart. Under `data-bs-theme="dark"` the theme remaps the same
 eight slots to lighter, dark-surface-validated steps (same hue order — it

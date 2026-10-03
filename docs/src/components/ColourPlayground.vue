@@ -31,18 +31,17 @@ type Variant = (typeof order)[number];
 
 // Button text is a SAME-HUE tint of the fill (light-hue on dark fills, dark-hue
 // on light fills), not pure black/white — the same principle that makes the soft
-// badges cohesive. AA-verified. danger is the one exception: on a red dark enough
-// to be a proper "delete" red, no same-hue pink tint clears AA (the lightest that
-// reads is essentially white), so danger keeps white text.
+// badges cohesive. AA-verified. The status variants are the "fruity" palette
+// (2026-10): light vivid fills, so every label is a dark same-hue ink.
 const seed: Record<Variant, Pair> = {
   // primary IS the Omni Tend brand: a dark navy fill (#151e2d) with light-brand
   // text (#e9f0f8) — bold in presence, calm in hue. Soft is the reverse.
   primary: { solidBg: '#151e2d', solidText: '#e9f0f8', softBg: '#e9f0f8', softText: '#151e2d', emphasis: '#151e2d' },
   secondary: { solidBg: '#475569', solidText: '#e6ebf2', softBg: '#e6ebf2', softText: '#29374a', emphasis: '#475569' },
-  success: { solidBg: '#84cc16', solidText: '#203b0e', softBg: '#cdf9b2', softText: '#203b0e', emphasis: '#4d7c0f' },
-  danger: { solidBg: '#dc2626', solidText: '#ffffff', softBg: '#f8d4d4', softText: '#7a1a1a', emphasis: '#dc2626' },
-  warning: { solidBg: '#f59e0b', solidText: '#512d05', softBg: '#fce5c4', softText: '#512d05', emphasis: '#b45309' },
-  info: { solidBg: '#2563eb', solidText: '#eef4ff', softBg: '#deebff', softText: '#12376c', emphasis: '#2563eb' },
+  success: { solidBg: '#7bf25a', solidText: '#153c04', softBg: '#c3faaa', softText: '#153c04', emphasis: '#236b12' },
+  danger: { solidBg: '#e46ab9', solidText: '#3d0a2f', softBg: '#f9dff2', softText: '#61124c', emphasis: '#a3247f' },
+  warning: { solidBg: '#efd574', solidText: '#121419', softBg: '#efd574', softText: '#121419', emphasis: '#8a6d00' },
+  info: { solidBg: '#7fd7fd', solidText: '#192547', softBg: '#d5dcf0', softText: '#192547', emphasis: '#31586d' },
 };
 
 const clone = (source: Record<Variant, Pair>): Record<Variant, Pair> =>

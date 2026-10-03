@@ -589,17 +589,33 @@ solid fill by reflex.
   bold SOLID button (the brand navy `#151e2d` fill + light text) — one loud action
   per screen. Every other variant, **including `danger`**, is **soft** (light
   same-hue tint + dark same-hue label); a soft `.btn-danger`/"Delete" is a light
-  red (`#f8d4d4`/`#7a1a1a`). (Changed 2026-07-20 / v0.31.0 — danger was the second
-  solid; it and its off-hue plum soft became a same-hue soft red.) Tertiary
-  actions use a `link` variant restyled as a **ghost** (body colour, no underline).
+  magenta (`#f9dff2`/`#61124c`). Tertiary actions use a `link` variant restyled
+  as a **ghost** (body colour, no underline).
+- **The status hues are the "fruity" palette** (2026-10): solids lime `#7bf25a`,
+  magenta `#e46ab9`, butter `#efd574`, sky `#7fd7fd`; emphasis (= the base
+  `$success/$danger/$warning/$info`) `#236b12`, `#a3247f`, `#8a6d00`,
+  `#31586d`. Every label is a dark same-hue ink, never white.
+- **Links are the brand navy `#151e2d` and stay underlined** (Bootstrap's
+  default `$link-decoration`; only the ghost `.btn-link` drops it). The
+  underline is what marks a navy link, so don't remove it.
+- **Form errors are crimson `#c8102e`** (`$dx-form-error`, wired into
+  `$form-invalid-*` / `$form-feedback-*-invalid-*` before the import), NOT the
+  danger magenta, which stays on badges and buttons.
+- **Bootstrap's subtle family is derived from the soft tints** (set before the
+  import): `$X-bg-subtle` and the `$table-variants` rows = soft-bg mixed 50%
+  with white, `$X-border-subtle` = soft-bg 10% darker, `$X-text-emphasis` =
+  soft-text. Sass emits the 50% mix with fractional channels
+  (`rgb(225, 252.5, 212.5)`), so tests compare parsed channels, not strings.
+  The `*-dark` subtle variables are still Bootstrap's own derivation.
 - **Switches** default to the filled-box style (`DXSwitch` / `DXField
   type:'switch'`): the whole box is green when on (the success soft green) / light
-  red when off, with a neutral grey pill; `on-variant="neutral"` for mixed cases
-  (#158, v0.31.0).
+  magenta when off (a tint of the danger solid; the bare `.form-switch` thumb is
+  the danger emphasis `#a3247f`, `$dx-switch-thumb-off`), with a neutral grey
+  pill; `on-variant="neutral"` for mixed cases (#158, v0.31.0).
 - **Status colours are soft** — badges, alerts, toasts all use the soft tint.
 - **Large FILLS use the vivid `solid-bg`, not the emphasis shade** (#154):
-  `.progress-bar.bg-success` is the switch-ON lime `#84cc16`, not the dark
-  olive emphasis. Emphasis shades stay for outlines/links/text.
+  `.progress-bar.bg-success` is the switch-ON lime `#7bf25a`, not the deep
+  green emphasis. Emphasis shades stay for outlines/links/text.
 - **DXTable header titles are muted grey** by default (#157), token
   `--dx-table-header-color`. Sidebar nav has natural-case group headers since
   #95 (0.875rem headers, 0.3rem link padding), with a **1rem** gap between
@@ -618,21 +634,33 @@ solid fill by reflex.
   `tests/components/soft-badges.test.ts`.
 - Design/review tooling: the **Style guide** (`docs /showcase`) and **Colour
   playground** (`docs /playground`).
-- **Charts do NOT use the semantic colours.** Data-viz has its own palette:
-  `$dx-chart-palette` in theme.scss → `--dx-chart-1..8`, read at runtime by
-  `chartTheme.ts` (#141). The base theme colours are dark *emphasis* shades
-  (too muted for series) and status colours shouldn't impersonate "series 2".
-  The **slot order is load-bearing** — derived by exhaustively permuting the
-  hues to maximise adjacent-pair CVD separation (min adjacent ΔE 13.8, all
-  ≥3:1 on white); don't reorder or swap a hue without re-running that
-  validation (dataviz-skill `validate_palette.js`). Sync between the Sass
-  list, the TS fallbacks, and the test expectation is enforced by
-  `tests/components/charts.test.ts` (it parses the Sass source). The palette
-  cycles after 8 series. Under `data-bs-theme="dark"` the same slots remap to
-  `$dx-chart-palette-dark` (#145) — same hue ORDER (it encodes the CVD
-  separation), lightness lifted for the dark body; validated min adjacent CVD
-  ΔE 15.1, all ≥5.6:1 on `#212529`. Swapping a dark step needs the validation
-  re-run, same as the light set. Related: `release.sh` regenerates the AI docs
+- **Charts do NOT read the semantic variables.** Data-viz has its own lists in
+  theme.scss, read at runtime by `chartTheme.ts` (#141): `$dx-chart-palette`
+  (light FILLS, `--dx-chart-1..8`), `$dx-chart-line-palette` (LINE shades,
+  `--dx-chart-line-1..8`, each fill darkened to 3.5:1 on white) and
+  `$dx-chart-edge` (`#121419`, `--dx-chart-edge`). The fills share the fruity
+  status hues but are only 1.35–2.97:1 on white, so WCAG 1.4.11 non-text
+  contrast is carried by the 1px edge on bars/doughnut segments and by the
+  line shades on line charts. `applyPalette` sets bar/doughnut
+  `borderColor`=edge + `borderWidth`=1, and line `borderColor`=line shade,
+  `pointBackgroundColor`=fill, `pointBorderColor`=line shade, area
+  `backgroundColor`=fill at 35% — each only when the caller left it unset.
+  The **slot order is load-bearing** — slot 1 pinned, slots 2..8 the best
+  permutation for adjacent-pair CVD separation (OKLab ΔE ×100, Viénot
+  protan/deutan): fills min adjacent 19.56, lines 13.73. Don't reorder, swap a
+  hue or hand-edit a line shade without re-running
+  `node scripts/validate-chart-palette.mjs` (reads the lists from theme.scss,
+  prints the scores and the best order, and fails if a line shade isn't its
+  fill darkened to 3.5:1). Sync between the Sass lists, the TS fallbacks
+  (`PALETTE_VARS`, `LINE_PALETTE_VARS`, `EDGE_VAR`) and the test expectations
+  is enforced by `tests/components/charts.test.ts` (it parses the Sass
+  source). The palette cycles after 8 series. Under `data-bs-theme="dark"`
+  the fills remap to `$dx-chart-palette-dark` (#145, unchanged: min adjacent
+  CVD ΔE 15.09, all ≥5.67:1 on `#212529`), the line shades ARE those dark
+  fills, and the edge is `$body-bg-dark` (`#212529`), so dark charts look as
+  they did before the edge existed. The `[data-bs-theme="light"]` re-declaration
+  shares a mixin with `:root`. Swapping a dark step needs the validation re-run,
+  same as the light set. Related: `release.sh` regenerates the AI docs
   (`docs:generate:ai`) before publish because `api-reference.json`/`llms.txt`
   are **gitignored but listed in package.json `files`** — without the regen,
   publish ships whatever stale copy sits on disk.
