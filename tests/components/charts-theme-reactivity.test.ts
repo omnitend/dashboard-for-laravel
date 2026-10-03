@@ -29,9 +29,13 @@ import DXDoughnutChart from '../../resources/js/components/charts/DXDoughnutChar
 
 // Slot 1 of each shipped palette (theme.scss $dx-chart-palette /
 // $dx-chart-palette-dark). Values, not just "different", so a fix that resolved
-// *some* other colour would still fail.
-const LIGHT_SLOT_1 = '#2563eb';
+// *some* other colour would still fail. A line's STROKE uses the slot's line
+// shade ($dx-chart-line-palette) in light mode; in dark mode the line shades
+// are the dark fills themselves.
+const LIGHT_SLOT_1 = '#7fd7fd';
+const LIGHT_LINE_1 = '#5590aa';
 const DARK_SLOT_1 = '#60a5fa';
+const DARK_LINE_1 = DARK_SLOT_1;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -64,12 +68,12 @@ describe('charts follow a colour-mode change while mounted (#161)', () => {
     const screen = render(DXLineChart, { props: lineProps });
     await wait(80);
 
-    expect(chartIn(screen.container).data.datasets[0].borderColor).toBe(LIGHT_SLOT_1);
+    expect(chartIn(screen.container).data.datasets[0].borderColor).toBe(LIGHT_LINE_1);
 
     document.documentElement.setAttribute('data-bs-theme', 'dark');
     await wait(120);
 
-    expect(chartIn(screen.container).data.datasets[0].borderColor).toBe(DARK_SLOT_1);
+    expect(chartIn(screen.container).data.datasets[0].borderColor).toBe(DARK_LINE_1);
   });
 
   it('DXBarChart repaints its bars when data-bs-theme flips on the root', async () => {
@@ -119,7 +123,7 @@ describe('charts resolve the palette from their own colour-mode scope (#161)', (
     await wait(120);
 
     expect(document.documentElement.hasAttribute('data-bs-theme')).toBe(false); // root is light
-    expect(chartIn(screen.container).data.datasets[0].borderColor).toBe(DARK_SLOT_1);
+    expect(chartIn(screen.container).data.datasets[0].borderColor).toBe(DARK_LINE_1);
   });
 
   it('DXDoughnutChart inside a nested dark container uses the DARK palette', async () => {
@@ -142,16 +146,31 @@ describe('charts resolve the palette from their own colour-mode scope (#161)', (
   // depending on the prebuilt dist/style.css carrying the new
   // `[data-bs-theme=light]` rule (the CSS side is guarded from source below).
   it('a per-container --dx-chart-* override beats the document root', async () => {
-    const SENTINEL = 'rgb(1, 2, 3)';
+    const FILL_SENTINEL = 'rgb(1, 2, 3)';
+    const LINE_SENTINEL = 'rgb(4, 5, 6)';
     document.documentElement.setAttribute('data-bs-theme', 'dark');
 
-    const Overridden = wrappedIn({ style: { '--dx-chart-1': SENTINEL } }, DXLineChart, lineProps);
+    const Overridden = wrappedIn(
+      { style: { '--dx-chart-1': FILL_SENTINEL, '--dx-chart-line-1': LINE_SENTINEL } },
+      DXLineChart,
+      lineProps,
+    );
     const screen = render(Overridden);
     await wait(120);
 
-    const resolved = chartIn(screen.container).data.datasets[0].borderColor;
-    expect(resolved).toBe(SENTINEL);
-    expect(resolved).not.toBe(DARK_SLOT_1); // i.e. not the root's palette
+    const dataset = chartIn(screen.container).data.datasets[0] as any;
+    expect(dataset.borderColor).toBe(LINE_SENTINEL);
+    expect(dataset.pointBackgroundColor).toBe(FILL_SENTINEL);
+    expect(dataset.borderColor).not.toBe(DARK_LINE_1); // i.e. not the root's palette
+  });
+
+  it('a per-container --dx-chart-edge override reaches the bar outline', async () => {
+    const EDGE_SENTINEL = 'rgb(7, 8, 9)';
+    const Overridden = wrappedIn({ style: { '--dx-chart-edge': EDGE_SENTINEL } }, DXBarChart, barProps);
+    const screen = render(Overridden);
+    await wait(120);
+
+    expect(chartIn(screen.container).data.datasets[0].borderColor).toBe(EDGE_SENTINEL);
   });
 });
 
@@ -178,9 +197,9 @@ describe('a LIGHT scope nested under a dark root resolves the light palette (#16
     await wait(120);
 
     const resolved = chartIn(screen.container).data.datasets[0].borderColor;
-    expect(resolved).toBe(LIGHT_SLOT_1);
+    expect(resolved).toBe(LIGHT_LINE_1);
     // Named explicitly: inheriting the root's dark value is the exact bug.
-    expect(resolved).not.toBe(DARK_SLOT_1);
+    expect(resolved).not.toBe(DARK_LINE_1);
   });
 });
 
@@ -191,15 +210,36 @@ describe('theme.scss publishes the palette in a light scope too (#161)', () => {
   // stylesheet needs a matching light-scope block. Asserted against the Sass
   // SOURCE because the test environment loads the prebuilt dist/style.css,
   // which may predate this change.
-  it('declares --dx-chart-* under [data-bs-theme="light"] from the LIGHT list', () => {
-    const lightBlock = themeScssSource.match(/\[data-bs-theme="light"\]\s*\{([\s\S]*?)\n\}/);
-    expect(lightBlock).not.toBeNull();
+  // `:root` and `[data-bs-theme="light"]` both include one mixin, so the two
+  // light declarations cannot drift; the assertions follow that indirection.
+  const blockBody = (selector: RegExp) => {
+    const match = themeScssSource.match(selector);
+    expect(match).not.toBeNull();
+    return match![1];
+  };
 
-    const body = lightBlock![1];
-    expect(body).toContain('--dx-chart-#{$i}');
-    // The light list, NOT the dark one — a copy-paste slip here would ship the
+  it('declares --dx-chart-* under [data-bs-theme="light"] from the LIGHT list', () => {
+    expect(blockBody(/\[data-bs-theme="light"\]\s*\{([\s\S]*?)\n\}/)).toContain(
+      '@include dx-chart-light-vars',
+    );
+    expect(blockBody(/\n:root\s*\{\s*(@include dx-chart-light-vars[\s\S]*?)\n\}/)).toContain(
+      '@include dx-chart-light-vars',
+    );
+
+    const mixin = blockBody(/@mixin dx-chart-light-vars\s*\{([\s\S]*?)\n\}/);
+    expect(mixin).toContain('--dx-chart-#{$i}');
+    expect(mixin).toContain('--dx-chart-line-#{$i}');
+    expect(mixin).toContain('--dx-chart-edge');
+    // The light lists, NOT the dark one — a copy-paste slip here would ship the
     // dark palette to every light-scoped container.
-    expect(body).toContain('list.nth($dx-chart-palette, $i)');
-    expect(body).not.toContain('$dx-chart-palette-dark');
+    expect(mixin).toContain('list.nth($dx-chart-palette, $i)');
+    expect(mixin).toContain('list.nth($dx-chart-line-palette, $i)');
+    expect(mixin).not.toContain('$dx-chart-palette-dark');
+  });
+
+  it('the dark block remaps the line shades and the edge too', () => {
+    const dark = blockBody(/\[data-bs-theme="dark"\]\s*\{([\s\S]*?)\n\}/);
+    expect(dark).toContain('--dx-chart-line-#{$i}: #{list.nth($dx-chart-palette-dark, $i)}');
+    expect(dark).toContain('--dx-chart-edge: #{$dx-chart-edge-dark}');
   });
 });

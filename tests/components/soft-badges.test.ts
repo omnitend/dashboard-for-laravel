@@ -60,10 +60,10 @@ const paintedStyle = (component: any, variant: string, selector: string) => {
 const softBadges: Array<[string, string, string]> = [
   ['primary', '#e9f0f8', '#151e2d'],
   ['secondary', '#e6ebf2', '#29374a'],
-  ['success', '#cdf9b2', '#203b0e'],
-  ['danger', '#f8d4d4', '#7a1a1a'],
-  ['warning', '#fce5c4', '#512d05'],
-  ['info', '#deebff', '#12376c'],
+  ['success', '#c3faaa', '#153c04'],
+  ['danger', '#f9dff2', '#61124c'],
+  ['warning', '#efd574', '#121419'],
+  ['info', '#d5dcf0', '#192547'],
 ];
 
 describe('semantic badges are all soft-tinted', () => {
@@ -93,14 +93,14 @@ const paintedRawStyle = (className: string) => {
 describe('.text-bg-* is soft on any element, not only .badge', () => {
   it('paints a non-badge .text-bg-success (e.g. input-group-text) as the soft badge green', async () => {
     const style = await paintedRawStyle('input-group-text text-bg-success');
-    expect(style.background).toBe(rgb('#cdf9b2'));
-    expect(style.color).toBe(rgb('#203b0e'));
+    expect(style.background).toBe(rgb('#c3faaa'));
+    expect(style.color).toBe(rgb('#153c04'));
   });
 
   it('excludes .toast so its own fainter mix is not clobbered', async () => {
     const style = await paintedRawStyle('toast text-bg-success');
     // The broad soft rule must NOT paint a toast the full soft badge green.
-    expect(style.background).not.toBe(rgb('#cdf9b2'));
+    expect(style.background).not.toBe(rgb('#c3faaa'));
   });
 });
 
@@ -111,10 +111,10 @@ describe('buttons: bold solid ONLY for primary, soft for the rest (incl. danger)
     expect(style.color).toBe(rgb('#e9f0f8'));
   });
 
-  it('danger button is SOFT now (light-red tint + dark-red text), not a solid red fill', async () => {
+  it('danger button is SOFT (light-magenta tint + dark-magenta text), not a solid fill', async () => {
     const style = await paintedStyle(DButton, 'danger', '.btn');
-    expect(style.background).toBe(rgb('#f8d4d4'));
-    expect(style.color).toBe(rgb('#7a1a1a'));
+    expect(style.background).toBe(rgb('#f9dff2'));
+    expect(style.color).toBe(rgb('#61124c'));
   });
 
   it('secondary button is the soft grey tint (not the dark slate solid)', async () => {
@@ -125,8 +125,8 @@ describe('buttons: bold solid ONLY for primary, soft for the rest (incl. danger)
 
   it('success button is soft, not a saturated lime fill', async () => {
     const style = await paintedStyle(DButton, 'success', '.btn');
-    expect(style.background).toBe(rgb('#cdf9b2'));
-    expect(style.color).toBe(rgb('#203b0e'));
+    expect(style.background).toBe(rgb('#c3faaa'));
+    expect(style.color).toBe(rgb('#153c04'));
   });
 });
 
@@ -144,17 +144,129 @@ describe('progress-bar fills use the vivid solid-bg, not the dark emphasis (#154
     return background;
   };
 
-  it('bg-success fills as the vivid lime (the switch-ON green), not the dark olive', async () => {
+  it('bg-success fills as the vivid lime (the switch-ON green), not the deep green', async () => {
     // Would this pass if the bug were present? No — Bootstrap's .bg-success
-    // paints the $success emphasis #4d7c0f, which this rejects.
-    expect(await paintedBar('bg-success')).toBe(rgb('#84cc16'));
+    // paints the $success emphasis #236b12, which this rejects.
+    expect(await paintedBar('bg-success')).toBe(rgb('#7bf25a'));
   });
 
-  it('bg-warning fills as the bright amber solid, not the dark amber emphasis', async () => {
-    expect(await paintedBar('bg-warning')).toBe(rgb('#f59e0b'));
+  it('bg-warning fills as the butter-yellow solid, not the deep ochre emphasis', async () => {
+    expect(await paintedBar('bg-warning')).toBe(rgb('#efd574'));
+  });
+
+  it('bg-danger and bg-info fill with their vivid solids too', async () => {
+    expect(await paintedBar('bg-danger')).toBe(rgb('#e46ab9'));
+    expect(await paintedBar('bg-info')).toBe(rgb('#7fd7fd'));
   });
 
   it('the default (variant-less) bar stays the brand navy', async () => {
     expect(await paintedBar('')).toBe(rgb('#151e2d'));
+  });
+});
+
+/**
+ * Bootstrap's subtle family is derived from the soft tints (set before the
+ * Bootstrap import): bg-subtle is the soft tint mixed 50% with white, the
+ * border is the tint 10% darker, and text-emphasis is the soft text. Without
+ * the overrides Bootstrap derives them from the dark emphasis base, a
+ * different, greyer family, so every expectation below would fail.
+ *
+ * Sass emits the 50% mix with fractional channels (`rgb(225, 252.5, 212.5)`),
+ * so the comparison parses the channels and allows half a unit of rounding.
+ */
+const channels = (colour: string) => (colour.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+
+const expectColourNear = (actual: string, expected: [number, number, number]) => {
+  const parsed = channels(actual);
+  expect(parsed.length, `could not parse "${actual}"`).toBe(3);
+  parsed.forEach((value, index) => {
+    expect(Math.abs(value - expected[index]), `${actual} vs rgb(${expected})`).toBeLessThanOrEqual(
+      0.5,
+    );
+  });
+};
+
+const paintedMarkup = (markup: () => any, selector: string) => {
+  const screen = render({ render: () => h(BApp, {}, markup) });
+  return readWhenPainted(screen.container, selector).then((style) => ({
+    ...style,
+    element: screen.container.querySelector(selector) as HTMLElement,
+  }));
+};
+
+// [variant, soft-bg mixed 50% with white, soft-text]
+const subtleTints: Array<[string, [number, number, number], string]> = [
+  ['success', [225, 252.5, 212.5], '#153c04'],
+  ['danger', [252, 239, 248.5], '#61124c'],
+  ['warning', [247, 234, 185.5], '#121419'],
+  ['info', [234, 237.5, 247.5], '#192547'],
+];
+
+describe('Bootstrap subtle family follows the soft tints', () => {
+  for (const [variant, tint, text] of subtleTints) {
+    it(`.bg-${variant}-subtle is the soft tint mixed with white`, async () => {
+      const style = await paintedMarkup(
+        () => h('span', { class: `bg-${variant}-subtle` }, 'x'),
+        'span',
+      );
+      expectColourNear(style.background, tint);
+    });
+
+    it(`.text-${variant}-emphasis is the soft text ${text}`, async () => {
+      const style = await paintedMarkup(
+        () => h('span', { class: `bg-white text-${variant}-emphasis` }, 'x'),
+        'span',
+      );
+      expect(style.color).toBe(rgb(text));
+    });
+
+    it(`.table-${variant} rows use the same tint`, async () => {
+      const style = await paintedMarkup(
+        () =>
+          h('table', { class: 'table' }, [
+            h('tbody', [h('tr', { class: `table-${variant}` }, [h('td', 'x')])]),
+          ]),
+        'td',
+      );
+      expectColourNear(style.background, tint);
+    });
+  }
+
+  it('.border-success-subtle is the soft tint 10% darker', async () => {
+    const style = await paintedMarkup(
+      () => h('div', { class: 'border border-success-subtle bg-white' }, 'x'),
+      'div.border',
+    );
+    expectColourNear(getComputedStyle(style.element).borderTopColor, [167, 247.67, 130.33]);
+  });
+});
+
+/**
+ * Form errors are crimson #c8102e, deliberately NOT the danger magenta (which
+ * stays on badges and buttons). Bootstrap's default is $danger, so before this
+ * change an invalid field painted the old red #dc2626 and these fail.
+ */
+describe('form validation errors are crimson, not the danger magenta', () => {
+  const CRIMSON = rgb('#c8102e');
+
+  it('paints an invalid input border and its feedback text crimson', async () => {
+    const style = await paintedMarkup(
+      () =>
+        h('div', { class: 'bg-white' }, [
+          h('input', { class: 'form-control is-invalid', value: 'x' }),
+          h('div', { class: 'invalid-feedback d-block' }, 'Required'),
+        ]),
+      '.form-control',
+    );
+    const feedback = style.element.parentElement!.querySelector('.invalid-feedback') as HTMLElement;
+
+    expect(getComputedStyle(style.element).borderTopColor).toBe(CRIMSON);
+    expect(getComputedStyle(feedback).color).toBe(CRIMSON);
+  });
+
+  it('leaves the danger badge magenta', async () => {
+    const style = await paintedStyle(DBadge, 'danger', '.badge');
+    expect(style.background).toBe(rgb('#f9dff2'));
+    expect(style.background).not.toBe(CRIMSON);
   });
 });

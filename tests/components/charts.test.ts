@@ -7,7 +7,11 @@ import {
   mergeOptions,
   applyPalette,
   getPalette,
+  getLinePalette,
+  getEdgeColor,
   PALETTE_VARS,
+  LINE_PALETTE_VARS,
+  EDGE_VAR,
 } from '../../resources/js/components/charts/chartTheme';
 // The Sass SOURCE (not the built CSS) — vitest runs in a browser, so read it
 // through Vite's ?raw import, never node:fs (see CLAUDE.md testing gotchas).
@@ -21,18 +25,52 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 describe('chartTheme helpers', () => {
   // The fixed, CVD-validated order from theme.scss's $dx-chart-palette (#141).
   const EXPECTED_PALETTE = [
-    '#2563eb', // blue
-    '#65a30d', // lime
-    '#7c3aed', // violet
-    '#0d9488', // teal
-    '#ea580c', // orange
-    '#0891b2', // cyan
-    '#d97706', // amber
-    '#db2777', // pink
+    '#7fd7fd', // sky
+    '#7bf25a', // lime
+    '#e46ab9', // magenta
+    '#d6e86a', // lime-yellow
+    '#b9a3f0', // lavender
+    '#efd574', // butter
+    '#9fb4ff', // periwinkle
+    '#f7a072', // peach
   ];
+  // Each fill darkened to 3.5:1 on white ($dx-chart-line-palette), same order.
+  const EXPECTED_LINES = [
+    '#5590aa',
+    '#4d9839',
+    '#d161a9',
+    '#848f41',
+    '#907fbb',
+    '#99884a',
+    '#7686be',
+    '#ba7956',
+  ];
+  const EXPECTED_EDGE = '#121419';
+  const DARK_BODY_BG = '#212529';
+
+  const sassList = (name: string) => {
+    const line = themeScssSource.match(new RegExp(`\\$${name}:\\s*\\(([^)]*)\\)`));
+    expect(line).not.toBeNull();
+    return line![1].match(/#[0-9a-fA-F]{3,8}/g);
+  };
 
   it('getPalette resolves the dedicated --dx-chart-* palette', () => {
     expect(getPalette()).toEqual(EXPECTED_PALETTE);
+  });
+
+  it('getLinePalette and getEdgeColor resolve the line shades and the edge', () => {
+    expect(getLinePalette()).toEqual(EXPECTED_LINES);
+    expect(getEdgeColor()).toBe(EXPECTED_EDGE);
+  });
+
+  it('the built CSS publishes every --dx-chart-line-* variable and --dx-chart-edge', () => {
+    // Raw custom properties, no TS fallback to hide a missing variable.
+    const styles = getComputedStyle(document.documentElement);
+    const lines = EXPECTED_LINES.map(
+      (_, i) => styles.getPropertyValue(`--dx-chart-line-${i + 1}`).trim(),
+    );
+    expect(lines).toEqual(EXPECTED_LINES);
+    expect(styles.getPropertyValue('--dx-chart-edge').trim()).toBe(EXPECTED_EDGE);
   });
 
   it('the built CSS publishes every --dx-chart-* variable', () => {
@@ -73,6 +111,10 @@ describe('chartTheme helpers', () => {
       );
       expect(published).toEqual(EXPECTED_DARK_PALETTE);
       expect(getPalette()).toEqual(EXPECTED_DARK_PALETTE);
+      // Dark lines ARE the dark fills, and the edge is the dark body colour,
+      // so dark charts look as they did before the light edge existed.
+      expect(getLinePalette()).toEqual(EXPECTED_DARK_PALETTE);
+      expect(styles.getPropertyValue('--dx-chart-edge').trim()).toBe(DARK_BODY_BG);
     } finally {
       document.documentElement.removeAttribute('data-bs-theme');
     }
@@ -89,11 +131,20 @@ describe('chartTheme helpers', () => {
     // The TS fallbacks only ever run on the SSR/no-CSS path, which no browser
     // test exercises — so drift there is invisible to the two tests above.
     // Guard it by parsing the hexes straight out of the Sass source.
-    const paletteLine = themeScssSource.match(/\$dx-chart-palette:\s*\(([^)]*)\)/);
-    expect(paletteLine).not.toBeNull();
-    const scssHexes = paletteLine![1].match(/#[0-9a-fA-F]{3,8}/g);
+    const scssHexes = sassList('dx-chart-palette');
     expect(scssHexes).toEqual(PALETTE_VARS.map(([, fallback]) => fallback));
     expect(scssHexes).toEqual(EXPECTED_PALETTE);
+  });
+
+  it('chartTheme line and edge fallbacks match theme.scss', () => {
+    const scssLines = sassList('dx-chart-line-palette');
+    expect(scssLines).toEqual(LINE_PALETTE_VARS.map(([, fallback]) => fallback));
+    expect(scssLines).toEqual(EXPECTED_LINES);
+
+    const edgeLine = themeScssSource.match(/\$dx-chart-edge:\s*(#[0-9a-fA-F]{3,8})/);
+    expect(edgeLine).not.toBeNull();
+    expect(edgeLine![1]).toBe(EDGE_VAR[1]);
+    expect(EDGE_VAR).toEqual(['--dx-chart-edge', EXPECTED_EDGE]);
   });
 
   it('withAlpha converts hex and rgb to rgba', () => {
@@ -128,6 +179,63 @@ describe('chartTheme helpers', () => {
     const [doughnut] = applyPalette([{ data: [1, 2] }], 'doughnut', 2);
     expect(Array.isArray(doughnut.backgroundColor)).toBe(true);
     expect(doughnut.backgroundColor.length).toBe(2);
+  });
+
+  it('applyPalette gives a line the darker line shade, fill-coloured points and a 35% wash', () => {
+    const [first, second] = applyPalette([{ data: [1] }, { data: [2] }], 'line', 1);
+    expect(first.borderColor).toBe(EXPECTED_LINES[0]);
+    expect(first.pointBorderColor).toBe(EXPECTED_LINES[0]);
+    expect(first.pointBackgroundColor).toBe(EXPECTED_PALETTE[0]);
+    expect(first.backgroundColor).toBe(withAlpha(EXPECTED_PALETTE[0], 0.35));
+    // Slot order holds for the second series too.
+    expect(second.borderColor).toBe(EXPECTED_LINES[1]);
+    expect(second.pointBackgroundColor).toBe(EXPECTED_PALETTE[1]);
+  });
+
+  it('applyPalette outlines bars and doughnut segments with the 1px edge', () => {
+    const [bar] = applyPalette([{ data: [1, 2] }], 'bar', 2);
+    expect(bar.backgroundColor).toEqual([EXPECTED_PALETTE[0], EXPECTED_PALETTE[0]]);
+    expect(bar.borderColor).toBe(EXPECTED_EDGE);
+    expect(bar.borderWidth).toBe(1);
+
+    const [doughnut] = applyPalette([{ data: [1, 2] }], 'doughnut', 2);
+    expect(doughnut.backgroundColor).toEqual([EXPECTED_PALETTE[0], EXPECTED_PALETTE[1]]);
+    expect(doughnut.borderColor).toBe(EXPECTED_EDGE);
+    expect(doughnut.borderWidth).toBe(1);
+  });
+
+  it('applyPalette leaves every caller-set colour and width alone', () => {
+    const [line] = applyPalette(
+      [
+        {
+          data: [1],
+          borderColor: '#010101',
+          backgroundColor: '#020202',
+          pointBackgroundColor: '#030303',
+          pointBorderColor: '#040404',
+        },
+      ],
+      'line',
+      1,
+    );
+    expect(line.borderColor).toBe('#010101');
+    expect(line.backgroundColor).toBe('#020202');
+    expect(line.pointBackgroundColor).toBe('#030303');
+    expect(line.pointBorderColor).toBe('#040404');
+
+    const [bar] = applyPalette([{ data: [1], borderColor: '#050505', borderWidth: 0 }], 'bar', 1);
+    expect(bar.borderColor).toBe('#050505');
+    expect(bar.borderWidth).toBe(0);
+
+    const [doughnut] = applyPalette(
+      [{ data: [1, 2], borderColor: '#060606', borderWidth: 3 }],
+      'doughnut',
+      2,
+    );
+    expect(doughnut.borderColor).toBe('#060606');
+    expect(doughnut.borderWidth).toBe(3);
+    // And the colours it did not set are still themed.
+    expect(doughnut.backgroundColor).toEqual([EXPECTED_PALETTE[0], EXPECTED_PALETTE[1]]);
   });
 });
 

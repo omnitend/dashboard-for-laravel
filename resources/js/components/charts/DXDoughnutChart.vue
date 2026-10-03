@@ -1,7 +1,8 @@
 <!--
   @component
   A themed doughnut chart. Thin wrapper around vue-chartjs (chart.js) with one
-  chart-palette colour (--dx-chart-1..8) per slice and dashboard-friendly defaults. Pass
+  chart-palette colour (--dx-chart-1..8) per slice, a 1px --dx-chart-edge outline, and
+  dashboard-friendly defaults. Pass
   `labels` + either `data` (a number array) or full `datasets`; `options`
   deep-merges over the defaults.
 
