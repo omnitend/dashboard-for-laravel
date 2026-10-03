@@ -575,9 +575,37 @@ fine print. Badges self-land at 12px. It was 14px until 0.39.0, which read
 miniaturised against rem-fixed chrome; 16px matches legacy omnitend. `--dx-input-height`
 is ~38px at this base. When judging an optical spacing tweak (a check-box margin,
 a caret offset), prefer an **em** value (scales with the tier) and judge it
-against a rendered screenshot at 16px, not the maths — Poppins seats glyphs low
-in the line box. The dense **sidebar** metrics (#95, `0.875rem` headers) are
+against a rendered screenshot at 16px, not the maths — glyphs seat
+differently in the line box per typeface. The dense **sidebar** metrics (#95, `0.875rem` headers) are
 rem-pinned and intentionally stay 14px regardless of the base.
+
+### Typefaces (bundled, since the fruity-palette pass)
+
+- **Body: Maven Pro** (`$font-family-sans-serif`). **Display: Poppins**, a
+  theme token `$dx-font-family-display` → `--dx-font-family-display`, applied
+  by the theme to **h1–h4 / `.h1`–`.h4` only** (via `$headings-font-family`;
+  h5/h6 are reset to the body face). Consumers use the token for product names;
+  dfl applies it to nothing else. Never call it "display name": that phrase is
+  a product field downstream.
+- **Both are bundled** as woff2 with `@font-face` + `font-display: swap`
+  (`$dx-bundled-fonts` in theme.scss): Maven Pro 400/500/600/700, Poppins
+  500/600. Sources and their SIL OFL 1.1 licences live in
+  `resources/fonts/<family>/` (`OFL.txt` beside the files; the package ships
+  `resources`). A weight that is not in the list gets synthesised, so add a
+  face rather than relying on it.
+- **Extraction**: Vite inlines every CSS-referenced woff2 in lib mode, so
+  `scripts/extract-icon-font.mjs` writes EVERY inlined woff2 out to
+  `dist/assets/<source-name>-<hash>.woff2`, naming each by matching its bytes to
+  `resources/fonts/**` or the bootstrap-icons font. Same reason and mechanism
+  as the icon font (#77).
+- Poppins was converted from the TTF with fontTools (`flavor='woff2'`); the
+  Maven Pro files are the upstream woff2s, unmodified (Maven Pro has a Reserved
+  Font Name, so a modified copy could not keep the name).
+- **Test the faces LOAD, not the names**: `tests/bundle/theme-fonts.test.ts`
+  renders text in each face and asserts the `document.fonts` entry reached
+  `status === "loaded"`. A `font-family` check passes with the font missing
+  (it did for Poppins, which the theme named but never shipped), and a face that no rendered text uses
+  stays `unloaded`, which the test also catches.
 
 ### Layout tokens: dashboard gutter and form label column
 
@@ -1128,6 +1156,9 @@ fetches it, pages without icons don't.
 
 Nothing changes for consumers: a bundler resolves the relative `url()` out of
 `node_modules`, a plain `<link>` resolves it next to the stylesheet.
+
+The theme's bundled text fonts (Maven Pro, Poppins) go through the same
+script; see "Typefaces" under Styling Guidelines.
 
 Guarded by `tests/bundle/icon-font.test.ts`, because the failure mode is
 **silent** — re-inlining still works, it just quietly triples the CSS again.

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Bundle the theme's fonts: Maven Pro (400, 500, 600, 700) for body text and
+  Poppins (500, 600) as the display face, as woff2 files with `@font-face`
+  and `font-display: swap`. Until now the theme named Poppins without shipping
+  it, so it only rendered where it was installed. Poppins is exposed as
+  `--dx-font-family-display` (`$dx-font-family-display`) and used for h1–h4.
+
 ### Changed
 
 - Switch the status colours to a lighter, fruitier palette: lime success,

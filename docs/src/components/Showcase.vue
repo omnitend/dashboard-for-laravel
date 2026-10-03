@@ -49,9 +49,12 @@ const typeScale = [
 ];
 
 const weights = [
-  { weight: 400, label: 'Regular (base)' },
-  { weight: 500, label: 'Medium (buttons, labels)' },
-  { weight: 600, label: 'Semibold (headings)' },
+  { family: 'Maven Pro', weight: 400, label: 'Regular (body)' },
+  { family: 'Maven Pro', weight: 500, label: 'Medium (buttons, labels)' },
+  { family: 'Maven Pro', weight: 600, label: 'Semibold' },
+  { family: 'Maven Pro', weight: 700, label: 'Bold (<strong>)' },
+  { family: 'Poppins', weight: 500, label: 'Display medium' },
+  { family: 'Poppins', weight: 600, label: 'Display semibold' },
 ];
 
 const radii = [
@@ -195,8 +198,10 @@ const baseComponents = gallery.filter((entry) => entry.category === 'base');
     <section class="showcase-section">
       <h2 id="type">Typography</h2>
       <p class="section-note">
-        Base family is <strong>Poppins</strong>, base size <strong>14px</strong>
-        (0.875rem), body weight 400, headings 600.
+        Body text is <strong>Maven Pro</strong>; h1–h4 use the display face
+        <strong>Poppins</strong> (<code>--dx-font-family-display</code>). Both ship
+        with the theme. Base size <strong>16px</strong> (1rem), body weight 400,
+        headings 600.
       </p>
       <div class="type-scale">
         <div v-for="row in typeScale" :key="row.tag" class="type-row">
@@ -215,8 +220,14 @@ const baseComponents = gallery.filter((entry) => entry.category === 'base');
 
       <h3 class="subhead">Weights</h3>
       <div class="weight-list">
-        <div v-for="item in weights" :key="item.weight" class="weight-row">
-          <span class="weight-sample" :style="{ fontWeight: item.weight }">Poppins {{ item.weight }}</span>
+        <div v-for="item in weights" :key="`${item.family}-${item.weight}`" class="weight-row">
+          <span
+            class="weight-sample"
+            :style="{
+              fontWeight: item.weight,
+              fontFamily: item.family === 'Poppins' ? 'var(--dx-font-family-display)' : undefined,
+            }"
+          >{{ item.family }} {{ item.weight }}</span>
           <span class="type-meta">{{ item.label }}</span>
         </div>
       </div>

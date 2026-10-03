@@ -49,7 +49,18 @@ $color-contrast-light: #fff; // Light text color (for dark backgrounds)
 // Typography
 // ----------------------------------------------------------------------------
 
-$font-family-base: "Poppins", sans-serif;
+// Two bundled typefaces (SIL OFL 1.1; woff2 + licence in resources/fonts/):
+// MAVEN PRO for body text, and POPPINS as the DISPLAY face, published as
+// `--dx-font-family-display`. The theme applies the display face to h1–h4 and
+// nothing else; consumers use the token for things like product names. Both
+// are declared with `@font-face` below, so they render on every machine, not
+// only where the font happens to be installed (the theme used to name Poppins
+// and ship no face for it, so most visitors got the generic sans-serif).
+$font-family-sans-serif: "Maven Pro", system-ui, -apple-system, "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, sans-serif;
+$dx-font-family-display: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, sans-serif;
+$headings-font-family: var(--dx-font-family-display);
 $font-size-base: 1rem; // 16px — the default tier. Legacy omnitend rendered body
 // and table text at 16px; the earlier 0.875rem (14px) shrank every ported page's
 // text ~12% while rem-fixed chrome stayed put, so controls read oversized and
@@ -360,6 +371,53 @@ $dashboard-navbar-content-height: calc(
 $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2")
   format("woff2");
 @import "bootstrap-icons/font/bootstrap-icons";
+
+// ----------------------------------------------------------------------------
+// Bundled text fonts
+// ----------------------------------------------------------------------------
+// Maven Pro (body) and Poppins (display), woff2 only, one face per weight the
+// theme uses: Maven Pro 400/500/600/700 (body, `.fw-medium`/`.fw-semibold`,
+// `<strong>`/`.fw-bold`), Poppins 500 (h1–h4) and 600 (`.fw-semibold` on a
+// display heading, e.g. DXDashboardNavbar's page title). A weight not listed
+// here is synthesised by the browser, so add a face rather than relying on it.
+//
+// These are extracted out of `dist/style.css` the same way as the icon font
+// (#77): Vite inlines every CSS-referenced woff2 in library mode, and
+// `scripts/extract-icon-font.mjs` writes each back out as
+// `dist/assets/<file>-<hash>.woff2`. A face downloads only when text actually
+// renders in it. `swap` shows the fallback stack while the file loads rather
+// than invisible text.
+$dx-bundled-fonts: (
+  ("Maven Pro", 400, "maven-pro/MavenPro-Regular"),
+  ("Maven Pro", 500, "maven-pro/MavenPro-Medium"),
+  ("Maven Pro", 600, "maven-pro/MavenPro-SemiBold"),
+  ("Maven Pro", 700, "maven-pro/MavenPro-Bold"),
+  ("Poppins", 500, "poppins/Poppins-Medium"),
+  ("Poppins", 600, "poppins/Poppins-SemiBold"),
+);
+
+@each $family, $weight, $file in $dx-bundled-fonts {
+  @font-face {
+    font-family: $family;
+    font-style: normal;
+    font-weight: $weight;
+    font-display: swap;
+    src: url("../fonts/#{$file}.woff2") format("woff2");
+  }
+}
+
+:root {
+  --dx-font-family-display: #{$dx-font-family-display};
+}
+
+// Bootstrap gives `$headings-font-family` to h1–h6; the display face is for
+// h1–h4 only, so the two smallest headings stay in the body face.
+h5,
+.h5,
+h6,
+.h6 {
+  font-family: var(--bs-body-font-family);
+}
 
 // ----------------------------------------------------------------------------
 // Forms
@@ -877,7 +935,7 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // Dropdowns — chevron caret (B14 / PO5)
 // ----------------------------------------------------------------------------
 // Bootstrap's `.dropdown-toggle::after` is a CSS border-triangle that sits high
-// against Poppins' line box and reads crude next to the rest of the theme.
+// against the body font's line box and reads crude next to the rest of the theme.
 // Replace it with the bootstrap-icons chevron glyph, optically centred with a
 // little breathing room from the label. The font is already available: the
 // theme `@import`s `bootstrap-icons/font/bootstrap-icons` (declaring the

@@ -46,6 +46,27 @@ that:
 - **Links are the brand navy** (`#151e2d`) and keep their underline, which is
   what marks them as links.
 
+## Typography
+
+The theme ships two typefaces, both under the SIL Open Font License and
+bundled as woff2 files next to `theme.css` (each downloads only when text
+renders in it):
+
+- **Maven Pro** is the body face (`$font-family-sans-serif`).
+- **Poppins** is the display face, published as `--dx-font-family-display`.
+  The theme uses it for `h1`–`h4` (and `.h1`–`.h4`) only; use the token for
+  your own display text, such as a product name:
+
+```css
+.product-title {
+  font-family: var(--dx-font-family-display);
+  font-weight: 500;
+}
+```
+
+Bundled weights: Maven Pro 400, 500, 600 and 700; Poppins 500 and 600. Other
+weights are synthesised by the browser.
+
 ## The token model
 
 Each of the six variants carries three colour roles, defined in one Sass map
