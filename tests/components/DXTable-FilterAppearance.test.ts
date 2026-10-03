@@ -85,3 +85,32 @@ it('preserves consumer subheader content alongside filters', async () => {
   expect(rows[1].querySelector('input')).not.toBeNull();
   expect(rows[1].querySelector('.consumer-sub')).not.toBeNull();
 });
+
+describe('text filter placeholders', () => {
+  // The magnifier already says "search", so the default is just the column
+  // label and an ellipsis. Was "Search Name..." beside the icon.
+  const placeholdersFor = async (fields: Record<string, unknown>[]) => {
+    const screen = render({
+      render: () => h(BApp, {}, () => h(DXTable, {
+        clientSide: true,
+        items: [{ id: 1, name: 'Sample', account_code: 'A1', email: 'a@example.com' }],
+        fields,
+      })),
+    });
+    await expect.poll(() => screen.container.querySelectorAll('.dx-table-filter-cell input').length).toBe(fields.length);
+    return [...screen.container.querySelectorAll<HTMLInputElement>('.dx-table-filter-cell input')].map((input) => input.placeholder);
+  };
+
+  it('defaults to the column label plus an ellipsis, or the key when there is no label', async () => {
+    expect(await placeholdersFor([
+      { key: 'name', label: 'Name', filter: 'text' },
+      { key: 'account_code', filter: 'text' },
+    ])).toEqual(['Name…', 'account_code…']);
+  });
+
+  it('keeps a consumer-provided filterPlaceholder', async () => {
+    expect(await placeholdersFor([
+      { key: 'email', label: 'Email', filter: 'text', filterPlaceholder: 'Search by email address' },
+    ])).toEqual(['Search by email address']);
+  });
+});

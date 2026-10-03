@@ -100,7 +100,7 @@
                                 <DFormInput
                                     v-if="field.filter === 'text'"
                                     :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                    :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
+                                    :placeholder="field.filterPlaceholder || `${field.label || field.key}…`"
                                     size="sm"
                                     @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                 />
