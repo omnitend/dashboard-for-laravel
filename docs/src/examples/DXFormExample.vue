@@ -36,7 +36,6 @@
       :form="contactForm"
       :fields="contactFields"
       layout="horizontal"
-      :label-cols="3"
       :show-submit="false"
     />
   </div>
