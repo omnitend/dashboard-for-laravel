@@ -22,13 +22,18 @@ that:
 
 - **Only `primary` is a bold solid button** (the brand navy) — one loud action
   per screen. Everything else stays quiet.
-- **`secondary` / `success` / `danger` / `warning` / `info` buttons are
-  _soft_** — a light same-hue tint background with a dark same-hue label. A
+- **`secondary` / `success` / `danger` / `warning` / `info` / `pending`
+  buttons are _soft_** — a light same-hue tint background with a dark same-hue label. A
   soft light-red "Delete" still reads as danger without a heavy fill.
+- **Disabled buttons are neutral.** Whatever the variant, a disabled button
+  is light grey with a grey label (outline and link buttons: grey border or
+  text, no fill), so it never looks pressable. Retune with
+  `--dx-btn-disabled-bg`, `--dx-btn-disabled-color` and
+  `--dx-btn-disabled-outline-border`.
 - **Tertiary actions are ghosts** — the `link` variant is restyled as a quiet
   button: body-colour text, no underline, a faint hover surface.
-- **All status colour is soft.** Badges, alerts, and toasts use light tints,
-  never saturated fills.
+- **All status colour is soft.** Badges and toasts use light tints, and alerts
+  a paler step of the same tint with a border; never saturated fills.
 
 ### Semantic guidance
 
@@ -38,20 +43,56 @@ that:
   reward belongs in a "Saved ✓" toast or badge after it succeeds, not on the
   button itself.
 - **`danger` is for destructive actions** (delete, remove) and error states.
-  Since v0.31.0 it renders soft (light red + dark-red label), matching the
-  rest of the system; the emphasis red still carries outlines and links.
-- **Links are info-blue** (`#2563eb`), independent of the near-black brand
-  primary — a navy link would read as bold text, not a link.
+  It renders soft (light magenta + dark-magenta label), matching the rest of
+  the system; the deep-magenta emphasis carries outlines and links.
+- **Form errors are crimson** (`#c8102e`, 5.88:1 on white), not the danger
+  magenta: an invalid field must read as "wrong" at a glance. Danger badges and
+  buttons stay magenta.
+- **Links are the brand navy** (`#151e2d`) and keep their underline, which is
+  what marks them as links.
+- **`pending` means waiting, and the next move is not yours** ("awaiting
+  payment", "sent to printer, not yet confirmed"). It is a violet, distinct
+  from `info`'s slate blue. It works everywhere a stock variant does
+  (`variant="pending"` on badges and buttons, `outline-pending`,
+  `.alert-pending`, `.text-pending`, `.bg-pending-subtle`, `.table-pending`,
+  `.list-group-item-pending`, toasts), and the theme adds it to
+  bootstrap-vue-next's variant types.
+
+## Typography
+
+The theme ships two typefaces, both under the SIL Open Font License and
+bundled as woff2 files next to `theme.css` (each downloads only when text
+renders in it):
+
+- **Maven Pro** is the body face (`$font-family-sans-serif`).
+- **Poppins** is the display face, published as `--dx-font-family-display`.
+  The theme uses it for `h1`–`h4` (and `.h1`–`.h4`) only; use the token for
+  your own display text, such as a product name:
+
+```css
+.product-title {
+  font-family: var(--dx-font-family-display);
+  font-weight: 500;
+}
+```
+
+Bundled weights: Maven Pro 400, 500, 600 and 700; Poppins 500 and 600. Other
+weights are synthesised by the browser.
+
+Headings are compact and restrained, all at weight 500: `h1` 1.25rem, `h2`
+1.15rem, `h3` and `h4` 1.05rem, `h5` and `h6` 1rem (body size). Table body
+text is the body colour (`#212529`) and table headers are weight 500 in the
+muted `--dx-table-header-color`.
 
 ## The token model
 
-Each of the six variants carries three colour roles, defined in one Sass map
+Each of the seven variants carries three colour roles, defined in one Sass map
 (`$dx-variants` in `resources/css/theme.scss`):
 
 | Token | Drives |
 |---|---|
 | **solid** (bg + text) | The `.btn-primary` fill and label, the switch-ON green, and large fills — `.progress-bar.bg-*` uses each variant's vivid solid, not the dark emphasis |
-| **soft** (bg + text) | Soft buttons (`.btn-secondary` etc.), all badges (`.text-bg-*`), alerts (`.alert-*`), toast tints |
+| **soft** (bg + text) | Soft buttons (`.btn-secondary` etc.), all badges (`.text-bg-*`), toast tints; alerts (`.alert-*`) take the soft text on the paler subtle tint |
 | **emphasis** | Outline buttons (`.btn-outline-*`), coloured links (`.link-*`), text utilities (`.text-*`) — the shade that reads on a white background |
 
 The map also records whether each variant's button renders **solid** or
@@ -63,12 +104,19 @@ no colour of its own.
 Two details make the system cohesive:
 
 - **Button text is a same-hue tint**, not plain black or white — light-hue text
-  on dark fills, dark-hue text on light tints. (`danger` is the one exception:
-  white, because a delete-red can't carry a same-hue tint at AA contrast.)
+  on dark fills, dark-hue text on light tints.
 - **The base `$theme-colors` carry each hue's _emphasis_ shade** — so
   `.text-success`, `.link-warning`, `.border-info` and outline buttons are
   legible on white without any extra overrides. The solid fills and soft tints
   are applied after the Bootstrap import, from the map.
+- **Bootstrap's subtle family follows the soft tints.** `.bg-*-subtle` and the
+  `.table-*` row variants are the soft tint mixed with white to 70% white,
+  `.border-*-subtle` is the tint 10% darker, and `.text-*-emphasis` is the soft
+  text, so a subtle surface is a paler step of the badge colour.
+- **Alerts use the subtle tint, with a border.** `.alert-*` paints the 70%-white
+  subtle background, the `border-*-subtle` shade as its border and the soft
+  text. A large box in the full soft tint is too loud (warning's soft tint is
+  its solid butter yellow).
 
 All colour pairs are WCAG AA verified.
 
@@ -78,18 +126,22 @@ All colour pairs are WCAG AA verified.
 |---|---|---|---|---|---|---|
 | `primary` | `#151e2d` | `#e9f0f8` | `#e9f0f8` | `#151e2d` | `#151e2d` | **solid** |
 | `secondary` | `#475569` | `#e6ebf2` | `#e6ebf2` | `#29374a` | `#475569` | soft |
-| `success` | `#84cc16` | `#203b0e` | `#cdf9b2` | `#203b0e` | `#4d7c0f` | soft |
-| `danger` | `#dc2626` | `#ffffff` | `#f8d4d4` | `#7a1a1a` | `#dc2626` | soft |
-| `warning` | `#f59e0b` | `#512d05` | `#fce5c4` | `#512d05` | `#b45309` | soft |
-| `info` | `#2563eb` | `#eef4ff` | `#deebff` | `#12376c` | `#2563eb` | soft |
+| `success` | `#7bf25a` | `#153c04` | `#c3faaa` | `#153c04` | `#236b12` | soft |
+| `danger` | `#e46ab9` | `#3d0a2f` | `#f9dff2` | `#61124c` | `#a3247f` | soft |
+| `warning` | `#efd574` | `#121419` | `#efd574` | `#121419` | `#8a6d00` | soft |
+| `info` | `#7fd7fd` | `#192547` | `#d5dcf0` | `#192547` | `#31586d` | soft |
+| `pending` | `#b9a3f0` | `#2a1260` | `#e3d3fb` | `#3b1a80` | `#6a43c4` | soft |
 
-Default link colour: `#2563eb` (info-blue).
+Default link colour: `#151e2d` (brand navy, underlined). Form error colour:
+`#c8102e` (crimson).
 
 ### Chart palette
 
-Data-viz gets its own palette — eight vivid hues published as `--dx-chart-1` …
-`--dx-chart-8`, separate from the semantic UI colours (whose emphasis shades are
-too muted for series, and whose status meanings shouldn't leak into "series 2").
+Data-viz gets its own palette — eight light, vivid fills published as
+`--dx-chart-1` … `--dx-chart-8`, a darker line shade per slot
+(`--dx-chart-line-1` … `--dx-chart-line-8`) and one outline colour
+(`--dx-chart-edge`), kept as their own lists rather than read from the semantic
+UI colours.
 The chart components read these variables at runtime, so overriding them
 rethemes every chart. Under `data-bs-theme="dark"` the theme remaps the same
 eight slots to lighter, dark-surface-validated steps (same hue order — it
@@ -174,7 +226,7 @@ $dx-variants: (
 ```
 
 A single loop after the Bootstrap import applies the whole system (buttons,
-outlines, badges, alerts) from this map, so a palette change is a map edit —
+outlines, badges, alerts, the subtle family) from this map, so a palette change is a map edit —
 there is no second place to update.
 
 **Check contrast when you change colours.** Every pair in the shipped palette

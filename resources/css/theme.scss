@@ -9,6 +9,7 @@
 @use "sass:color";
 @use "sass:list";
 @use "sass:map";
+@use "sass:math";
 
 // ----------------------------------------------------------------------------
 // Colors
@@ -17,21 +18,23 @@
 // Base $theme-colors carry each hue's READABLE-ON-LIGHT identity (its "emphasis"
 // shade) — this is what `.text-*`, `.link-*`, `.border-*` and outline buttons
 // use, so every one must clear AA on white. The one bold solid FILL (the primary
-// button) and SOFT tints (soft buttons incl. danger, badges, alerts) are applied
+// button) and SOFT tints (soft buttons incl. danger, badges) are applied
 // as explicit overrides after the Bootstrap import, from the $dx-variants map. See
 // plans/2026-07-18-semantic-colour-system.md.
 $primary: #151e2d; // Omni Tend brand navy (16.73:1 on white)
 $secondary: #475569; // Slate-600 (7.58:1 on white)
-$success: #4d7c0f; // Lime-700 emphasis (4.99:1 on white); soft/vivid tints in $dx-variants
-$danger: #dc2626; // Red-600 (4.83:1 on white)
-$warning: #b45309; // Amber-700 emphasis (5.02:1 on white)
-$info: #2563eb; // Blue-600 (5.17:1 on white)
+$success: #236b12; // Deep green emphasis (6.60:1 on white); vivid/soft tints in $dx-variants
+$danger: #a3247f; // Deep magenta emphasis (6.74:1 on white)
+$warning: #8a6d00; // Deep ochre emphasis (4.92:1 on white)
+$info: #31586d; // Deep slate-teal emphasis (7.64:1 on white)
 $light: #f8fafc; // Slate-50 (uses dark text)
 $dark: #151e2d; // Brand navy — sidebar/high-contrast surfaces (was Slate-900 #0f172a)
 
-// Links are the info-blue, independent of the near-black brand primary (a navy
-// link would read as bold text, not a link).
-$link-color: #2563eb;
+// Links are the brand navy (16.73:1 on white). A navy link would read as bold
+// text if it lost its underline, so links KEEP Bootstrap's default underline
+// ($link-decoration is not overridden here; only `.btn-link`, the ghost
+// button, drops it). The underline, not the hue, is what marks a link.
+$link-color: #151e2d;
 $link-shade-percentage: 15%;
 
 // ----------------------------------------------------------------------------
@@ -47,7 +50,18 @@ $color-contrast-light: #fff; // Light text color (for dark backgrounds)
 // Typography
 // ----------------------------------------------------------------------------
 
-$font-family-base: "Poppins", sans-serif;
+// Two bundled typefaces (SIL OFL 1.1; woff2 + licence in resources/fonts/):
+// MAVEN PRO for body text, and POPPINS as the DISPLAY face, published as
+// `--dx-font-family-display`. The theme applies the display face to h1–h4 and
+// nothing else; consumers use the token for things like product names. Both
+// are declared with `@font-face` below, so they render on every machine, not
+// only where the font happens to be installed (the theme used to name Poppins
+// and ship no face for it, so most visitors got the generic sans-serif).
+$font-family-sans-serif: "Maven Pro", system-ui, -apple-system, "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, sans-serif;
+$dx-font-family-display: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto,
+  "Helvetica Neue", Arial, sans-serif;
+$headings-font-family: var(--dx-font-family-display);
 $font-size-base: 1rem; // 16px — the default tier. Legacy omnitend rendered body
 // and table text at 16px; the earlier 0.875rem (14px) shrank every ported page's
 // text ~12% while rem-fixed chrome stayed put, so controls read oversized and
@@ -56,14 +70,19 @@ $font-size-base: 1rem; // 16px — the default tier. Legacy omnitend rendered bo
 $font-weight-base: 400;
 $line-height-base: 1.5;
 
-$h1-font-size: 2rem; // 32px
-$h2-font-size: 1.75rem; // 28px
-$h3-font-size: 1.5rem; // 24px
-$h4-font-size: 1.25rem; // 20px
-$h5-font-size: 1.125rem; // 18px
+// A compact, restrained heading scale for dense admin screens: chosen from
+// rendered comparisons against legacy omnitend, which set headings at weight
+// 500. The old 2rem…1.25rem at 600 shouted over the data. h1 is at Bootstrap's
+// RFS threshold (1.25rem), so no heading is rescaled on narrow viewports. h5
+// and h6 sit at body size so neither outranks h4.
+$h1-font-size: 1.25rem; // 20px
+$h2-font-size: 1.15rem; // 18.4px
+$h3-font-size: 1.05rem; // 16.8px
+$h4-font-size: 1.05rem; // 16.8px
+$h5-font-size: 1rem; // 16px
 $h6-font-size: 1rem; // 16px
 
-$headings-font-weight: 600;
+$headings-font-weight: 500;
 
 // ----------------------------------------------------------------------------
 // Spacing
@@ -137,7 +156,9 @@ $card-border-radius: $border-radius;
 $card-border-color: $border-color;
 $card-box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
   0 1px 2px 0 rgba(0, 0, 0, 0.06);
-$card-cap-bg: transparent;
+// A quiet blue-tinted cap (legacy Omni Tend's card header) so a card's title
+// reads as a band above its body rather than floating on the same white.
+$card-cap-bg: #f6f8fd;
 $card-spacer-y: 1.5rem; // 24px vertical padding
 $card-spacer-x: 1.5rem; // 24px horizontal padding
 
@@ -145,6 +166,11 @@ $card-spacer-x: 1.5rem; // 24px horizontal padding
 // Tables
 // ----------------------------------------------------------------------------
 
+// Body cells take the body text colour (#212529) rather than Bootstrap's
+// `--bs-emphasis-color` (pure black), and header cells a medium weight instead
+// of the browser's bold. Header COLOUR is `--dx-table-header-color` (below).
+$table-color: var(--bs-body-color);
+$table-th-font-weight: 500;
 $table-cell-padding-y: 0.75rem;
 $table-cell-padding-x: 1rem;
 $table-striped-bg: #f9fafb; // Gray-50
@@ -177,24 +203,134 @@ $badge-font-weight: 500;
 
 // The ONE source of truth for the semantic colour system. Each variant carries
 // its SOLID fill + same-hue text (the primary button, solid fills), its SOFT
-// tint pair (soft buttons, badges, alerts, status), its EMPHASIS shade (outline
-// buttons, coloured links, .text-*), and whether its button is solid or soft.
+// tint pair (soft buttons, badges, status; alerts use its paler subtle mix),
+// its EMPHASIS shade (outline buttons, coloured links, .text-*), and whether
+// its button is solid or soft.
 // The overrides after the Bootstrap import loop over this map. All pairs are
 // WCAG AA verified. See plans/2026-07-18-semantic-colour-system.md.
 //
 // Only PRIMARY is a bold solid button — one loud action (the brand). Everything
-// else, INCLUDING danger, is soft: a soft red "Delete" reads as danger without
-// a heavy fill, and one solid button per screen keeps the hierarchy clear. (Was
-// primary+danger solid; danger's soft was also an off-hue plum — it is now a
-// same-hue light red, matching the danger emphasis and the switch OFF.)
+// else, INCLUDING danger, is soft: a soft magenta "Delete" reads as danger
+// without a heavy fill, and one solid button per screen keeps the hierarchy
+// clear.
+//
+// The status hues are the "fruity" palette (2026-10): a vivid lime, magenta,
+// butter yellow and sky blue for the solid fills, light tints of the same hues
+// for the soft pair, and a deep shade of each for the emphasis. Every label is
+// a dark same-hue ink (no white text on a status fill). Contrast: solid text on
+// solid fill 5.50:1 (danger) to 12.67:1 (warning); soft text on soft fill
+// 9.93:1 to 14.56:1; emphasis on white 4.92:1 (warning) to 16.73:1. Warning's
+// soft pair IS its solid pair: the butter yellow is already light enough to be
+// the tint.
+//
+// PENDING is a status of its own: waiting, and the next move is not yours
+// ("awaiting payment", "sent to printer, not yet confirmed"). It is a violet
+// from the chart lavender (#b9a3f0 is chart slot 5), kept clear of info's
+// slate blue by hue and by its violet ink. Contrast: solid 7.06:1, soft
+// 9.10:1, emphasis 6.54:1 on white, soft text on its subtle (alert) tint
+// 11.58:1.
 $dx-variants: (
   "primary": (solid-bg: #151e2d, solid-text: #e9f0f8, soft-bg: #e9f0f8, soft-text: #151e2d, emphasis: #151e2d, button: "solid"),
   "secondary": (solid-bg: #475569, solid-text: #e6ebf2, soft-bg: #e6ebf2, soft-text: #29374a, emphasis: #475569, button: "soft"),
-  "success": (solid-bg: #84cc16, solid-text: #203b0e, soft-bg: #cdf9b2, soft-text: #203b0e, emphasis: #4d7c0f, button: "soft"),
-  "danger": (solid-bg: #dc2626, solid-text: #ffffff, soft-bg: #f8d4d4, soft-text: #7a1a1a, emphasis: #dc2626, button: "soft"),
-  "warning": (solid-bg: #f59e0b, solid-text: #512d05, soft-bg: #fce5c4, soft-text: #512d05, emphasis: #b45309, button: "soft"),
-  "info": (solid-bg: #2563eb, solid-text: #eef4ff, soft-bg: #deebff, soft-text: #12376c, emphasis: #2563eb, button: "soft"),
+  "success": (solid-bg: #7bf25a, solid-text: #153c04, soft-bg: #c3faaa, soft-text: #153c04, emphasis: #236b12, button: "soft"),
+  "danger": (solid-bg: #e46ab9, solid-text: #3d0a2f, soft-bg: #f9dff2, soft-text: #61124c, emphasis: #a3247f, button: "soft"),
+  "warning": (solid-bg: #efd574, solid-text: #121419, soft-bg: #efd574, soft-text: #121419, emphasis: #8a6d00, button: "soft"),
+  "info": (solid-bg: #7fd7fd, solid-text: #192547, soft-bg: #d5dcf0, soft-text: #192547, emphasis: #31586d, button: "soft"),
+  "pending": (solid-bg: #b9a3f0, solid-text: #2a1260, soft-bg: #e3d3fb, soft-text: #3b1a80, emphasis: #6a43c4, button: "soft"),
 );
+
+// Bootstrap's base map plus `pending` (its emphasis, like every other base
+// colour), so Bootstrap generates `.btn-pending`, `.btn-outline-pending`,
+// `.text-bg-pending`, `.text-pending`, `.link-pending`, `.border-pending`,
+// `.alert-pending` and `.list-group-item-pending` itself. The subtle maps get
+// their `pending` entries just before the Bootstrap import (they only exist
+// once Bootstrap's own variables and maps have been read).
+$theme-colors: (
+  "primary": $primary,
+  "secondary": $secondary,
+  "success": $success,
+  "info": $info,
+  "warning": $warning,
+  "danger": $danger,
+  "pending": map.get(map.get($dx-variants, "pending"), "emphasis"),
+  "light": $light,
+  "dark": $dark,
+);
+
+// Bootstrap's "subtle" family (`.bg-*-subtle`, `.border-*-subtle`,
+// `.text-*-emphasis`, list-group and table variants) is derived from the SAME
+// soft tints, so a subtle surface is a paler cousin of the badge rather than a
+// separate, greyer family Bootstrap would otherwise mix from the dark emphasis
+// base. Set here, before the import, so Bootstrap's own maps pick them up.
+//
+// The subtle background is the soft tint mixed with white so the result is 70%
+// white. On real pages legacy omnitend's tinted table rows measure about that
+// (danger #fdf6fb, warning #fbf3d8); the earlier 50% mix read too strong for a
+// row or an alert, which are large surfaces.
+// Sass cannot create variables in a loop, hence one line per variable; the
+// functions keep the three formulas in one place. Dark mode's `*-dark`
+// variables are left to Bootstrap.
+@function dx-soft($name, $key) {
+  @return map.get(map.get($dx-variants, $name), $key);
+}
+@function dx-subtle-bg($name) {
+  @return color.mix(#fff, dx-soft($name, "soft-bg"), 70%);
+}
+@function dx-subtle-border($name) {
+  @return color.scale(dx-soft($name, "soft-bg"), $lightness: -10%);
+}
+
+$primary-bg-subtle: dx-subtle-bg("primary");
+$primary-border-subtle: dx-subtle-border("primary");
+$primary-text-emphasis: dx-soft("primary", "soft-text");
+$secondary-bg-subtle: dx-subtle-bg("secondary");
+$secondary-border-subtle: dx-subtle-border("secondary");
+$secondary-text-emphasis: dx-soft("secondary", "soft-text");
+$success-bg-subtle: dx-subtle-bg("success");
+$success-border-subtle: dx-subtle-border("success");
+$success-text-emphasis: dx-soft("success", "soft-text");
+$danger-bg-subtle: dx-subtle-bg("danger");
+$danger-border-subtle: dx-subtle-border("danger");
+$danger-text-emphasis: dx-soft("danger", "soft-text");
+$warning-bg-subtle: dx-subtle-bg("warning");
+$warning-border-subtle: dx-subtle-border("warning");
+$warning-text-emphasis: dx-soft("warning", "soft-text");
+$info-bg-subtle: dx-subtle-bg("info");
+$info-border-subtle: dx-subtle-border("info");
+$info-text-emphasis: dx-soft("info", "soft-text");
+
+// Table row variants (`.table-success` etc.) use the same 70%-white tints.
+// Bootstrap would otherwise shift each base colour toward white, which for the
+// dark emphasis bases gives a muddy row tint.
+$table-variants: (
+  "primary": dx-subtle-bg("primary"),
+  "secondary": dx-subtle-bg("secondary"),
+  "success": dx-subtle-bg("success"),
+  "danger": dx-subtle-bg("danger"),
+  "warning": dx-subtle-bg("warning"),
+  "info": dx-subtle-bg("info"),
+  "pending": dx-subtle-bg("pending"),
+  "light": $light,
+  "dark": $dark,
+);
+
+// Form errors are crimson, NOT the danger magenta: an invalid field has to
+// read as "wrong" at a glance, which the playful magenta badge hue does not.
+// #c8102e is 5.88:1 on white. Danger badges and buttons stay magenta.
+$dx-form-error: #c8102e;
+$form-invalid-color: $dx-form-error;
+$form-invalid-border-color: $dx-form-error;
+$form-feedback-invalid-color: $dx-form-error;
+$form-feedback-icon-invalid-color: $dx-form-error;
+
+// Width of a horizontal field's label column when the caller sets no
+// `labelCols` (DXField/DXForm). 45% sits between Bootstrap's 5/12 and 6/12
+// steps on purpose: chosen from rendered options, it lets a label with help
+// text wrap far less than the old 3/12 without starving the input. Applies
+// from `sm` up; below `sm` the label stacks. Published as
+// `--dx-form-label-width` so a consumer can retune it in CSS. An explicit
+// `labelCols` uses the 12-column grid instead and ignores this.
+$dx-form-label-width: 45%;
 
 // ----------------------------------------------------------------------------
 // Dashboard
@@ -203,6 +339,14 @@ $dx-variants: (
 $dashboard-sidebar-width: 280px;
 $dashboard-sidebar-collapsed-width: 80px;
 $dashboard-navbar-height: 64px;
+
+// The shell's one horizontal gutter: the navbar's inner padding AND the page
+// content's left/right edge both come from it, so the navbar's first item (the
+// menu toggle, or whatever leads the bar) starts exactly where the page content
+// starts. They used to be 12px and 36px, so nothing on the bar lined up with
+// anything on the page. Published as `--dx-dashboard-gutter-x` on `:root`;
+// a consumer can retune both edges together by overriding that.
+$dashboard-gutter-x: 20px;
 
 // The bar's vertical padding, and the single-row CONTENT BUDGET that follows
 // from it. Everything on the bar's single row — the avatar toggle, whatever a
@@ -237,6 +381,48 @@ $dashboard-navbar-content-height: calc(
 // Import Bootstrap
 // ----------------------------------------------------------------------------
 
+// `pending` in the subtle family. Bootstrap's subtle maps, and the utility maps
+// behind `.bg-*-subtle`, `.border-*-subtle` and `.text-*-emphasis`, list the
+// eight stock colours by name and are defined from Bootstrap's own variables,
+// so they can only be extended after those are read. Import the configuration
+// layer first, merge, then import Bootstrap as a whole: every variable and map
+// in it is `!default`, so the second read keeps these values and the layer
+// emits no CSS. Dark mode follows Bootstrap's own derivation from the base
+// colour (text tint 40%, background shade 80%, border shade 40%).
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+
+$dx-pending-emphasis: map.get(map.get($dx-variants, "pending"), "emphasis");
+$theme-colors-text: map.merge($theme-colors-text, ("pending": dx-soft("pending", "soft-text")));
+$theme-colors-bg-subtle: map.merge($theme-colors-bg-subtle, ("pending": dx-subtle-bg("pending")));
+$theme-colors-border-subtle: map.merge(
+  $theme-colors-border-subtle,
+  ("pending": dx-subtle-border("pending"))
+);
+$theme-colors-text-dark: map.merge(
+  $theme-colors-text-dark,
+  ("pending": tint-color($dx-pending-emphasis, 40%))
+);
+$theme-colors-bg-subtle-dark: map.merge(
+  $theme-colors-bg-subtle-dark,
+  ("pending": shade-color($dx-pending-emphasis, 80%))
+);
+$theme-colors-border-subtle-dark: map.merge(
+  $theme-colors-border-subtle-dark,
+  ("pending": shade-color($dx-pending-emphasis, 40%))
+);
+$utilities-text-emphasis-colors: map.merge(
+  $utilities-text-emphasis-colors,
+  ("pending-emphasis": var(--bs-pending-text-emphasis))
+);
+$utilities-bg-subtle: map.merge($utilities-bg-subtle, ("pending-subtle": var(--bs-pending-bg-subtle)));
+$utilities-border-subtle: map.merge(
+  $utilities-border-subtle,
+  ("pending-subtle": var(--bs-pending-border-subtle))
+);
+
 @import "bootstrap/scss/bootstrap";
 
 // ----------------------------------------------------------------------------
@@ -269,6 +455,53 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 @import "bootstrap-icons/font/bootstrap-icons";
 
 // ----------------------------------------------------------------------------
+// Bundled text fonts
+// ----------------------------------------------------------------------------
+// Maven Pro (body) and Poppins (display), woff2 only, one face per weight the
+// theme uses: Maven Pro 400/500/600/700 (body, `.fw-medium`/`.fw-semibold`,
+// `<strong>`/`.fw-bold`), Poppins 500 (h1–h4) and 600 (`.fw-semibold` on a
+// display heading, e.g. DXDashboardNavbar's page title). A weight not listed
+// here is synthesised by the browser, so add a face rather than relying on it.
+//
+// These are extracted out of `dist/style.css` the same way as the icon font
+// (#77): Vite inlines every CSS-referenced woff2 in library mode, and
+// `scripts/extract-icon-font.mjs` writes each back out as
+// `dist/assets/<file>-<hash>.woff2`. A face downloads only when text actually
+// renders in it. `swap` shows the fallback stack while the file loads rather
+// than invisible text.
+$dx-bundled-fonts: (
+  ("Maven Pro", 400, "maven-pro/MavenPro-Regular"),
+  ("Maven Pro", 500, "maven-pro/MavenPro-Medium"),
+  ("Maven Pro", 600, "maven-pro/MavenPro-SemiBold"),
+  ("Maven Pro", 700, "maven-pro/MavenPro-Bold"),
+  ("Poppins", 500, "poppins/Poppins-Medium"),
+  ("Poppins", 600, "poppins/Poppins-SemiBold"),
+);
+
+@each $family, $weight, $file in $dx-bundled-fonts {
+  @font-face {
+    font-family: $family;
+    font-style: normal;
+    font-weight: $weight;
+    font-display: swap;
+    src: url("../fonts/#{$file}.woff2") format("woff2");
+  }
+}
+
+:root {
+  --dx-font-family-display: #{$dx-font-family-display};
+}
+
+// Bootstrap gives `$headings-font-family` to h1–h6; the display face is for
+// h1–h4 only, so the two smallest headings stay in the body face.
+h5,
+.h5,
+h6,
+.h6 {
+  font-family: var(--bs-body-font-family);
+}
+
+// ----------------------------------------------------------------------------
 // Forms
 // ----------------------------------------------------------------------------
 // Bootstrap's compiled `.form-control`/`.form-select` height isn't exposed as
@@ -286,6 +519,18 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   --dx-input-height: calc(
     #{$input-line-height * 1em} + #{$input-padding-y * 2} + (2 * #{$input-border-width})
   );
+  --dx-form-label-width: #{$dx-form-label-width};
+}
+
+// The default horizontal label column. DXField renders it with BFormGroup's
+// `labelColsSm` (so it is a `col-sm` that stacks below `sm`, as any `labelCols`
+// breakpoint does) plus this modifier, which fixes its width; the input column
+// is a plain `.col` and takes the rest. `.row >` lifts it over `.col-sm`.
+@include media-breakpoint-up(sm) {
+  .row > .dx-field-label-col--default-width {
+    flex: 0 0 auto;
+    width: var(--dx-form-label-width);
+  }
 }
 
 // Bootstrap sizes grouped buttons with padding properties, but leaves their
@@ -317,6 +562,51 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   }
 }
 
+// A display-only value in a form row: a badge, a line of text, a short stack
+// of lines. It has no input box, so on its own it sits at the top of the row
+// while the label column (`.col-form-label`) is padded down to an input's text
+// line. This gives it the same offset and line-height Bootstrap gives
+// `.col-form-label` and `.form-control-plaintext`, so its FIRST line shares
+// the label's centre. DXField wraps a `plaintext` field's `value` slot in it;
+// consumers put it on their own display-only content. A `.form-control-
+// plaintext` inside already carries the offset, so it drops its own.
+.dx-form-plaintext {
+  padding-top: calc(#{$input-padding-y} + #{$input-border-width});
+  padding-bottom: calc(#{$input-padding-y} + #{$input-border-width});
+  line-height: $input-line-height;
+
+  > .form-control-plaintext {
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+  }
+
+  // A badge is an inline-block in a smaller font, so neither `baseline` nor
+  // `middle` centres it on the line (both land ~2px off, the way depending on
+  // the font's x-height). Pin it to the line's top and push it down by half
+  // the spare height: the line is `$input-line-height` parent-ems, the badge
+  // is 1em (Bootstrap's `line-height: 1`) plus its padding, in badge-ems.
+  .badge {
+    vertical-align: top;
+    margin-top: calc(
+      (#{math.div($input-line-height, math.div($badge-font-size, 1em)) * 1em} - 1em - #{$badge-padding-y * 2}) / 2
+    );
+  }
+}
+
+// Switch-list option rows (DXField `switch-list`) are one line each: a label,
+// a switch and an optional trailing control (a notes input in the
+// `switch-list-item` slot). Centre all three in the row, instead of the
+// top-aligned horizontal rhythm above, so the padded label column, the 24px
+// switch and a taller input share one centre whether or not the input is
+// showing. Comes after `.dx-form--horizontal .row` at the same specificity so
+// it wins. The `.row` is bootstrap-vue-next's, inside the BFormGroup wrapper,
+// so a utility class on the DFormGroup lands on the wrapper and does nothing.
+.dx-switch-list-row .row {
+  align-items: center;
+}
+
 // Bootstrap's `.input-group` defaults to `flex-wrap: wrap`, letting a
 // narrow container (e.g. a compact table cell, a small screen) stack the
 // prepend/append affix onto its own line below the input. That breaks the
@@ -328,13 +618,44 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   flex-wrap: nowrap;
 }
 
+// DXNumberStepper: `[ − ][ 12 ][ + ]`. The buttons are DButton icon-only
+// squares, sized by the input group. The number is centred between them, and
+// the browser's spin arrows are hidden (they duplicate the buttons and push the
+// number off centre). Global rather than scoped: the input is a bvn root, where
+// a scoped rule is not reliably reached (see CLAUDE.md, scope-id trap).
+// The input is a fixed few characters wide (the group is inline, so it does
+// not stretch across a table cell); retune with `--dx-number-stepper-input-width`.
+.dx-number-stepper {
+  display: inline-flex;
+  width: auto;
+  vertical-align: middle;
+
+  > .dx-number-stepper__input {
+    flex: 0 1 auto;
+    width: var(--dx-number-stepper-input-width, 6ch);
+    min-width: 4ch;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Nav tabs
 // ----------------------------------------------------------------------------
 // Chrome recedes, content leads — the same ethos as the muted table headers
 // (#157). Bootstrap gives an INACTIVE tab `--bs-nav-link-color:
-// var(--bs-link-color)`, i.e. the saturated link-blue, so a row of tabs above a
-// form reads as a row of links competing with the fields below. Mute the
+// var(--bs-link-color)`, i.e. the link colour (brand navy, near-black), so
+// every tab reads as selected and a row of tabs competes with the fields
+// below. Mute the
 // inactive tabs and let the ACTIVE one (Bootstrap's
 // `--bs-nav-tabs-link-active-color`, the near-black emphasis colour) carry the
 // selection on its own.
@@ -357,6 +678,22 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 // ----------------------------------------------------------------------------
 // Dashboard Custom Styles
 // ----------------------------------------------------------------------------
+
+:root {
+  --dx-dashboard-gutter-x: #{$dashboard-gutter-x};
+}
+
+// Both are the `DContainer fluid` directly inside the navbar header and the
+// <main> panel (which keeps only its vertical padding, `py-4`). In the main
+// panel's centred branch the DRow's negative margins and the DCol's padding
+// cancel, so the content edge is this padding in both branches. Two classes
+// so it outranks Bootstrap's own `.container-fluid` padding regardless of
+// stylesheet order.
+.dashboard-navbar > .container-fluid,
+.dashboard-main > .container-fluid {
+  padding-left: var(--dx-dashboard-gutter-x);
+  padding-right: var(--dx-dashboard-gutter-x);
+}
 
 .dashboard-sidebar {
   background-color: $dark;
@@ -519,12 +856,12 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   // the base `.toast` rule (above, and Bootstrap's own) already reads.
   //
   // Sourced from each variant's `soft-bg` in $dx-variants (#143) — the same
-  // vivid-derived soft family badges/alerts use — so the toast hue tracks the
+  // vivid-derived soft family badges use — so the toast hue tracks the
   // palette and editing a `soft-bg` moves toasts too. Previously these mixed the
   // dark *emphasis* base colours (greyer success/warning) and danger's saturated
   // red (a pink, not the soft system's plum). Mixed 50% with white so a large
   // toast surface stays fainter than a small badge while keeping the hue.
-  @each $name in ("success", "danger", "warning", "info") {
+  @each $name in ("success", "danger", "warning", "info", "pending") {
     $variant: map.get($dx-variants, $name);
     &.toast-#{$name} {
       --bs-toast-bg: #{color.mix(map.get($variant, "soft-bg"), $white, 50%)};
@@ -542,9 +879,10 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 //     active). secondary/success/danger/warning/info are SOFT (light tint bg +
 //     dark text, fully overridden incl. hover/active).
 //   - Outline buttons: the emphasis shade for border/label, the soft tint on hover.
+//   - Disabled buttons of every variant: the neutral grey set after this loop.
 //   - Badges: `.badge.text-bg-*` re-tinted soft — needs `!important` because
 //     Bootstrap's `.text-bg-*` helper sets its colours `!important` by design.
-//   - Alerts: the soft tint.
+//   - Alerts: the SUBTLE tint (70% white) with the subtle border.
 //   - Links/text: `.link-*` and `.text-*` take the emphasis shade so they read
 //     on white (the base colours already carry emphasis for most variants; this
 //     pins the two — success/warning — whose base differs).
@@ -563,7 +901,6 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
       --bs-btn-color: #{$solid-text};
       --bs-btn-hover-color: #{$solid-text};
       --bs-btn-active-color: #{$solid-text};
-      --bs-btn-disabled-color: #{$solid-text};
     }
   } @else {
     // Soft button: light tint bg + dark same-hue label; darken the tint slightly
@@ -578,9 +915,6 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
       --bs-btn-active-color: #{$soft-text};
       --bs-btn-active-bg: #{color.scale($soft-bg, $lightness: -10%)};
       --bs-btn-active-border-color: #{color.scale($soft-bg, $lightness: -10%)};
-      --bs-btn-disabled-color: #{$soft-text};
-      --bs-btn-disabled-bg: #{$soft-bg};
-      --bs-btn-disabled-border-color: #{$soft-bg};
     }
   }
 
@@ -621,20 +955,25 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
     color: #{$soft-text} !important;
   }
 
-  // Alert — soft tint, with the emphasis shade as the accent border.
+  // Alert — the SUBTLE tint (the 70%-white mix), the subtle border and the
+  // soft text. Not the soft tint: warning's soft-bg is its full butter-yellow
+  // solid, so a soft warning alert was as loud as a solid fill, and an alert is
+  // a large surface. The border (the soft tint 10% darker, the same shade as
+  // `$X-border-subtle`) is what keeps the paler box visible against a white
+  // card. Badges, soft buttons and toasts keep their own tints.
   .alert-#{$name} {
-    --bs-alert-bg: #{$soft-bg};
+    --bs-alert-bg: #{dx-subtle-bg($name)};
     --bs-alert-color: #{$soft-text};
-    --bs-alert-border-color: #{color.scale($soft-bg, $lightness: -8%)};
+    --bs-alert-border-color: #{dx-subtle-border($name)};
     --bs-alert-link-color: #{$emphasis};
   }
 
   // Progress bars — large FILLS use the vivid `solid-bg`, not the dark
-  // emphasis Bootstrap wires into `.bg-*` (#154). A big solid block of the
-  // emphasis olive reads muddy and clashes with the soft badge green; the
-  // vivid fill is the same family as the switch-ON colour, so badge + switch +
-  // bar read as one system. Only success and warning actually change hex
-  // (danger/info's solid IS their emphasis). The variant-less default bar
+  // emphasis Bootstrap wires into `.bg-*` (#154). A big solid block of a
+  // deep emphasis shade reads muddy and clashes with the soft badge tint; the
+  // vivid fill is the same family as the switch colours, so badge + switch +
+  // bar read as one system. Every status variant's solid differs from its
+  // emphasis, so all four change hex here. The variant-less default bar
   // stays `$progress-bar-bg` (brand navy). `!important` beats the `.bg-*`
   // utility, which sets its colour `!important` by design.
   //
@@ -655,9 +994,10 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
 
 // Publish each variant's soft/emphasis shades as CSS variables so components
 // (e.g. DXSwitch's on-box) and consumers can reference the exact soft-first
-// tints on any element — Bootstrap's own `--bs-*-bg-subtle` are a different,
-// greyer family derived from the dark emphasis base, so they don't match the
-// soft badge/alert green. These are the same values the $dx-variants loop paints.
+// tints on any element. Bootstrap's own `--bs-*-bg-subtle` are now derived
+// from these same tints (a 70%-white mix, set before the import), so they are
+// a paler step of this family rather than a different one; use these when you
+// need the badge/alert tint itself. These are the values the $dx-variants loop paints.
 :root {
   @each $name, $v in $dx-variants {
     --dx-#{$name}-soft-bg: #{map.get($v, "soft-bg")};
@@ -745,11 +1085,64 @@ $bootstrap-icons-font-src: url("bootstrap-icons/font/fonts/bootstrap-icons.woff2
   }
 }
 
+// Disabled buttons: one neutral treatment whatever the variant. Bootstrap's is
+// opacity alone (0.65), so a disabled butter-yellow warning or lime success
+// button kept its colour and still looked pressable. Light grey fill, grey
+// label, full opacity; outline and link buttons keep no fill (grey border /
+// grey text). The label is #6c757d on #e9ecef, 3.95:1: disabled controls are
+// exempt from WCAG 1.4.3, but it stays readable. Bootstrap already sets
+// `pointer-events: none` on a disabled `.btn`, so there is no hover state and a
+// `cursor` would never show. Published as `--dx-btn-disabled-*` so a consumer
+// can retune all three together.
+$dx-btn-disabled-bg: #e9ecef; // $gray-200
+$dx-btn-disabled-color: #6c757d; // $gray-600
+$dx-btn-disabled-outline-border: #ced4da; // $gray-400
+
+:root {
+  --dx-btn-disabled-bg: #{$dx-btn-disabled-bg};
+  --dx-btn-disabled-color: #{$dx-btn-disabled-color};
+  --dx-btn-disabled-outline-border: #{$dx-btn-disabled-outline-border};
+}
+
+// Drives Bootstrap's own `--bs-btn-disabled-*` variables, which its
+// `.btn:disabled` rule paints. Two classes (or `fieldset:disabled .btn`) so it
+// outranks the per-variant `.btn-*` rules that set the same variables.
+.btn:is(:disabled, .disabled),
+fieldset:disabled .btn {
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-disabled-bg: var(--dx-btn-disabled-bg);
+  --bs-btn-disabled-color: var(--dx-btn-disabled-color);
+  --bs-btn-disabled-border-color: var(--dx-btn-disabled-bg);
+
+  &:is([class*="btn-outline-"]) {
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: var(--dx-btn-disabled-outline-border);
+  }
+
+  &.btn-link {
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: transparent;
+  }
+}
+
+// The one exception: DXSaveButton's saved state ("✓ Saved") is a REAL
+// disabled button, but it is a confirmation, not an unavailable action, so it
+// keeps its variant's own colours (by default the navy primary fill, #151e2d /
+// #e9f0f8) at full opacity rather than the neutral grey above, so saving
+// changes the label and the disabled state but not the colour. Three classes
+// plus the state, so it outranks the neutral rule (and `fieldset:disabled .btn`).
+.btn.dx-save-button--saved:is(:disabled, .disabled) {
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-disabled-bg: var(--bs-btn-bg);
+  --bs-btn-disabled-color: var(--bs-btn-color);
+  --bs-btn-disabled-border-color: var(--bs-btn-border-color);
+}
+
 // ----------------------------------------------------------------------------
 // Dropdowns — chevron caret (B14 / PO5)
 // ----------------------------------------------------------------------------
 // Bootstrap's `.dropdown-toggle::after` is a CSS border-triangle that sits high
-// against Poppins' line box and reads crude next to the rest of the theme.
+// against the body font's line box and reads crude next to the rest of the theme.
 // Replace it with the bootstrap-icons chevron glyph, optically centred with a
 // little breathing room from the label. The font is already available: the
 // theme `@import`s `bootstrap-icons/font/bootstrap-icons` (declaring the
@@ -775,10 +1168,10 @@ $dx-dropdown-caret-shift: 0.05em; // vertical nudge for optical centring
 }
 
 // ----------------------------------------------------------------------------
-// Switches — green when ON, red when OFF, by default (#158)
+// Switches — green when ON, magenta (danger) when OFF, by default (#158)
 // ----------------------------------------------------------------------------
 // House style (James): an active switch — "Product is current", "Stock is
-// tracked", "Visible" — should read success GREEN when on and RED when off,
+// tracked", "Visible" — should read success GREEN when on and danger when off,
 // OUT OF THE BOX, not only when a consumer opts in. Bootstrap's default is a
 // primary (navy) track when on / grey when off. We flip the default here.
 //
@@ -789,19 +1182,22 @@ $dx-dropdown-caret-shift: 0.05em; // vertical nudge for optical centring
 // Applies to any bare `.form-switch` (DFormCheckbox `switch`); DXSwitch is the
 // "filled box" form where the whole control (not the toggle) carries the colour
 // and the pill stays a neutral affordance — it reads the same tokens below.
-$dx-switch-on: map.get(map.get($dx-variants, "success"), "solid-bg"); // vivid lime
-$dx-switch-off: map.get(map.get($dx-variants, "danger"), "solid-bg"); // vivid red
+$dx-switch-on: map.get(map.get($dx-variants, "success"), "solid-bg"); // vivid lime #7bf25a
+$dx-switch-off: map.get(map.get($dx-variants, "danger"), "solid-bg"); // vivid magenta #e46ab9
 $dx-switch-thumb-white: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
-// A red thumb reads better than white on the light-red OFF track.
-$dx-switch-thumb-red: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23dc2626'/%3e%3c/svg%3e");
+// A coloured thumb reads better than white on the light OFF track. Its fill is
+// the danger EMPHASIS (#a3247f) — an SVG data URI can't take a Sass variable
+// without string surgery, so keep this literal in step with $dx-variants.
+$dx-switch-thumb-off: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23a3247f'/%3e%3c/svg%3e");
 
 // Switch fill tokens. The ON fill is the SAME soft green as the success
 // badge/button (its `soft-bg`), so a switch and a success badge read as one
-// green — not a separate, punchier lime. OFF is a LIGHT red (a light tint of the
-// danger solid, NOT the plum `danger` soft — a switch off wants to read "red /
-// stop", which the plum status tint doesn't). Derived from the base tokens so
-// one edit moves them. Used by the DXSwitch filled box; the OFF track reuses them.
-$dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cdf9b2
+// green — not a separate, punchier lime. OFF is a LIGHT magenta: a 20% tint of
+// the danger solid (mixed here rather than the danger `soft-bg`, so the
+// track's well/line/ink steps all come from one hue). Derived from the base
+// tokens so one edit moves them. Used by the DXSwitch filled box; the OFF track
+// reuses them.
+$dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #c3faaa
 :root {
   --dx-switch-on-bg: #{$dx-switch-on-soft};
   --dx-switch-on-well: #{color.mix($dx-switch-on-soft, #fff, 55%)};
@@ -824,10 +1220,10 @@ $dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cd
 }
 
 .form-switch .form-check-input {
-  // OFF: light-red track, red thumb (left).
+  // OFF: light-magenta track, deep-magenta thumb (left).
   background-color: var(--dx-switch-off-bg);
   border-color: var(--dx-switch-off-line);
-  --bs-form-switch-bg: #{$dx-switch-thumb-red};
+  --bs-form-switch-bg: #{$dx-switch-thumb-off};
 
   &:checked {
     // ON: vivid green track, white thumb (right — Bootstrap positions it).
@@ -839,7 +1235,7 @@ $dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cd
   // Neutral grey focus ring (the track carries the state colour, so the brand
   // navy ring would clash); keep the state thumb rather than Bootstrap's navy.
   &:focus {
-    --bs-form-switch-bg: #{$dx-switch-thumb-red};
+    --bs-form-switch-bg: #{$dx-switch-thumb-off};
     border-color: var(--dx-switch-off-line);
     box-shadow: 0 0 0 0.25rem rgba($dark, 0.15);
   }
@@ -873,59 +1269,86 @@ $dx-switch-on-soft: map.get(map.get($dx-variants, "success"), "soft-bg"); // #cd
 // ----------------------------------------------------------------------------
 // Chart palette (data-viz)
 // ----------------------------------------------------------------------------
-// Dedicated categorical palette for the DX*Chart components — deliberately NOT
-// the semantic UI colours (#141). Two reasons: the base $theme-colors carry
+// Dedicated categorical palette for the DX*Chart components — its own lists,
+// NOT the semantic `--bs-*` variables (#141): the base $theme-colors carry
 // dark "emphasis" shades (AA text/link colours, too muted for data series), and
-// status colours (success/danger) shouldn't impersonate "series 2" — a green or
-// red series should mean something.
+// a series colour must not move when a status colour is retuned. The fills do
+// share the fruity family's hues (slots 1/2/3/6 are the info/success/danger/
+// warning solids) so charts and badges read as one system; the order, not the
+// status meaning, is what the slots encode.
 //
-// Eight vivid mid-lightness hues in a FIXED order. The order is load-bearing:
-// it was derived by exhaustively permuting the hues (slot 1 pinned to the brand
-// info-blue) to maximise the minimum adjacent-pair colour-vision-deficiency
-// separation — validated at min adjacent ΔE 13.8 (OKLab ×100, protan/deutan
-// simulated), min normal-vision ΔE 20.3, every hue ≥ 3:1 contrast on white.
-// Reordering or swapping a hue needs that validation re-run, not an eyeball.
+// Eight light, vivid FILLS in a FIXED order, plus a darker LINE shade per slot
+// and one EDGE colour. The fills are light (1.35–2.97:1 on white), so they
+// cannot carry WCAG 1.4.11 non-text contrast on their own; that job goes to:
+//   - the EDGE: bars and doughnut segments get a 1px near-black outline
+//     (#121419, the warning label ink; 18.42:1 on white), which separates each
+//     mark from the white page and from its neighbours whatever the fill;
+//   - the LINE shades: each fill darkened toward black (same hue) until it
+//     clears 3.5:1 on white. Line strokes and point outlines use them; the
+//     fill only shows as point centres and a 35% area wash.
 //
-// Published as --dx-chart-1..8 so consumers can retheme charts by overriding
-// the variables; chartTheme.ts reads them at runtime (with these hexes as
-// fallbacks for SSR / missing-CSS cases — keep the two lists in sync).
-$dx-chart-palette: (#2563eb, #65a30d, #7c3aed, #0d9488, #ea580c, #0891b2, #d97706, #db2777);
+// The order is load-bearing: slot 1 is pinned and slots 2..8 were chosen by
+// exhaustive permutation to maximise the minimum adjacent-pair separation
+// under colour-vision deficiency (OKLab ΔE ×100, Viénot protan/deutan). The
+// shipped order is the best available for both lists: fills min adjacent CVD
+// ΔE 19.56, lines 13.73 (weakest neighbours: the magenta and olive line
+// shades, slots 3/4). Min adjacent normal-vision ΔE: fills 21.41, lines 16.63.
+// Reordering, swapping a hue, or editing a line shade needs the validation
+// re-run, not an eyeball: `node scripts/validate-chart-palette.mjs` reads these
+// lists from this file, prints the scores, and checks every line shade is its
+// fill darkened to 3.5:1.
+//
+// Published as --dx-chart-1..8 (fills), --dx-chart-line-1..8 and
+// --dx-chart-edge so consumers can retheme charts by overriding the
+// variables; chartTheme.ts reads them at runtime (with these hexes as
+// fallbacks for SSR / missing-CSS cases — keep the lists in sync; the sync is
+// enforced by tests/components/charts.test.ts, which parses this file).
+$dx-chart-palette: (#7fd7fd, #7bf25a, #e46ab9, #d6e86a, #b9a3f0, #efd574, #9fb4ff, #f7a072);
+$dx-chart-line-palette: (#5590aa, #4d9839, #d161a9, #848f41, #907fbb, #99884a, #7686be, #ba7956);
+$dx-chart-edge: #121419;
 
-// Dark-surface remap (#145). SAME hue slots — the CVD-derived order above is
-// load-bearing, so only lightness moves: each hue lifted into the dark band so
-// every step clears the 3:1 non-text guideline on Bootstrap's dark body
-// (#212529), where two of the light steps dipped below. Validated with the
-// same method as the light set (OKLab ΔE ×100, Viénot protan/deutan): min
-// adjacent CVD ΔE 15.1 (light set: 13.8), min normal ΔE 25.3, contrast
-// 5.67–10.23:1 on #212529. Swapping a step needs that validation re-run.
+// Dark-surface remap (#145). The dark set predates the light fills above and
+// is unchanged: mid-lightness hues that already clear 3:1 on Bootstrap's dark
+// body (#212529) — 5.67–10.23:1 — so in dark mode the fills ARE the line
+// shades, and the edge is the dark body colour itself (an invisible 1px
+// separator between segments, as before the light edge existed). Validated
+// with the same method: min adjacent CVD ΔE 15.09, min adjacent normal ΔE
+// 25.33. Swapping a step needs that validation re-run.
 // getPalette() reads these CSS variables live — off the CHART'S OWN container,
 // so nested colour-mode scopes resolve correctly, and re-read on every
 // `data-bs-theme` change so mounted charts repaint (#161). The TS fallbacks
 // stay the light set (SSR/no-CSS default).
 $dx-chart-palette-dark: (#60a5fa, #a3e635, #a78bfa, #2dd4bf, #fb923c, #22d3ee, #fbbf24, #f472b6);
+$dx-chart-edge-dark: $body-bg-dark;
 
-:root {
+@mixin dx-chart-light-vars {
   @for $i from 1 through list.length($dx-chart-palette) {
     --dx-chart-#{$i}: #{list.nth($dx-chart-palette, $i)};
+    --dx-chart-line-#{$i}: #{list.nth($dx-chart-line-palette, $i)};
   }
+  --dx-chart-edge: #{$dx-chart-edge};
+}
+
+:root {
+  @include dx-chart-light-vars;
 }
 
 [data-bs-theme="dark"] {
   @for $i from 1 through list.length($dx-chart-palette-dark) {
     --dx-chart-#{$i}: #{list.nth($dx-chart-palette-dark, $i)};
+    --dx-chart-line-#{$i}: #{list.nth($dx-chart-palette-dark, $i)};
   }
+  --dx-chart-edge: #{$dx-chart-edge-dark};
 }
 
 // Bootstrap allows `data-bs-theme` on ANY container, so colour-mode scopes
 // nest — and custom properties inherit. Without this re-declaration a LIGHT
 // scope inside a dark root (a light card on a dark page) would inherit the dark
 // palette, because only `:root` publishes the light values and the dark block
-// above overrides it for the whole subtree (#161). Same list as `:root`, so the
-// two can't drift.
+// above overrides it for the whole subtree (#161). Same mixin as `:root`, so
+// the two can't drift.
 [data-bs-theme="light"] {
-  @for $i from 1 through list.length($dx-chart-palette) {
-    --dx-chart-#{$i}: #{list.nth($dx-chart-palette, $i)};
-  }
+  @include dx-chart-light-vars;
 }
 
 // The chart container used by DXBarChart/DXLineChart/DXDoughnutChart (shipped

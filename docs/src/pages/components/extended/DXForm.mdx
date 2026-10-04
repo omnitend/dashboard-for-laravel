@@ -42,12 +42,14 @@ accepts either a `useForm` return or a `defineForm` return (with the latter,
   { name: 'autoErrorTab', type: 'boolean', required: 'No', default: 'true', description: 'Auto-switch to the first tab containing a validation error.' },
   { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text.' },
   { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text.' },
+  { name: 'submitSavedText', type: 'string', required: 'No', default: 'Saved', description: 'Submit button label in the saved state (see Saved state below).' },
+  { name: 'savedState', type: 'boolean', required: 'No', default: 'true', description: 'After a successful form.post/put/patch, show the submit button as a disabled "✓ Saved" until any field changes. Set false for forms whose submit is not a save (search, filter).' },
   { name: 'showSubmit', type: 'boolean', required: 'No', default: 'true', description: 'Show the submit button.' },
   { name: 'card', type: 'boolean', required: 'No', default: 'false', description: 'Wrap a FLAT form in a card for a visual boundary (mirrors DXTable\'s card prop). Also forces the tabbed card on even when cardTabs is false. Off by default since DXForm is commonly embedded in a page card or modal already.' },
   { name: 'cardTabs', type: 'boolean', required: 'No', default: 'true', description: 'Wrap a TABBED form\'s content in a card panel so the active tab reads as a finished panel connected to the tab strip (the standard Bootstrap card-with-tabs pattern) rather than floating on the bare page. Set false for bare tabs (e.g. inside a modal that already provides a boundary). Ignored for flat forms — use card for those.' },
-  { name: 'layout', type: '"vertical" | "horizontal" | "auto"', required: 'No', default: '"vertical"', description: 'Form-wide field layout. "horizontal" puts the label to the left of the input, always. "auto" picks horizontal or vertical from the width of the form\'s own container (see Container-driven layout below). Overridable per-field via field.layout.' },
+  { name: 'layout', type: '"vertical" | "horizontal" | "auto"', required: 'No', default: '"vertical"', description: 'Form-wide field layout. "horizontal" puts the label to the left of the input whatever the container width (with the default label column, from the sm viewport breakpoint up; a numeric labelCols keeps it at every width). "auto" picks horizontal or vertical from the width of the form\'s own container (see Container-driven layout below). Overridable per-field via field.layout.' },
   { name: 'layoutThreshold', type: 'number', required: 'No', default: '640', description: 'Container width (px) at or above which layout: "auto" goes horizontal. Ignored for the explicit layouts.' },
-  { name: 'labelCols', type: 'number | { sm?, md?, lg?, xl? }', required: 'No', default: '3', description: 'Label column width for horizontal layout (mirrors BFormGroup\'s labelCols). Overridable per-field via field.labelCols. Omitted breakpoints collapse to vertical below that width.' },
+  { name: 'labelCols', type: 'number | { sm?, md?, lg?, xl? }', required: 'No', default: '45% from sm up', description: 'Label column width for horizontal layout (mirrors BFormGroup\'s labelCols). Overridable per-field via field.labelCols. Omitted breakpoints collapse to vertical below that width. When neither the form nor the field sets it, the label is --dx-form-label-width (45%) wide from sm up and stacks above the input below sm.' },
 ]} />
 
 ## Events
@@ -66,7 +68,7 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
 > genuinely full-width, label-less blocks (a sub-table, an activity log).
 
 <SlotsTable client:load slots={[
-  { name: 'value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s input control with custom markup.' },
+  { name: 'value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s input control with custom markup. On a plaintext field the content is wrapped in .dx-form-plaintext so display-only content lines up with the label (see Display-only values).' },
   { name: 'span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for a field marked span: true.' },
   { name: 'info(<key>)', props: 'field, model', description: 'Rich info block rendered always-visible below the field (not the label popover).' },
   { name: 'info-popover(<key>)', props: 'field, model', description: 'Rich body for the label’s hover/focus info popover (lists, bold, paragraphs). Overrides the plain field.info text.' },
@@ -81,6 +83,54 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
   { name: 'tab-after(<key>)', props: 'tab, model', description: 'Content rendered after a tab\'s fields.' },
   { name: 'footer', props: 'form', description: 'Content rendered after the form body.' },
 ]} />
+
+## Display-only values
+
+In a horizontal row the label column is padded so its text lines up with the
+text inside an input box. A value with no input box (a badge, a line of text, a
+timestamp, a short list) sits at the top of the row instead, about 11px above
+its label. Put such content in `.dx-form-plaintext`, which gives it the same
+top and bottom offset and line-height as the label (the offset Bootstrap's
+`.col-form-label` and `.form-control-plaintext` use), so its **first** line
+shares the label's centre:
+
+```vue
+<DXForm :form="form" :fields="fields" layout="horizontal">
+  <template #value(connection)>
+    <div class="dx-form-plaintext">
+      <span class="badge text-bg-secondary">Not connected</span>
+    </div>
+  </template>
+</DXForm>
+```
+
+- A field with `plaintext: true` gets this automatically: its `#value(<key>)`
+  slot is wrapped in `.dx-form-plaintext`, so the slot only needs the badge or
+  text itself. The built-in plaintext controls were already aligned.
+- A stack of lines aligns its first line; the rest follow below.
+- A badge inside is centred on the line rather than sitting on the baseline.
+- Inputs, checkboxes, switches, radios and file inputs need nothing; do not
+  wrap them.
+
+## Saved state
+
+The submit button is a [DXSaveButton](/components/extended/DXSaveButton).
+After a successful submit through the form's own methods (`form.post`,
+`put`, `patch`…, read from `form.wasSuccessful`) it changes to a disabled
+**✓ Saved** in the same navy (only the label and the disabled state change), and changing any field turns it back into the normal Save button.
+While the request is in flight it shows the usual busy state
+(`submitLoadingText`).
+
+- Writes made by the save itself (an `onSuccess` that copies the response into
+  the form, `resetOnSuccess`, or code straight after `await form.post()`) do
+  not count as changes.
+- An edit made while the request is in flight is not in the payload, so the
+  button stays **Save** when that request succeeds.
+- A failed save leaves the normal Save button.
+- Forms that submit with something other than the form's own submit methods
+  never see a success, so they keep the plain button. Set
+  `:saved-state="false"` for a form whose submit is not a save, such as a
+  search.
 
 ## Container-driven layout
 
@@ -97,11 +147,9 @@ vertical below `layoutThreshold`:
 <DXForm :form="form" :fields="fields" layout="auto" />
 ```
 
-The default threshold is `640`px. With the default 3-column label, the label's
-text area is roughly `containerWidth / 4 - 18`px, so 640 leaves it ~142px —
-enough for a 20-character label such as "Unit price (ex VAT)" to stay on one
-line, with the control column still ~474px. Raise `layoutThreshold` if your
-labels run longer, or lower `labelCols` instead.
+The default threshold is `640`px. With the default 45% label column, 640 leaves
+the label ~275px of text and the control column ~341px. Raise `layoutThreshold`
+if your controls need more room, or set a narrower `labelCols`.
 
 Notes:
 

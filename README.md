@@ -150,7 +150,8 @@ await form.delete("/api/users/1", options);
 form.processing; // boolean
 form.errors; // ValidationErrors
 form.hasErrors; // computed boolean
-form.recentlySuccessful; // boolean
+form.recentlySuccessful; // boolean (clears after 1.5s)
+form.wasSuccessful;      // boolean (latest submit succeeded; until the next submit)
 
 // Form methods
 form.reset(); // Reset to initial values

@@ -11,3 +11,6 @@ Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
 Route::get('/toasts', function () {
     return inertia('Toasts/Index');
 })->name('toasts.index');
+Route::get('/save-button', function () {
+    return inertia('SaveButton/Index');
+})->name('save-button.index');

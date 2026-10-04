@@ -972,7 +972,7 @@ interface TableField {
   filterMultiple?: boolean;       // 'select' filters only: allow several values (array filter entry, ANY-match); ignored by 'select-native'
   filterOptions?: FilterOption[]; // Options for select filters
   deriveFilterOptions?: boolean;  // Client-side 'select' filters: derive options from the loaded rows (default true)
-  filterPlaceholder?: string;     // Placeholder for filter input
+  filterPlaceholder?: string;     // Placeholder for filter input (text default: "<label>…")
   formatter?: (value: any, key: string, item: any) => string; // Custom formatter function
   width?: string | number;        // Fixed column width via <colgroup> (number → px). Pair with fixedLayout (#156)
   minWidth?: string | number;     // Minimum column width, same <col> (number → px)

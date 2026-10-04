@@ -549,7 +549,8 @@ await form.delete('/api/users/1', options);
 form.processing;          // boolean - is form submitting?
 form.errors;              // ValidationErrors object
 form.hasErrors;           // computed boolean
-form.recentlySuccessful;  // boolean - was last submit successful?
+form.recentlySuccessful;  // boolean - was last submit successful? (clears after 1.5s)
+form.wasSuccessful;       // boolean - latest submit succeeded (until the next submit; DXForm's saved state)
 
 // Form methods
 form.reset();             // Reset to initial values
@@ -575,9 +576,101 @@ fine print. Badges self-land at 12px. It was 14px until 0.39.0, which read
 miniaturised against rem-fixed chrome; 16px matches legacy omnitend. `--dx-input-height`
 is ~38px at this base. When judging an optical spacing tweak (a check-box margin,
 a caret offset), prefer an **em** value (scales with the tier) and judge it
-against a rendered screenshot at 16px, not the maths — Poppins seats glyphs low
-in the line box. The dense **sidebar** metrics (#95, `0.875rem` headers) are
+against a rendered screenshot at 16px, not the maths — glyphs seat
+differently in the line box per typeface. The dense **sidebar** metrics (#95, `0.875rem` headers) are
 rem-pinned and intentionally stay 14px regardless of the base.
+
+**Headings are small and weight 500** (legacy omnitend's weight): h1 1.25rem,
+h2 1.15rem, h3/h4 1.05rem, h5/h6 1rem (so neither outranks h4). h1 sits at
+Bootstrap's RFS threshold, so nothing rescales on narrow screens. Explicit
+weight utilities still win: DXDashboardNavbar's page title is an `h4
+fw-semibold` (Poppins 600, which is why that face is bundled). **Table text**:
+body cells `$table-color: var(--bs-body-color)` (#212529, not Bootstrap's
+pure-black emphasis colour), headers `$table-th-font-weight: 500` (was the
+browser's bold) in `--dx-table-header-color`. Pinned by
+`tests/components/typography.test.ts`.
+
+### Typefaces (bundled, since the fruity-palette pass)
+
+- **Body: Maven Pro** (`$font-family-sans-serif`). **Display: Poppins**, a
+  theme token `$dx-font-family-display` → `--dx-font-family-display`, applied
+  by the theme to **h1–h4 / `.h1`–`.h4` only** (via `$headings-font-family`;
+  h5/h6 are reset to the body face). Consumers use the token for product names;
+  dfl applies it to nothing else. Never call it "display name": that phrase is
+  a product field downstream.
+- **Both are bundled** as woff2 with `@font-face` + `font-display: swap`
+  (`$dx-bundled-fonts` in theme.scss): Maven Pro 400/500/600/700, Poppins
+  500/600. Sources and their SIL OFL 1.1 licences live in
+  `resources/fonts/<family>/` (`OFL.txt` beside the files; the package ships
+  `resources`). A weight that is not in the list gets synthesised, so add a
+  face rather than relying on it.
+- **Extraction**: Vite inlines every CSS-referenced woff2 in lib mode, so
+  `scripts/extract-icon-font.mjs` writes EVERY inlined woff2 out to
+  `dist/assets/<source-name>-<hash>.woff2`, naming each by matching its bytes to
+  `resources/fonts/**` or the bootstrap-icons font. Same reason and mechanism
+  as the icon font (#77).
+- **Poppins is subset to Latin** (about 12 KB a face, from 50 KB with
+  Devanagari) by `scripts/subset-poppins.py build <Poppins-Medium.ttf>
+  <Poppins-SemiBold.ttf>`, from the upstream TTFs. The kept ranges are literals
+  in the script: Basic Latin, Latin-1, Latin Extended-A and Additional, General
+  Punctuation, currency, letterlike and maths symbols. Poppins has no arrows or
+  check marks, so a UI arrow in a heading falls back to the next font. All
+  layout features and every name record (the OFL licence, IDs 0/13/14) are
+  kept. Poppins has no kerning to keep: its GPOS only positions Devanagari
+  marks. Subsetting is allowed because Poppins' OFL has no Reserved Font Name.
+  `scripts/subset-poppins.py check <files>` asserts the glyphs English/UK
+  headings and product names need (A–Z, a–z, 0–9, £ € & quotes, dashes,
+  ellipsis, bullets, é è à ç ñ ö ü ä), that Devanagari is gone and that the
+  licence records survive; `build` runs it on its output. woff2 output needs
+  the Python `brotli` module.
+- **Never subset or modify the Maven Pro files.** They are the upstream woff2s,
+  byte-identical, because Maven Pro's OFL has a Reserved Font Name: a modified
+  copy could not keep the name.
+- **Test the faces LOAD, not the names**: `tests/bundle/theme-fonts.test.ts`
+  renders text in each face and asserts the `document.fonts` entry reached
+  `status === "loaded"`. A `font-family` check passes with the font missing
+  (it did for Poppins, which the theme named but never shipped), and a face that no rendered text uses
+  stays `unloaded`, which the test also catches.
+
+### Layout tokens: dashboard gutter and form label column
+
+- **One dashboard gutter, 20px** (`$dashboard-gutter-x` →
+  `--dx-dashboard-gutter-x` on `:root`). theme.scss applies it as the
+  horizontal padding of the `.container-fluid` directly inside
+  `.dashboard-navbar` AND inside `.dashboard-main` (which keeps only `py-4`), so
+  the navbar's first item starts exactly where page content starts. In
+  DXDashboard's centred branch the `DRow`'s negative margins and the `DCol`'s
+  padding cancel, so the content edge is the gutter there too. Don't put
+  horizontal padding back on `<main>` or the navbar's container; pinned by
+  `tests/components/DXDashboard.gutter.test.ts` (rendered rects, both sidebar
+  states, both content branches, the wrapped navbar below `md`).
+- **Default horizontal label column is 45%** (`$dx-form-label-width` →
+  `--dx-form-label-width`). With no `labelCols` from the form or field,
+  DXField passes BFormGroup `labelColsSm: true` (a `col-sm`, so it stacks below
+  `sm`) plus the class `dx-field-label-col--default-width`, which theme.scss
+  sizes from `sm` up; the input is a plain `.col`. Any explicit `labelCols`
+  skips the modifier and uses the 12-column grid as before. Because the default
+  stacks below the `sm` VIEWPORT, a layout test of horizontal rows must set a
+  wide `page.viewport` (the runner's default window is 414px). Pinned by
+  `tests/components/DXForm-LabelWidth.test.ts`.
+- **Horizontal label centring**: the label column carries a top padding equal
+  to a text input's, so its first line centres on a 1-line input; checkboxes,
+  radios and switches get the same top margin (`.dx-form--horizontal
+  .form-check`). Switch-list rows instead centre the whole `.row`
+  (`.dx-switch-list-row .row` in theme.scss) so a trailing notes input lines
+  up too. A utility class on a `DFormGroup` lands on bvn's WRAPPER div, not
+  the inner `.row`, so it cannot change the row's alignment. Consumer markup
+  in a `value(key)` slot must follow the same rule (a bare native checkbox
+  sits 11px high; a `mt-2` wrapper pushes a control 8px low). Display-only
+  content (a badge, text, a short stack of lines) goes in
+  `.dx-form-plaintext`, which carries `.col-form-label`'s padding and
+  line-height so its FIRST line shares the label's centre; DXField wraps a
+  `plaintext` field's `value` slot in it automatically. Inside it a `.badge`
+  is `vertical-align: top` plus half the spare line height, because
+  `baseline` and `middle` both land ~2px off. The name reuses `plaintext` in
+  its existing meaning (the field option, Bootstrap's
+  `.form-control-plaintext`): a value shown without an input box. Pinned by
+  `tests/components/DXForm-LabelCentring.test.ts`.
 
 ### Semantic colour system (soft-first, since v0.27.0)
 
@@ -589,17 +682,57 @@ solid fill by reflex.
   bold SOLID button (the brand navy `#151e2d` fill + light text) — one loud action
   per screen. Every other variant, **including `danger`**, is **soft** (light
   same-hue tint + dark same-hue label); a soft `.btn-danger`/"Delete" is a light
-  red (`#f8d4d4`/`#7a1a1a`). (Changed 2026-07-20 / v0.31.0 — danger was the second
-  solid; it and its off-hue plum soft became a same-hue soft red.) Tertiary
-  actions use a `link` variant restyled as a **ghost** (body colour, no underline).
+  magenta (`#f9dff2`/`#61124c`). Tertiary actions use a `link` variant restyled
+  as a **ghost** (body colour, no underline).
+- **The status hues are the "fruity" palette** (2026-10): solids lime `#7bf25a`,
+  magenta `#e46ab9`, butter `#efd574`, sky `#7fd7fd`; emphasis (= the base
+  `$success/$danger/$warning/$info`) `#236b12`, `#a3247f`, `#8a6d00`,
+  `#31586d`. Every label is a dark same-hue ink, never white.
+- **`pending` is a seventh variant** (waiting; the next move is not yours):
+  solid `#b9a3f0`/`#2a1260` (7.06:1), soft `#e3d3fb`/`#3b1a80` (9.10:1),
+  emphasis `#6a43c4` (6.54:1 on white), a violet from chart slot 5 kept clear
+  of info's slate blue. It is in `$dx-variants` AND in a pre-import
+  `$theme-colors`, so Bootstrap generates `.btn-pending`, `.text-bg-pending`,
+  `.alert-pending`, `.list-group-item-pending`, `.link-pending` etc. The subtle
+  maps (`$theme-colors-text/-bg-subtle/-border-subtle`, their `-dark` forms,
+  and `$utilities-text-emphasis-colors`/`-bg-subtle`/`-border-subtle`) list
+  the stock colours BY NAME and only exist after Bootstrap's variables load,
+  so theme.scss imports `functions`/`variables`/`variables-dark`/`maps`
+  first, merges `pending` in, then imports the whole of Bootstrap (all
+  `!default`, so the second read keeps the merged maps and emits nothing
+  twice). A new variant needs the same three places. TS: `types/index.ts`
+  augments bvn's `BaseColorVariant`, which flows to `ColorVariant`,
+  `ButtonVariant` (incl. `outline-pending`) and the subtle/emphasis unions.
+  `useToast`'s themed set includes it. Pinned by `pending-variant.test.ts`.
+- **Links are the brand navy `#151e2d` and stay underlined** (Bootstrap's
+  default `$link-decoration`; only the ghost `.btn-link` drops it). The
+  underline is what marks a navy link, so don't remove it.
+- **Form errors are crimson `#c8102e`** (`$dx-form-error`, wired into
+  `$form-invalid-*` / `$form-feedback-*-invalid-*` before the import), NOT the
+  danger magenta, which stays on badges and buttons.
+- **Bootstrap's subtle family is derived from the soft tints** (set before the
+  import): `$X-bg-subtle` and the `$table-variants` rows = soft-bg mixed with
+  white to **70% white** (`dx-subtle-bg()`; legacy omnitend's rows measure
+  about that, danger `#fdf6fb`, warning `#fbf3d8`; 50% read too strong),
+  `$X-border-subtle` = soft-bg 10% darker, `$X-text-emphasis` = soft-text.
+  Sass emits the mix with fractional channels (`rgb(237, 253.5, 229.5)`), so
+  tests compare parsed channels, not strings. The `*-dark` subtle variables are
+  still Bootstrap's own derivation.
+- **Alerts take the SUBTLE tint, not the soft one**: `.alert-*` = the 70% mix
+  background, the `border-subtle` shade as a visible border, soft-text. A soft
+  warning alert was the full butter-yellow solid. Badges, soft buttons and
+  toasts (their own 50% mix via `--bs-toast-bg`) keep their tints; pinned by
+  `soft-badges.test.ts`.
 - **Switches** default to the filled-box style (`DXSwitch` / `DXField
   type:'switch'`): the whole box is green when on (the success soft green) / light
-  red when off, with a neutral grey pill; `on-variant="neutral"` for mixed cases
-  (#158, v0.31.0).
-- **Status colours are soft** — badges, alerts, toasts all use the soft tint.
+  magenta when off (a tint of the danger solid; the bare `.form-switch` thumb is
+  the danger emphasis `#a3247f`, `$dx-switch-thumb-off`), with a neutral grey
+  pill; `on-variant="neutral"` for mixed cases (#158, v0.31.0).
+- **Status colours are soft** — badges and toasts use the soft tint; alerts
+  the paler subtle step of it.
 - **Large FILLS use the vivid `solid-bg`, not the emphasis shade** (#154):
-  `.progress-bar.bg-success` is the switch-ON lime `#84cc16`, not the dark
-  olive emphasis. Emphasis shades stay for outlines/links/text.
+  `.progress-bar.bg-success` is the switch-ON lime `#7bf25a`, not the deep
+  green emphasis. Emphasis shades stay for outlines/links/text.
 - **DXTable header titles are muted grey** by default (#157), token
   `--dx-table-header-color`. Sidebar nav has natural-case group headers since
   #95 (0.875rem headers, 0.3rem link padding), with a **1rem** gap between
@@ -607,8 +740,27 @@ solid fill by reflex.
   group's last item than to its own, so the eye attached it to the wrong group.
   Pinned by `tests/components/DXDashboardSidebar.spacing.test.ts`, which
   measures rendered rects rather than class names.
+- **Disabled buttons are neutral grey, whatever the variant** (Bootstrap's is
+  opacity only, so a disabled warning/success still looked live): fill
+  `#e9ecef`, label `#6c757d` (3.95:1; disabled controls are WCAG-exempt),
+  opacity 1; outline = no fill + `#ced4da` border; link = grey text. Tokens
+  `--dx-btn-disabled-bg/-color/-outline-border`, applied through Bootstrap's
+  `--bs-btn-disabled-*` in a `.btn:is(:disabled, .disabled), fieldset:disabled
+  .btn` rule that outranks the per-variant classes. No `cursor`: Bootstrap's
+  `pointer-events: none` on disabled buttons means it would never show.
+  Form-control disabled styling is Bootstrap's (already neutral). **One
+  exception: DXSaveButton's saved state** (`.dx-save-button--saved`, a real
+  `disabled` button) keeps its OWN variant's colours (navy primary
+  `#151e2d`/`#e9f0f8` by default) at opacity 1 through a three-class rule
+  after the neutral one, because "✓ Saved" is a confirmation, not an
+  unavailable action. The colour does not change on save, only the label and
+  the disabled state (product decision 2026-10-04; #182 first shipped it
+  switching to the success soft green). Pinned by
+  `disabled-buttons.test.ts`.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
-  `primary`; a save's green reward belongs in a "Saved" toast, not the button.
+  `primary`. A button never turns green after saving: `DXSaveButton`'s saved
+  state ("✓ Saved", disabled until the form changes, what `DXForm`'s submit
+  button does after a successful save) stays in its own variant.
 - **Outline buttons / coloured links / `.text-*`** use each variant's *emphasis*
   shade (readable on white), which is also the base `$theme-color`.
 - Everything is driven by the **`$dx-variants` map in `resources/css/theme.scss`**
@@ -618,21 +770,33 @@ solid fill by reflex.
   `tests/components/soft-badges.test.ts`.
 - Design/review tooling: the **Style guide** (`docs /showcase`) and **Colour
   playground** (`docs /playground`).
-- **Charts do NOT use the semantic colours.** Data-viz has its own palette:
-  `$dx-chart-palette` in theme.scss → `--dx-chart-1..8`, read at runtime by
-  `chartTheme.ts` (#141). The base theme colours are dark *emphasis* shades
-  (too muted for series) and status colours shouldn't impersonate "series 2".
-  The **slot order is load-bearing** — derived by exhaustively permuting the
-  hues to maximise adjacent-pair CVD separation (min adjacent ΔE 13.8, all
-  ≥3:1 on white); don't reorder or swap a hue without re-running that
-  validation (dataviz-skill `validate_palette.js`). Sync between the Sass
-  list, the TS fallbacks, and the test expectation is enforced by
-  `tests/components/charts.test.ts` (it parses the Sass source). The palette
-  cycles after 8 series. Under `data-bs-theme="dark"` the same slots remap to
-  `$dx-chart-palette-dark` (#145) — same hue ORDER (it encodes the CVD
-  separation), lightness lifted for the dark body; validated min adjacent CVD
-  ΔE 15.1, all ≥5.6:1 on `#212529`. Swapping a dark step needs the validation
-  re-run, same as the light set. Related: `release.sh` regenerates the AI docs
+- **Charts do NOT read the semantic variables.** Data-viz has its own lists in
+  theme.scss, read at runtime by `chartTheme.ts` (#141): `$dx-chart-palette`
+  (light FILLS, `--dx-chart-1..8`), `$dx-chart-line-palette` (LINE shades,
+  `--dx-chart-line-1..8`, each fill darkened to 3.5:1 on white) and
+  `$dx-chart-edge` (`#121419`, `--dx-chart-edge`). The fills share the fruity
+  status hues but are only 1.35–2.97:1 on white, so WCAG 1.4.11 non-text
+  contrast is carried by the 1px edge on bars/doughnut segments and by the
+  line shades on line charts. `applyPalette` sets bar/doughnut
+  `borderColor`=edge + `borderWidth`=1, and line `borderColor`=line shade,
+  `pointBackgroundColor`=fill, `pointBorderColor`=line shade, area
+  `backgroundColor`=fill at 35% — each only when the caller left it unset.
+  The **slot order is load-bearing** — slot 1 pinned, slots 2..8 the best
+  permutation for adjacent-pair CVD separation (OKLab ΔE ×100, Viénot
+  protan/deutan): fills min adjacent 19.56, lines 13.73. Don't reorder, swap a
+  hue or hand-edit a line shade without re-running
+  `node scripts/validate-chart-palette.mjs` (reads the lists from theme.scss,
+  prints the scores and the best order, and fails if a line shade isn't its
+  fill darkened to 3.5:1). Sync between the Sass lists, the TS fallbacks
+  (`PALETTE_VARS`, `LINE_PALETTE_VARS`, `EDGE_VAR`) and the test expectations
+  is enforced by `tests/components/charts.test.ts` (it parses the Sass
+  source). The palette cycles after 8 series. Under `data-bs-theme="dark"`
+  the fills remap to `$dx-chart-palette-dark` (#145, unchanged: min adjacent
+  CVD ΔE 15.09, all ≥5.67:1 on `#212529`), the line shades ARE those dark
+  fills, and the edge is `$body-bg-dark` (`#212529`), so dark charts look as
+  they did before the edge existed. The `[data-bs-theme="light"]` re-declaration
+  shares a mixin with `:root`. Swapping a dark step needs the validation re-run,
+  same as the light set. Related: `release.sh` regenerates the AI docs
   (`docs:generate:ai`) before publish because `api-reference.json`/`llms.txt`
   are **gitignored but listed in package.json `files`** — without the regen,
   publish ships whatever stale copy sits on disk.
@@ -1070,6 +1234,9 @@ fetches it, pages without icons don't.
 
 Nothing changes for consumers: a bundler resolves the relative `url()` out of
 `node_modules`, a plain `<link>` resolves it next to the stylesheet.
+
+The theme's bundled text fonts (Maven Pro, Poppins) go through the same
+script; see "Typefaces" under Styling Guidelines.
 
 Guarded by `tests/bundle/icon-font.test.ts`, because the failure mode is
 **silent** — re-inlining still works, it just quietly triples the CSS again.

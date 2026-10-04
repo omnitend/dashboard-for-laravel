@@ -164,6 +164,35 @@ describe('DXDashboardSidebar', () => {
       expect(rotas?.classList.contains('active')).toBe(true);
     });
 
+    describe('items that differ only by query string', () => {
+      const navigation = [
+        {
+          label: 'Tasks',
+          items: [
+            { label: 'Bar Tasks', url: '/tasks?business_unit_id=1&business_unit_name=Bar' },
+            { label: 'Kitchen Tasks', url: '/tasks?business_unit_id=2&business_unit_name=Kitchen' },
+            { label: 'Task Manager', url: '/task-manager' },
+          ],
+        },
+      ];
+      const activeLabels = (currentUrl: string) => {
+        const screen = render(DXDashboardSidebar, { props: { navigation, currentUrl, title: 'My App' } });
+        return Array.from(screen.container.querySelectorAll('.nav-link.active')).map((link) => link.textContent?.trim());
+      };
+
+      it('activates only the item whose query the current URL carries', () => {
+        expect(activeLabels('/tasks?business_unit_id=1&business_unit_name=Bar')).toEqual(['Bar Tasks']);
+      });
+
+      it('still matches when the current URL adds parameters of its own', () => {
+        expect(activeLabels('/tasks?business_unit_id=2&business_unit_name=Kitchen&page=3')).toEqual(['Kitchen Tasks']);
+      });
+
+      it('activates none of them when the current query matches no item', () => {
+        expect(activeLabels('/tasks?business_unit_id=9')).toEqual([]);
+      });
+    });
+
     it('only matches root "/" exactly, never as an ancestor prefix', async () => {
       const navigation = [
         {

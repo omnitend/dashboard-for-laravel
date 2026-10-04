@@ -1,7 +1,8 @@
 <!--
   @component
   A themed line chart. Thin wrapper around vue-chartjs (chart.js) with the
-  theme's dedicated chart palette applied (--dx-chart-1..8 stroke + translucent fill, smoothed line)
+  theme's dedicated chart palette applied (--dx-chart-line-1..8 stroke and point outline,
+  --dx-chart-1..8 point centre and translucent area fill, smoothed line)
   and dashboard-friendly defaults. Pass `labels` + `datasets`; `options`
   deep-merges over the defaults.
 

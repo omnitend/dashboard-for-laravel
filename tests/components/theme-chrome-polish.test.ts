@@ -57,7 +57,7 @@ const settled = async (read: () => boolean) => {
 // 1. nav-tabs: inactive tabs are muted chrome, not saturated links
 // ---------------------------------------------------------------------------
 
-describe('nav-tabs inactive links are muted, not the saturated link-blue', () => {
+describe('nav-tabs inactive links are muted, not the link colour', () => {
   const renderTabs = () =>
     render({
       render: () =>
@@ -79,15 +79,26 @@ describe('nav-tabs inactive links are muted, not the saturated link-blue', () =>
     const colour = getComputedStyle(inactive).color;
 
     // Would this pass with the bug present? No — Bootstrap's default is
-    // `--bs-nav-link-color: var(--bs-link-color)`, i.e. the theme's #2563eb.
-    expect(colour).not.toBe('rgb(37, 99, 235)');
+    // `--bs-nav-link-color: var(--bs-link-color)`, i.e. the theme's link colour
+    // (brand navy #151e2d). Read it live, so this cannot pass vacuously if the
+    // link colour changes again.
+    const linkColour = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bs-link-color')
+      .trim();
+    expect(linkColour).not.toBe('');
+    const probe = document.createElement('span');
+    probe.style.color = linkColour;
+    document.body.appendChild(probe);
+    const linkRgb = getComputedStyle(probe).color;
+    probe.remove();
+    expect(colour).not.toBe(linkRgb);
     // `--bs-secondary-color` is rgba(var(--bs-body-color-rgb), .75).
     expect(colour).toBe('rgba(33, 37, 41, 0.75)');
     // …and it is still legible: WCAG AA for normal text needs 4.5:1.
     expect(contrastOnWhite(colour)).toBeGreaterThan(4.5);
   });
 
-  it('keeps the ACTIVE tab dark, so selection still reads without the blue', async () => {
+  it('keeps the ACTIVE tab dark, so selection still reads without the link colour', async () => {
     const screen = renderTabs();
     await settled(() => !!screen.container.querySelector('.nav-tabs .nav-link.active'));
 
@@ -98,7 +109,7 @@ describe('nav-tabs inactive links are muted, not the saturated link-blue', () =>
 
     const activeColour = getComputedStyle(active).color;
     // The active tab must be visibly DARKER than the muted inactive one — that
-    // contrast is the whole selection signal once the blue is gone.
+    // contrast is the whole selection signal once the link colour is gone.
     expect(luminanceOnWhite(activeColour)).toBeLessThan(
       luminanceOnWhite(getComputedStyle(inactive).color),
     );
@@ -293,7 +304,7 @@ describe('the soft colour overrides do not inflate their specificity', () => {
 
   it("lets a consumer's single-class !important rule beat the .progress-bar fill", async () => {
     const selector = compiledSelectorFor(
-      /([^\s,{]*\.bg-success)\s*\{\s*background-color:\s*#84cc16/,
+      /([^\s,{]*\.bg-success)\s*\{\s*background-color:\s*#7bf25a/,
     );
     expect(selector).toBe(':where(.progress-bar).bg-success');
 
@@ -348,13 +359,13 @@ describe('the soft overrides still beat Bootstrap at equal specificity', () => {
     expect(painted).not.toBe('rgb(71, 85, 105)'); // $secondary #475569 — what losing looks like
   });
 
-  it('keeps .progress-bar.bg-success on the vivid lime, not the dark emphasis olive', async () => {
+  it('keeps .progress-bar.bg-success on the vivid lime, not the deep green emphasis', async () => {
     const painted = await paintedWithSourceThemeOnly(
       () => h('div', { class: 'progress' }, [h('div', { class: 'progress-bar bg-success' })]),
       '.progress-bar',
     );
-    expect(painted).toBe('rgb(132, 204, 22)'); // solid-bg #84cc16
-    expect(painted).not.toBe('rgb(77, 124, 15)'); // $success #4d7c0f — what losing looks like
+    expect(painted).toBe('rgb(123, 242, 90)'); // solid-bg #7bf25a
+    expect(painted).not.toBe('rgb(35, 107, 18)'); // $success #236b12 — what losing looks like
   });
 });
 
@@ -391,5 +402,20 @@ describe('DBadge: :variant="null" opts out of the soft text-bg-* fill', () => {
 
   it('treats undefined as "no value" and falls back to the default (documented trap)', async () => {
     expect(await badgeClasses({ variant: undefined })).toContain('text-bg-secondary');
+  });
+});
+
+describe('card headers sit on a quiet tinted cap', () => {
+  it('paints .card-header in the cap tint, not transparent', () => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<div class="card-header">Current stock levels</div><div class="card-body">Body</div>';
+    document.body.appendChild(card);
+    const header = card.querySelector('.card-header') as HTMLElement;
+    const body = card.querySelector('.card-body') as HTMLElement;
+    expect(getComputedStyle(header).backgroundColor).toBe('rgb(246, 248, 253)');
+    // Control: the body stays on the card's own white, so the cap is a distinct band.
+    expect(getComputedStyle(body).backgroundColor).not.toBe('rgb(246, 248, 253)');
+    card.remove();
   });
 });

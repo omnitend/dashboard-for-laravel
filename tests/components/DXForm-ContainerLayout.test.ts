@@ -15,6 +15,7 @@
  * - Resizes are awaited on a real `ResizeObserver` delivery, not a sleep.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-vue';
 import { h, nextTick } from 'vue';
 import DXForm from '../../resources/js/components/extended/DXForm.vue';
@@ -104,7 +105,12 @@ function isStacked(label: Element, input: Element): boolean {
 describe('DXForm container-driven layout', () => {
   let viewport: { width: number; height: number };
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // A desktop-wide window, so only the CONTAINER is narrow. The default
+    // label column stacks below the `sm` VIEWPORT breakpoint (like any
+    // breakpoint labelCols), and the runner's default 414px window is under
+    // it, which would stack every horizontal row whatever the container did.
+    await page.viewport(1200, 900);
     viewport = { width: window.innerWidth, height: window.innerHeight };
   });
 

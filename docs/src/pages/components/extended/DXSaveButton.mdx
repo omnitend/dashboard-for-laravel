@@ -1,0 +1,67 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXSaveButton
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXSaveButtonExample from '../../../examples/DXSaveButtonExample.vue';
+import DXSaveButtonExampleRaw from '../../../examples/DXSaveButtonExample.vue?raw';
+
+# DXSaveButton
+
+A save button that confirms the save in place. While saving it shows
+[DButton](/components/base/DButton)'s busy state; once saved it changes to a
+disabled **✓ Saved** (tick, same colour as before: a disabled button is
+normally grey, but this one keeps its own variant at full strength, so only
+the label and the disabled state change); when the form changes it goes back
+to the normal Save button.
+
+[DXForm](/components/extended/DXForm) uses it for its submit button and works
+out `saving` and `saved` itself. For a form you build yourself, drive it with
+two booleans: set `saving` while the request runs, set `saved` when it
+succeeds, and clear `saved` whenever the data changes.
+
+```vue
+<DXSaveButton type="submit" :saving="isSaving" :saved="isSaved">Save</DXSaveButton>
+```
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXSaveButtonExampleRaw}
+>
+  <DXSaveButtonExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'saving', type: 'boolean', required: 'No', default: 'false', description: 'A save is in flight: disabled at once, spinner after the anti-flash delay (DButton loading). Wins over saved, so a re-save shows busy.' },
+  { name: 'saved', type: 'boolean', required: 'No', default: 'false', description: 'The current contents are saved: shows savedText with a tick and a real disabled attribute, in the button's own variant colours (not grey, not faded). Clear it when the data changes.' },
+  { name: 'savedText', type: 'string', required: 'No', default: '"Saved"', description: 'Label in the saved state.' },
+  { name: 'savingText', type: 'string', required: 'No', default: '-', description: 'Label beside the spinner while saving (DButton loadingText). Omit to keep the normal label.' },
+  { name: 'variant', type: 'ButtonVariant | null', required: 'No', default: '"primary"', description: 'Variant in every state, including saved.' },
+  { name: 'icon', type: 'string', required: 'No', default: '-', description: 'Leading Bootstrap Icons glyph when not saved. The saved state shows check-lg.' },
+  { name: 'disabled', type: 'boolean', required: 'No', default: 'false', description: 'Disable the button in any state.' },
+]} />
+
+Every other attribute and listener (`type`, `block`, `size`, `class`,
+`spinnerDelay`, `@click`, …) passes through to `DButton`.
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'default', props: '-', description: 'The normal (and saving) label. Defaults to "Save".' },
+]} />
+
+## Accessibility
+
+- The button is a polite live region (`aria-live="polite"`), so the change to
+  "Saved" is announced. While saving it is `aria-busy`, which holds
+  announcements until the save settles.
+- The saved state uses the real `disabled` attribute, not just a style.
+- The saved state keeps full contrast rather than Bootstrap's faded disabled
+  look, because it reports an outcome rather than an unavailable action.

@@ -69,15 +69,30 @@
 
         <!-- Custom value slot overrides the built-in control (checkbox / switch
              / standard types; not switch-list or repeater). -->
+        <!-- A `plaintext` field is display-only, so its value slot is wrapped
+             in `.dx-form-plaintext`: a badge or a line of text then shares
+             the label's centre line instead of sitting at the top of the row. -->
+        <div
+            v-if="showValueSlot && $slots.value && isPlaintext"
+            class="dx-form-plaintext"
+        >
+            <slot
+                name="value"
+                :field="field"
+                :model="model"
+                :value="fieldValue"
+                :update="setValue"
+            />
+        </div>
         <!--
-          @slot Replaces the built-in control with a custom value editor.
+          @slot Replaces the built-in control with a custom value editor. On a `plaintext` field the content is wrapped in `.dx-form-plaintext` so display-only content lines up with the label.
           @binding {FieldDefinition} field The field definition being rendered.
           @binding {any} model The model passed to field predicates (defaults to the live form data).
           @binding {any} value The current field value.
           @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
         -->
         <slot
-            v-if="showValueSlot && $slots.value"
+            v-else-if="showValueSlot && $slots.value"
             name="value"
             :field="field"
             :model="model"
@@ -154,7 +169,7 @@
                 >
                     <DFormGroup
                         v-bind="switchListRowAttrs"
-                        class="mb-0 align-items-center"
+                        class="mb-0"
                     >
                         <template #label>
                             <DXFieldLabel
@@ -420,7 +435,11 @@ interface Props {
      */
     layout?: "vertical" | "horizontal";
 
-    /** Label column width for horizontal layout (mirrors BFormGroup). */
+    /**
+     * Label column width for horizontal layout (mirrors BFormGroup's
+     * `labelCols`/`labelCols*`). Omitted: the label takes
+     * `--dx-form-label-width` (45%) from `sm` up and stacks below.
+     */
     labelCols?: LabelCols;
 
     /**
@@ -487,23 +506,39 @@ function labelColsAttrs(cols: LabelCols | undefined): Record<string, any> {
     return attrs;
 }
 
-// Default to a 3-column label when horizontal but no width was configured,
-// so `layout: "horizontal"` alone is enough to see the effect. When the
-// field's label is hidden, reserve no label column at all — BFormGroup would
-// otherwise still emit an empty label column (it goes horizontal whenever any
-// labelCols are set, regardless of whether a label exists), leaving the
-// control indented in the input column beside dead space. Dropping the column
-// lets the control span full width, so a switch/checkbox self-label lines up
-// with sibling row labels (#78).
+/**
+ * BFormGroup attrs for a horizontal label column. With no `labelCols` from the
+ * caller (field or form), the label is `--dx-form-label-width` (45%) wide from
+ * `sm` up and stacks below: `labelColsSm: true` makes it a `col-sm` (so
+ * BFormGroup goes horizontal and stacks below `sm` like any breakpoint
+ * `labelCols`), and the `--default-width` modifier is what theme.scss sizes.
+ * The 45% falls between two 12-column steps, which is why it is CSS rather
+ * than a column count. An explicit `labelCols` goes through the grid unchanged.
+ */
+function labelColumnAttrs(cols: LabelCols | undefined): Record<string, any> {
+    // Right-align the label column so the label (and the hint that sits
+    // beneath it in horizontal layout) line up against the control column,
+    // like a classic label-left settings form.
+    const labelClass = "text-sm-end dx-field-label-col";
+    if (cols === undefined) {
+        return {
+            labelColsSm: true,
+            labelClass: `${labelClass} dx-field-label-col--default-width`,
+        };
+    }
+    return { ...labelColsAttrs(cols), labelClass };
+}
+
+// `layout: "horizontal"` alone is enough to see the effect (the default label
+// width above). When the field's label is hidden, reserve no label column at
+// all — BFormGroup would otherwise still emit an empty label column (it goes
+// horizontal whenever any labelCols are set, regardless of whether a label
+// exists), leaving the control indented in the input column beside dead
+// space. Dropping the column lets the control span full width, so a
+// switch/checkbox self-label lines up with sibling row labels (#78).
 const horizontalAttrs = computed<Record<string, any>>(() =>
     isHorizontal.value && !props.hideLabel
-        ? {
-              ...labelColsAttrs(props.labelCols ?? 3),
-              // Right-align the label column so the label (and the hint that
-              // sits beneath it in horizontal layout) line up against the
-              // control column, like a classic label-left settings form.
-              labelClass: "text-sm-end dx-field-label-col",
-          }
+        ? labelColumnAttrs(props.labelCols)
         : {},
 );
 
@@ -667,12 +702,7 @@ const resolvedInfo = computed(() => resolveMaybe(props.field.info));
 // FIELD label but would collapse every option row's label column too —
 // `hideLabel` on a switch-list should drop only the section heading.
 const switchListRowAttrs = computed<Record<string, any>>(() =>
-    isHorizontal.value
-        ? {
-              ...labelColsAttrs(props.labelCols ?? 3),
-              labelClass: "text-sm-end dx-field-label-col",
-          }
-        : {},
+    isHorizontal.value ? labelColumnAttrs(props.labelCols) : {},
 );
 
 // The model is an array of selected option values, exactly like
@@ -864,9 +894,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* Switch-list rows (#160): compact rhythm with a divider between rows. The
-   vertical centring of label vs switch is the `align-items-center` utility on
-   each row's DFormGroup (its horizontal root IS the .row element), so no
-   deep selector into bvn internals is needed here. */
+   vertical centring of label, switch and trailing control is a global
+   `.dx-switch-list-row .row` rule in theme.scss: the `.row` is inside
+   bootstrap-vue-next's BFormGroup wrapper, so a class on the DFormGroup
+   lands on the wrapper, not the row. */
 .dx-switch-list-row {
     padding: 0.25rem 0;
     border-bottom: 1px solid var(--bs-border-color);

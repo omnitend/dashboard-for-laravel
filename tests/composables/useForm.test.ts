@@ -266,3 +266,70 @@ describe('useForm transform shapes the payload without mutating form state (#150
     expect(form.data.name).toBe('Ada');
   });
 });
+
+describe('useForm wasSuccessful (saved-state support)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('is false before any submission', () => {
+    expect(useForm({ name: '' }).wasSuccessful).toBe(false);
+  });
+
+  it('is true after a successful submission and stays true (unlike recentlySuccessful)', async () => {
+    vi.spyOn(api, 'post').mockResolvedValue({ data: {}, response: {} as Response });
+    const form = useForm({ name: 'Ada' });
+    await form.post('/api/users');
+    expect(form.wasSuccessful).toBe(true);
+  });
+
+  it('resets to false when the next submission starts', async () => {
+    let resolveSecond: (value: { data: unknown; response: Response }) => void = () => {};
+    vi.spyOn(api, 'post')
+      .mockResolvedValueOnce({ data: {}, response: {} as Response })
+      .mockImplementationOnce(
+        () => new Promise((resolve) => { resolveSecond = resolve; }),
+      );
+    const form = useForm({ name: 'Ada' });
+    await form.post('/api/users');
+    expect(form.wasSuccessful).toBe(true);
+
+    const second = form.post('/api/users');
+    expect(form.wasSuccessful).toBe(false);
+    resolveSecond({ data: {}, response: {} as Response });
+    await second;
+    expect(form.wasSuccessful).toBe(true);
+  });
+
+  it('is false after a failed submission', async () => {
+    vi.spyOn(api, 'post')
+      .mockResolvedValueOnce({ data: {}, response: {} as Response })
+      .mockRejectedValueOnce({ message: 'Nope', errors: { name: ['Required'] }, status: 422 });
+    const form = useForm({ name: 'Ada' });
+    await form.post('/api/users');
+    await form.post('/api/users').catch(() => {});
+    expect(form.wasSuccessful).toBe(false);
+  });
+});
+
+describe('useForm wasSuccessful with overlapping submissions', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('is false when a failure lands after an overlapping success', async () => {
+    let rejectFirst: (reason: unknown) => void = () => {};
+    vi.spyOn(api, 'post')
+      .mockImplementationOnce(
+        () => new Promise((_resolve, reject) => { rejectFirst = reject; }),
+      )
+      .mockResolvedValueOnce({ data: {}, response: {} as Response });
+    const form = useForm({ name: 'Ada' });
+    const first = form.post('/api/users').catch(() => {});
+    await form.post('/api/users');
+    expect(form.wasSuccessful).toBe(true);
+    rejectFirst({ message: 'Nope', errors: {}, status: 500 });
+    await first;
+    expect(form.wasSuccessful).toBe(false);
+  });
+});

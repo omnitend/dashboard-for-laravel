@@ -31,6 +31,13 @@ export interface FormState<TData extends Record<string, any>> {
     message: string;
     touched: Record<string, boolean>;
     recentlySuccessful: boolean;
+    /**
+     * Whether the most recent submission succeeded. Unlike
+     * `recentlySuccessful` (which clears itself after 1.5s) this stays true
+     * until the next submission starts, and is false after a failure — the
+     * Inertia `wasSuccessful` semantics. DXForm's saved state reads it.
+     */
+    wasSuccessful: boolean;
     shouldShowMessage: boolean;
 }
 
@@ -172,6 +179,7 @@ export function useForm<TData extends Record<string, any>>(
         message: "",
         touched: {},
         recentlySuccessful: false,
+        wasSuccessful: false,
         shouldShowMessage: false,
     });
 
@@ -263,6 +271,7 @@ export function useForm<TData extends Record<string, any>>(
     ): Promise<TResponse> => {
         inFlightCount += 1;
         state.processing = true;
+        state.wasSuccessful = false;
         if (!options.preserveErrors) clearErrors();
 
         const payloadRaw = (
@@ -326,6 +335,7 @@ export function useForm<TData extends Record<string, any>>(
                         });
 
             state.recentlySuccessful = true;
+            state.wasSuccessful = true;
             if (successTimer !== null) clearTimeout(successTimer);
             successTimer = setTimeout(() => {
                 state.recentlySuccessful = false;
@@ -338,6 +348,7 @@ export function useForm<TData extends Record<string, any>>(
             }
             return data;
         } catch (err) {
+            state.wasSuccessful = false;
             const { errors, message } = errorsFromLaravel(err);
             setErrors(errors);
             setMessage(message);

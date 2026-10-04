@@ -100,7 +100,7 @@
                                 <DFormInput
                                     v-if="field.filter === 'text'"
                                     :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                    :placeholder="field.filterPlaceholder || `Search ${field.label || field.key}...`"
+                                    :placeholder="field.filterPlaceholder || `${field.label || field.key}…`"
                                     size="sm"
                                     @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
                                 />
@@ -149,7 +149,7 @@
                                 <DFormInput
                                     v-else-if="field.filter === 'number'"
                                     :model-value="effectiveFilters[filterKeyFor(field)] || ''"
-                                    :placeholder="field.filterPlaceholder || `Filter ${field.label || field.key}...`"
+                                    :placeholder="field.filterPlaceholder || `${field.label || field.key}…`"
                                     type="number"
                                     size="sm"
                                     @update:model-value="handleFilterChange(filterKeyFor(field), $event as string)"
@@ -577,7 +577,10 @@ export interface Props<TItem = any> {
     /** Error message */
     error?: string | null;
 
-    /** Pagination data (Inertia mode) */
+    /**
+     * Pagination data (Inertia mode). Omit it on a plain `items` table and the
+     * footer counts the rows given as one page.
+     */
     pagination?: PaginationData;
 
     /** Show pagination controls */
@@ -685,7 +688,8 @@ export interface Props<TItem = any> {
     /**
      * Label column width for the edit modal's horizontal layout, forwarded to
      * `DXForm`'s `labelCols` (a single width or a per-breakpoint object). Only
-     * meaningful when `editLayout` is "horizontal".
+     * meaningful when `editLayout` is "horizontal". Omitted: DXForm's default
+     * 45% label column.
      */
     editLabelCols?: LabelCols;
 
@@ -989,8 +993,11 @@ if (
     console.warn('[DXTable] clientSide mode ignores provider, apiUrl and inertiaUrl props. Data is processed locally from items.');
 }
 
-// Computed for effective busy state (provider mode uses 'busy', inertia uses 'loading')
-const effectiveBusy = computed(() => isProviderMode.value ? props.busy : props.loading);
+// Effective busy state. Provider mode: `busy` (two-way with BTable's own
+// loading). Items and client-side modes: `busy`, the documented prop, or the
+// deprecated `loading`; these modes used to read only `loading`, so a page
+// passing `:busy` showed the empty text while its rows were still loading.
+const effectiveBusy = computed(() => isProviderMode.value ? props.busy : props.busy || props.loading);
 
 /*
  * `perPage`, `sortBy` and `filters` are dual-purpose: with a `v-model` they are
@@ -2023,9 +2030,10 @@ const handleApiPageChange = (page: number) => {
  *   `currentPage` and `perPage`; `busy` is the raw prop (two-way with BTable's
  *   provider loading via `@update:busy`).
  * - client-side: rows are pre-sliced by `clientSidePaginatedItems`, and local
- *   sorting is off (we sort in `clientSideSortedItems`).
+ *   sorting is off (we sort in `clientSideSortedItems`); `busy` is
+ *   `effectiveBusy`.
  * - inertia: server-paginated `items`, local sorting off, `busy` is
- *   `effectiveBusy` (the `loading` prop in this mode).
+ *   `effectiveBusy` (`busy` or the deprecated `loading` in this mode).
  *
  * A key absent from the returned object is simply not bound, which is what the
  * original blocks did (e.g. non-provider modes never set `provider`/`currentPage`,
@@ -2041,7 +2049,7 @@ const tableModeBindings = computed<Record<string, unknown>>(() => {
         };
     }
     if (isClientSideMode.value) {
-        return { items: clientSidePaginatedItems.value, noLocalSorting: true };
+        return { items: clientSidePaginatedItems.value, noLocalSorting: true, busy: effectiveBusy.value };
     }
     // inertia
     return { items: resolvedItems.value, noLocalSorting: true, busy: effectiveBusy.value };
@@ -2050,13 +2058,32 @@ const tableModeBindings = computed<Record<string, unknown>>(() => {
 /*
  * The pagination metadata the single footer renders, by mode (#123). Null means
  * no footer: only provider mode has that case (a custom provider with no
- * `pagination` prop). Client-side always has a computed object; inertia's
- * `pagination` prop carries a default object, so both always render a footer —
- * matching the three original per-mode `v-if`s exactly.
+ * `pagination` prop). Client-side and inertia always render a footer.
+ *
+ * Inertia mode is also what a plain `:items` table with no `pagination` lands
+ * in. Its footer read the `withDefaults` placeholder (`total: 0`), so two
+ * rendered rows sat above "0 items.". With no `pagination` passed, the rows
+ * given ARE the whole set: describe them as one page.
  */
+const unpaginatedItemsPagination = computed<PaginationData>(() => {
+    const itemCount = resolvedItems.value?.length ?? 0;
+    return {
+        current_page: 1,
+        // One page holding every row, so the pager (shown only when
+        // total > per_page) never appears. Floor of 1 keeps the page
+        // maths away from a zero divisor.
+        per_page: Math.max(itemCount, 1),
+        total: itemCount,
+        from: itemCount > 0 ? 1 : 0,
+        to: itemCount,
+    };
+});
+
 const activePagination = computed<PaginationData | null>(() => {
     if (isClientSideMode.value) return clientSidePagination.value;
-    if (isInertiaMode.value) return props.pagination;
+    if (isInertiaMode.value) {
+        return paginationWasProvided ? props.pagination : unpaginatedItemsPagination.value;
+    }
     if (isProviderMode.value) return providerPagination.value;
     return null;
 });
@@ -2347,7 +2374,9 @@ const tableSlotSignature = (slots: Record<string, unknown>): string => {
 // three data modes from one place.
 const tablePassthroughProps = computed(() => ({
     footClone: props.footClone,
-    showEmpty: props.showEmpty,
+    // No empty text while rows are loading: "No … found" during a load reads as
+    // "there is no data". Provider mode is unchanged by this.
+    showEmpty: props.showEmpty && (isProviderMode.value || effectiveBusy.value === false),
     emptyText:
         props.emptyText ??
         (hasActiveFilters.value
@@ -2457,7 +2486,7 @@ defineExpose({
 }
 
 /* Muted header titles (#157): in a data table the CONTENT is what matters —
-   near-black bold headers compete with it. Grey (still bold) keeps the
+   near-black bold headers compete with it. Grey (weight 500) keeps the
    structure without the shout. Consumers re-louden via the token. */
 :deep(thead th) {
     color: var(--dx-table-header-color, var(--bs-secondary-color));

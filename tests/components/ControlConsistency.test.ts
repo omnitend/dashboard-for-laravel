@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-vue';
 import { h } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
@@ -41,6 +42,9 @@ describe('shared control consistency', () => {
   });
 
   it('keeps horizontal form labels aligned with the input text', async () => {
+    // The default label column stacks below the `sm` viewport breakpoint, and
+    // the runner's default window is narrower than that.
+    await page.viewport(1200, 800);
     const screen = render({ setup() {
       const form = useForm({ name: 'Example' });
       return () => h('div', { style: 'width: 900px' }, [h(DXForm, {

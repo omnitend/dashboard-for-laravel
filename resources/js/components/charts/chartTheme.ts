@@ -42,23 +42,41 @@ export function registerCharts(): void {
 }
 
 // The dedicated data-viz palette (`$dx-chart-palette` in theme.scss) — eight
-// vivid hues in a fixed, CVD-validated order, published as --dx-chart-1..8.
-// Deliberately NOT the semantic --bs-* colours (#141): the base theme colours
-// are dark AA "emphasis" shades (too muted for series), and status colours
-// shouldn't impersonate "series 2". Fallbacks mirror the shipped theme so
-// charts still render without the CSS (SSR / tests / a consumer who didn't
-// import it). Sync with theme.scss's $dx-chart-palette is enforced by a test
-// that parses the Sass source (charts.test.ts), which is why this is exported.
+// light, vivid fills in a fixed, CVD-validated order, published as
+// --dx-chart-1..8. Deliberately NOT read from the semantic --bs-* colours
+// (#141). Fallbacks mirror the shipped theme so charts still render without
+// the CSS (SSR / tests / a consumer who didn't import it). Sync with
+// theme.scss is enforced by a test that parses the Sass source
+// (charts.test.ts), which is why these lists are exported.
 export const PALETTE_VARS: Array<[string, string]> = [
-    ["--dx-chart-1", "#2563eb"], // blue
-    ["--dx-chart-2", "#65a30d"], // lime
-    ["--dx-chart-3", "#7c3aed"], // violet
-    ["--dx-chart-4", "#0d9488"], // teal
-    ["--dx-chart-5", "#ea580c"], // orange
-    ["--dx-chart-6", "#0891b2"], // cyan
-    ["--dx-chart-7", "#d97706"], // amber
-    ["--dx-chart-8", "#db2777"], // pink
+    ["--dx-chart-1", "#7fd7fd"], // sky
+    ["--dx-chart-2", "#7bf25a"], // lime
+    ["--dx-chart-3", "#e46ab9"], // magenta
+    ["--dx-chart-4", "#d6e86a"], // lime-yellow
+    ["--dx-chart-5", "#b9a3f0"], // lavender
+    ["--dx-chart-6", "#efd574"], // butter
+    ["--dx-chart-7", "#9fb4ff"], // periwinkle
+    ["--dx-chart-8", "#f7a072"], // peach
 ];
+
+// The line/point shade for each slot (`$dx-chart-line-palette`): the fill
+// darkened to 3.5:1 on white, so a line stroke or point outline clears WCAG
+// 1.4.11 non-text contrast where the light fill alone would not. Same order.
+export const LINE_PALETTE_VARS: Array<[string, string]> = [
+    ["--dx-chart-line-1", "#5590aa"],
+    ["--dx-chart-line-2", "#4d9839"],
+    ["--dx-chart-line-3", "#d161a9"],
+    ["--dx-chart-line-4", "#848f41"],
+    ["--dx-chart-line-5", "#907fbb"],
+    ["--dx-chart-line-6", "#99884a"],
+    ["--dx-chart-line-7", "#7686be"],
+    ["--dx-chart-line-8", "#ba7956"],
+];
+
+// The 1px outline on bars and doughnut segments (`$dx-chart-edge`): it carries
+// the non-text contrast for the light fills. Dark mode remaps it to the dark
+// body colour.
+export const EDGE_VAR: [string, string] = ["--dx-chart-edge", "#121419"];
 
 /**
  * The element whose computed style the theme variables are read from.
@@ -86,12 +104,29 @@ function themeScope(scope?: Element | null): Element | null {
  *   backward compatible.
  */
 export function getPalette(scope?: Element | null): string[] {
+    return resolveVars(PALETTE_VARS, scope);
+}
+
+/**
+ * Resolve the themed line/point shades (`--dx-chart-line-1..8`), slot for slot
+ * with getPalette(). Same scope rules as getPalette().
+ */
+export function getLinePalette(scope?: Element | null): string[] {
+    return resolveVars(LINE_PALETTE_VARS, scope);
+}
+
+/** Resolve the bar/segment edge colour (`--dx-chart-edge`). */
+export function getEdgeColor(scope?: Element | null): string {
+    return resolveVars([EDGE_VAR], scope)[0];
+}
+
+function resolveVars(vars: Array<[string, string]>, scope?: Element | null): string[] {
     const host = themeScope(scope);
     if (host === null) {
-        return PALETTE_VARS.map(([, fallback]) => fallback);
+        return vars.map(([, fallback]) => fallback);
     }
     const styles = getComputedStyle(host);
-    return PALETTE_VARS.map(([name, fallback]) => {
+    return vars.map(([name, fallback]) => {
         const value = styles.getPropertyValue(name).trim();
         return value || fallback;
     });
@@ -273,8 +308,11 @@ export function baseOptions(args: BaseOptionArgs): Record<string, any> {
 
 /**
  * Apply the themed palette to any dataset that doesn't set its own colours.
- * Bar: one colour per dataset (or per bar for a single dataset). Line: a themed
- * stroke + translucent fill. Doughnut/pie: one colour per slice.
+ * Each property is filled in only when the caller left it undefined.
+ * Bar: one fill per dataset (or per bar for a single dataset), with a 1px
+ * edge outline. Line: the slot's darker line shade for the stroke and point
+ * outlines, the fill for point centres, and a 35% fill wash under the line.
+ * Doughnut/pie: one fill per slice, with a 1px edge outline.
  *
  * `scope` is the chart's container element; the palette is resolved from its
  * computed style so a nested `data-bs-theme` container themes correctly (#161).
@@ -287,11 +325,14 @@ export function applyPalette(
     scope?: Element | null,
 ): any[] {
     const palette = getPalette(scope);
+    const linePalette = getLinePalette(scope);
+    const edge = getEdgeColor(scope);
     const single = datasets.length === 1;
 
     return datasets.map((dataset, index) => {
         const next = { ...dataset };
         const color = palette[index % palette.length];
+        const lineColor = linePalette[index % linePalette.length];
 
         if (kind === "doughnut") {
             if (next.backgroundColor === undefined) {
@@ -300,14 +341,18 @@ export function applyPalette(
                     (_, i) => palette[i % palette.length],
                 );
             }
+            if (next.borderColor === undefined) next.borderColor = edge;
+            if (next.borderWidth === undefined) next.borderWidth = 1;
             return next;
         }
 
         if (kind === "line") {
-            if (next.borderColor === undefined) next.borderColor = color;
+            if (next.borderColor === undefined) next.borderColor = lineColor;
             if (next.backgroundColor === undefined) {
-                next.backgroundColor = withAlpha(color, 0.15);
+                next.backgroundColor = withAlpha(color, 0.35);
             }
+            if (next.pointBackgroundColor === undefined) next.pointBackgroundColor = color;
+            if (next.pointBorderColor === undefined) next.pointBorderColor = lineColor;
             if (next.tension === undefined) next.tension = 0.3;
             if (next.fill === undefined) next.fill = true;
             if (next.pointRadius === undefined) next.pointRadius = 2;
@@ -321,6 +366,8 @@ export function applyPalette(
                     ? Array.from({ length: labelsCount }, () => color)
                     : color;
         }
+        if (next.borderColor === undefined) next.borderColor = edge;
+        if (next.borderWidth === undefined) next.borderWidth = 1;
         if (next.borderRadius === undefined) next.borderRadius = 4;
         return next;
     });

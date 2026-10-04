@@ -7,6 +7,119 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.42.0] - 2026-10-04
+
+### Added
+
+- Add `.dx-form-plaintext` for display-only values in a form row: a badge, a
+  line of text, a timestamp or a short list. It gives the content the label
+  column's offset, so its first line shares the label's centre line instead
+  of sitting about 11px higher. A `plaintext` field's `value` slot is wrapped
+  in it automatically.
+- Bundle the theme's fonts: Maven Pro (400, 500, 600, 700) for body text and
+  Poppins (500, 600) as the display face, as woff2 files with `@font-face`
+  and `font-display: swap`. Until now the theme named Poppins without shipping
+  it, so it only rendered where it was installed. Poppins is exposed as
+  `--dx-font-family-display` (`$dx-font-family-display`) and used for h1–h4.
+  Poppins is subset to Latin (about 12 KB per face, without its Devanagari).
+- Add a `pending` colour variant, a violet for "waiting, the next move is not
+  yours" (awaiting payment, sent to a printer but not confirmed). It works on
+  badges, soft and outline buttons, alerts, toasts, text and subtle
+  utilities, table rows and list-group items, and is added to
+  bootstrap-vue-next's variant types.
+- Add `DXSaveButton`, a save button that confirms in place: busy while
+  saving, then a disabled "✓ Saved" (tick, announced through `aria-live`)
+  until the form changes. The colour stays the button's own variant (navy
+  primary by default) at full strength: only the label and the disabled
+  state change. Drive it with two
+  booleans, `saving` and `saved`.
+- `DXForm`'s submit button is now a `DXSaveButton`: after a successful
+  `form.post`/`put`/`patch` it reads "Saved" until any field changes. Writes
+  made by the save itself do not count as changes, and an edit made while the
+  request is in flight keeps the button as Save. New props `submitSavedText`
+  and `savedState` (set `false` for search or filter forms).
+- Add `DXNumberStepper`, a number input between decrease and increase
+  buttons (`v-model`, `min`, `max`, `step`, `size`, `disabled`). The buttons
+  are square at the input's height, soft secondary, and disable at a bound;
+  ArrowUp and ArrowDown step the same way. Typing is free and an
+  out-of-range value is clamped when the input loses focus. Decimal steps do
+  not accumulate float error (0.1 three times is 0.3).
+- Add `useForm().wasSuccessful`: true once the latest submission succeeds,
+  false from the start of the next one or after a failure.
+
+### Changed
+
+- Give card headers a quiet blue-tinted cap (`#f6f8fd`, legacy Omni Tend's)
+  instead of a transparent one, so a card's title reads as a band.
+- Switch the status colours to a lighter, fruitier palette: lime success,
+  magenta danger, butter-yellow warning and sky info, each with a dark
+  same-hue label and a deeper emphasis shade. Links are the brand navy and
+  stay underlined.
+- Derive Bootstrap's subtle colours (`.bg-*-subtle`, `.border-*-subtle`,
+  `.text-*-emphasis`) and the `.table-*` row variants from the soft tints.
+  The subtle backgrounds are the soft tint mixed to 70% white.
+- Shrink the heading scale and set every heading at weight 500: h1 1.25rem,
+  h2 1.15rem, h3 and h4 1.05rem, h5 and h6 1rem (was 2rem down to 1rem at
+  600). Table body text is now `#212529` instead of black and table headers
+  weight 500 instead of bold.
+- Give disabled buttons one neutral look whatever their variant: a light grey
+  fill and grey label at full opacity (outline and link buttons: grey border
+  or text, no fill), instead of Bootstrap's 65% opacity, which left a
+  disabled yellow or green button looking active. Tokens:
+  `--dx-btn-disabled-bg`, `--dx-btn-disabled-color`,
+  `--dx-btn-disabled-outline-border`. The one exception is `DXSaveButton`'s
+  "✓ Saved" state, which is disabled but keeps its own variant's colours.
+- Paint alerts with the subtle background, a `border-*-subtle` border and the
+  soft text, instead of the full soft tint. A warning alert is no longer as
+  loud as a solid yellow fill. Badges, soft buttons and toasts are unchanged.
+- Show form validation errors in crimson `#c8102e` rather than the danger
+  colour. Switches follow the new danger colour when off.
+- Give charts a new light palette with a darker line shade per series
+  (`--dx-chart-line-1..8`) and a 1px outline on bars and doughnut segments
+  (`--dx-chart-edge`). Dark mode charts are unchanged. Rename the Sass
+  variable `$dx-switch-thumb-red` to `$dx-switch-thumb-off`.
+- Give the dashboard one horizontal gutter, 20px (`$dashboard-gutter-x`,
+  `--dx-dashboard-gutter-x`): the navbar's padding and the page content's
+  edges both use it, so the menu toggle lines up with the page content.
+  Content used to start 36px in and the navbar 12px.
+- Make a horizontal field's label column 45% wide by default
+  (`$dx-form-label-width`, `--dx-form-label-width`) instead of 3 of 12
+  columns. It applies from `sm` up; below `sm` the label now stacks above
+  the input. An explicit `labelCols`, on the form or the field, still uses
+  the 12-column grid as before.
+- Default a `DXTable` text or number filter's placeholder to the column label
+  and an ellipsis ("Name…", "Count…") instead of "Search Name..." or
+  "Filter Count...": the magnifier already says search. A
+  `filterPlaceholder` still wins.
+
+### Bug Fixes
+
+- Tell sidebar items apart by query string: links that differ only by
+  their query (`/tasks?business_unit_id=1`, `...=2`) no longer all light up
+  together. The current URL must carry an item's query parameters; extra ones
+  such as `page` still match.
+
+- Honour `busy` on `DXTable` with `items` or `clientSide` rows (it was read
+  only in API/provider mode), and hide the empty text while busy, so a table
+  whose rows are still loading no longer says "No … found".
+- Count the rows of a `DXTable` given plain `items` and no `pagination`: its
+  footer read the `pagination` default and said "0 items." under rows it was
+  showing. The rows given are now treated as one page ("2 items.", no pager).
+  A passed `pagination` drives the footer as before.
+- Centre a `switch-list` row's label, switch and trailing control (such as a
+  notes input in `switch-list-item`) on one line. In a horizontal form the
+  label sat 11px below a lone switch, and 3.5px below the row once a notes
+  input appeared; the row's centring class landed on bootstrap-vue-next's
+  form-group wrapper instead of its `.row`.
+
+### Tests
+
+- Cover the save button's states, DXForm's saved state (including in-flight
+  edits, writes from `onSuccess` and after `await`, failures and the tabbed
+  layout) and `wasSuccessful`.
+- Measure horizontal label centring against text, checkbox, switch, radio,
+  file and switch-list controls (`DXForm-LabelCentring.test.ts`).
+
 ## [0.41.2] - 2026-09-29
 
 ### Added

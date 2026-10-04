@@ -73,8 +73,9 @@ export type OptionsLoader = (model: any) => Promise<FieldOption[]>;
  * Deliberately excludes `boolean` (which BFormGroup's own `labelCols` prop
  * accepts): Vue's type-based `defineProps` auto-defaults an omitted prop to
  * `false` (not `undefined`) whenever its declared type includes `boolean`,
- * which would silently break the `field.labelCols ?? formLabelCols ?? 3`
- * fallback chain used to resolve this value.
+ * which would silently break the `field.labelCols ?? formLabelCols` fallback
+ * chain used to resolve this value (`undefined` at the end of it means the
+ * default 45% label column, `--dx-form-label-width`).
  */
 export type LabelCols =
     | number
@@ -241,7 +242,8 @@ export interface FieldDefinition {
 
     /**
      * Per-field override of DXForm's `labelCols` prop, for horizontal
-     * layout. Falls back to the form-level `labelCols` when omitted.
+     * layout. Falls back to the form-level `labelCols` when omitted, and to
+     * the default 45% label column (`--dx-form-label-width`) when neither is set.
      */
     labelCols?: LabelCols;
 
@@ -635,4 +637,20 @@ export interface FormTab {
 
     /** Lazily mount tab content until first activated */
     lazy?: boolean;
+}
+
+/**
+ * The theme's extra colour variant, `pending`: waiting, and the next move is
+ * not yours ("awaiting payment", "sent to printer, not yet confirmed").
+ * theme.scss paints it everywhere a stock variant is painted (badge, soft and
+ * outline button, alert, text, subtle utilities, table row, list-group item,
+ * toast). Registering it on bootstrap-vue-next's `BaseColorVariant` adds it to
+ * every variant union derived from that interface (`ColorVariant`,
+ * `ButtonVariant` incl. `outline-pending`, the `-subtle` and `-emphasis`
+ * forms), so `<DBadge variant="pending">` type-checks.
+ */
+declare module "bootstrap-vue-next" {
+    interface BaseColorVariant {
+        pending: unknown;
+    }
 }

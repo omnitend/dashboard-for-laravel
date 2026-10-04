@@ -1,0 +1,80 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXNumberStepper
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import DXNumberStepperExample from '../../../examples/DXNumberStepperExample.vue';
+import DXNumberStepperExampleRaw from '../../../examples/DXNumberStepperExample.vue?raw';
+
+# DXNumberStepper
+
+A number input between a decrease and an increase button, `[ − ][ 12 ][ + ]`,
+for quantities that are usually nudged rather than typed: cases on an order
+line, covers on a booking.
+
+```vue
+<DXNumberStepper v-model="cases" :min="1" aria-label="Cases" />
+```
+
+- **The model is a number, or `null` when the input is empty** (never `NaN` or
+  `""`). Every step and every valid keystroke emits `update:modelValue`. If
+  each change saves, debounce on your side.
+- **A step adds or subtracts `step`** from the current value and clamps to
+  `min`/`max`. It does not snap to a grid (1.05 + 0.1 is 1.15). The sum is
+  rounded to the decimal places of the value and the step, so 0.1 three times
+  is 0.3, not 0.30000000000000004. From empty, a step goes to the in-range
+  value nearest zero.
+- **The button at a bound is disabled**: decrease at `min`, increase at `max`.
+- **Typing is free, and the value is clamped on blur.** What you type is
+  emitted as typed, even out of range, so the field never fights the keyboard;
+  when the input loses focus an out-of-range value is clamped to `min`/`max`
+  and the clamped value is emitted. Half-typed text the browser cannot parse
+  (`-`, `1e`) emits nothing until it parses.
+- **ArrowUp and ArrowDown** on the input step exactly like the buttons. The
+  browser's spin arrows are hidden.
+- The buttons are square icon buttons at the input's height (46px at the
+  default size), in the soft `secondary` look used for in-row actions.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXNumberStepperExampleRaw}
+>
+  <DXNumberStepperExample client:load />
+</ComponentExample>
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'modelValue', type: 'number | null', required: 'No', default: 'null', description: 'The value (v-model). null when the input is empty.' },
+  { name: 'min', type: 'number', required: 'No', default: '-', description: 'Lowest value. The decrease button disables here, steps clamp to it, and a typed value below it is clamped on blur.' },
+  { name: 'max', type: 'number', required: 'No', default: '-', description: 'Highest value. The increase button disables here, steps clamp to it, and a typed value above it is clamped on blur.' },
+  { name: 'step', type: 'number', required: 'No', default: '1', description: 'How much one press, or ArrowUp/ArrowDown, changes the value. Decimal steps do not accumulate float error.' },
+  { name: 'size', type: "'sm' | 'md' | 'lg'", required: 'No', default: "'md'", description: 'Control size, matching the other inputs. The buttons stay square at the input height.' },
+  { name: 'disabled', type: 'boolean', required: 'No', default: 'false', description: 'Disable the input and both buttons.' },
+  { name: 'decreaseLabel', type: 'string', required: 'No', default: '"Decrease" + aria-label', description: "The decrease button's accessible label. Defaults to \"Decrease\", followed by the input's aria-label when it has one." },
+  { name: 'increaseLabel', type: 'string', required: 'No', default: '"Increase" + aria-label', description: "The increase button's accessible label. Defaults to \"Increase\", followed by the input's aria-label when it has one." },
+]} />
+
+`class` and `style` go on the input group. Every other attribute and listener
+(`aria-label`, `name`, `id`, `placeholder`, `required`, `state`, `@blur`, …)
+goes on the input. The input is 6 characters wide; set
+`--dx-number-stepper-input-width` on the stepper to change it.
+
+## Events
+
+- `update:modelValue` (`number | null`): on every step, every valid keystroke,
+  clearing the input, and a clamp on blur.
+
+## Accessibility
+
+- The buttons are labelled "Decrease" and "Increase", plus the input's
+  `aria-label` when given ("Decrease Cases"). Pass `decreaseLabel` and
+  `increaseLabel` to translate them.
+- The buttons are `tabindex="-1"`, so a column of steppers is one Tab stop per
+  row. Keyboard users step with ArrowUp and ArrowDown on the input, which do
+  the same as the buttons.
+- A button at its bound uses the real `disabled` attribute.

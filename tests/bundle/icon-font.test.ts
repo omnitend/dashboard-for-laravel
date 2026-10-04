@@ -48,8 +48,11 @@ describe('icon font is not inlined into the stylesheet (#77)', () => {
     expect(stylesheet).toMatch(/@font-face\{[^}]*font-family:bootstrap-icons/);
   });
 
-  it('references exactly one font file', () => {
-    const references = stylesheet.match(/url\(\.\/assets\/[^)]*\.woff2\)/g) ?? [];
+  it('references exactly one icon font file', () => {
+    // The theme's text fonts are extracted the same way (theme-fonts.test.ts),
+    // so count only the icon font here.
+    const references =
+      stylesheet.match(/url\(\.\/assets\/bootstrap-icons-[^)]*\.woff2\)/g) ?? [];
     expect(references).toHaveLength(1);
   });
 });
