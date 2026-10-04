@@ -34,6 +34,12 @@ number, so there is no `String()`/`Number()` dance. (DXTable's string-value
 column filters are unaffected; it builds its own "All" option and does not use
 `null-option`.)
 
+**Options may arrive after the value.** Bind the value first and load the
+options later (a filter seeded from the URL while its list is fetched): when
+the options change and one matches the value, the input shows that option's
+label instead of the raw value. A search the user is typing is never
+overwritten, and if you bind `v-model:search` yourself the text is yours.
+
 ## Slots
 
 This component forwards all slots dynamically from the underlying Bootstrap Vue Next component.

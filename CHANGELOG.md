@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inputs, selects, checkboxes, switches, file inputs or buttons are
   unchanged. `.dx-form-plaintext` and `plaintext: true` still work and are
   no longer needed for this inside a horizontal form.
+- Show an autocomplete's option label when its options load after its value.
+  `DAutocomplete` (and so every DXTable `select` filter) set its text from
+  the value once, so a filter seeded from the URL before its options arrived
+  kept showing the raw value ("78" instead of "Alcopop"). It now relabels
+  whenever the options change, unless the user is typing a search, and
+  leaves the text alone when the consumer binds its own `search` model.
 
 ## [0.42.0] - 2026-10-04
 
