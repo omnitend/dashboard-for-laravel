@@ -9,7 +9,7 @@
  * searchable single-select can always reach "none" in-list (#138).
  */
 <script setup lang="ts">
-import { computed, useAttrs } from "vue";
+import { computed, ref, useAttrs, watch } from "vue";
 import { BAutocomplete } from "bootstrap-vue-next";
 import type { SelectOption } from "bootstrap-vue-next";
 
@@ -127,6 +127,75 @@ const hasValue = computed(() => {
 const noClearButton = computed(
   () => attr("noClearButton", "no-clear-button") === true || !hasValue.value,
 );
+
+/*
+ * Late options (0.42.1). bvn's BAutocomplete writes the input's text from the
+ * model value through reka-ui's ComboboxInput, which does so on mount and
+ * again only when the MODEL changes. A value set before its options load (a
+ * DXTable select filter seeded from the URL while the option list is still
+ * being fetched) therefore kept showing the raw value ("78") after its label
+ * ("Alcopop") arrived. bvn exposes no "resync" method, but the input's text
+ * is its `search` v-model, so this wrapper owns that model and, whenever the
+ * options change, puts the matching option's label in it.
+ *
+ * It never overwrites a search the user is typing: while the input has
+ * focus, it relabels only text that is still exactly the raw value. Multiple
+ * mode needs nothing (bvn derives the chips from the options on every
+ * render). A consumer that binds its own `search` owns the text, so it is
+ * left alone. A `:key` remount would also work but drops focus and the open
+ * menu, so the `search` model is the cleaner hook.
+ */
+const rootElement = ref<HTMLElement | null>(null);
+const searchText = ref("");
+const consumerOwnsSearch = computed(() => attr("search", "search") !== undefined);
+const boundSearch = computed<string>(() =>
+  consumerOwnsSearch.value ? String(attr("search", "search")) : searchText.value,
+);
+
+const optionValueAndText = (option: unknown): { value: unknown; text: unknown } => {
+  if (option === null || typeof option !== "object") return { value: option, text: option };
+  const valueField = (attr("valueField", "value-field") as string | undefined) ?? "value";
+  const textField = (attr("textField", "text-field") as string | undefined) ?? "text";
+  const record = option as Record<string, unknown>;
+  return { value: record[valueField], text: record[textField] };
+};
+
+// The same equality bvn uses to find the selected option (strict, or by key).
+const sameValue = (optionValue: unknown, modelValue: unknown) => {
+  const by = attr("by", "by");
+  if (typeof by === "string") {
+    return (
+      (optionValue as Record<string, unknown> | null)?.[by] ===
+      (modelValue as Record<string, unknown> | null)?.[by]
+    );
+  }
+  return optionValue === modelValue;
+};
+
+// A bare `multiple` in a template arrives as "" (it is not a declared prop).
+const isMultiple = computed(() => {
+  const multiple = attr("multiple", "multiple");
+  return multiple !== undefined && multiple !== null && multiple !== false;
+});
+
+const relabelFromOptions = () => {
+  if (isMultiple.value || consumerOwnsSearch.value) return;
+  const modelValue = attr("modelValue", "model-value");
+  if (modelValue === null || modelValue === undefined || modelValue === "") return;
+  const match = computedOptions.value
+    .map(optionValueAndText)
+    .find((option) => sameValue(option.value, modelValue));
+  if (!match) return;
+  const label = String(match.text ?? "");
+  if (searchText.value === label) return;
+  const input = rootElement.value?.querySelector("input");
+  const userIsTyping =
+    input !== null && input !== undefined && document.activeElement === input;
+  if (userIsTyping && searchText.value !== String(modelValue)) return;
+  searchText.value = label;
+};
+
+watch(computedOptions, relabelFromOptions);
 </script>
 
 <template>
@@ -138,12 +207,14 @@ const noClearButton = computed(
     root, so `[data-v-x] .input-group` matches nothing in a consumer build
     (#53). A plain element root makes it deterministic.
   -->
-  <div class="d-autocomplete">
+  <div ref="rootElement" class="d-autocomplete">
     <BAutocomplete
       v-bind="$attrs"
+      :search="boundSearch"
       :options="computedOptions"
       :filter-function="effectiveFilterFunction"
       :no-clear-button="noClearButton"
+      @update:search="searchText = $event"
     >
       <!-- Dynamically pass through all named slots with their props -->
       <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">

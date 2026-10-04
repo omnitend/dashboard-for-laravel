@@ -661,14 +661,28 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   up too. A utility class on a `DFormGroup` lands on bvn's WRAPPER div, not
   the inner `.row`, so it cannot change the row's alignment. Consumer markup
   in a `value(key)` slot must follow the same rule (a bare native checkbox
-  sits 11px high; a `mt-2` wrapper pushes a control 8px low). Display-only
-  content (a badge, text, a short stack of lines) goes in
-  `.dx-form-plaintext`, which carries `.col-form-label`'s padding and
-  line-height so its FIRST line shares the label's centre; DXField wraps a
-  `plaintext` field's `value` slot in it automatically. Inside it a `.badge`
-  is `vertical-align: top` plus half the spare line height, because
-  `baseline` and `middle` both land ~2px off. The name reuses `plaintext` in
-  its existing meaning (the field option, Bootstrap's
+  sits 11px high; a `mt-2` wrapper pushes a control 8px low). **Display-only
+  content needs nothing (0.42.1)**: a row whose content column holds no form
+  control (`$dx-display-only-row` in theme.scss: no `input` other than
+  hidden, `select`, `textarea`, `button`, `.btn`, `.form-control`,
+  `.form-select`, `.form-check`, `.input-group`, `[contenteditable]`) is
+  `align-items: baseline`, so the value's FIRST line of text, whatever its
+  shape (text, link, flex row, stack), sits on the label's. Two helpers make
+  shapes offer that text as their baseline: a table's first-row cells are
+  `vertical-align: baseline` (with every cell `middle`, CSS takes the row's
+  baseline from the cell's bottom edge, ~6px low), and a `.badge` is
+  `vertical-align: top` plus half the spare line height (its own baseline is
+  its smaller text's, ~2px off). Limits: a control anywhere in the column
+  keeps the whole row top-aligned (display text above a button sits high,
+  as it always did); content with no text (an image, an icon) puts its
+  bottom edge on the label baseline; it needs `:has()` (no fallback beyond
+  the old top alignment). Rows holding controls were left on the top
+  alignment on purpose: checkboxes, switches and file inputs expose
+  synthesized or box-edge baselines. `.dx-form-plaintext` (which carries
+  `.col-form-label`'s padding and line-height, and centres a badge the same
+  way) still works and is now redundant inside a horizontal form; DXField
+  still wraps a `plaintext` field's `value` slot in it. The name reuses
+  `plaintext` in its existing meaning (the field option, Bootstrap's
   `.form-control-plaintext`): a value shown without an input box. Pinned by
   `tests/components/DXForm-LabelCentring.test.ts`.
 
@@ -748,15 +762,16 @@ solid fill by reflex.
   `--bs-btn-disabled-*` in a `.btn:is(:disabled, .disabled), fieldset:disabled
   .btn` rule that outranks the per-variant classes. No `cursor`: Bootstrap's
   `pointer-events: none` on disabled buttons means it would never show.
-  Form-control disabled styling is Bootstrap's (already neutral). **One
-  exception: DXSaveButton's saved state** (`.dx-save-button--saved`, a real
-  `disabled` button) keeps its OWN variant's colours (navy primary
-  `#151e2d`/`#e9f0f8` by default) at opacity 1 through a three-class rule
-  after the neutral one, because "✓ Saved" is a confirmation, not an
-  unavailable action. The colour does not change on save, only the label and
-  the disabled state (product decision 2026-10-04; #182 first shipped it
-  switching to the success soft green). Pinned by
-  `disabled-buttons.test.ts`.
+  Form-control disabled styling is Bootstrap's (already neutral). **Two
+  exceptions keep their OWN variant's colours** (navy primary
+  `#151e2d`/`#e9f0f8` by default) at opacity 1, through one rule after the
+  neutral one: a **busy** button (DButton `loading`, `aria-busy="true"`),
+  disabled only against a double press, and **DXSaveButton's saved state**
+  (`.dx-save-button--saved`), a confirmation. Neither is an unavailable
+  action, so the colour never changes through a save, only the label and the
+  disabled state (product decision 2026-10-04; #182 first shipped saved as
+  the success soft green, and 0.42.0 still greyed busy buttons, which made
+  every save blink navy → grey → navy). Pinned by `disabled-buttons.test.ts`.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
   `primary`. A button never turns green after saving: `DXSaveButton`'s saved
   state ("✓ Saved", disabled until the form changes, what `DXForm`'s submit

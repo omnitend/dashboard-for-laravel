@@ -562,6 +562,47 @@ h6,
   }
 }
 
+// A horizontal row whose content column holds NO form control shows a
+// display-only value: text, a link, a badge, a flex row of text, a small
+// table, a stack of lines. Such a row is baseline-aligned instead of
+// top-aligned, so the first line of text in the value, whatever its shape,
+// sits on the label's first line (the label's padding just moves the shared
+// baseline down). No class or field flag is needed; `.dx-form-plaintext`
+// below still works and is now redundant inside a horizontal form.
+//
+// Every row that holds a control keeps the top alignment above: a checkbox,
+// switch or file input exposes a synthesized or box-edge baseline, so
+// baseline alignment would move them. The list is what the library renders
+// as a control plus the native ones; a `.btn` counts because it is
+// input-height and already lines its text up with the label when
+// top-aligned. Content with no text at all (an image, an icon) sits its
+// bottom edge on the label's baseline, as an inline image would in a line of
+// text. The rule needs `:has()` (Chrome 105, Safari 15.4, Firefox 121); a
+// browser without it falls back to the top alignment.
+$dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has(> .col-form-label ~ * :is(input:not([type="hidden"]), select, textarea, button, .btn, .form-control, .form-select, .form-check, .input-group, [contenteditable])))';
+
+#{$dx-display-only-row} {
+  align-items: baseline;
+
+  // A table's baseline is its first row's, and a row's baseline is its
+  // first BASELINE-aligned cell's; with every cell `middle` (the theme's
+  // default) CSS falls back to the bottom of the cell, ~6px below the text.
+  // Baseline-align the first row's cells so the table offers its text.
+  > .col-form-label ~ * table tr:first-child > * {
+    vertical-align: baseline;
+  }
+
+  // A badge's own baseline is its smaller text's, which lands its box ~2px
+  // off the label's centre; centre it on its line instead, as
+  // `.dx-form-plaintext .badge` does below.
+  > .col-form-label ~ * .badge {
+    vertical-align: top;
+    margin-top: calc(
+      (#{math.div($input-line-height, math.div($badge-font-size, 1em)) * 1em} - 1em - #{$badge-padding-y * 2}) / 2
+    );
+  }
+}
+
 // A display-only value in a form row: a badge, a line of text, a short stack
 // of lines. It has no input box, so on its own it sits at the top of the row
 // while the label column (`.col-form-label`) is padded down to an input's text
@@ -1125,13 +1166,18 @@ fieldset:disabled .btn {
   }
 }
 
-// The one exception: DXSaveButton's saved state ("✓ Saved") is a REAL
-// disabled button, but it is a confirmation, not an unavailable action, so it
-// keeps its variant's own colours (by default the navy primary fill, #151e2d /
-// #e9f0f8) at full opacity rather than the neutral grey above, so saving
-// changes the label and the disabled state but not the colour. Three classes
-// plus the state, so it outranks the neutral rule (and `fieldset:disabled .btn`).
-.btn.dx-save-button--saved:is(:disabled, .disabled) {
+// The exceptions: two states that are REALLY disabled but are not unavailable
+// actions, so they keep their variant's own colours (by default the navy
+// primary fill, #151e2d / #e9f0f8) at full opacity rather than the neutral grey
+// above:
+// - a busy button (DButton `loading`, marked `aria-busy="true"`), disabled only
+//   so it can't be pressed twice. Greying it made every save blink navy → grey
+//   → navy, since the grey lasted exactly as long as the request;
+// - DXSaveButton's saved state ("✓ Saved"), a confirmation.
+// So saving changes the label and the disabled state but never the colour.
+// `.btn` + the `:is()` (its most specific argument counts) + the state outranks
+// the neutral rule (and `fieldset:disabled .btn`).
+.btn:is(.dx-save-button--saved, [aria-busy="true"]):is(:disabled, .disabled) {
   --bs-btn-disabled-opacity: 1;
   --bs-btn-disabled-bg: var(--bs-btn-bg);
   --bs-btn-disabled-color: var(--bs-btn-color);
