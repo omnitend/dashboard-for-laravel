@@ -618,6 +618,36 @@ h6,
   flex-wrap: nowrap;
 }
 
+// DXNumberStepper: `[ − ][ 12 ][ + ]`. The buttons are DButton icon-only
+// squares, sized by the input group. The number is centred between them, and
+// the browser's spin arrows are hidden (they duplicate the buttons and push the
+// number off centre). Global rather than scoped: the input is a bvn root, where
+// a scoped rule is not reliably reached (see CLAUDE.md, scope-id trap).
+// The input is a fixed few characters wide (the group is inline, so it does
+// not stretch across a table cell); retune with `--dx-number-stepper-input-width`.
+.dx-number-stepper {
+  display: inline-flex;
+  width: auto;
+  vertical-align: middle;
+
+  > .dx-number-stepper__input {
+    flex: 0 1 auto;
+    width: var(--dx-number-stepper-input-width, 6ch);
+    min-width: 4ch;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Nav tabs
 // ----------------------------------------------------------------------------

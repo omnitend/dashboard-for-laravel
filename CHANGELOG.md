@@ -36,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   made by the save itself do not count as changes, and an edit made while the
   request is in flight keeps the button as Save. New props `submitSavedText`
   and `savedState` (set `false` for search or filter forms).
+- Add `DXNumberStepper`, a number input between decrease and increase
+  buttons (`v-model`, `min`, `max`, `step`, `size`, `disabled`). The buttons
+  are square at the input's height, soft secondary, and disable at a bound;
+  ArrowUp and ArrowDown step the same way. Typing is free and an
+  out-of-range value is clamped when the input loses focus. Decimal steps do
+  not accumulate float error (0.1 three times is 0.3).
 - Add `useForm().wasSuccessful`: true once the latest submission succeeds,
   false from the start of the next one or after a failure.
 
