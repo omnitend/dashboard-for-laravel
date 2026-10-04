@@ -748,15 +748,16 @@ solid fill by reflex.
   `--bs-btn-disabled-*` in a `.btn:is(:disabled, .disabled), fieldset:disabled
   .btn` rule that outranks the per-variant classes. No `cursor`: Bootstrap's
   `pointer-events: none` on disabled buttons means it would never show.
-  Form-control disabled styling is Bootstrap's (already neutral). **One
-  exception: DXSaveButton's saved state** (`.dx-save-button--saved`, a real
-  `disabled` button) keeps its OWN variant's colours (navy primary
-  `#151e2d`/`#e9f0f8` by default) at opacity 1 through a three-class rule
-  after the neutral one, because "✓ Saved" is a confirmation, not an
-  unavailable action. The colour does not change on save, only the label and
-  the disabled state (product decision 2026-10-04; #182 first shipped it
-  switching to the success soft green). Pinned by
-  `disabled-buttons.test.ts`.
+  Form-control disabled styling is Bootstrap's (already neutral). **Two
+  exceptions keep their OWN variant's colours** (navy primary
+  `#151e2d`/`#e9f0f8` by default) at opacity 1, through one rule after the
+  neutral one: a **busy** button (DButton `loading`, `aria-busy="true"`),
+  disabled only against a double press, and **DXSaveButton's saved state**
+  (`.dx-save-button--saved`), a confirmation. Neither is an unavailable
+  action, so the colour never changes through a save, only the label and the
+  disabled state (product decision 2026-10-04; #182 first shipped saved as
+  the success soft green, and 0.42.0 still greyed busy buttons, which made
+  every save blink navy → grey → navy). Pinned by `disabled-buttons.test.ts`.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
   `primary`. A button never turns green after saving: `DXSaveButton`'s saved
   state ("✓ Saved", disabled until the form changes, what `DXForm`'s submit

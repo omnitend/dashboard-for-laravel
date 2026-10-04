@@ -1125,13 +1125,18 @@ fieldset:disabled .btn {
   }
 }
 
-// The one exception: DXSaveButton's saved state ("✓ Saved") is a REAL
-// disabled button, but it is a confirmation, not an unavailable action, so it
-// keeps its variant's own colours (by default the navy primary fill, #151e2d /
-// #e9f0f8) at full opacity rather than the neutral grey above, so saving
-// changes the label and the disabled state but not the colour. Three classes
-// plus the state, so it outranks the neutral rule (and `fieldset:disabled .btn`).
-.btn.dx-save-button--saved:is(:disabled, .disabled) {
+// The exceptions: two states that are REALLY disabled but are not unavailable
+// actions, so they keep their variant's own colours (by default the navy
+// primary fill, #151e2d / #e9f0f8) at full opacity rather than the neutral grey
+// above:
+// - a busy button (DButton `loading`, marked `aria-busy="true"`), disabled only
+//   so it can't be pressed twice. Greying it made every save blink navy → grey
+//   → navy, since the grey lasted exactly as long as the request;
+// - DXSaveButton's saved state ("✓ Saved"), a confirmation.
+// So saving changes the label and the disabled state but never the colour.
+// `.btn` + the `:is()` (its most specific argument counts) + the state outranks
+// the neutral rule (and `fieldset:disabled .btn`).
+.btn:is(.dx-save-button--saved, [aria-busy="true"]):is(:disabled, .disabled) {
   --bs-btn-disabled-opacity: 1;
   --bs-btn-disabled-bg: var(--bs-btn-bg);
   --bs-btn-disabled-color: var(--bs-btn-color);

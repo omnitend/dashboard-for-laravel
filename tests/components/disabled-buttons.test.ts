@@ -145,3 +145,39 @@ describe('the saved DXSaveButton keeps its own variant colours while disabled', 
     expect(style.color).toBe(DISABLED_TEXT);
   });
 });
+
+describe('a busy (loading) button keeps its own variant colours', () => {
+  // A button that is busy is disabled only so it can't be pressed twice; it is
+  // not unavailable. Greying it made every save blink navy, grey, navy.
+  it('a loading primary button is disabled and aria-busy but paints the navy fill and text', async () => {
+    const style = await paintedButton('primary', { loading: true });
+    expect(style.backgroundColor).toBe(rgb('#151e2d'));
+    expect(style.color).toBe(rgb('#e9f0f8'));
+    expect(style.opacity).toBe('1');
+  });
+
+  it('a loading warning button keeps its soft yellow', async () => {
+    const style = await paintedButton('warning', { loading: true });
+    expect(style.backgroundColor).toBe(rgb('#efd574'));
+  });
+
+  it('a saving DXSaveButton keeps the navy it had before the click', async () => {
+    const screen = render({
+      render: () => h(BApp, {}, () => h(DXSaveButton, { saving: true }, () => 'Save')),
+    });
+    let button: HTMLButtonElement | null = null;
+    for (let i = 0; i < 150; i++) {
+      button = screen.container.querySelector('button.btn');
+      if (button && themeApplied()) break;
+      await new Promise((resolve) => setTimeout(resolve, 16));
+    }
+    expect(button!.disabled).toBe(true);
+    expect(button!.getAttribute('aria-busy')).toBe('true');
+    expect(getComputedStyle(button!).backgroundColor).toBe(rgb('#151e2d'));
+  });
+
+  it('control: a disabled (not loading) primary button is still neutral', async () => {
+    const style = await paintedButton('primary', { disabled: true });
+    expect(style.backgroundColor).toBe(DISABLED_BG);
+  });
+});

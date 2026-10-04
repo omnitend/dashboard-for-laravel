@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.42.1] - 2026-10-04
+
+### Bug Fixes
+
+- Keep a busy (`loading`) button in its own colours instead of the neutral
+  disabled grey. A busy button is disabled only so it can't be pressed twice;
+  greying it made every save blink from navy to grey and back for as long as
+  the request took. Disabled buttons that are genuinely unavailable stay grey.
+
 ## [0.42.0] - 2026-10-04
 
 ### Added
