@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disabled grey. A busy button is disabled only so it can't be pressed twice;
   greying it made every save blink from navy to grey and back for as long as
   the request took. Disabled buttons that are genuinely unavailable stay grey.
+- Line up a display-only value in a horizontal form row with its label,
+  whatever its shape and with no class or field flag: plain text, a link, a
+  badge, a flex row of text, a small table, a stack of lines. A row whose
+  content column holds no form control is now baseline-aligned, so the
+  value's first line of text sits on the label's (it sat 7-11px higher,
+  e.g. a category's product counts above its "Products" label). Rows with
+  inputs, selects, checkboxes, switches, file inputs or buttons are
+  unchanged. `.dx-form-plaintext` and `plaintext: true` still work and are
+  no longer needed for this inside a horizontal form.
 
 ## [0.42.0] - 2026-10-04
 

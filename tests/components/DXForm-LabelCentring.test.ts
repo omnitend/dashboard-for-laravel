@@ -225,8 +225,118 @@ describe('display-only values share the label line', () => {
     expect(Math.abs(offset(root, 'Created', 'input'))).toBeLessThan(1);
   });
 
-  it('positive control: an unwrapped badge in an ordinary value slot is off', async () => {
+  // Until 0.42.1 this was the positive control (an unwrapped badge sat 2-11px
+  // off); a display-only row is now aligned with no class, so it is pinned
+  // as aligned, and the control moves to a row that keeps the top alignment.
+  it('an unwrapped badge in an ordinary value slot is aligned too', async () => {
     const root = await mountDisplayRows();
-    expect(Math.abs(offset(root, 'Bare badge', '.bare-badge'))).toBeGreaterThan(3);
+    expect(Math.abs(offset(root, 'Bare badge', '.bare-badge'))).toBeLessThan(1);
+  });
+});
+
+/**
+ * Display-only values with NO class and NO field flag (0.42.1). Consumers kept
+ * missing `.dx-form-plaintext`: the downstream app's product category modal
+ * showed a "Products" row (a small borderless table: the category name, and a
+ * "16 products" link on the right) ~10px above its label. A row whose content
+ * column holds no form control is now baseline-aligned, so the FIRST line of
+ * text in it, whatever its shape, sits on the label's first line.
+ */
+describe('display-only values of any shape share the label line with no class', () => {
+  const mountBareRows = async () => {
+    await page.viewport(1200, 900);
+    const screen = render(DXForm, {
+      props: {
+        form: useForm({ text: null, link: null, badge: null, split: null, table: null, stack: null, withButton: null }),
+        showSubmit: false,
+        layout: 'horizontal',
+        fields: [
+          { key: 'text', label: 'Employee PIN' },
+          { key: 'link', label: 'Website' },
+          { key: 'badge', label: 'Connection' },
+          { key: 'split', label: 'Products' },
+          { key: 'table', label: 'Product table' },
+          { key: 'stack', label: 'Cost history' },
+          // Positive control: text beside a button is NOT display-only, so the
+          // row keeps the top alignment and the text sits high, as before.
+          { key: 'withButton', label: 'Printer' },
+        ],
+      },
+      slots: {
+        'value(text)': () => h('span', { class: 'bare-text text-muted' }, 'No PIN set'),
+        'value(link)': () => h('a', { href: '#', class: 'bare-link' }, 'Open the shop'),
+        'value(badge)': () => h('span', { class: 'badge text-bg-secondary bare-badge' }, 'Not connected'),
+        'value(split)': () =>
+          h('div', { class: 'd-flex justify-content-between' }, [
+            h('span', { class: 'split-name' }, 'Alcopop'),
+            h('a', { href: '#', class: 'split-link' }, '16 products'),
+          ]),
+        'value(table)': () =>
+          h('table', { class: 'table table-sm table-borderless mb-0' }, [
+            h('tbody', [
+              h('tr', [h('td', { class: 'table-first' }, 'Alcopop'), h('td', { class: 'text-end' }, [h('a', { href: '#' }, '16 products')])]),
+              h('tr', { class: 'small' }, [h('td', [h('i', 'Subcategories of Alcopop')]), h('td', { class: 'text-end' }, '3 products')]),
+            ]),
+          ]),
+        'value(withButton)': () =>
+          h('div', [h('div', { class: 'beside-button' }, 'Kitchen'), h('button', { type: 'button', class: 'btn btn-secondary' }, 'Test print')]),
+        'value(stack)': () =>
+          h('div', [
+            h('div', { class: 'stack-line' }, '£1.20 from 1 Apr'),
+            h('div', { class: 'stack-line' }, '£1.10 from 1 Jan'),
+          ]),
+      },
+    });
+    await expect.element(screen.getByText('Employee PIN')).toBeVisible();
+    await settled();
+    return screen.container;
+  };
+
+  const textOffset = (root: Element, labelText: string, valueSelector: string) => {
+    const { label, content } = rowFor(root, labelText);
+    const value = content.querySelector(valueSelector);
+    expect(value, `expected "${valueSelector}" beside "${labelText}"`).toBeTruthy();
+    return firstLineCentre(label) - firstLineCentre(value!);
+  };
+
+  it('(a) plain text', async () => {
+    const root = await mountBareRows();
+    expect(Math.abs(textOffset(root, 'Employee PIN', '.bare-text'))).toBeLessThan(1);
+  });
+
+  it('(b) a link', async () => {
+    const root = await mountBareRows();
+    expect(Math.abs(textOffset(root, 'Website', '.bare-link'))).toBeLessThan(1);
+  });
+
+  it('(c) a badge', async () => {
+    const root = await mountBareRows();
+    expect(Math.abs(offset(root, 'Connection', '.bare-badge'))).toBeLessThan(1);
+  });
+
+  it('(d) a two-cell flex row: text left, link right', async () => {
+    const root = await mountBareRows();
+    expect(Math.abs(textOffset(root, 'Products', '.split-name'))).toBeLessThan(1);
+    expect(Math.abs(textOffset(root, 'Products', '.split-link'))).toBeLessThan(1);
+  });
+
+  it("(e) a small table's first row", async () => {
+    const root = await mountBareRows();
+    expect(Math.abs(textOffset(root, 'Product table', '.table-first'))).toBeLessThan(1);
+  });
+
+  it('(f) the first line of a multi-line stack, the second below it', async () => {
+    const root = await mountBareRows();
+    const lines = rowFor(root, 'Cost history').content.querySelectorAll('.stack-line');
+    expect(lines).toHaveLength(2);
+    expect(lines[1].getBoundingClientRect().top).toBeGreaterThan(lines[0].getBoundingClientRect().top);
+    expect(Math.abs(textOffset(root, 'Cost history', '.stack-line'))).toBeLessThan(1);
+  });
+
+  it('positive control: text above a button keeps the top alignment', async () => {
+    const root = await mountBareRows();
+    // A row holding a button is not display-only: its first line of text sits
+    // at the top of the row, well above the label, as before 0.42.1.
+    expect(Math.abs(textOffset(root, 'Printer', '.beside-button'))).toBeGreaterThan(3);
   });
 });

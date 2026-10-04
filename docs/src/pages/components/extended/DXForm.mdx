@@ -87,30 +87,30 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
 ## Display-only values
 
 In a horizontal row the label column is padded so its text lines up with the
-text inside an input box. A value with no input box (a badge, a line of text, a
-timestamp, a short list) sits at the top of the row instead, about 11px above
-its label. Put such content in `.dx-form-plaintext`, which gives it the same
-top and bottom offset and line-height as the label (the offset Bootstrap's
-`.col-form-label` and `.form-control-plaintext` use), so its **first** line
-shares the label's centre:
+text inside an input box. A row whose value has **no form control** (a badge, a
+line of text, a link, a timestamp, a short list, a small table, a flex row of
+text) needs nothing: the row is baseline-aligned, so the value's **first** line
+of text sits on the label's, whatever markup you put in the slot:
 
 ```vue
 <DXForm :form="form" :fields="fields" layout="horizontal">
   <template #value(connection)>
-    <div class="dx-form-plaintext">
-      <span class="badge text-bg-secondary">Not connected</span>
-    </div>
+    <span class="badge text-bg-secondary">Not connected</span>
   </template>
 </DXForm>
 ```
 
-- A field with `plaintext: true` gets this automatically: its `#value(<key>)`
-  slot is wrapped in `.dx-form-plaintext`, so the slot only needs the badge or
-  text itself. The built-in plaintext controls were already aligned.
 - A stack of lines aligns its first line; the rest follow below.
-- A badge inside is centred on the line rather than sitting on the baseline.
-- Inputs, checkboxes, switches, radios and file inputs need nothing; do not
-  wrap them.
+- A table aligns its first row's text; a badge is centred on the line.
+- Inputs, selects, checkboxes, switches, radios, file inputs and buttons need
+  nothing either. A row that holds any of them keeps the input alignment, so
+  display text placed **above** a button sits at the top of the row; put the
+  text beside the label in its own row instead.
+- Content with no text at all (an image, an icon) puts its bottom edge on the
+  label's baseline.
+- `.dx-form-plaintext` (since 0.42.0) still works and is now redundant inside
+  a horizontal form; a field with `plaintext: true` still wraps its
+  `#value(<key>)` slot in it.
 
 ## Saved state
 
