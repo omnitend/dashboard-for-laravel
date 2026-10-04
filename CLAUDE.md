@@ -750,15 +750,17 @@ solid fill by reflex.
   `pointer-events: none` on disabled buttons means it would never show.
   Form-control disabled styling is Bootstrap's (already neutral). **One
   exception: DXSaveButton's saved state** (`.dx-save-button--saved`, a real
-  `disabled` button) keeps its success soft pair `#c3faaa`/`#153c04` (10.46:1)
-  through a three-class rule after the neutral one, because "✓ Saved" is a
-  confirmation, not an unavailable action. Pinned by
+  `disabled` button) keeps its OWN variant's colours (navy primary
+  `#151e2d`/`#e9f0f8` by default) at opacity 1 through a three-class rule
+  after the neutral one, because "✓ Saved" is a confirmation, not an
+  unavailable action. The colour does not change on save, only the label and
+  the disabled state (product decision 2026-10-04; #182 first shipped it
+  switching to the success soft green). Pinned by
   `disabled-buttons.test.ts`.
 - **`success`/green means a positive _outcome_, not "save".** The main action is
-  `primary`. The one place a button turns green is `DXSaveButton`'s saved
-  state ("✓ Saved", disabled until the form changes): that reports the outcome
-  in place of the action, and it is what `DXForm`'s submit button does after a
-  successful save.
+  `primary`. A button never turns green after saving: `DXSaveButton`'s saved
+  state ("✓ Saved", disabled until the form changes, what `DXForm`'s submit
+  button does after a successful save) stays in its own variant.
 - **Outline buttons / coloured links / `.text-*`** use each variant's *emphasis*
   shade (readable on white), which is also the base `$theme-color`.
 - Everything is driven by the **`$dx-variants` map in `resources/css/theme.scss`**

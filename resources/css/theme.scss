@@ -1097,9 +1097,10 @@ fieldset:disabled .btn {
 
 // The one exception: DXSaveButton's saved state ("✓ Saved") is a REAL
 // disabled button, but it is a confirmation, not an unavailable action, so it
-// keeps its variant's own colours (success soft, #c3faaa / #153c04, 10.46:1) at
-// full opacity rather than the neutral grey above. Three classes plus the
-// state, so it outranks the neutral rule (and `fieldset:disabled .btn`).
+// keeps its variant's own colours (by default the navy primary fill, #151e2d /
+// #e9f0f8) at full opacity rather than the neutral grey above, so saving
+// changes the label and the disabled state but not the colour. Three classes
+// plus the state, so it outranks the neutral rule (and `fieldset:disabled .btn`).
 .btn.dx-save-button--saved:is(:disabled, .disabled) {
   --bs-btn-disabled-opacity: 1;
   --bs-btn-disabled-bg: var(--bs-btn-bg);

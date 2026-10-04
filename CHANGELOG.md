@@ -26,8 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   utilities, table rows and list-group items, and is added to
   bootstrap-vue-next's variant types.
 - Add `DXSaveButton`, a save button that confirms in place: busy while
-  saving, then a disabled "✓ Saved" (tick, soft success, full contrast,
-  announced through `aria-live`) until the form changes. Drive it with two
+  saving, then a disabled "✓ Saved" (tick, announced through `aria-live`)
+  until the form changes. The colour stays the button's own variant (navy
+  primary by default) at full strength: only the label and the disabled
+  state change. Drive it with two
   booleans, `saving` and `saved`.
 - `DXForm`'s submit button is now a `DXSaveButton`: after a successful
   `form.post`/`put`/`patch` it reads "Saved" until any field changes. Writes
@@ -58,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disabled yellow or green button looking active. Tokens:
   `--dx-btn-disabled-bg`, `--dx-btn-disabled-color`,
   `--dx-btn-disabled-outline-border`. The one exception is `DXSaveButton`'s
-  "✓ Saved" state, which is disabled but keeps its success soft colours.
+  "✓ Saved" state, which is disabled but keeps its own variant's colours.
 - Paint alerts with the subtle background, a `border-*-subtle` border and the
   soft text, instead of the full soft tint. A warning alert is no longer as
   loud as a solid yellow fill. Badges, soft buttons and toasts are unchanged.

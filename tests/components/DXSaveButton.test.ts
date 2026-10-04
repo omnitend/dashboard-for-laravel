@@ -48,7 +48,7 @@ describe('DXSaveButton', () => {
     expect(button.textContent?.trim()).toBe('Saving…');
   });
 
-  it('saved: shows a tick and "Saved", success styling, and is really disabled', async () => {
+  it('saved: shows a tick and "Saved", keeps its own variant, and is really disabled', async () => {
     const screen = render(DXSaveButton, {
       props: { saved: true },
       slots: { default: () => 'Save' },
@@ -59,8 +59,8 @@ describe('DXSaveButton', () => {
     const tick = button.querySelector('i.bi.bi-check-lg');
     expect(tick).not.toBeNull();
     expect(tick?.getAttribute('aria-hidden')).toBe('true');
-    expect(button.classList.contains('btn-success')).toBe(true);
-    expect(button.classList.contains('btn-primary')).toBe(false);
+    expect(button.classList.contains('btn-primary')).toBe(true);
+    expect(button.classList.contains('btn-success')).toBe(false);
     expect(button.disabled).toBe(true);
     expect(button.hasAttribute('disabled')).toBe(true);
     expect(button.classList.contains('dx-save-button--saved')).toBe(true);
@@ -104,7 +104,7 @@ describe('DXSaveButton', () => {
     await flush();
     const button = buttonOf(screen.container);
     expect(button.textContent?.trim()).toBe('Save');
-    expect(button.classList.contains('btn-success')).toBe(false);
+    expect(button.classList.contains('dx-save-button--saved')).toBe(false);
     expect(button.querySelector('.bi-check-lg')).toBeNull();
     expect(button.getAttribute('aria-busy')).toBe('true');
   });
@@ -121,7 +121,7 @@ describe('DXSaveButton', () => {
     expect(button.textContent?.trim()).toBe('Save');
     expect(button.disabled).toBe(false);
     expect(button.classList.contains('btn-primary')).toBe(true);
-    expect(button.classList.contains('btn-success')).toBe(false);
+    expect(button.classList.contains('dx-save-button--saved')).toBe(false);
     expect(button.querySelector('.bi-check-lg')).toBeNull();
   });
 
@@ -134,6 +134,19 @@ describe('DXSaveButton', () => {
     const button = buttonOf(screen.container);
     expect(button.querySelector('i.bi.bi-save')).not.toBeNull();
     expect(button.classList.contains('btn-secondary')).toBe(true);
+  });
+
+  it('saved: keeps a consumer variant (the saved state never switches variant)', async () => {
+    const screen = render(DXSaveButton, {
+      props: { saved: true, variant: 'secondary', icon: 'save' },
+      slots: { default: () => 'Save' },
+    });
+    await flush();
+    const button = buttonOf(screen.container);
+    expect(button.classList.contains('btn-secondary')).toBe(true);
+    expect(button.classList.contains('btn-success')).toBe(false);
+    expect(button.querySelector('i.bi.bi-check-lg')).not.toBeNull();
+    expect(button.querySelector('i.bi.bi-save')).toBeNull();
   });
 
   it('respects an explicit disabled when not saved', async () => {

@@ -86,10 +86,12 @@ describe('disabled buttons are neutral, not the variant colour', () => {
 /**
  * The one exception: DXSaveButton's saved state ("✓ Saved") is a disabled
  * button, but it is a confirmation, not an unavailable action, so it keeps
- * the success soft pair (#c3faaa / #153c04, 10.46:1) instead of turning grey.
- * Before the exception the saved button painted the neutral #e9ecef/#6c757d.
+ * its OWN variant's colours at full opacity instead of turning grey. Only the
+ * label and the disabled state change: a primary save button stays the navy
+ * fill (#151e2d / #e9f0f8). Until 2026-10-04 the saved state switched to the
+ * success soft green (#c3faaa / #153c04); these expectations failed then.
  */
-describe('the saved DXSaveButton keeps its success look while disabled', () => {
+describe('the saved DXSaveButton keeps its own variant colours while disabled', () => {
   const paintedSaveButton = async (props: Record<string, unknown>) => {
     const screen = render({
       render: () => h(BApp, {}, () => h(DXSaveButton, props, () => 'Save')),
@@ -103,14 +105,31 @@ describe('the saved DXSaveButton keeps its success look while disabled', () => {
     return button!;
   };
 
-  it('a saved button is disabled and paints the success soft background and text', async () => {
+  it('a saved (default primary) button is disabled and paints the navy primary fill and text', async () => {
     const button = await paintedSaveButton({ saved: true });
     expect(button.disabled).toBe(true);
     expect(button.textContent?.trim()).toBe('Saved');
     const style = getComputedStyle(button);
-    expect(style.backgroundColor).toBe(rgb('#c3faaa'));
-    expect(style.color).toBe(rgb('#153c04'));
-    expect(style.borderTopColor).toBe(rgb('#c3faaa'));
+    expect(style.backgroundColor).toBe(rgb('#151e2d'));
+    expect(style.color).toBe(rgb('#e9f0f8'));
+    expect(style.borderTopColor).toBe(rgb('#151e2d'));
+    expect(style.opacity).toBe('1');
+  });
+
+  it('a saved button paints exactly what the same button paints before the save', async () => {
+    const idleStyle = getComputedStyle(await paintedSaveButton({}));
+    const idle = { bg: idleStyle.backgroundColor, color: idleStyle.color };
+    const savedStyle = getComputedStyle(await paintedSaveButton({ saved: true }));
+    expect(savedStyle.backgroundColor).toBe(idle.bg);
+    expect(savedStyle.color).toBe(idle.color);
+  });
+
+  it('a saved non-primary (secondary) button keeps its own soft colours', async () => {
+    const button = await paintedSaveButton({ saved: true, variant: 'secondary' });
+    expect(button.disabled).toBe(true);
+    const style = getComputedStyle(button);
+    expect(style.backgroundColor).toBe(rgb('#e6ebf2'));
+    expect(style.color).toBe(rgb('#29374a'));
     expect(style.opacity).toBe('1');
   });
 

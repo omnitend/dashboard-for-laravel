@@ -53,7 +53,8 @@ describe('DXForm saved state', () => {
     const button = submitButton(screen.container);
     expect(button.textContent?.trim()).toBe('Saved');
     expect(button.querySelector('.bi-check-lg')).not.toBeNull();
-    expect(button.classList.contains('btn-success')).toBe(true);
+    expect(button.classList.contains('btn-primary')).toBe(true);
+    expect(button.classList.contains('btn-success')).toBe(false);
     expect(button.disabled).toBe(true);
   });
 
@@ -74,7 +75,7 @@ describe('DXForm saved state', () => {
     const button = submitButton(screen.container);
     expect(button.textContent?.trim()).toBe('Save');
     expect(button.disabled).toBe(false);
-    expect(button.classList.contains('btn-success')).toBe(false);
+    expect(button.classList.contains('dx-save-button--saved')).toBe(false);
   });
 
   it('a programmatic data change (not via an input) also clears saved', async () => {

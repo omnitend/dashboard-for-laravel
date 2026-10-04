@@ -6,9 +6,12 @@
   - idle (`saving` and `saved` both false) — the normal Save button.
   - saving (`saving`) — DButton's busy state: disabled at once, spinner after
     the anti-flash delay, `savingText` if given.
-  - saved (`saved` and not `saving`) — "✓ Saved" (tick icon, soft success
-    styling) and genuinely `disabled`, until the consumer clears `saved`
-    (typically on the next edit to the form).
+  - saved (`saved` and not `saving`) — "✓ Saved" (tick icon) and genuinely
+    `disabled`, until the consumer clears `saved` (typically on the next edit
+    to the form). The colour does not change: the button keeps its own
+    variant (navy primary by default) at full strength, neither the neutral
+    grey of a disabled button nor a faded one. Only the label and the
+    disabled state say it is saved.
 
   `saving` wins over `saved`, so re-saving from the saved state shows busy.
   The label change is announced: the button itself is a polite live region,
@@ -21,7 +24,7 @@
 <template>
     <DButton
         v-bind="$attrs"
-        :variant="isShowingSaved ? 'success' : variant"
+        :variant="variant"
         :icon="isShowingSaved ? 'check-lg' : icon"
         :loading="saving"
         :loading-text="savingText"
@@ -57,7 +60,7 @@ interface Props {
     /** Label shown beside the spinner while saving (DButton's `loadingText`). */
     savingText?: string;
 
-    /** Variant when not saved. The saved state is always `success`. @default 'primary' */
+    /** Variant in every state; the saved state keeps it. @default 'primary' */
     variant?: ButtonVariant | null;
 
     /** Leading icon when not saved. The saved state shows `check-lg`. */
