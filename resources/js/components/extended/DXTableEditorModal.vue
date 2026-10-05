@@ -40,104 +40,118 @@
         <!-- Tabs stay bare here: the modal body already provides the panel
              boundary, so DXForm's default card-panel-around-tabs (#159) would be
              redundant nested chrome inside the modal. -->
-        <DXForm
+        <!-- Not editable while the full record is loading (showUrl): the
+             response reseeds the form, so anything typed before it lands would
+             be silently replaced. `disabled` greys and blocks the native
+             controls (Bootstrap styles :disabled); `inert` also blocks focus,
+             clicks and keystrokes for custom slot controls that are not form
+             elements (a contenteditable, an editor widget). Save and Delete are
+             disabled for the same window in the footer. -->
+        <fieldset
             v-if="form"
-            :key="formInstanceKey"
-            :active-tab="activeTab"
-            :form="form"
-            :fields="fields"
-            :tabs="tabs"
-            :layout="layout"
-            :label-cols="labelCols"
-            :card="card"
-            :card-tabs="false"
-            :context="item ?? undefined"
-            :show-submit="false"
-            @update:active-tab="emit('update:activeTab', $event)"
-            @submit="emit('save')"
+            class="dx-edit-fieldset"
+            :disabled="loading"
+            :inert="loading"
+            :aria-busy="loading ? 'true' : undefined"
         >
-            <!-- Forward DXTable's edit-value(key) → DXForm value(key) -->
-            <template
-                v-for="key in editValueSlotKeys"
-                :key="`ev-${key}`"
-                #[`value(${key})`]="sp"
+            <DXForm
+                :key="formInstanceKey"
+                :active-tab="activeTab"
+                :form="form"
+                :fields="fields"
+                :tabs="tabs"
+                :layout="layout"
+                :label-cols="labelCols"
+                :card="card"
+                :card-tabs="false"
+                :context="item ?? undefined"
+                :show-submit="false"
+                @update:active-tab="emit('update:activeTab', $event)"
+                @submit="emit('save')"
             >
-                <!--
-                  @slot Custom input for field `<key>` in the edit/create modal, forwarded to DXForm. Name it `edit-value(<fieldKey>)`.
-                  @binding {object} item The row being edited (null in create mode).
-                  @binding {any} value The current field value.
-                  @binding {Function} update Call with a new value to update the field.
-                  @binding {object} field The field definition.
-                -->
-                <slot
-                    :name="`edit-value(${key})`"
-                    :item="item"
-                    :value="sp.value"
-                    :update="sp.update"
-                    :field="sp.field"
-                />
-            </template>
+                <!-- Forward DXTable's edit-value(key) → DXForm value(key) -->
+                <template
+                    v-for="key in editValueSlotKeys"
+                    :key="`ev-${key}`"
+                    #[`value(${key})`]="sp"
+                >
+                    <!--
+                      @slot Custom input for field `<key>` in the edit/create modal, forwarded to DXForm. Name it `edit-value(<fieldKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {any} value The current field value.
+                      @binding {Function} update Call with a new value to update the field.
+                      @binding {object} field The field definition.
+                    -->
+                    <slot
+                        :name="`edit-value(${key})`"
+                        :item="item"
+                        :value="sp.value"
+                        :update="sp.update"
+                        :field="sp.field"
+                    />
+                </template>
 
-            <!-- Forward edit-span(key) → span(key) -->
-            <template
-                v-for="key in editSpanSlotKeys"
-                :key="`es-${key}`"
-                #[`span(${key})`]="sp"
-            >
-                <!--
-                  @slot Full-width custom content for field `<key>` in the edit/create modal, forwarded to DXForm's span slot. Name it `edit-span(<fieldKey>)`.
-                  @binding {object} item The row being edited (null in create mode).
-                  @binding {any} value The current field value.
-                  @binding {Function} update Call with a new value to update the field.
-                  @binding {Function} close Call to close the edit modal.
-                -->
-                <slot
-                    :name="`edit-span(${key})`"
-                    :item="item"
-                    :value="sp.value"
-                    :update="sp.update"
-                    :close="close"
-                />
-            </template>
+                <!-- Forward edit-span(key) → span(key) -->
+                <template
+                    v-for="key in editSpanSlotKeys"
+                    :key="`es-${key}`"
+                    #[`span(${key})`]="sp"
+                >
+                    <!--
+                      @slot Full-width custom content for field `<key>` in the edit/create modal, forwarded to DXForm's span slot. Name it `edit-span(<fieldKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {any} value The current field value.
+                      @binding {Function} update Call with a new value to update the field.
+                      @binding {Function} close Call to close the edit modal.
+                    -->
+                    <slot
+                        :name="`edit-span(${key})`"
+                        :item="item"
+                        :value="sp.value"
+                        :update="sp.update"
+                        :close="close"
+                    />
+                </template>
 
-            <!-- Forward tab-content / tab-before / tab-after slots -->
-            <template
-                v-for="key in tabContentSlotKeys"
-                :key="`tc-${key}`"
-                #[`tab-content(${key})`]="sp"
-            >
-                <!--
-                  @slot Replaces the auto-rendered fields of edit-modal tab `<key>` with custom content. Name it `tab-content(<tabKey>)`.
-                  @binding {object} item The row being edited (null in create mode).
-                  @binding {object} tab The tab definition.
-                -->
-                <slot :name="`tab-content(${key})`" :item="item" :tab="sp.tab" />
-            </template>
-            <template
-                v-for="key in tabBeforeSlotKeys"
-                :key="`tb-${key}`"
-                #[`tab-before(${key})`]="sp"
-            >
-                <!--
-                  @slot Custom content rendered before the fields of edit-modal tab `<key>`. Name it `tab-before(<tabKey>)`.
-                  @binding {object} item The row being edited (null in create mode).
-                  @binding {object} tab The tab definition.
-                -->
-                <slot :name="`tab-before(${key})`" :item="item" :tab="sp.tab" />
-            </template>
-            <template
-                v-for="key in tabAfterSlotKeys"
-                :key="`taf-${key}`"
-                #[`tab-after(${key})`]="sp"
-            >
-                <!--
-                  @slot Custom content rendered after the fields of edit-modal tab `<key>`. Name it `tab-after(<tabKey>)`.
-                  @binding {object} item The row being edited (null in create mode).
-                  @binding {object} tab The tab definition.
-                -->
-                <slot :name="`tab-after(${key})`" :item="item" :tab="sp.tab" />
-            </template>
-        </DXForm>
+                <!-- Forward tab-content / tab-before / tab-after slots -->
+                <template
+                    v-for="key in tabContentSlotKeys"
+                    :key="`tc-${key}`"
+                    #[`tab-content(${key})`]="sp"
+                >
+                    <!--
+                      @slot Replaces the auto-rendered fields of edit-modal tab `<key>` with custom content. Name it `tab-content(<tabKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {object} tab The tab definition.
+                    -->
+                    <slot :name="`tab-content(${key})`" :item="item" :tab="sp.tab" />
+                </template>
+                <template
+                    v-for="key in tabBeforeSlotKeys"
+                    :key="`tb-${key}`"
+                    #[`tab-before(${key})`]="sp"
+                >
+                    <!--
+                      @slot Custom content rendered before the fields of edit-modal tab `<key>`. Name it `tab-before(<tabKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {object} tab The tab definition.
+                    -->
+                    <slot :name="`tab-before(${key})`" :item="item" :tab="sp.tab" />
+                </template>
+                <template
+                    v-for="key in tabAfterSlotKeys"
+                    :key="`taf-${key}`"
+                    #[`tab-after(${key})`]="sp"
+                >
+                    <!--
+                      @slot Custom content rendered after the fields of edit-modal tab `<key>`. Name it `tab-after(<tabKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {object} tab The tab definition.
+                    -->
+                    <slot :name="`tab-after(${key})`" :item="item" :tab="sp.tab" />
+                </template>
+            </DXForm>
+        </fieldset>
 
         <template #footer>
             <div class="d-flex justify-content-between w-100">
