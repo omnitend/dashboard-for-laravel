@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Stop DXTable's edit modal losing what the user typed while the full record
+  loads. With `showUrl`, the modal opened on the list row and the fetched
+  record then replaced the form data, so an edit made before the response
+  arrived (a supplier renamed on a slow connection) was silently discarded.
+  The form is now disabled and inert, with its "Loading…" line, until the
+  record lands, as Save and Delete already were; custom `edit-value`
+  controls are covered too. A late response for a row the user has since
+  closed is still ignored.
+- Make `DXNumberStepper` controlled by its `modelValue`. When the parent
+  declined an emitted value (a quantity that takes only whole numbers kept
+  2 when 2.5 was typed), the stepper kept stepping from its own copy: blur
+  could leave 2.5 on screen and + went to 3.5, which the parent declined
+  again, so nothing saved. Steps, bound checks and blur now read
+  `modelValue`, and a declined step is not left on screen. Typing still
+  passes through as typed until blur.
+
 ## [0.42.1] - 2026-10-04
 
 ### Bug Fixes
