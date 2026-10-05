@@ -1084,6 +1084,112 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   vertical-align: middle;
 }
 
+// ----------------------------------------------------------------------------
+// DXStackingTable — a hand-built table that becomes one card per body row
+// ----------------------------------------------------------------------------
+//
+// Global, not scoped: the table is the consumer's slot content, which a
+// component's scoped styles cannot reach. The component toggles
+// `.dx-stacking-table--stacked` from its MEASURED width and writes each cell's
+// column label to `data-dx-stack-label`; everything visual is here. Only the
+// wrapper's DIRECT child table is affected, so a table nested in a cell keeps
+// its own layout.
+
+// Wide layout: the wrapper is the old `.table-responsive` (a horizontal scroll
+// container), which also keeps its measured width equal to the space it has.
+.dx-stacking-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dx-stacking-table--stacked > table {
+  display: block;
+  width: 100%;
+
+  > thead {
+    display: none;
+  }
+
+  > tbody,
+  > tfoot,
+  > tbody > tr,
+  > tfoot > tr {
+    display: block;
+  }
+
+  // Each body row is a card.
+  > tbody > tr {
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    padding: 0.25rem $table-cell-padding-x;
+    margin-bottom: 0.75rem;
+  }
+
+  // A `.dx-stack-continue` row (a note under a line) joins the card above it.
+  > tbody > tr:has(+ tr.dx-stack-continue) {
+    margin-bottom: 0;
+    border-bottom-width: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  > tbody > tr.dx-stack-continue {
+    border-top-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+
+  // Footer rows (a total) are not cards: they line up with the cards' content.
+  > tfoot > tr {
+    padding: 0 $table-cell-padding-x;
+  }
+
+  > tbody > tr > *,
+  > tfoot > tr > * {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0;
+    border-bottom-width: 0;
+  }
+
+  // A labelled cell is a row of the card: its column's name, then its content.
+  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span),
+  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    text-align: end;
+  }
+
+  > tbody > tr > [data-dx-stack-label]:not(.dx-stack-span)::before,
+  > tfoot > tr > [data-dx-stack-label]:not(.dx-stack-span)::before {
+    content: attr(data-dx-stack-label);
+  }
+
+  // A consumer `data-label` wins over the derived one (same specificity, later).
+  > tbody > tr > [data-label]:not(.dx-stack-span)::before,
+  > tfoot > tr > [data-label]:not(.dx-stack-span)::before {
+    content: attr(data-label);
+  }
+
+  // The label reads as the header it replaces.
+  > tbody > tr > *::before,
+  > tfoot > tr > *::before {
+    flex: 0 1 auto;
+    text-align: start;
+    font-weight: $table-th-font-weight;
+    color: var(--dx-table-header-color);
+  }
+
+  // Hidden when stacked: opted out, or an empty cell with no label (the
+  // `&nbsp;` filler beside a footer total).
+  > tbody > tr > :is(.dx-stack-hide, [data-dx-stack-empty]),
+  > tfoot > tr > :is(.dx-stack-hide, [data-dx-stack-empty]) {
+    display: none;
+  }
+}
+
 // PL1: a magnifier glyph on DXTable's text/number filter inputs, so the filter
 // row reads as "this searches" at a glance (legacy lt-table carried one).
 //

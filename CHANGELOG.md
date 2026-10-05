@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `DXStackingTable`: wrap a table you write yourself (an order's lines with
+  price and quantity inputs) and it turns each body row into a card when the
+  space it has, not the window, is below `stackBelow` (576px by default). Each
+  cell becomes a line of the card labelled with its column's header, so the
+  labels are not repeated in the markup; `data-label` on a `th` or a cell
+  overrides one. `.dx-stack-span` makes a cell the card's full-width title,
+  `colspan` cells span automatically, `.dx-stack-hide` hides a cell, empty
+  unlabelled cells (a footer's `&nbsp;` filler) hide themselves, and
+  `.dx-stack-continue` on a row joins it to the card above (a note under a
+  line). Footer rows line up under the cards, so a total reads "Total £54.00".
+  It replaces the `.table-responsive` wrapper and scrolls sideways like it in
+  the wide layout. Unmeasured (server rendering) it renders stacked, like
+  `DXForm`'s `layout="auto"`.
+
+### Bug Fixes
+
+- `useContainerWidth` no longer applies its hysteresis band to the guess it
+  makes before the first measurement. A `DXForm` with `layout="auto"` whose
+  container measured just above `layoutThreshold` (650px against 640) stayed
+  on the vertical layout until the container grew past 664px, although it
+  had never crossed the threshold.
+
 ## [0.42.2] - 2026-10-05
 
 ### Bug Fixes

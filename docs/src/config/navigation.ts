@@ -41,6 +41,7 @@ export const navigationConfig: Navigation = [
       { label: 'DXNumberStepper', url: '/components/extended/DXNumberStepper' },
       { label: 'DXRepeater', url: '/components/extended/DXRepeater' },
       { label: 'DXSaveButton', url: '/components/extended/DXSaveButton' },
+      { label: 'DXStackingTable', url: '/components/extended/DXStackingTable' },
       { label: 'DXStatCard', url: '/components/extended/DXStatCard' },
       { label: 'DXSwitch', url: '/components/extended/DXSwitch' },
       { label: 'DXUserAvatar', url: '/components/extended/DXUserAvatar' },

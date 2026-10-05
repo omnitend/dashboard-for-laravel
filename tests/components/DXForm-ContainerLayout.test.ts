@@ -200,6 +200,19 @@ describe('DXForm container-driven layout', () => {
     screen.unmount();
   });
 
+  it('does not hold the unmeasured vertical guess through the band', async () => {
+    // Mounted at 650: above the 640 threshold, inside the 24px band. The
+    // vertical layout before the first measurement is a guess, not a crossing,
+    // so the first measurement must decide on the threshold alone.
+    const { screen, formEl } = mountForm({ layout: 'auto' }, 650);
+    await settleResize(formEl);
+    expect(formEl.getBoundingClientRect().width).toBeCloseTo(650, 0);
+    expect(formEl.classList.contains('dx-form--horizontal')).toBe(true);
+    expectViewportUnchanged();
+
+    screen.unmount();
+  });
+
   it('leaves layout="horizontal" unconditional, even in a narrow container', async () => {
     const { screen, host, formEl } = mountForm({ layout: 'horizontal' }, 900);
     await settleResize(formEl);

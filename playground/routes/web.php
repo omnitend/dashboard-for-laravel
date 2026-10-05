@@ -14,3 +14,6 @@ Route::get('/toasts', function () {
 Route::get('/save-button', function () {
     return inertia('SaveButton/Index');
 })->name('save-button.index');
+Route::get('/stacking-table', function () {
+    return inertia('StackingTable/Index');
+})->name('stacking-table.index');
