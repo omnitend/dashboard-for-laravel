@@ -1140,8 +1140,11 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   }
 
   // Footer rows (a total) are not cards: they line up with the cards' content.
+  // The transparent border matches the cards' box exactly, so the 33% label
+  // column resolves to the same width and the total sits on the same edge.
   > tfoot > tr {
     padding: 0 $table-cell-padding-x;
+    border: var(--bs-border-width) solid transparent;
   }
 
   > tbody > tr > *,
@@ -1152,14 +1155,33 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
     border-bottom-width: 0;
   }
 
-  // A labelled cell is a row of the card: its column's name, then its content.
+  // A labelled cell is a row of the card: a fixed label column, then its
+  // content, so every control in a card starts at the same left edge (like a
+  // horizontal form's label column). The column is a third of the card,
+  // clamped so short labels waste no space and long ones wrap instead of
+  // pushing the control. Tune it with `--dx-stacking-table-label-width` on the
+  // wrapper or any ancestor (deliberately NOT declared here, so an ancestor's
+  // value is not shadowed).
+  //
+  // Values start at that edge too (text-align: start, overriding a cell's
+  // `.text-end`/`.text-center`, which only meant something in a column):
+  // a total reads as one more line of the same column, not a stray figure at
+  // the far right.
   > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span),
   > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 1rem;
-    text-align: end;
+    text-align: start !important;
+  }
+
+  // Content fills the rest of the line: an input group or a number input
+  // stretches to the card's edge. Buttons keep their own size.
+  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > :not(button, .btn),
+  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > :not(button, .btn) {
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   > tbody > tr > [data-dx-stack-label]:not(.dx-stack-span)::before,
@@ -1176,8 +1198,9 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   // The label reads as the header it replaces.
   > tbody > tr > *::before,
   > tfoot > tr > *::before {
-    flex: 0 1 auto;
+    flex: 0 0 var(--dx-stacking-table-label-width, clamp(5rem, 33%, 10rem));
     text-align: start;
+    overflow-wrap: anywhere;
     font-weight: $table-th-font-weight;
     color: var(--dx-table-header-color);
   }

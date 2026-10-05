@@ -384,7 +384,11 @@ MutationObserver to `data-dx-stack-label` (never to the consumer's
 `data-label`, which wins in CSS); `colspan` cells get none, and an empty
 unlabelled cell gets `data-dx-stack-empty` (hidden). Opt-outs:
 `.dx-stack-span`, `.dx-stack-hide`, row `.dx-stack-continue` (joins the
-previous card through `:has(+ …)`). Pinned by
+previous card through `:has(+ …)`). Card lines use a fixed label column
+(`--dx-stacking-table-label-width`, read with a fallback and never declared,
+so an ancestor's value isn't shadowed; default `clamp(5rem, 33%, 10rem)`);
+non-button content is `flex: 1 1 0` and `text-align: start !important`
+beats a cell's `.text-end`, so controls and values share one left edge. Pinned by
 `tests/components/DXStackingTable.test.ts`, which reads the BUILT CSS:
 rebuild before running it after a theme change.
 

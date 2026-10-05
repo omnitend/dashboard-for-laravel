@@ -18,7 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `colspan` cells span automatically, `.dx-stack-hide` hides a cell, empty
   unlabelled cells (a footer's `&nbsp;` filler) hide themselves, and
   `.dx-stack-continue` on a row joins it to the card above (a note under a
-  line). Footer rows line up under the cards, so a total reads "Total £54.00".
+  line). In a card the labels sit in one column (33% of the card, clamped
+  to 5–10rem; set `--dx-stacking-table-label-width` to change it), so every
+  control and value starts at the same left edge, and inputs stretch to the
+  card's edge. Footer rows use the same column, so a total reads "Total
+  £54.00" in line with the cards.
   It replaces the `.table-responsive` wrapper and scrolls sideways like it in
   the wide layout. Unmeasured (server rendering) it renders stacked, like
   `DXForm`'s `layout="auto"`.

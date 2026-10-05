@@ -56,8 +56,19 @@ None of these change the wide layout.
 | a cell | `class="dx-stack-hide"` | Not shown. An empty cell with no label (a footer's `&nbsp;` filler) is hidden without it. |
 | a `tr` | `class="dx-stack-continue"` | Joins the card of the row above it (a note under a line) instead of starting a new card. |
 
-Footer (`tfoot`) rows are not cards: each cell lines up with the cards'
-content, so a total reads "Total £54.00" under the last card.
+In a card, the labels sit in one column and every control and value starts
+at the same left edge; inputs stretch to the card's edge, buttons keep their
+size. A value such as a total starts at that edge too, whatever its wide-layout
+alignment (`.text-end` only meant something in a column). The column is 33% of
+the card, clamped to 5–10rem, and a long label wraps. Change it with a CSS
+custom property on the wrapper or any ancestor, in your own stylesheet:
+
+```css
+.order-lines { --dx-stacking-table-label-width: 7rem; }
+```
+
+Footer (`tfoot`) rows are not cards: they use the same label column, so a
+total reads "Total £54.00" in line with the cards above.
 
 ## Props
 

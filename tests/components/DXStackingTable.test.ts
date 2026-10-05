@@ -77,16 +77,21 @@ function mountOrderLines(
                     h('tr', { key: `line-${line.id}`, 'data-line': line.id }, [
                       h('td', { class: 'dx-stack-span' }, line.name),
                       h('td', [
-                        h('div', { class: 'input-group' }, [
-                          h('span', { class: 'input-group-text' }, '£'),
-                          h('input', { class: 'form-control', value: '18.00' }),
-                          h('span', { class: 'input-group-text' }, 'each'),
+                        // A plain block wrapper, as consumers write one to size
+                        // the control in the wide layout.
+                        h('div', { class: 'price-wrapper' }, [
+                          h('div', { class: 'input-group' }, [
+                            h('span', { class: 'input-group-text' }, '£'),
+                            h('input', { class: 'form-control', value: '18.00' }),
+                            h('span', { class: 'input-group-text' }, 'each'),
+                          ]),
                         ]),
                       ]),
                       h('td', { 'data-label': 'Qty' }, [
                         h('input', { class: 'form-control', type: 'number', value: '2' }),
                       ]),
-                      h('td', { class: 'text-end' }, '£36.00'),
+                      // Wrapped like a currency component's output (an element, not bare text).
+                      h('td', { class: 'text-end' }, h('span', '£36.00')),
                       h('td', { class: 'dx-stack-hide' }, h('button', 'x')),
                     ]),
                   ];
@@ -256,6 +261,77 @@ describe('DXStackingTable', () => {
       table.tBodies[0].rows[0].getBoundingClientRect().width -
         parseFloat(getComputedStyle(table.tBodies[0].rows[0]).paddingLeft) * 2 -
         parseFloat(getComputedStyle(table.tBodies[0].rows[0]).borderLeftWidth) * 2,
+      0,
+    );
+
+    screen.unmount();
+  });
+
+  it('aligns every control and value in a card on one left edge, filling the line', async () => {
+    const { screen, wrapper, table } = mountOrderLines(400);
+    await settleResize(wrapper);
+    expect(isStackedClass(wrapper)).toBe(true);
+
+    const [, priceCell, quantityCell, totalCell] = firstLineCells(table);
+    const priceControl = priceCell.querySelector('.input-group')!.getBoundingClientRect();
+    const quantityControl = quantityCell.querySelector('input')!.getBoundingClientRect();
+    // The total's TEXT (inside a span in a `.text-end` cell), not its box.
+    const totalRange = document.createRange();
+    totalRange.selectNodeContents(totalCell.firstElementChild!);
+    const totalText = totalRange.getBoundingClientRect();
+    const footerTotalRange = document.createRange();
+    footerTotalRange.selectNodeContents(table.tFoot!.rows[0].cells[1]);
+    const footerTotalText = footerTotalRange.getBoundingClientRect();
+
+    // One label column: "Price" and "Qty" differ in length, the controls do not move.
+    expect(priceControl.left).toBeCloseTo(quantityControl.left, 0);
+    expect(totalText.left).toBeCloseTo(priceControl.left, 0);
+    expect(Math.abs(footerTotalText.left - priceControl.left)).toBeLessThan(0.05);
+
+    // Controls fill to the card's content edge.
+    const cellRight = priceCell.getBoundingClientRect().right;
+    expect(priceControl.right).toBeCloseTo(cellRight, 0);
+    expect(quantityControl.right).toBeCloseTo(cellRight, 0);
+
+    // The column is 33% of the card, within its clamp (5rem..10rem + 1rem gap).
+    const cellRect = priceCell.getBoundingClientRect();
+    const labelColumn = priceControl.left - cellRect.left - 16;
+    expect(labelColumn).toBeCloseTo(Math.min(Math.max(cellRect.width * 0.33, 80), 160), 0);
+
+    screen.unmount();
+  });
+
+  it('stretches controls to the card edge when there is room to spare', async () => {
+    // 560px is still stacked, and leaves the controls more room than their
+    // natural width, so only the fill rule can take them to the edge.
+    const { screen, wrapper, table } = mountOrderLines(560);
+    await settleResize(wrapper);
+    expect(isStackedClass(wrapper)).toBe(true);
+
+    const [, priceCell, quantityCell] = firstLineCells(table);
+    const cellRight = priceCell.getBoundingClientRect().right;
+    const priceControl = priceCell.querySelector('.input-group')!.getBoundingClientRect();
+    const quantityControl = quantityCell.querySelector('input')!.getBoundingClientRect();
+    expect(priceControl.left).toBeCloseTo(quantityControl.left, 0);
+    expect(priceControl.right).toBeCloseTo(cellRight, 0);
+    expect(quantityControl.right).toBeCloseTo(cellRight, 0);
+
+    screen.unmount();
+  });
+
+  it('takes the label column width from --dx-stacking-table-label-width', async () => {
+    const { screen, host, wrapper, table } = mountOrderLines(400);
+    host.style.setProperty('--dx-stacking-table-label-width', '150px');
+    await settleResize(wrapper);
+
+    const [, priceCell, quantityCell] = firstLineCells(table);
+    const cellLeft = priceCell.getBoundingClientRect().left;
+    expect(priceCell.querySelector('.input-group')!.getBoundingClientRect().left).toBeCloseTo(
+      cellLeft + 150 + 16,
+      0,
+    );
+    expect(quantityCell.querySelector('input')!.getBoundingClientRect().left).toBeCloseTo(
+      cellLeft + 150 + 16,
       0,
     );
 
