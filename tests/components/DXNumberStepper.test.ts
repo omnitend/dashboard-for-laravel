@@ -270,4 +270,106 @@ describe('DXNumberStepper', () => {
     expect(increase().classList.contains('btn-secondary')).toBe(true);
     expect(getComputedStyle(increase()).backgroundColor).toBe('rgb(230, 235, 242)');
   });
+
+  /*
+   * Controlled by `modelValue`. A parent may DECLINE an emitted value — e.g. a
+   * purchase-order quantity that only takes whole cases keeps 2 when 2.5 is
+   * typed. The prop then never changes, so nothing tells the stepper to
+   * resync: it used to show 2 on blur but step from its own 2.5, so + went to
+   * 3.5 (which the parent declined again, so nothing saved) and every later
+   * step stayed fractional.
+   */
+  describe('controlled by modelValue when the parent declines a value', () => {
+    /** A parent that accepts only whole numbers; returns the model and emits. */
+    function mountWholeNumbersOnly(initial: number) {
+      const model = ref<number | null>(initial);
+      const emitted: Array<number | null> = [];
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXNumberStepper, {
+              modelValue: model.value,
+              'onUpdate:modelValue': (value: number | null) => {
+                emitted.push(value);
+                if (value !== null && Number.isInteger(value)) model.value = value;
+              },
+            }),
+          ),
+      });
+      const input = () => screen.container.querySelector('input') as HTMLInputElement;
+      const increase = () =>
+        screen.container.querySelector('.dx-number-stepper__increase') as HTMLButtonElement;
+      const decrease = () =>
+        screen.container.querySelector('.dx-number-stepper__decrease') as HTMLButtonElement;
+      return { model, emitted, input, increase, decrease };
+    }
+
+    it('after a declined typed value, blur shows the model and + steps from it', async () => {
+      const { model, emitted, input, increase } = mountWholeNumbersOnly(2);
+      await flush();
+      await type(input(), '2.5');
+      // Typing passes through as typed (the parent decides).
+      expect(emitted).toEqual([2.5]);
+      expect(input().value).toBe('2.5');
+      input().blur();
+      await flush();
+      expect(model.value).toBe(2);
+      expect(input().value).toBe('2');
+
+      increase().click();
+      await flush();
+      expect(emitted).toEqual([2.5, 3]);
+      expect(model.value).toBe(3);
+      expect(input().value).toBe('3');
+    });
+
+    it('ArrowUp while still focused on a declined value steps from the model', async () => {
+      const { emitted, input } = mountWholeNumbersOnly(2);
+      await flush();
+      await type(input(), '2.5');
+      input().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      await flush();
+      expect(emitted).toEqual([2.5, 3]);
+      expect(input().value).toBe('3');
+    });
+
+    it('a declined step is not left on screen', async () => {
+      // A parent that refuses every change: the shown value must stay its own.
+      const emitted: Array<number | null> = [];
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXNumberStepper, {
+              modelValue: 4,
+              'onUpdate:modelValue': (value: number | null) => emitted.push(value),
+            }),
+          ),
+      });
+      await flush();
+      const input = screen.container.querySelector('input') as HTMLInputElement;
+      (screen.container.querySelector('.dx-number-stepper__increase') as HTMLButtonElement).click();
+      await flush();
+      expect(emitted).toEqual([5]);
+      expect(input.value).toBe('4');
+      // And the next step is computed from 4 again, not from 5.
+      (screen.container.querySelector('.dx-number-stepper__increase') as HTMLButtonElement).click();
+      await flush();
+      expect(emitted).toEqual([5, 5]);
+      expect(input.value).toBe('4');
+    });
+
+    it('a parent that accepts the value still works as before (type, blur, step)', async () => {
+      const { model, emitted, input, increase } = mountWholeNumbersOnly(2);
+      await flush();
+      await type(input(), '7');
+      input().blur();
+      await flush();
+      expect(model.value).toBe(7);
+      expect(input().value).toBe('7');
+      increase().click();
+      await flush();
+      expect(emitted).toEqual([7, 8]);
+      expect(input().value).toBe('8');
+    });
+  });
 });

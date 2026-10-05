@@ -7,6 +7,9 @@
   - The model is a number, or `null` when the input is empty (never `NaN`,
     never `""`). Every step and every valid keystroke emits `update:modelValue`;
     debounce on the consumer's side if each change saves.
+  - Controlled: steps, the bound checks and blur all read `modelValue`. A
+    parent may decline an emitted value (keep 2 when 2.5 is typed): blur then
+    shows 2, + goes to 3, and a declined step is not left on screen.
   - A step adds or subtracts `step` from the current value and clamps to
     `min`/`max`. It does not snap to a grid, so 1.05 + 0.1 is 1.15. The sum is
     rounded to the decimal places of the value and step, so 0.1 three times is
@@ -79,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useAttrs, watch } from "vue";
+import { computed, nextTick, ref, useAttrs, watch } from "vue";
 import type { StyleValue } from "vue";
 import DInputGroup from "../base/DInputGroup.vue";
 import DFormInput from "../base/DFormInput.vue";
@@ -143,26 +146,33 @@ const increaseAriaLabel = computed(
     () => props.increaseLabel ?? (fieldLabel.value === "" ? "Increase" : `Increase ${fieldLabel.value}`),
 );
 
-// The value the buttons step from: the last value emitted or received.
-const currentValue = ref<number | null>(props.modelValue);
-// The shown text tracks a local ref so typing is never rewritten mid-edit
-// ("0." must not become "0"); it resyncs from the model while not focused.
+// Controlled: steps, bounds and blur all read `modelValue`, never a value of
+// the stepper's own. A parent may decline an emitted value (a quantity that
+// only takes whole numbers keeps 2 when 2.5 is typed); the prop then does not
+// change, so a private copy would silently diverge — + would step from 2.5.
+const modelNumber = computed<number | null>(() =>
+    typeof props.modelValue === "number" && Number.isFinite(props.modelValue)
+        ? props.modelValue
+        : null,
+);
+// The shown text is a local ref only so typing is never rewritten mid-edit
+// ("0." must not become "0"). It resyncs from the model while not focused, on
+// blur, and after every step (see `commit`).
 const displayValue = ref(format(props.modelValue));
 const isFocused = ref(false);
 
 watch(
     () => props.modelValue,
     (value) => {
-        currentValue.value = value;
         if (!isFocused.value) displayValue.value = format(value);
     },
 );
 
 const isAtMin = computed(
-    () => props.min !== undefined && currentValue.value !== null && currentValue.value <= props.min,
+    () => props.min !== undefined && modelNumber.value !== null && modelNumber.value <= props.min,
 );
 const isAtMax = computed(
-    () => props.max !== undefined && currentValue.value !== null && currentValue.value >= props.max,
+    () => props.max !== undefined && modelNumber.value !== null && modelNumber.value >= props.max,
 );
 
 function format(value: number | null | undefined): string {
@@ -186,16 +196,30 @@ function clamp(value: number): number {
     return clamped;
 }
 
+// A step emitted in this tick, before the parent's answer can reach the prop.
+// Two steps in one tick (two synchronous clicks) chain from it rather than
+// both stepping from the same stale prop; it is dropped at the next tick, when
+// `modelValue` says what the parent made of it.
+let unansweredStep: number | null | undefined;
+
+// Emit a step (or a blur clamp), then show whatever the parent made of it: the
+// new value if it accepted, its unchanged value if it declined.
 function commit(value: number | null): void {
-    currentValue.value = value;
     displayValue.value = format(value);
+    const isFirstInTick = unansweredStep === undefined;
+    unansweredStep = value;
     emit("update:modelValue", value);
+    if (!isFirstInTick) return;
+    void nextTick(() => {
+        unansweredStep = undefined;
+        displayValue.value = format(props.modelValue);
+    });
 }
 
 function stepBy(direction: 1 | -1): void {
     if (props.disabled) return;
     const stepSize = Number.isFinite(props.step) && props.step > 0 ? props.step : 1;
-    const from = currentValue.value;
+    const from = unansweredStep !== undefined ? unansweredStep : modelNumber.value;
     if (from === null) {
         commit(clamp(0));
         return;
@@ -213,13 +237,11 @@ function handleInput(event: Event): void {
         // A number input reports "" for unparseable text too ("-", "1e");
         // wait for it to parse rather than emitting null mid-typing.
         if (target.validity?.badInput) return;
-        currentValue.value = null;
         emit("update:modelValue", null);
         return;
     }
     const parsed = Number(raw);
     if (!Number.isFinite(parsed)) return;
-    currentValue.value = parsed;
     emit("update:modelValue", parsed);
 }
 
@@ -227,7 +249,7 @@ function handleInput(event: Event): void {
 // merged with these by Vue, so they are not re-emitted.
 function handleBlur(): void {
     isFocused.value = false;
-    const value = currentValue.value;
+    const value = modelNumber.value;
     if (value !== null && clamp(value) !== value) {
         commit(clamp(value));
         return;
