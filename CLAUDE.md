@@ -12,14 +12,14 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
-2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (58 base components)
-3. **DX* Extended Components** - Complex dashboard layouts, forms, stat cards, and charts (16 components)
+2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (57 base components)
+3. **DX* Extended Components** - Complex dashboard layouts, forms, stat cards, and charts (18 in the main entry)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 74 components** (58 base + 16 extended)
+**Total: 75 components** in the main entry (57 base + 18 extended), plus the 3 charts in `./charts` (counted from `resources/js/index.ts` exports, 2026-10-05)
 
 > **Chart components ship from a separate entry** (`#142`): `DXBarChart`,
 > `DXLineChart`, `DXDoughnutChart` are exported from
@@ -1131,10 +1131,18 @@ and pushed with nothing published — and re-running died at `npm version`. Both
 The script is interactive (a confirm and npm's OTP), so an **agent cannot run
 it** — prepare the release and hand the command to James.
 
-Checking whether a publish landed: hit the registry directly
-(`curl -s https://registry.npmjs.org/@omnitend%2Fdashboard-for-laravel`), not
-`npm view` — the CLI caches, and a stale cache after a successful publish is
-indistinguishable from a failed one.
+Checking whether a publish landed: read it UNCACHED, and give it a minute.
+Both the npm CLI and the registry's CDN serve a stale document for a while
+after a successful publish, so a plain `curl` of the registry is as stale as a
+cached `npm view` — that is what `release.sh`'s own verify step hit for
+0.42.0, 0.42.1 and 0.42.2 (each reported "✗ npm has …" and each was in fact
+published; #184 tracks making the script retry). Use
+`npm view @omnitend/dashboard-for-laravel@<version> version --prefer-online`
+(or `curl` with `-H 'Cache-Control: no-cache'` and a `?t=$(date +%s)` query),
+and poll for up to a minute before concluding anything. Do NOT re-run the
+release on a ✗ alone: a re-run whose publish step finds the version already
+taken fails with "cannot publish over the previously published versions",
+which is itself the proof it landed.
 
 ## Common Tasks
 
