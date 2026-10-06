@@ -1321,6 +1321,173 @@ aside.dashboard-sidebar--light {
   vertical-align: middle;
 }
 
+// ----------------------------------------------------------------------------
+// DXStackingTable — a hand-built table that becomes one card per body row
+// ----------------------------------------------------------------------------
+//
+// Global, not scoped: the table is the consumer's slot content, which a
+// component's scoped styles cannot reach. The component toggles
+// `.dx-stacking-table--stacked` from its MEASURED width and writes each cell's
+// column label to `data-dx-stack-label`; everything visual is here. Only the
+// wrapper's DIRECT child table is affected, so a table nested in a cell keeps
+// its own layout.
+
+// ----------------------------------------------------------------------------
+// DXCurrencyInput — keep the amount usable in a narrow container
+// ----------------------------------------------------------------------------
+//
+// Bootstrap gives an input-group's control `min-width: 0`, so a long unit
+// ("10L Bag in Box") crushed the amount to ~32px. The amount keeps room for a
+// price, the group still does not wrap (a wrapped affix would land on its own line
+// with broken corners: the theme already makes every `.input-group` nowrap),
+// and the affix text wraps onto two lines instead.
+.dx-currency-input {
+  > .form-control {
+    min-width: 5.5rem;
+  }
+
+  > .input-group-text {
+    white-space: normal;
+  }
+}
+
+// What a stacked card line stretches: a form control, or an element wrapping
+// one. Not buttons, which keep their size.
+$dx-stack-controls: 'input:not([type="hidden"]), select, textarea, .form-control, .form-select, .input-group, [contenteditable]';
+$dx-stack-fill: ':is(#{$dx-stack-controls}):not(button, .btn), :not(button, .btn):has(#{$dx-stack-controls})';
+
+// Wide layout: the wrapper is the old `.table-responsive` (a horizontal scroll
+// container), which also keeps its measured width equal to the space it has.
+.dx-stacking-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dx-stacking-table--stacked > table {
+  display: block;
+  width: 100%;
+
+  > thead {
+    display: none;
+  }
+
+  > tbody,
+  > tfoot,
+  > tbody > tr,
+  > tfoot > tr {
+    display: block;
+  }
+
+  // Each body row is a card.
+  > tbody > tr {
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    padding: 0.25rem $table-cell-padding-x;
+    margin-bottom: 0.75rem;
+  }
+
+  // A `.dx-stack-continue` row (a note under a line) joins the card above it.
+  > tbody > tr:has(+ tr.dx-stack-continue) {
+    margin-bottom: 0;
+    border-bottom-width: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  > tbody > tr.dx-stack-continue {
+    border-top-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+
+  // Footer rows (a total) are not cards: they line up with the cards' content.
+  // The transparent border matches the cards' box exactly, so the 33% label
+  // column resolves to the same width and the total sits on the same edge.
+  > tfoot > tr {
+    padding: 0 $table-cell-padding-x;
+    border: var(--bs-border-width) solid transparent;
+  }
+
+  > tbody > tr > *,
+  > tfoot > tr > * {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0;
+    border-bottom-width: 0;
+  }
+
+  // A labelled cell is a row of the card: a fixed label column, then its
+  // content, so every control in a card starts at the same left edge (like a
+  // horizontal form's label column). The column is a third of the card,
+  // clamped so short labels waste no space and long ones wrap instead of
+  // pushing the control. Tune it with `--dx-stacking-table-label-width` on the
+  // wrapper or any ancestor (deliberately NOT declared here, so an ancestor's
+  // value is not shadowed).
+  //
+  // Values start at that edge too (text-align: start, overriding a cell's
+  // `.text-end`/`.text-center`, which only meant something in a column):
+  // a total reads as one more line of the same column, not a stray figure at
+  // the far right.
+  //
+  // `.dx-stack-hide` is excluded HERE rather than out-ranked below: this
+  // selector is (0,2,0) to the hide rule's (0,1,0), so a hidden cell that has a
+  // label would otherwise stay on screen as a flex line.
+  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span, .dx-stack-hide),
+  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span, .dx-stack-hide) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    text-align: start !important;
+  }
+
+  // A VALUE (text, a currency span) keeps its natural width, so it starts at
+  // the label edge even when it, or something inside it, aligns itself to the
+  // end (`.text-end`, `d-block text-end`): stretched, that end-alignment would
+  // carry it to the card's right edge.
+  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > *,
+  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > * {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  // A CONTROL (or a wrapper holding one) fills the rest of the line: an input
+  // group or a number input stretches to the card's edge. Buttons keep their
+  // own size. Same control list as the horizontal form's display-only rule.
+  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > :is(#{$dx-stack-fill}),
+  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > :is(#{$dx-stack-fill}) {
+    flex: 1 1 0;
+  }
+
+  > tbody > tr > [data-dx-stack-label]:not(.dx-stack-span)::before,
+  > tfoot > tr > [data-dx-stack-label]:not(.dx-stack-span)::before {
+    content: attr(data-dx-stack-label);
+  }
+
+  // A consumer `data-label` wins over the derived one (same specificity, later).
+  > tbody > tr > [data-label]:not(.dx-stack-span)::before,
+  > tfoot > tr > [data-label]:not(.dx-stack-span)::before {
+    content: attr(data-label);
+  }
+
+  // The label reads as the header it replaces.
+  > tbody > tr > *::before,
+  > tfoot > tr > *::before {
+    flex: 0 0 var(--dx-stacking-table-label-width, clamp(5rem, 33%, 10rem));
+    text-align: start;
+    overflow-wrap: anywhere;
+    font-weight: $table-th-font-weight;
+    color: var(--dx-table-header-color);
+  }
+
+  // Hidden when stacked: opted out, or an empty cell with no label (the
+  // `&nbsp;` filler beside a footer total).
+  > tbody > tr > :is(.dx-stack-hide, [data-dx-stack-empty]),
+  > tfoot > tr > :is(.dx-stack-hide, [data-dx-stack-empty]) {
+    display: none;
+  }
+}
+
 // PL1: a magnifier glyph on DXTable's text/number filter inputs, so the filter
 // row reads as "this searches" at a glance (legacy lt-table carried one).
 //

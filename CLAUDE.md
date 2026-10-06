@@ -13,13 +13,15 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
 2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (58 base components)
-3. **DX* Extended Components** - Complex dashboard layouts, forms, stat cards, and charts (16 components)
+3. **DX* Extended Components** - Complex dashboard layouts, forms, tables, stat cards, and charts (19 on the main entry, plus 3 charts)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 74 components** (58 base + 16 extended)
+**Total: 79 components on the main entry** (60 base + 19 extended), plus the 3
+chart components on `/charts`. Counted from the `D*`/`DX*` exports in
+`resources/js/index.ts` (2026-10-05); the old 74 (58 + 16) had drifted.
 
 > **Chart components ship from a separate entry** (`#142`): `DXBarChart`,
 > `DXLineChart`, `DXDoughnutChart` are exported from
@@ -421,6 +423,29 @@ scoped style block plus a slot is a trap — the slot content can't see the styl
 Its disc keeps the class **`.user-avatar`** (not a `dx-`-prefixed name) because
 that is the documented theming hook in `docs/src/pages/guide/theming.md` —
 renaming it would silently break consumer overrides.
+
+### DXStackingTable
+
+**Purpose**: wraps a consumer's own `<table>` (direct child) and turns each
+body row into a card when the WRAPPER is narrower than `stackBelow` (576),
+via `useContainerWidth` with DXForm's 24px hysteresis. Stacked until measured
+(DXForm's choice). All styling is global in theme.scss under
+`.dx-stacking-table--stacked > table` (slot content can't see scoped styles).
+Labels are derived from a column map of the whole `thead` (each column
+takes the lowest header cell over it; `rowspan`/`colspan` followed, body rows
+too) and written by a MutationObserver (which also watches `class`/`aria-hidden`,
+acting on those only inside the thead) to `data-dx-stack-label` (never to the consumer's
+`data-label`, which wins in CSS); `colspan` cells get none, and an empty
+unlabelled cell gets `data-dx-stack-empty` (hidden). Opt-outs:
+`.dx-stack-span`, `.dx-stack-hide`, row `.dx-stack-continue` (joins the
+previous card through `:has(+ …)`); `.dx-stack-hide` is EXCLUDED from the
+labelled-cell `display:flex` selector, which out-ranks the hide rule. Card lines use a fixed label column
+(`--dx-stacking-table-label-width`, read with a fallback and never declared,
+so an ancestor's value isn't shadowed; default `clamp(5rem, 33%, 10rem)`);
+non-button content is `flex: 1 1 0` and `text-align: start !important`
+beats a cell's `.text-end`, so controls and values share one left edge. Pinned by
+`tests/components/DXStackingTable.test.ts`, which reads the BUILT CSS:
+rebuild before running it after a theme change.
 
 ### DXBasicForm
 

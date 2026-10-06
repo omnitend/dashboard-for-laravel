@@ -270,10 +270,17 @@ export function useContainerWidth(
     // express without mutating during evaluation. With `hysteresis: 0` it is
     // exactly `width < threshold`. The watcher is `sync` so `isBelow` is never
     // observed one tick behind `width`.
+    //
+    // The band only applies to a state that came from a MEASUREMENT. Before
+    // the first one, `isBelow` is the `initialWidth` guess (true by default),
+    // and holding that guess through the band would leave a container that
+    // measures just above the threshold (say 590 against 576 + 24) on the
+    // narrow layout until it next grows: it never crossed anything.
     const initialThreshold = resolveThreshold();
     const isBelow = ref<boolean>(
         initialThreshold === undefined ? false : startWidth < initialThreshold,
     );
+    let isBelowCameFromMeasurement = false;
     watch(
         [width, () => resolveThreshold()],
         ([currentWidth, currentThreshold]) => {
@@ -281,9 +288,11 @@ export function useContainerWidth(
                 isBelow.value = false;
                 return;
             }
-            isBelow.value = isBelow.value
-                ? currentWidth < currentThreshold + hysteresis
-                : currentWidth < currentThreshold;
+            isBelow.value =
+                isBelow.value && isBelowCameFromMeasurement
+                    ? currentWidth < currentThreshold + hysteresis
+                    : currentWidth < currentThreshold;
+            if (hasMeasured.value) isBelowCameFromMeasurement = true;
         },
         { flush: "sync" },
     );

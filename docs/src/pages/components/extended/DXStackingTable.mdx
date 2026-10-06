@@ -1,0 +1,98 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DXStackingTable
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import DXStackingTableExample from '../../../examples/DXStackingTableExample.vue';
+import DXStackingTableExampleRaw from '../../../examples/DXStackingTableExample.vue?raw';
+
+# DXStackingTable
+
+A wrapper for a table you write yourself (an order's lines with price and
+quantity inputs, say) that turns each body row into a card when the table has
+too little room. Above `stackBelow` (576px) it is an ordinary table; below it
+the header is hidden and every cell becomes a line of its row's card, labelled
+with its column's header.
+
+It measures **the space it has, not the window**, so a table narrowed by the
+sidebar or shown in a modal stacks too. It replaces the `.table-responsive`
+div you would otherwise wrap the table in (and scrolls sideways like it in the
+wide layout). Put your `<table>` directly inside it:
+
+```vue
+<DXStackingTable>
+  <table class="table align-middle">
+    <thead>…</thead>
+    <tbody>…</tbody>
+  </table>
+</DXStackingTable>
+```
+
+The labels come from the header, so you do not repeat them on every cell. With
+several header rows, each column takes the lowest heading over it, following
+`rowspan` and `colspan`. They are recalculated when rows are added or removed,
+or when header text or its hidden helper text changes.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DXStackingTableExampleRaw}
+>
+  <DXStackingTableExample client:load />
+</ComponentExample>
+
+## Controlling cells
+
+None of these change the wide layout.
+
+| On | Markup | When stacked |
+|---|---|---|
+| a `th` | `data-label="Price"` | Use this as the column's label instead of the header's text (for a header with a sub-line or a help icon). Text in `.visually-hidden` or `aria-hidden` elements is never part of a label. |
+| a cell | `data-label="Qty"` | Use this label for this cell only. |
+| a cell | `class="dx-stack-span"` | No label, full card width: the card's title (a product name). |
+| a cell | `colspan="…"` | A cell spanning columns belongs to none of them: no label, full width. |
+| a cell | `class="dx-stack-hide"` | Not shown. An empty cell with no label (a footer's `&nbsp;` filler) is hidden without it. |
+| a `tr` | `class="dx-stack-continue"` | Joins the card of the row above it (a note under a line) instead of starting a new card. |
+
+In a card, the labels sit in one column and every control and value starts
+at the same left edge; inputs stretch to the card's edge, buttons keep their
+size. A value such as a total starts at that edge too, whatever its wide-layout
+alignment (`.text-end` only meant something in a column). The column is 33% of
+the card, clamped to 5–10rem, and a long label wraps. Change it with a CSS
+custom property on the wrapper or any ancestor, in your own stylesheet:
+
+```css
+.order-lines { --dx-stacking-table-label-width: 7rem; }
+```
+
+Footer (`tfoot`) rows are not cards: they use the same label column, so a
+total reads "Total £54.00" in line with the cards above.
+
+## Props
+
+<PropsTable client:load props={[
+  { name: 'stackBelow', type: 'number', required: 'No', default: '576', description: 'Stack when the wrapper is narrower than this many px. Once stacked, it returns to the table only at stackBelow + 24px, so a scrollbar appearing at the boundary cannot flip it back and forth.' },
+]} />
+
+## Slots
+
+<SlotsTable client:load slots={[
+  { name: 'default', props: '{ stacked: boolean }', description: 'Your <table>, as the direct child. stacked is there for the rare markup that must differ between the layouts.' },
+]} />
+
+## Notes
+
+- Before it has measured itself (server rendering, or a browser without
+  `ResizeObserver`) the table renders stacked, as
+  [DXForm](/components/extended/DXForm)'s `layout="auto"` renders vertical: a
+  stacked table is readable at any width, a wide one guessed wrongly
+  overflows. In a browser the measurement lands before the first paint.
+- The styling is global theme CSS keyed on `.dx-stacking-table--stacked`, and
+  uses the theme's border, radius and table-header tokens.
+- For a data table built from `items` and `fields`, use
+  [DXTable](/components/extended/DXTable); this component is for markup you
+  write by hand.

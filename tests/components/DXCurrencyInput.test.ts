@@ -232,3 +232,44 @@ describe('DXCurrencyInput append affix', () => {
     expect(model.value).toBe(1999);
   });
 });
+
+/**
+ * In a narrow container (a stacked table card, a modal column) a long unit
+ * used to crush the amount: Bootstrap gives an input-group control
+ * `min-width: 0`. Measured on real layout, against the built theme CSS.
+ */
+describe('DXCurrencyInput in a narrow container', () => {
+  it('keeps the amount at least 5.5rem wide and wraps a long append instead', async () => {
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h('div', { class: 'narrow-currency-host', style: 'width:220px' }, [
+            h(DXCurrencyInput, { modelValue: 12.5, append: '10L Bag in Box' }),
+          ]),
+        ),
+    });
+    await flush();
+
+    const host = screen.container.querySelector('.narrow-currency-host')!.getBoundingClientRect();
+    const group = screen.container.querySelector('.input-group')!;
+    const input = group.querySelector('input')!.getBoundingClientRect();
+    const [symbol, unit] = Array.from(group.querySelectorAll('.input-group-text')).map((el) =>
+      el.getBoundingClientRect(),
+    );
+    const remInPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
+
+    // The amount keeps room for a price.
+    expect(input.width).toBeGreaterThanOrEqual(5.5 * remInPx - 0.5);
+    // One line of the group: symbol, amount and unit side by side, inside the
+    // host. (Bootstrap overlaps neighbouring borders by 1px.)
+    expect(unit.left).toBeGreaterThanOrEqual(input.right - 1.5);
+    expect(unit.top).toBeLessThan(input.bottom);
+    expect(symbol.right).toBeLessThanOrEqual(input.left + 1.5);
+    expect(unit.right).toBeLessThanOrEqual(host.right + 0.5);
+    // The unit wrapped onto more than one line rather than crushing the amount.
+    const unitLineHeight = parseFloat(getComputedStyle(group.querySelectorAll('.input-group-text')[1]).lineHeight);
+    expect(unit.height).toBeGreaterThan(unitLineHeight * 1.5);
+
+    screen.unmount();
+  });
+});

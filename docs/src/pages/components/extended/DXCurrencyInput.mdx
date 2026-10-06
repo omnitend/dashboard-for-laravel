@@ -30,6 +30,10 @@ the usual case; use the `#append` slot when the affix needs to be more than
 one (a unit picker, a button). On a `DXField`, reach it through the field's
 `inputProps`: `{ type: 'currency', inputProps: { append: 'per case' } }`.
 
+In a narrow container (a modal column, a stacked table card) the amount keeps
+at least 5.5rem, and a long affix such as "10L Bag in Box" wraps onto two
+lines rather than squeezing the amount.
+
 **`minorUnits`** edits an **integer minor-unit model** (a legacy pence column)
 as major units: the input shows `19.99`, the model holds exactly `1999`
 (rounded, so float artefacts like `19.99 × 100 = 1998.999…` never reach your
