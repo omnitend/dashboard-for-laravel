@@ -80,14 +80,15 @@ const handleNavClick = (item) => {
   { name: 'title', type: 'string', required: 'No', default: 'Dashboard', description: 'Sidebar title shown in the header' },
   { name: 'collapsibleGroups', type: 'boolean', required: 'No', default: 'false', description: 'Turn group headers into accordion toggles that collapse/expand their items' },
   { name: 'autoCollapseInactiveGroups', type: 'boolean', required: 'No', default: 'true', description: 'When collapsibleGroups is on: true opens only the active-route group and closes others when one opens (single-open accordion); false opens all groups and toggles them independently' },
+  { name: 'phoneMenu', type: 'boolean', required: 'No', default: 'false', description: 'Below 576px (the theme\'s sm), show the open sidebar as a full-screen menu with a close button, hidden until opened. The owner must close it on close, navigate and Escape: DXDashboard sets it and does. Without it the sidebar keeps its rail on phones and has no close button' },
 ]} />
 
 ## Events
 
 <EventsTable client:load events={[
   { name: 'toggle', params: 'none', description: 'Emitted when the sidebar should toggle between collapsed and expanded states' },
-  { name: 'close', params: 'none', description: 'Emitted by the close button in the header, shown only below 576px, where the open sidebar covers the screen' },
-  { name: 'navigate', params: 'none', description: 'Emitted when a link in the navigation is followed (a plain click; new-tab clicks are ignored), including links from the link slot. DXDashboard closes its phone menu on it' },
+  { name: 'close', params: 'none', description: 'Emitted by the close button in the header, rendered only with phoneMenu and shown only below 576px, where the open sidebar covers the screen' },
+  { name: 'navigate', params: 'none', description: 'Emitted when a link anywhere in the sidebar is followed (a plain click; new-tab clicks are ignored): the navigation, the link slot, and the brand and footer slots. DXDashboard closes its phone menu on it' },
 ]} />
 
 ## Slots
