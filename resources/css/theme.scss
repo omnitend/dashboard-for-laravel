@@ -736,8 +736,98 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   padding-right: var(--dx-dashboard-gutter-x);
 }
 
+// Sidebar colour schemes (DXDashboard `sidebarVariant`, DXDashboardSidebar
+// `variant`). Every colour, the typeface and the weights come from a
+// `--dx-sidebar-*` custom property, so an install can rebrand either scheme in
+// CSS without Sass: override on `:root` for the light default, on
+// `.dashboard-sidebar--dark` for the dark one.
+//
+// LIGHT (the default since 0.43) follows the legacy Omni Tend admin: a white
+// pane with a 1px edge, tinted group-header pills, grey links, a green active
+// item, Poppins (500 links, 600 active and headers). Links are #6b7182
+// (4.87:1 on white); the legacy #7c8293 is 3.84:1 and fails WCAG AA.
+//
+// DARK is the navy rail dfl shipped before, value for value. Its typeface and
+// link size/weight are `initial` (no value), which makes those declarations
+// fall back to inheriting from the page, exactly as before the tokens existed.
+$dx-sidebar-bg: #ffffff !default;
+$dx-sidebar-color: #121419 !default;
+$dx-sidebar-edge-width: 1px !default;
+$dx-sidebar-edge-color: #e6e9f0 !default;
+$dx-sidebar-separator-color: #e6e9f0 !default;
+$dx-sidebar-group-color: #121419 !default;
+$dx-sidebar-group-bg: #f5f8fe !default;
+$dx-sidebar-group-hover-bg: #ebf0fb !default;
+$dx-sidebar-link-color: #6b7182 !default;
+$dx-sidebar-link-hover-color: #363e4d !default;
+$dx-sidebar-link-hover-bg: #f9f9fc !default;
+$dx-sidebar-active-color: #121419 !default;
+$dx-sidebar-active-bg: #c3faaa !default;
+$dx-sidebar-focus-ring: #6b7182 !default;
+$dx-sidebar-scrollbar-track: rgba($black, 0.04) !default;
+$dx-sidebar-scrollbar-thumb: rgba($black, 0.18) !default;
+$dx-sidebar-scrollbar-thumb-hover: rgba($black, 0.28) !default;
+$dx-sidebar-font-family: var(--dx-font-family-display) !default;
+$dx-sidebar-link-font-size: 0.9375rem !default;
+$dx-sidebar-link-font-weight: 500 !default;
+$dx-sidebar-active-font-weight: 600 !default;
+$dx-sidebar-group-font-weight: 600 !default;
+
+:root {
+  --dx-sidebar-bg: #{$dx-sidebar-bg};
+  --dx-sidebar-color: #{$dx-sidebar-color};
+  --dx-sidebar-edge-width: #{$dx-sidebar-edge-width};
+  --dx-sidebar-edge-color: #{$dx-sidebar-edge-color};
+  --dx-sidebar-separator-color: #{$dx-sidebar-separator-color};
+  --dx-sidebar-group-color: #{$dx-sidebar-group-color};
+  --dx-sidebar-group-bg: #{$dx-sidebar-group-bg};
+  --dx-sidebar-group-hover-bg: #{$dx-sidebar-group-hover-bg};
+  --dx-sidebar-link-color: #{$dx-sidebar-link-color};
+  --dx-sidebar-link-hover-color: #{$dx-sidebar-link-hover-color};
+  --dx-sidebar-link-hover-bg: #{$dx-sidebar-link-hover-bg};
+  --dx-sidebar-active-color: #{$dx-sidebar-active-color};
+  --dx-sidebar-active-bg: #{$dx-sidebar-active-bg};
+  --dx-sidebar-focus-ring: #{$dx-sidebar-focus-ring};
+  --dx-sidebar-divider-color: rgba(var(--bs-secondary-rgb), 1);
+  --dx-sidebar-scrollbar-track: #{$dx-sidebar-scrollbar-track};
+  --dx-sidebar-scrollbar-thumb: #{$dx-sidebar-scrollbar-thumb};
+  --dx-sidebar-scrollbar-thumb-hover: #{$dx-sidebar-scrollbar-thumb-hover};
+  --dx-sidebar-font-family: #{$dx-sidebar-font-family};
+  --dx-sidebar-link-font-size: #{$dx-sidebar-link-font-size};
+  --dx-sidebar-link-font-weight: #{$dx-sidebar-link-font-weight};
+  --dx-sidebar-active-font-weight: #{$dx-sidebar-active-font-weight};
+  --dx-sidebar-group-font-weight: #{$dx-sidebar-group-font-weight};
+}
+
+.dashboard-sidebar--dark {
+  --dx-sidebar-bg: #{$dark};
+  --dx-sidebar-color: #{$white};
+  --dx-sidebar-edge-width: 0;
+  --dx-sidebar-edge-color: transparent;
+  --dx-sidebar-separator-color: #{$navbar-dark-toggler-border-color};
+  --dx-sidebar-group-color: #{$navbar-dark-color};
+  --dx-sidebar-group-bg: transparent;
+  --dx-sidebar-group-hover-bg: #{rgba($white, 0.08)};
+  --dx-sidebar-link-color: #{$navbar-dark-hover-color};
+  --dx-sidebar-link-hover-color: #{$navbar-dark-active-color};
+  --dx-sidebar-link-hover-bg: #{rgba($white, 0.1)};
+  --dx-sidebar-active-color: #{$navbar-dark-active-color};
+  --dx-sidebar-active-bg: #{rgba($white, 0.15)};
+  --dx-sidebar-focus-ring: #{rgba($white, 0.5)};
+  --dx-sidebar-scrollbar-track: #{rgba($black, 0.1)};
+  --dx-sidebar-scrollbar-thumb: #{rgba($white, 0.2)};
+  --dx-sidebar-scrollbar-thumb-hover: #{rgba($white, 0.3)};
+  --dx-sidebar-font-family: initial;
+  --dx-sidebar-link-font-size: initial;
+  --dx-sidebar-link-font-weight: initial;
+  --dx-sidebar-active-font-weight: 500;
+  --dx-sidebar-group-font-weight: 600;
+}
+
 .dashboard-sidebar {
-  background-color: $dark;
+  background-color: var(--dx-sidebar-bg);
+  color: var(--dx-sidebar-color);
+  border-right: var(--dx-sidebar-edge-width) solid var(--dx-sidebar-edge-color);
   width: $dashboard-sidebar-width;
 
   &.sidebar-collapsed {
@@ -746,31 +836,94 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 
   .sidebar-header {
     height: $dashboard-navbar-height;
-    border-bottom-color: $navbar-dark-toggler-border-color;
+  }
+
+  .sidebar-nav,
+  .sidebar-footer {
+    font-family: var(--dx-sidebar-font-family);
   }
 
   .nav-group-label,
   .nav-group-toggle {
-    color: $navbar-dark-color;
+    color: var(--dx-sidebar-group-color);
+    font-weight: var(--dx-sidebar-group-font-weight);
   }
 
-  .nav-group-divider {
-    border-color: $navbar-dark-toggler-border-color;
+  .nav-group-toggle {
+    background-color: var(--dx-sidebar-group-bg);
+
+    &:hover {
+      background-color: var(--dx-sidebar-group-hover-bg);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--dx-sidebar-focus-ring);
+      outline-offset: 2px;
+    }
+  }
+
+  .nav-group-divider hr {
+    border-color: var(--dx-sidebar-divider-color);
   }
 
   .nav-link {
-    color: $navbar-dark-hover-color;
+    color: var(--dx-sidebar-link-color);
+    font-size: var(--dx-sidebar-link-font-size);
+    font-weight: var(--dx-sidebar-link-font-weight);
 
     &:hover {
-      color: $navbar-dark-active-color;
-      background-color: rgba($white, 0.1);
+      color: var(--dx-sidebar-link-hover-color);
+      background-color: var(--dx-sidebar-link-hover-bg);
+    }
+
+    // Bootstrap's own ring is a primary-tinted box-shadow, which disappears
+    // against the dark pane; an outline in the scheme's ring colour shows on
+    // both.
+    &:focus-visible {
+      outline: 2px solid var(--dx-sidebar-focus-ring);
+      outline-offset: 2px;
+      box-shadow: none;
     }
 
     &.active {
-      color: $navbar-dark-active-color;
-      background-color: rgba($white, 0.15);
-      font-weight: 500;
+      color: var(--dx-sidebar-active-color);
+      background-color: var(--dx-sidebar-active-bg);
+      font-weight: var(--dx-sidebar-active-font-weight);
     }
+  }
+}
+
+// Light geometry: the group headers are pills (static labels too, so the
+// default non-collapsible sidebar has them) and the links line up with the
+// pill text. `aside` outranks the component's scoped padding and margin (same
+// class count, but those land later in the stylesheet). The collapsed rail
+// keeps its centred icon padding.
+//
+// The gap under a pill is on its first item rather than the pill itself:
+// inside a closed collapsible group that item is clipped away with the rest,
+// so closed pills sit exactly the group gap (1rem) apart, as in the legacy
+// admin, instead of 1rem plus the header's own margin.
+aside.dashboard-sidebar--light {
+  .nav-group-label,
+  .nav-group-toggle {
+    display: flex;
+    align-items: center;
+    min-height: 2.2rem;
+    margin-bottom: 0;
+    padding-left: 1rem;
+    padding-right: 0.9rem;
+    background-color: var(--dx-sidebar-group-bg);
+    border-radius: $border-radius;
+  }
+
+  .nav-group-label + .nav-group-items > .nav > .nav-item:first-child,
+  .nav-group-toggle + .nav-group-items > .nav > .nav-item:first-child {
+    margin-top: 0.25rem;
+  }
+
+  &:not(.sidebar-collapsed) .nav-link {
+    padding-left: 1rem;
+    border-radius: $border-radius;
   }
 }
 

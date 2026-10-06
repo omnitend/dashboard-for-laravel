@@ -17,6 +17,7 @@
       :hidden="hidden"
       :collapsible-groups="collapsibleGroups"
       :auto-collapse-inactive-groups="autoCollapseInactiveGroups"
+      :variant="sidebarVariant"
       @toggle="toggleSidebar"
       @close="closePhoneMenu"
       @navigate="onSidebarNavigate"
@@ -104,7 +105,7 @@ import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
 import DRow from '../base/DRow.vue';
 import DCol from '../base/DCol.vue';
-import type { Navigation, NavbarActionsOnMobile, NavbarSearchAlign } from '../../types/navigation';
+import type { Navigation, NavbarActionsOnMobile, NavbarSearchAlign, SidebarVariant } from '../../types/navigation';
 
 const slots = useSlots();
 
@@ -175,6 +176,14 @@ interface Props {
    */
   autoCollapseInactiveGroups?: boolean;
 
+  /**
+   * Sidebar colour scheme, forwarded to DXDashboardSidebar as `variant`:
+   * `'light'` (default: white pane, tinted group headers, green active item,
+   * Poppins) or `'dark'` (the navy rail). Colours come from the
+   * `--dx-sidebar-*` custom properties, so either can be rebranded in CSS.
+   */
+  sidebarVariant?: SidebarVariant;
+
   /** LocalStorage key for sidebar state persistence */
   storageKey?: string;
 
@@ -192,6 +201,7 @@ const props = withDefaults(defineProps<Props>(), {
   user: null,
   collapsibleGroups: false,
   autoCollapseInactiveGroups: true,
+  sidebarVariant: 'light',
   storageKey: 'dashboard-sidebar-hidden',
   dashboardId: '',
   contentMaxWidth: '1140px',

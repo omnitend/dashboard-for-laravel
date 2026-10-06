@@ -322,22 +322,54 @@ const toggleDarkMode = () => {
 
 ### DashboardSidebar
 
-The sidebar uses the brand navy (`$dark`) with CSS variables for links:
+The sidebar has two colour schemes, chosen with DXDashboard's `sidebarVariant`
+(or DXDashboardSidebar's `variant`): **`light`**, the default, and **`dark`**,
+the navy rail. Every colour, the typeface and the weights come from a
+`--dx-sidebar-*` custom property. The light values are published on `:root`;
+the dark ones are set on `.dashboard-sidebar--dark`. To rebrand, override them
+in a stylesheet loaded after `theme.css`:
 
 ```css
-.sidebar {
-  background-color: var(--bs-dark);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+/* Light (default) sidebar: a blue active item instead of green */
+:root {
+  --dx-sidebar-active-bg: #dbe8ff;
+  --dx-sidebar-active-color: #10264d;
 }
 
-.nav-link {
-  color: var(--bs-nav-link-color);
-}
-
-.nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+/* Dark sidebar: a different navy */
+.dashboard-sidebar--dark {
+  --dx-sidebar-bg: #0f2240;
 }
 ```
+
+| Token | Light default | Used for |
+|---|---|---|
+| `--dx-sidebar-bg` | `#ffffff` | The pane |
+| `--dx-sidebar-color` | `#121419` | Brand initial and title |
+| `--dx-sidebar-edge-width`, `--dx-sidebar-edge-color` | `1px`, `#e6e9f0` | The pane's right edge (dark: none) |
+| `--dx-sidebar-separator-color` | `#e6e9f0` | Lines under the header and above the footer |
+| `--dx-sidebar-group-color` | `#121419` | Group header text |
+| `--dx-sidebar-group-bg` | `#f5f8fe` | Group header pill (dark: transparent) |
+| `--dx-sidebar-group-hover-bg` | `#ebf0fb` | Collapsible group header on hover |
+| `--dx-sidebar-link-color` | `#6b7182` | Links (4.87:1 on white) |
+| `--dx-sidebar-link-hover-color`, `--dx-sidebar-link-hover-bg` | `#363e4d`, `#f9f9fc` | Links on hover |
+| `--dx-sidebar-active-color`, `--dx-sidebar-active-bg` | `#121419`, `#c3faaa` | The current page's link |
+| `--dx-sidebar-focus-ring` | `#6b7182` | Keyboard focus outline on links and group headers |
+| `--dx-sidebar-divider-color` | secondary | Dividers between groups in the collapsed rail |
+| `--dx-sidebar-scrollbar-track`, `-thumb`, `-thumb-hover` | translucent black | The nav's scrollbar |
+| `--dx-sidebar-font-family` | `var(--dx-font-family-display)` | Menu typeface (dark: the page's) |
+| `--dx-sidebar-link-font-size` | `0.9375rem` | Link size (dark: the page's) |
+| `--dx-sidebar-link-font-weight` | `500` | Link weight (dark: the page's) |
+| `--dx-sidebar-active-font-weight` | `600` | Current link weight (dark: 500) |
+| `--dx-sidebar-group-font-weight` | `600` | Group header weight |
+
+Keep text tokens at 4.5:1 or better against the background they sit on. The
+light defaults are pinned by tests: links 4.87:1, the active item 15.4:1 and
+group headers 17.3:1. The legacy admin's link grey `#7c8293` is 3.84:1 and
+fails WCAG AA.
+
+A dark brand logo is needed on the light pane: a custom `sidebar-brand` slot
+that shows a white logo becomes invisible on it.
 
 ### DashboardNavbar
 

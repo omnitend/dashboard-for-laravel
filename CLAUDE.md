@@ -321,6 +321,20 @@ interface NavigationItem {
 - `#brand="{ collapsed }"` - Custom brand/logo content
 - `#link="{ item, isActive, collapsed }"` - Custom link rendering
 
+**Variants (`variant` / DXDashboard `sidebarVariant`):** `light` (default,
+legacy Omni Tend look, Poppins) and `dark` (the old navy rail). ALL colours,
+the typeface and weights are `--dx-sidebar-*` tokens in theme.scss: light on
+`:root`, dark on `.dashboard-sidebar--dark`, where the typeface and link
+size/weight are `initial` so those declarations fall back to inheriting, as
+before the tokens. Keep colours out of the scoped block (it lands AFTER the
+theme in dist/style.css, so a scoped colour beats the token rule); light
+geometry uses `aside.dashboard-sidebar--light ...` to outrank scoped padding.
+Group headers carry no `px-2`/`mb-2`/`fw-semibold` utilities on purpose (their
+`!important` would block the light pills). The dark variant is checked
+byte-identical against the pre-variant build; pinned by
+`tests/components/DXDashboardSidebar.variant.test.ts` (rendered styles, token
+rebrand, WCAG contrast of the light defaults).
+
 **On phones (below `sm`, 576px):** inside DXDashboard the open sidebar is a
 full-screen menu (theme.scss, `aside.dashboard-sidebar:not(.sidebar-hidden)`),
 not a rail. DXDashboard matches `(max-width: 575.98px)` in JS and there: always

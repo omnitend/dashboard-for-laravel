@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `sidebarVariant` on DXDashboard (`variant` on DXDashboardSidebar):
+  `'light'` (default) or `'dark'`, the navy rail as it was. The `SidebarVariant`
+  type is exported.
+- `--dx-sidebar-*` custom properties for every sidebar colour, the menu
+  typeface and its weights, with the light values on `:root` and the dark ones
+  on `.dashboard-sidebar--dark`, so either scheme can be rebranded in CSS
+  (for example `--dx-sidebar-active-bg`). Listed in the theming guide.
+
 ### Bug Fixes
 
 - Stop DXDashboard's menu reopening on every page on a phone. The sidebar's
@@ -20,6 +30,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- DXDashboard's sidebar is light by default: a white pane with a 1px edge,
+  tinted group-header pills, grey links (#6b7182, 4.87:1 on white), a green
+  active item, in Poppins (links 500, the active link and headers 600). It
+  follows the legacy Omni Tend admin, except that the legacy link grey failed
+  WCAG AA. Pass `sidebar-variant="dark"` to keep the navy rail, which renders
+  pixel for pixel as before. A custom `sidebar-brand` slot that shows a white
+  logo needs a dark one on the light default.
+- DXDashboardSidebar's group headers and labels no longer carry the `px-2`,
+  `mb-2` and `fw-semibold` utility classes; the same values now come from the
+  component and theme CSS, so they can differ per variant without
+  `!important`. CSS that targeted those classes inside the sidebar needs
+  updating.
 - DModal is full screen below 576px by default (`fullscreen="sm"`, Bootstrap's
   `.modal-fullscreen-sm-down`), with the header and footer pinned and the body
   scrolling. DXTable's edit modal inherits it. A `size="sm"` modal (a short
