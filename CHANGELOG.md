@@ -7,6 +7,140 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-10-06
+
+### Added
+
+- `sidebarVariant` on DXDashboard (`variant` on DXDashboardSidebar):
+  `'light'` (default) or `'dark'`, the navy rail as it was. The `SidebarVariant`
+  type is exported.
+- `--dx-sidebar-*` custom properties for every sidebar colour, the menu
+  typeface and its weights, with the light values on `:root` and the dark ones
+  on `.dashboard-sidebar--dark`, so either scheme can be rebranded in CSS
+  (for example `--dx-sidebar-active-bg`). Listed in the theming guide.
+- `--dx-dashboard-header-bg` and `--dx-dashboard-header-border-width`: one
+  background for the navbar and the light sidebar's brand row, so the top
+  band runs the full width, and the line under it (none by default; 1px with
+  the dark sidebar, which keeps its navy brand row).
+- `--dx-dashboard-header-height`, the one height for the sidebar header and
+  the navbar, and `--dx-sidebar-header-border-width` for the line under the
+  brand row (none on the light sidebar, 1px on the dark one).
+
+- `DXStackingTable`: wrap a table you write yourself (an order's lines with
+  price and quantity inputs) and it turns each body row into a card when the
+  space it has, not the window, is below `stackBelow` (576px by default). Each
+  cell becomes a line of the card labelled with its column's header, so the
+  labels are not repeated in the markup; `data-label` on a `th` or a cell
+  overrides one. `.dx-stack-span` makes a cell the card's full-width title,
+  `colspan` cells span automatically, `.dx-stack-hide` hides a cell, empty
+  unlabelled cells (a footer's `&nbsp;` filler) hide themselves, and
+  `.dx-stack-continue` on a row joins it to the card above (a note under a
+  line). In a card the labels sit in one column (33% of the card, clamped
+  to 5–10rem; set `--dx-stacking-table-label-width` to change it), so every
+  control and value starts at the same left edge, and inputs stretch to the
+  card's edge. Footer rows use the same column, so a total reads "Total
+  £54.00" in line with the cards.
+  It replaces the `.table-responsive` wrapper and scrolls sideways like it in
+  the wide layout. Unmeasured (server rendering) it renders stacked, like
+  `DXForm`'s `layout="auto"`.
+  Labels follow the table's real columns through every header row: a heading
+  that spans two rows ("Product" beside a "Pricing" group over Price and
+  Quantity) labels its own column, and `rowspan`/`colspan` cells in the body
+  no longer shift the labels of the cells after them. Hiding or showing
+  header helper text (`.visually-hidden`, `aria-hidden`) relabels the cells,
+  and `.dx-stack-hide` hides a cell even when its column has a visible label.
+
+### Changed
+
+- DXDashboard's sidebar is light by default: a white pane with no line
+  along its edge or under the brand row, tinted group-header pills, grey links (#6b7182, 4.87:1 on white), a green
+  active item, in Poppins (links 500, the active link and headers 600). It
+  follows the legacy Omni Tend admin, except that the legacy link grey failed
+  WCAG AA. Pass `sidebar-variant="dark"` to keep the navy rail, which renders
+  pixel for pixel as before. A custom `sidebar-brand` slot that shows a white
+  logo needs a dark one on the light default.
+- DXDashboardSidebar's group headers and labels no longer carry the `px-2`,
+  `mb-2` and `fw-semibold` utility classes; the same values now come from the
+  component and theme CSS, so they can differ per variant without
+  `!important`. CSS that targeted those classes inside the sidebar needs
+  updating.
+- DXDashboard's navbar is one row on phones: the toggle, the search filling
+  the middle (never narrower than 9rem; below that it wraps to its own row),
+  and the user menu. Page actions still take a row below `md`. A `<kbd>` hint
+  inside the search (such as "⌘K") is hidden when the search is narrower
+  than 16rem, and the search region is a size container named
+  `dx-navbar-search` for slot content to query.
+- The dashboard's side gutter is 16px below 576px (was 20px), matching the
+  full-screen modal's edge, for the page content and the navbar alike.
+- The dashboard's top band runs the full width with no line under it: the
+  light sidebar's brand row takes the navbar's background (both from
+  `--dx-dashboard-header-bg`) and the navbar's bottom border is gone. The
+  navbar's content budget grows from 47px to 48px accordingly. With
+  `sidebar-variant="dark"` the band and line are as before.
+- The sidebar header and the navbar take their height from one property,
+  `--dx-dashboard-header-height` (64px), so their bottom edges always meet.
+  Override that property to change the header height; a consumer that sized
+  `.sidebar-header` or the navbar bar separately should remove that CSS.
+- DModal is full screen below 576px by default (`fullscreen="sm"`, Bootstrap's
+  `.modal-fullscreen-sm-down`), with the header and footer pinned and the body
+  scrolling. DXTable's edit modal inherits it. A `size="sm"` modal (a short
+  confirmation) stays a centred dialog; pass `:fullscreen="false"` to opt any
+  other modal out.
+- DXDashboard's open sidebar covers the whole screen below 576px instead of
+  squeezing the page beside it, and the page behind it does not scroll while
+  it is open (`dx-dashboard-menu-open` on `<html>`). From 576px up the sidebar
+  is unchanged.
+
+### Bug Fixes
+
+- Stop DXDashboard's menu reopening on every page on a phone. The sidebar's
+  visibility was saved to `storageKey` and restored on each page load at any
+  width, so after opening the menu on a phone and tapping a link, an app that
+  navigates with full page loads showed the next page with the menu still
+  open. Below 576px the menu now always starts closed, and opening or closing
+  it there is not saved, so the desktop preference is kept. It also closes
+  when a link in it is followed (including client-side router links), on
+  Escape, and from a close button in its header.
+- DXDashboard's phone menu: a server-rendered scoped dashboard no longer
+  hydrates with the menu showing while its state says closed (the first render
+  now matches the server's and the client state is applied on mount, and the
+  server's markup never paints the menu open on a phone). Opening the menu
+  moves keyboard focus into it, keeps Tab inside it with the page behind
+  `inert`, and closing it returns focus to the navbar toggle, which now has
+  `aria-expanded` and `aria-controls`. Links in the sidebar's `brand` and
+  `footer` slots close it too. A dashboard cached by `<KeepAlive>` closes its
+  menu and releases the page scroll lock when deactivated, and several
+  dashboards on one page no longer release each other's lock.
+- DXDashboard's phone width follows the theme's `sm` breakpoint
+  (`--dx-dashboard-phone-max-width`, published from `$grid-breakpoints`)
+  instead of a hard-coded 576px, so a custom breakpoint keeps the full-screen
+  styles and the menu behaviour together.
+- The full-screen phone menu applies only to the sidebar DXDashboard owns (the
+  sidebar's new `phoneMenu` prop). A standalone DXDashboardSidebar keeps its
+  rail on phones and shows no close button that nothing would answer.
+- DXDashboard's open phone menu contains focus by making the navbar and page
+  `inert` rather than by intercepting Tab, so Tab inside a modal opened from
+  the menu moves between the modal's own controls, and a `tabindex="-1"` link
+  in the sidebar is never focused. Escape pressed in such a modal closes the
+  modal only. The phone width is re-read whenever the dashboard decides, so a
+  theme stylesheet that loads after mount applies.
+
+- `useContainerWidth` no longer applies its hysteresis band to the guess it
+  makes before the first measurement. A `DXForm` with `layout="auto"` whose
+  container measured just above `layoutThreshold` (650px against 640) stayed
+  on the vertical layout until the container grew past 664px, although it
+  had never crossed the threshold.
+- In a stacked `DXStackingTable` card, a value that aligns itself to the end
+  (a currency component rendering `d-block text-end`, or a `.text-end` cell
+  holding a block) no longer lands at the card's right edge: values keep
+  their natural width and start at the label column's edge, while controls
+  (inputs, input groups, or anything wrapping one) still fill the line.
+- `DXCurrencyInput` keeps the amount at least 5.5rem wide in a narrow
+  container, and a long `append` ("10L Bag in Box") now wraps onto two lines
+  instead of crushing the amount input to about 32px.
+
+||||||| c8fd098
+
 ## [0.42.2] - 2026-10-05
 
 ### Bug Fixes

@@ -26,7 +26,9 @@
   it binds to this prop like any other.
 -->
 <template>
-    <DInputGroup>
+    <!-- `.dx-currency-input` (theme.scss) keeps the amount usable in a narrow
+         container: a minimum width, and a long affix wraps instead. -->
+    <DInputGroup class="dx-currency-input">
         <template #prepend>
             <span class="input-group-text">{{ currencySymbol }}</span>
         </template>

@@ -7,6 +7,7 @@ import IconTags from '~icons/lucide/tags';
 import IconBell from '~icons/lucide/bell';
 import IconSave from '~icons/lucide/save';
 import IconShoppingCart from '~icons/lucide/shopping-cart';
+import IconTable from '~icons/lucide/table';
 import IconUser from '~icons/lucide/user';
 import IconSettings from '~icons/lucide/settings';
 import { usePlaygroundMode } from '../composables/usePlaygroundMode';
@@ -34,6 +35,7 @@ const navigation: Navigation = [
       { label: 'Orders', url: '/orders', icon: IconShoppingCart, active: false },
       { label: 'Toasts', url: '/toasts', icon: IconBell, active: false },
       { label: 'Save button', url: '/save-button', icon: IconSave, active: false },
+      { label: 'Stacking table', url: '/stacking-table', icon: IconTable, active: false },
     ],
   },
   {

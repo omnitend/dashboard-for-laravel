@@ -39,6 +39,15 @@ export type Navigation = NavigationGroup[];
 export type NavbarSearchAlign = "start" | "center";
 
 /**
+ * Colour scheme of the dashboard sidebar: `"light"` (the default: a white pane,
+ * tinted group headers, a green active item, Poppins) or `"dark"` (the navy
+ * rail dfl shipped before). Every colour comes from a `--dx-sidebar-*` custom
+ * property, so either can be rebranded in CSS. Shared by DXDashboard (which
+ * forwards it as `sidebarVariant`) and DXDashboardSidebar (`variant`).
+ */
+export type SidebarVariant = "light" | "dark";
+
+/**
  * What the navbar actions slot does below the `md` breakpoint: `"wrap"` moves
  * it to its own full-width row (the bar grows), `"hide"` removes it entirely
  * (for apps that relocate page actions into the page on phones).

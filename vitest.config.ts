@@ -40,6 +40,13 @@ export default defineConfig({
     // ignore-scripts disables the pre-test hooks). See tests/global-setup.ts.
     globalSetup: ['./tests/global-setup.ts'],
   },
+  // Pre-bundled up front: the phone-menu hydration test imports it, and when
+  // Vite only discovers it mid-run it re-optimises and reloads, leaving two
+  // copies of Vue ("Cannot read properties of null (reading 'ce')"). That
+  // fails the first run on any fresh cache, CI included.
+  optimizeDeps: {
+    include: ['vue/server-renderer'],
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './resources/js'),

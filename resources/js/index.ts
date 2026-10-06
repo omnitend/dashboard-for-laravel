@@ -20,6 +20,7 @@ export { default as DXStatCard } from "./components/extended/DXStatCard.vue";
 // (#142) so chart.js / vue-chartjs stay genuinely optional peers — the main
 // entry no longer references them. See resources/js/charts.ts.
 export { default as DXRepeater } from "./components/extended/DXRepeater.vue";
+export { default as DXStackingTable } from "./components/extended/DXStackingTable.vue";
 /**
  * @deprecated Use `DXForm`. `DXBasicForm` is a thin wrapper around `DXForm`
  * (a flat form is just `DXForm` without a `tabs` prop) that logs a one-time
@@ -202,4 +203,5 @@ export type {
     Navigation,
     NavbarSearchAlign,
     NavbarActionsOnMobile,
+    SidebarVariant,
 } from "./types/navigation";

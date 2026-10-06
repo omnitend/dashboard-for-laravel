@@ -34,7 +34,8 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
   { name: 'user', type: '{ name: string; email: string } | null', default: 'null', description: 'User object for navbar dropdown' },
   { name: 'searchAlign', type: "'start' | 'center'", default: "'start'", description: 'Horizontal alignment of the navbar search slot content (start = flush left, center = centred), forwarded to DXDashboardNavbar' },
   { name: 'actionsOnMobile', type: "'wrap' | 'hide'", default: "'wrap'", description: 'What the navbar actions slot does below md: wrap moves it to its own full-width row, hide removes it (relocate actions into the page on phones). Forwarded to DXDashboardNavbar' },
-  { name: 'storageKey', type: 'string', default: '\'dashboard-sidebar-hidden\'', description: 'LocalStorage key for sidebar state persistence' },
+  { name: 'sidebarVariant', type: "'light' | 'dark'", default: "'light'", description: 'Sidebar colour scheme, forwarded to DXDashboardSidebar as variant. light: white pane, tinted group-header pills, green active item, Poppins. dark: the navy rail. Rebrand either through the --dx-sidebar-* custom properties (theming guide)' },
+  { name: 'storageKey', type: 'string', default: '\'dashboard-sidebar-hidden\'', description: 'LocalStorage key for sidebar state persistence. Desktop only: below 576px the menu always starts closed and its toggles are not saved' },
 ]} />
 
 ## Slots
@@ -59,7 +60,7 @@ and `sidebarHidden` on top of the underlying slot's own bindings — see
 
 - **Combined Layout** - Integrates DXDashboardSidebar and DXDashboardNavbar
 - **State Management** - Handles sidebar toggle and localStorage persistence
-- **Responsive** - Works on mobile and desktop
+- **Responsive** - A rail beside the page from 576px up; a full-screen menu on phones (see [On phones](#on-phones))
 - **Customisable** - Extensive slot system for customisation
 - **Type-Safe** - Full TypeScript support with proper types
 
@@ -227,6 +228,44 @@ const toggle = () => dashboard.value?.toggleSidebar();
 </template>
 ```
 
+## On phones
+
+Below Bootstrap's `sm` breakpoint (576px) the open sidebar covers the whole
+screen instead of squeezing the page beside it, and it behaves as a menu:
+
+- It always starts closed. The visibility saved under `storageKey` is a desktop
+  preference, so it is neither applied nor overwritten on a phone. An app that
+  navigates with full page loads would otherwise reopen the menu over every
+  page the user tapped through to.
+- Following a link in it closes it (including links in the `sidebar-link`,
+  `sidebar-brand` and `sidebar-footer` slots, and client-side router links that
+  cancel the click), as do Escape and the close button in its header, which
+  shows only at this width because the menu covers the navbar's toggle.
+- Opening it moves keyboard focus into it and makes the navbar and page
+  behind it inert, so, as with a native modal `<dialog>`, Tab moves between
+  the menu's controls and the browser's own and never reaches what the menu
+  covers. A modal opened from the menu keeps its own Tab order. Closing it
+  returns focus to the navbar toggle, whose `aria-expanded` follows the
+  sidebar.
+- While it is open, `<html>` carries `dx-dashboard-menu-open` and the page
+  behind it does not scroll. Several dashboards on one page each hold their
+  own share of that lock, and a dashboard cached by `<KeepAlive>` closes its
+  menu and releases the lock when deactivated.
+- A server-rendered dashboard hydrates with the menu closed and never paints
+  it open before hydration.
+
+From 576px up nothing changes: the sidebar is a rail beside the page and its
+state is remembered. Crossing the breakpoint (rotating a tablet, resizing a
+window) closes the menu on the way down and restores the remembered state on
+the way up. The theme publishes the breakpoint as
+`--dx-dashboard-phone-max-width` (from `$grid-breakpoints`) and DXDashboard
+reads it whenever it decides (so also when the stylesheet loads after the
+dashboard), so a theme compiled with its own `sm` moves the behaviour and the
+full-screen styles together (575.98px if the theme's CSS is not loaded).
+
+These are DXDashboard's: a `DXDashboardSidebar` used on its own keeps its rail
+on phones unless given `phone-menu`, whose owner must then close it.
+
 ## Notes
 
 This component requires CSS for sidebar visibility control. Add this to your global styles or layout:
@@ -248,7 +287,9 @@ For Astro projects with SSR, add an inline script to prevent flicker:
   (function() {
     try {
       const hidden = localStorage.getItem('dashboard-sidebar-hidden');
-      if (hidden === 'false') {
+      // Phones always start with the menu closed (see "On phones").
+      const isPhone = window.matchMedia('(max-width: 575.98px)').matches;
+      if (hidden === 'false' && !isPhone) {
         document.documentElement.classList.add('sidebar-visible');
       }
     } catch (e) {}
