@@ -34,6 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   container measured just above `layoutThreshold` (650px against 640) stayed
   on the vertical layout until the container grew past 664px, although it
   had never crossed the threshold.
+- In a stacked `DXStackingTable` card, a value that aligns itself to the end
+  (a currency component rendering `d-block text-end`, or a `.text-end` cell
+  holding a block) no longer lands at the card's right edge: values keep
+  their natural width and start at the label column's edge, while controls
+  (inputs, input groups, or anything wrapping one) still fill the line.
+- `DXCurrencyInput` keeps the amount at least 5.5rem wide in a narrow
+  container, and a long `append` ("10L Bag in Box") now wraps onto two lines
+  instead of crushing the amount input to about 32px.
 
 ## [0.42.2] - 2026-10-05
 

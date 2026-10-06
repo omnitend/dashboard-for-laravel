@@ -90,8 +90,9 @@ function mountOrderLines(
                       h('td', { 'data-label': 'Qty' }, [
                         h('input', { class: 'form-control', type: 'number', value: '2' }),
                       ]),
-                      // Wrapped like a currency component's output (an element, not bare text).
-                      h('td', { class: 'text-end' }, h('span', '£36.00')),
+                      // A value that end-aligns ITSELF, as a currency component
+                      // does (`d-block text-end`), inside a `.text-end` cell.
+                      h('td', { class: 'text-end' }, h('span', { class: 'd-block text-end' }, '£36.00')),
                       h('td', { class: 'dx-stack-hide' }, h('button', 'x')),
                     ]),
                   ];
@@ -108,7 +109,8 @@ function mountOrderLines(
               h('tfoot', [
                 h('tr', [
                   h('th', { colspan: 3 }, ' '),
-                  h('th', { class: 'text-end' }, '£54.00'),
+                  // A value whose INNER element end-aligns itself.
+                  h('th', { class: 'text-end' }, h('div', h('span', { class: 'd-block text-end' }, '£54.00'))),
                   h('th'),
                 ]),
               ]),
@@ -280,7 +282,7 @@ describe('DXStackingTable', () => {
     totalRange.selectNodeContents(totalCell.firstElementChild!);
     const totalText = totalRange.getBoundingClientRect();
     const footerTotalRange = document.createRange();
-    footerTotalRange.selectNodeContents(table.tFoot!.rows[0].cells[1]);
+    footerTotalRange.selectNodeContents(table.tFoot!.rows[0].cells[1].querySelector('span')!);
     const footerTotalText = footerTotalRange.getBoundingClientRect();
 
     // One label column: "Price" and "Qty" differ in length, the controls do not move.

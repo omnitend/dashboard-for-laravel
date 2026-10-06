@@ -1095,6 +1095,30 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 // wrapper's DIRECT child table is affected, so a table nested in a cell keeps
 // its own layout.
 
+// ----------------------------------------------------------------------------
+// DXCurrencyInput — keep the amount usable in a narrow container
+// ----------------------------------------------------------------------------
+//
+// Bootstrap gives an input-group's control `min-width: 0`, so a long unit
+// ("10L Bag in Box") crushed the amount to ~32px. The amount keeps room for a
+// price, the group still does not wrap (a wrapped affix would land on its own line
+// with broken corners: the theme already makes every `.input-group` nowrap),
+// and the affix text wraps onto two lines instead.
+.dx-currency-input {
+  > .form-control {
+    min-width: 5.5rem;
+  }
+
+  > .input-group-text {
+    white-space: normal;
+  }
+}
+
+// What a stacked card line stretches: a form control, or an element wrapping
+// one. Not buttons, which keep their size.
+$dx-stack-controls: 'input:not([type="hidden"]), select, textarea, .form-control, .form-select, .input-group, [contenteditable]';
+$dx-stack-fill: ':is(#{$dx-stack-controls}):not(button, .btn), :not(button, .btn):has(#{$dx-stack-controls})';
+
 // Wide layout: the wrapper is the old `.table-responsive` (a horizontal scroll
 // container), which also keeps its measured width equal to the space it has.
 .dx-stacking-table {
@@ -1176,12 +1200,22 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
     text-align: start !important;
   }
 
-  // Content fills the rest of the line: an input group or a number input
-  // stretches to the card's edge. Buttons keep their own size.
-  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > :not(button, .btn),
-  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > :not(button, .btn) {
-    flex: 1 1 0;
+  // A VALUE (text, a currency span) keeps its natural width, so it starts at
+  // the label edge even when it, or something inside it, aligns itself to the
+  // end (`.text-end`, `d-block text-end`): stretched, that end-alignment would
+  // carry it to the card's right edge.
+  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > *,
+  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > * {
+    flex: 0 1 auto;
     min-width: 0;
+  }
+
+  // A CONTROL (or a wrapper holding one) fills the rest of the line: an input
+  // group or a number input stretches to the card's edge. Buttons keep their
+  // own size. Same control list as the horizontal form's display-only rule.
+  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > :is(#{$dx-stack-fill}),
+  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) > :is(#{$dx-stack-fill}) {
+    flex: 1 1 0;
   }
 
   > tbody > tr > [data-dx-stack-label]:not(.dx-stack-span)::before,
