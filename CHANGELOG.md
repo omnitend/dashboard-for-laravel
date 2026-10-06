@@ -51,6 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The full-screen phone menu applies only to the sidebar DXDashboard owns (the
   sidebar's new `phoneMenu` prop). A standalone DXDashboardSidebar keeps its
   rail on phones and shows no close button that nothing would answer.
+- DXDashboard's open phone menu contains focus by making the navbar and page
+  `inert` rather than by intercepting Tab, so Tab inside a modal opened from
+  the menu moves between the modal's own controls, and a `tabindex="-1"` link
+  in the sidebar is never focused. Escape pressed in such a modal closes the
+  modal only. The phone width is re-read whenever the dashboard decides, so a
+  theme stylesheet that loads after mount applies.
 
 ### Changed
 
