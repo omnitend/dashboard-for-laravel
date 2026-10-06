@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-vue';
 import { h } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
@@ -129,5 +130,31 @@ describe('DXTable edit modal — opt-in card (B10)', () => {
   it('cards the modal form when edit-card is set', async () => {
     await openEdit({ editCard: true });
     expect(modalHasCard()).toBe(true);
+  });
+});
+
+/*
+ * The edit modal is a DModal, so it inherits DModal's phone default: full
+ * screen below `sm` (unless the table asks for a `sm` edit modal).
+ */
+describe('DXTable edit modal — full screen on a phone', () => {
+  const dialogAfterOpen = async (extra: any = {}) => {
+    await page.viewport(390, 844);
+    await openEdit(extra);
+    await expect.poll(() => document.querySelector('.modal .modal-dialog')).toBeTruthy();
+    return document.querySelector('.modal .modal-dialog')!;
+  };
+
+  it('covers the viewport by default', async () => {
+    const dialog = await dialogAfterOpen();
+    expect(dialog.classList.contains('modal-fullscreen-sm-down')).toBe(true);
+    await expect
+      .poll(() => Math.round(dialog.getBoundingClientRect().width), { timeout: 3000 })
+      .toBe(window.innerWidth);
+  });
+
+  it('stays a small dialog with editModalSize="sm"', async () => {
+    const dialog = await dialogAfterOpen({ editModalSize: 'sm' });
+    expect(dialog.classList.contains('modal-fullscreen-sm-down')).toBe(false);
   });
 });

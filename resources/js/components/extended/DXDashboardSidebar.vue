@@ -14,8 +14,11 @@
     :class="{
       'sidebar-collapsed': collapsed,
       'sidebar-hidden': hidden,
-      'sidebar-collapsible-groups': collapsibleGroups && !collapsed
+      'sidebar-collapsible-groups': collapsibleGroups && !collapsed,
+      'dashboard-sidebar--phone-menu': phoneMenu,
+      'dashboard-sidebar--phone-menu-open': phoneMenuOpen
     }"
+    @click="onLinkClick"
   >
     <div class="sidebar-header p-3">
       <div class="d-flex align-items-center justify-content-between">
@@ -33,6 +36,18 @@
           </div>
         </slot>
       </div>
+      <!-- With `phoneMenu`, below `sm` the open sidebar covers the whole
+           screen, navbar toggle included, so it carries its own way out, at
+           the far end of the header row. Hidden from `sm` up, where the navbar
+           toggle stays in view. Not rendered without `phoneMenu`: nothing
+           would answer its `close`. -->
+      <button
+        v-if="phoneMenu"
+        type="button"
+        class="sidebar-close btn-close btn-close-white d-sm-none flex-shrink-0 ms-auto"
+        aria-label="Close menu"
+        @click="$emit('close')"
+      />
     </div>
 
     <nav ref="navRef" class="sidebar-nav px-3 pb-3 pt-2">
@@ -175,20 +190,61 @@ const props = withDefaults(defineProps<{
    * `false`: all groups start open and toggle independently.
    */
   autoCollapseInactiveGroups?: boolean;
+  /**
+   * Below `sm`, show the open sidebar as a full-screen menu over the page,
+   * with a close button (which emits `close`), instead of a rail beside it;
+   * hidden there until opened. The owner must answer `close`, Escape and
+   * `navigate`: DXDashboard sets this and does. Off by default, so a
+   * standalone sidebar keeps its rail on phones.
+   */
+  phoneMenu?: boolean;
 }>(), {
   collapsed: false,
   hidden: false,
   title: 'Dashboard',
   collapsibleGroups: false,
   autoCollapseInactiveGroups: true,
+  phoneMenu: false,
 });
 
-defineEmits<{
+const emit = defineEmits<{
   /** Emitted to request toggling the sidebar's collapsed/expanded state. */
   toggle: [];
+  /** Emitted by the close button shown below `sm`, where the open sidebar covers the screen. */
+  close: [];
+  /**
+   * Emitted when a link anywhere in the sidebar is followed (a plain click,
+   * not one that opens a new tab): the navigation, including links rendered
+   * through the `link` slot, and the `brand` and `footer` slots. DXDashboard
+   * uses it to close the full-screen menu on a phone.
+   */
+  navigate: [];
 }>();
 
+// Delegated from the whole sidebar, so `link`, `brand` and `footer` slot
+// anchors count too. A modified click opens a new tab or window and leaves
+// this page where it is. A cancelled click still counts: a client-side
+// router's link (Inertia's <Link>) cancels the browser navigation and routes
+// itself.
+const onLinkClick = (event: MouseEvent): void => {
+  if (event.button !== 0) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const target = event.target as Element | null;
+  if (target?.closest('a[href]')) {
+    emit('navigate');
+  }
+};
+
 const sidebarRef = ref<HTMLElement | null>(null);
+
+// The open phone menu's class waits for mount, so a server-rendered page
+// (which cannot know the width) never paints an open menu on a phone before
+// hydration, and hydration sees the same classes the server sent.
+const isMounted = ref(false);
+onMounted(() => {
+  isMounted.value = true;
+});
+const phoneMenuOpen = computed(() => props.phoneMenu && isMounted.value && !props.hidden);
 const navRef = ref<HTMLElement | null>(null);
 
 const uid = useId();
@@ -375,6 +431,15 @@ const scrollToActiveItem = async (smooth = false) => {
 // Scroll to active item on initial mount (instant, no animation)
 onMounted(() => {
   scrollToActiveItem(false);
+});
+
+// A hidden sidebar has no layout to scroll, so the mount-time scroll does
+// nothing; centre the active item whenever it is shown (opening the phone
+// menu, or a dashboard that restores its visibility after mount).
+watch(() => props.hidden, (isHidden) => {
+  if (!isHidden) {
+    scrollToActiveItem(false);
+  }
 });
 
 // Client-side route change: open the newly active group, then scroll to it.

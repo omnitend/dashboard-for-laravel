@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-vue';
 import { h, ref } from 'vue';
 import DXDashboard from '../../resources/js/components/extended/DXDashboard.vue';
@@ -82,7 +83,14 @@ describe('DXDashboard', () => {
     });
   });
 
+  // Below `sm` the sidebar is a phone menu that always starts closed (see
+  // DXDashboard.phone.test.ts); the runner's default window is 414px wide, so
+  // the rail's own defaults are tested at a desktop width.
   describe('Sidebar Toggle', () => {
+    beforeEach(async () => {
+      await page.viewport(1280, 800);
+    });
+
     it('starts with default hidden state', async () => {
       const screen = render(DXDashboard, {
         props: {
@@ -119,7 +127,10 @@ describe('DXDashboard', () => {
       storageKey: STORAGE_KEY,
     };
 
-    beforeEach(() => localStorage.removeItem(STORAGE_KEY));
+    beforeEach(async () => {
+      await page.viewport(1280, 800);
+      localStorage.removeItem(STORAGE_KEY);
+    });
     afterEach(() => localStorage.removeItem(STORAGE_KEY));
 
     it('exposes toggleSidebar() and sidebarHidden', async () => {

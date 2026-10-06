@@ -47,5 +47,15 @@ When the actions belong to an embedded detail component, wrap them in the export
 props. Icon-only buttons retain their explicit square size.
 
 DModal defaults to `size="lg"` (800px on desktop), giving embedded forms room
-for horizontal labels. Bootstrap keeps it within the mobile viewport. Pass an
-explicit `size` to override this, for example `size="sm"` for a short confirmation.
+for horizontal labels. Pass an explicit `size` to override this, for example
+`size="sm"` for a short confirmation.
+
+## On phones
+
+Below Bootstrap's `sm` breakpoint (576px) DModal fills the screen by default
+(`fullscreen="sm"`, Bootstrap's `.modal-fullscreen-sm-down`): the header and
+footer stay put and the body scrolls between them. DXTable's edit modal is a
+DModal, so it does the same. A `size="sm"` modal is the exception: a short
+confirmation stays a centred small dialog. Pass `fullscreen` to override the
+default either way: `:fullscreen="false"` keeps a centred dialog at every
+width, and `fullscreen="md"` (or `true`) widens the full-screen range.

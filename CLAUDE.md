@@ -321,6 +321,44 @@ interface NavigationItem {
 - `#brand="{ collapsed }"` - Custom brand/logo content
 - `#link="{ item, isActive, collapsed }"` - Custom link rendering
 
+**On phones (below `sm`, 576px):** inside DXDashboard the open sidebar is a
+full-screen menu (theme.scss, `aside.dashboard-sidebar--phone-menu`), not a
+rail. DXDashboard sets the sidebar's `phoneMenu` prop; a STANDALONE sidebar
+(no `phoneMenu`) keeps its rail and renders no close button, because nothing
+would answer `close`/Escape. The width is read at runtime from
+`--dx-dashboard-phone-max-width` (theme.scss publishes `breakpoint-max(sm)`;
+575.98px fallback), so a custom `$grid-breakpoints` moves JS and CSS together.
+It is re-read on every phone check (setup, mount, toggle, close, Escape), so a
+theme stylesheet that loads after mount still applies.
+There DXDashboard: always starts closed, never reads or writes `storageKey`
+(that is the DESKTOP preference: consumer apps navigate with full page loads,
+and restoring it on a phone reopened the menu over every page), closes on a
+followed link anywhere in the sidebar (nav, `brand`, `footer`; the sidebar's
+`navigate` event, delegated from the `<aside>`, cancelled clicks too because
+Inertia's `<Link>` cancels), on Escape and from the header's close button.
+Opening moves focus to the close button and makes the navbar and page
+(`.dashboard-content`) `inert`, which is the whole focus containment: there is
+deliberately NO keydown Tab trap (a hand-written one broke Tab inside a modal
+opened from the menu and mis-read `tabindex="-1"` links), so Tab cycles the
+sidebar and the browser chrome like a native modal `<dialog>`, and teleported
+modals are unaffected. Closing returns focus to the navbar toggle (which
+carries `aria-expanded`/`aria-controls`). It holds `dx-dashboard-menu-open` on
+`<html>` through a per-owner lock (`utils/pageScrollLock.ts`) so several
+dashboards and `<KeepAlive>` deactivation (which closes the menu) cannot leave
+or steal the lock. **SSR:** the first render uses the server's state
+(`defaultHidden()`) on the client too and applies the client state on mount, so
+hydration matches; the sidebar's open class waits for mount, so server markup
+never paints an open menu on a phone. The vitest window defaults to 414px, i.e.
+a phone: a test of the rail's own defaults must set a desktop
+`page.viewport`. Pinned by `tests/components/DXDashboard.phone.test.ts` and
+`DXDashboard.phone-menu.test.ts` (SSR via `vue/server-renderer`: the first run
+after Vite discovers it can fail with "reading 'ce'" from a stale dep
+optimisation; re-run).
+
+DModal is likewise full screen below `sm` by default (`fullscreen="sm"`),
+except `size="sm"`; an explicit `fullscreen` wins because `$attrs` fall
+through onto the root BModal after its own bindings.
+
 **Styling Notes:**
 - Uses CSS variables for colours (`var(--bs-dark)`, `var(--bs-nav-link-color)`)
 - Separator line: `rgba(255, 255, 255, 0.1)` for subtlety
