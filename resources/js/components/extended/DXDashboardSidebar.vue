@@ -455,7 +455,7 @@ watch(activeGroupIndex, () => {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--dx-sidebar-separator-color);
+  border-bottom: var(--dx-sidebar-header-border-width) solid var(--dx-sidebar-separator-color);
 }
 
 .sidebar-footer {

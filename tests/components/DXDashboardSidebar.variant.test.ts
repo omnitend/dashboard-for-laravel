@@ -84,8 +84,8 @@ describe('DXDashboardSidebar variants', () => {
     const { sidebar, link, active, group, title } = parts(screen.container);
 
     expect(getComputedStyle(sidebar).backgroundColor).toBe('rgb(255, 255, 255)');
-    expect(getComputedStyle(sidebar).borderRightWidth).toBe('1px');
-    expect(getComputedStyle(sidebar).borderRightColor).toBe('rgb(230, 233, 240)');
+    // No line between the menu and the page (2026-10-06 review).
+    expect(getComputedStyle(sidebar).borderRightWidth).toBe('0px');
     expect(getComputedStyle(title).color).toBe('rgb(18, 20, 25)');
 
     const linkStyle = getComputedStyle(link);

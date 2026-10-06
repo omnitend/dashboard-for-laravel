@@ -665,9 +665,10 @@ browser's bold) in `--dx-table-header-color`. Pinned by
 
 ### Layout tokens: dashboard gutter and form label column
 
-- **One dashboard gutter, 20px** (`$dashboard-gutter-x` →
-  `--dx-dashboard-gutter-x` on `:root`). theme.scss applies it as the
-  horizontal padding of the `.container-fluid` directly inside
+- **One dashboard gutter, 20px; 16px below `sm`** (`$dashboard-gutter-x` /
+  `$dashboard-gutter-x-phone` → `--dx-dashboard-gutter-x` on `:root`, the
+  phone value matching the full-screen modal's 1rem padding).
+  theme.scss applies it as the horizontal padding of the `.container-fluid` directly inside
   `.dashboard-navbar` AND inside `.dashboard-main` (which keeps only `py-4`), so
   the navbar's first item starts exactly where page content starts. In
   DXDashboard's centred branch the `DRow`'s negative margins and the `DCol`'s
@@ -675,6 +676,13 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   horizontal padding back on `<main>` or the navbar's container; pinned by
   `tests/components/DXDashboard.gutter.test.ts` (rendered rects, both sidebar
   states, both content branches, the wrapped navbar below `md`).
+- **One header height** (`--dx-dashboard-header-height`, 64px): the sidebar
+  header's `height`, the navbar's `min-height` and its bar's floor, and the
+  navbar content budget all derive from it, so the two bottom edges meet. Never
+  size either element on its own (greendragon's stepped corner came from
+  exactly that). Pinned by `tests/components/DXDashboard.header.test.ts`,
+  which also pins the one-row phone navbar (search `flex: 1 1 0`, 9rem floor,
+  `kbd` hidden by the `dx-navbar-search` container query below 16rem).
 - **Default horizontal label column is 45%** (`$dx-form-label-width` →
   `--dx-form-label-width`). With no `labelCols` from the form or field,
   DXField passes BFormGroup `labelColsSm: true` (a `col-sm`, so it stacks below

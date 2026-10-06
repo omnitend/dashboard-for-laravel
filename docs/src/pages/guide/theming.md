@@ -346,8 +346,9 @@ in a stylesheet loaded after `theme.css`:
 |---|---|---|
 | `--dx-sidebar-bg` | `#ffffff` | The pane |
 | `--dx-sidebar-color` | `#121419` | Brand initial and title |
-| `--dx-sidebar-edge-width`, `--dx-sidebar-edge-color` | `1px`, `#e6e9f0` | The pane's right edge (dark: none) |
-| `--dx-sidebar-separator-color` | `#e6e9f0` | Lines under the header and above the footer |
+| `--dx-sidebar-edge-width`, `--dx-sidebar-edge-color` | `0`, `#e6e9f0` | A line along the pane's right edge (none by default in both schemes) |
+| `--dx-sidebar-header-border-width` | `0` | The line under the brand row (dark: `1px`) |
+| `--dx-sidebar-separator-color` | `#e6e9f0` | The line above the footer, and under the header where it has one |
 | `--dx-sidebar-group-color` | `#121419` | Group header text |
 | `--dx-sidebar-group-bg` | `#f5f8fe` | Group header pill (dark: transparent) |
 | `--dx-sidebar-group-hover-bg` | `#ebf0fb` | Collapsible group header on hover |
@@ -362,6 +363,12 @@ in a stylesheet loaded after `theme.css`:
 | `--dx-sidebar-link-font-weight` | `500` | Link weight (dark: the page's) |
 | `--dx-sidebar-active-font-weight` | `600` | Current link weight (dark: 500) |
 | `--dx-sidebar-group-font-weight` | `600` | Group header weight |
+
+Two shell tokens sit beside these. `--dx-dashboard-header-height` (64px) is
+the height of both the sidebar header and the navbar, so their bottom edges
+always meet; change it there, never on either element. `--dx-dashboard-gutter-x`
+is the page and navbar side gutter: 20px, and 16px below 576px (the full-screen
+modal's edge).
 
 Keep text tokens at 4.5:1 or better against the background they sit on. The
 light defaults are pinned by tests: links 4.87:1, the active item 15.4:1 and

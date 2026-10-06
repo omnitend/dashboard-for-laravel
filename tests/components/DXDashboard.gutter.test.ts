@@ -135,7 +135,10 @@ describe('DXDashboard shared horizontal gutter', () => {
     expect(Math.abs(firstVisibleNavbarItemLeft(root) - contentLeft)).toBeLessThanOrEqual(0.5);
   });
 
-  it('keeps the gutter on the wrapped navbar rows below md', async () => {
+  // Below `sm` the gutter is the phone one, 16px (the full-screen modal's
+  // edge), and the search sits inline on the bar's single row.
+  it('keeps the phone gutter on the navbar row and the page below sm', async () => {
+    const PHONE_GUTTER = 16;
     await page.viewport(380, 800);
     localStorage.setItem(STORAGE_KEY, 'true');
     const screen = render(DXDashboard, {
@@ -162,9 +165,12 @@ describe('DXDashboard shared horizontal gutter', () => {
     const toggleLeft = left(root, '.dashboard-navbar button[aria-label="Toggle sidebar"]');
     const contentLeft = left(root, '.gutter-probe');
 
-    expect(Math.abs(toggleLeft - GUTTER)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(searchLeft - GUTTER)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(contentLeft - GUTTER)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(window.innerWidth - searchRight - GUTTER)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(toggleLeft - PHONE_GUTTER)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(contentLeft - PHONE_GUTTER)).toBeLessThanOrEqual(0.5);
+    const userMenuRight = root.querySelector('.dashboard-navbar__end')!.getBoundingClientRect().right;
+    expect(Math.abs(window.innerWidth - userMenuRight - PHONE_GUTTER)).toBeLessThanOrEqual(0.5);
+    // Inline: the search starts after the toggle and ends before the user menu.
+    expect(searchLeft).toBeGreaterThan(toggleLeft);
+    expect(searchRight).toBeLessThan(userMenuRight);
   });
 });
