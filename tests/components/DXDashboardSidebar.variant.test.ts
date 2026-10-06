@@ -71,7 +71,9 @@ describe('DXDashboardSidebar variants', () => {
   });
 
   it('is light by default', async () => {
-    const screen = renderSidebar();
+    // `phoneMenu` renders the close button (DXDashboard sets it); it changes
+    // nothing at this width.
+    const screen = renderSidebar({ phoneMenu: true });
     const { sidebar, closeButton } = parts(screen.container);
     expect(sidebar.classList.contains('dashboard-sidebar--light')).toBe(true);
     expect(sidebar.classList.contains('dashboard-sidebar--dark')).toBe(false);
@@ -177,7 +179,7 @@ describe('DXDashboardSidebar variants', () => {
   });
 
   it('renders the dark variant exactly as the old rail', async () => {
-    const screen = renderSidebar({ variant: 'dark', collapsibleGroups: true });
+    const screen = renderSidebar({ variant: 'dark', collapsibleGroups: true, phoneMenu: true });
     const { sidebar, link, active, group, title, closeButton } = parts(screen.container);
     expect(sidebar.classList.contains('dashboard-sidebar--dark')).toBe(true);
     expect(closeButton.classList.contains('btn-close-white')).toBe(true);

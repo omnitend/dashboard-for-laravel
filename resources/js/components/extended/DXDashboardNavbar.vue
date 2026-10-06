@@ -19,6 +19,8 @@
             class="text-dark p-0"
             @click="$emit('toggleSidebar')"
             aria-label="Toggle sidebar"
+            :aria-expanded="sidebarExpanded === undefined ? undefined : String(sidebarExpanded)"
+            :aria-controls="sidebarId || undefined"
           >
             <!-- @slot Custom hamburger/menu icon. Defaults to a three-line SVG. -->
             <slot name="menu-icon">
@@ -149,6 +151,14 @@ const props = withDefaults(
      * announces the trigger as the avatar's initial ("J") rather than as a menu.
      */
     userMenuLabel?: string;
+    /**
+     * Whether the sidebar the toggle controls is showing, exposed as the
+     * toggle's `aria-expanded`. Left unset, the toggle carries none.
+     * DXDashboard sets it.
+     */
+    sidebarExpanded?: boolean;
+    /** `id` of the sidebar the toggle controls (its `aria-controls`). */
+    sidebarId?: string;
   }>(),
   {
     user: null,
@@ -156,6 +166,8 @@ const props = withDefaults(
     searchAlign: "start",
     actionsOnMobile: "wrap",
     userMenuLabel: "User menu",
+    sidebarExpanded: undefined,
+    sidebarId: "",
   },
 );
 

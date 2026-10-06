@@ -237,19 +237,30 @@ screen instead of squeezing the page beside it, and it behaves as a menu:
   preference, so it is neither applied nor overwritten on a phone. An app that
   navigates with full page loads would otherwise reopen the menu over every
   page the user tapped through to.
-- Following a link in it closes it (including links rendered through the
-  `sidebar-link` slot and client-side router links that cancel the click), as
-  do Escape and the close button in its header, which shows only at this width
-  because the menu covers the navbar's toggle.
+- Following a link in it closes it (including links in the `sidebar-link`,
+  `sidebar-brand` and `sidebar-footer` slots, and client-side router links that
+  cancel the click), as do Escape and the close button in its header, which
+  shows only at this width because the menu covers the navbar's toggle.
+- Opening it moves keyboard focus into it, Tab stays inside it and the page
+  behind is inert; closing it returns focus to the navbar toggle, whose
+  `aria-expanded` follows the sidebar.
 - While it is open, `<html>` carries `dx-dashboard-menu-open` and the page
-  behind it does not scroll.
+  behind it does not scroll. Several dashboards on one page each hold their
+  own share of that lock, and a dashboard cached by `<KeepAlive>` closes its
+  menu and releases the lock when deactivated.
+- A server-rendered dashboard hydrates with the menu closed and never paints
+  it open before hydration.
 
 From 576px up nothing changes: the sidebar is a rail beside the page and its
 state is remembered. Crossing the breakpoint (rotating a tablet, resizing a
 window) closes the menu on the way down and restores the remembered state on
-the way up. The breakpoint is matched in JavaScript as
-`(max-width: 575.98px)`; a consumer that moves `sm` in `$grid-breakpoints`
-must keep the two in step.
+the way up. The theme publishes the breakpoint as
+`--dx-dashboard-phone-max-width` (from `$grid-breakpoints`) and DXDashboard
+reads it, so a theme compiled with its own `sm` moves the behaviour and the
+full-screen styles together (575.98px if the theme's CSS is not loaded).
+
+These are DXDashboard's: a `DXDashboardSidebar` used on its own keeps its rail
+on phones unless given `phone-menu`, whose owner must then close it.
 
 ## Notes
 

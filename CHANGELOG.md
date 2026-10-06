@@ -34,6 +34,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it there is not saved, so the desktop preference is kept. It also closes
   when a link in it is followed (including client-side router links), on
   Escape, and from a close button in its header.
+- DXDashboard's phone menu: a server-rendered scoped dashboard no longer
+  hydrates with the menu showing while its state says closed (the first render
+  now matches the server's and the client state is applied on mount, and the
+  server's markup never paints the menu open on a phone). Opening the menu
+  moves keyboard focus into it, keeps Tab inside it with the page behind
+  `inert`, and closing it returns focus to the navbar toggle, which now has
+  `aria-expanded` and `aria-controls`. Links in the sidebar's `brand` and
+  `footer` slots close it too. A dashboard cached by `<KeepAlive>` closes its
+  menu and releases the page scroll lock when deactivated, and several
+  dashboards on one page no longer release each other's lock.
+- DXDashboard's phone width follows the theme's `sm` breakpoint
+  (`--dx-dashboard-phone-max-width`, published from `$grid-breakpoints`)
+  instead of a hard-coded 576px, so a custom breakpoint keeps the full-screen
+  styles and the menu behaviour together.
+- The full-screen phone menu applies only to the sidebar DXDashboard owns (the
+  sidebar's new `phoneMenu` prop). A standalone DXDashboardSidebar keeps its
+  rail on phones and shows no close button that nothing would answer.
 
 ### Changed
 

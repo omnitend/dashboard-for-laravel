@@ -971,17 +971,30 @@ aside.dashboard-sidebar--light {
   }
 }
 
-// Phones (below `sm`, where DModal also goes full screen): the open sidebar is
-// a full-screen menu over the page rather than a rail squeezing it. DXDashboard
-// pairs this with its phone behaviour (starts closed, closes on a link or
-// Escape) and puts `dx-dashboard-menu-open` on <html> while it is open, so the
-// page behind cannot scroll. The JS side matches `(max-width: 575.98px)`; keep
-// the two in step if you move `sm` in `$grid-breakpoints`. Below the modal
+// Phones (below `sm`, where DModal also goes full screen): the sidebar
+// DXDashboard owns (`phoneMenu`, class `dashboard-sidebar--phone-menu`) is a
+// full-screen menu over the page rather than a rail squeezing it, and hidden
+// until opened. DXDashboard pairs this with its phone behaviour (starts
+// closed, closes on a link or Escape, holds focus) and puts
+// `dx-dashboard-menu-open` on <html> while it is open, so the page behind
+// cannot scroll. A standalone DXDashboardSidebar keeps its rail. The JS reads
+// the width from `--dx-dashboard-phone-max-width`, published here from
+// `$grid-breakpoints`, so a custom `sm` moves both together. Below the modal
 // layer (1055), so a modal opened from the menu still sits on top.
+:root {
+  --dx-dashboard-phone-max-width: #{breakpoint-max(sm, $grid-breakpoints)};
+}
+
 @include media-breakpoint-down(sm) {
-  // `aside` outranks the component's scoped sticky/100vh rules (same class
-  // count) whatever order the two land in the stylesheet.
-  aside.dashboard-sidebar:not(.sidebar-hidden) {
+  // `aside` outranks the component's scoped sticky/100vh/flex rules (same
+  // class count) whatever order the two land in the stylesheet. The open
+  // class is set only once mounted, so a server-rendered page never paints an
+  // open menu before hydration.
+  aside.dashboard-sidebar--phone-menu:not(.dashboard-sidebar--phone-menu-open) {
+    display: none;
+  }
+
+  aside.dashboard-sidebar--phone-menu.dashboard-sidebar--phone-menu-open {
     position: fixed;
     inset: 0;
     z-index: $zindex-offcanvas;
