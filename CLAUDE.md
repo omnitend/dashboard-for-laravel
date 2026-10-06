@@ -321,6 +321,23 @@ interface NavigationItem {
 - `#brand="{ collapsed }"` - Custom brand/logo content
 - `#link="{ item, isActive, collapsed }"` - Custom link rendering
 
+**On phones (below `sm`, 576px):** inside DXDashboard the open sidebar is a
+full-screen menu (theme.scss, `aside.dashboard-sidebar:not(.sidebar-hidden)`),
+not a rail. DXDashboard matches `(max-width: 575.98px)` in JS and there: always
+starts closed, never reads or writes `storageKey` (that is the DESKTOP
+preference: consumer apps navigate with full page loads, and restoring it on a
+phone reopened the menu over every page), closes on a followed nav link (the
+sidebar's `navigate` event, delegated so `link`-slot anchors count, cancelled
+clicks too because Inertia's `<Link>` cancels), on Escape and from the header's
+`d-sm-none` close button (`close` event), and puts `dx-dashboard-menu-open` on
+`<html>` to stop the page scrolling. The vitest window defaults to 414px, i.e.
+a phone: a test of the rail's own defaults must set a desktop
+`page.viewport`. Pinned by `tests/components/DXDashboard.phone.test.ts`.
+
+DModal is likewise full screen below `sm` by default (`fullscreen="sm"`),
+except `size="sm"`; an explicit `fullscreen` wins because `$attrs` fall
+through onto the root BModal after its own bindings.
+
 **Styling Notes:**
 - Uses CSS variables for colours (`var(--bs-dark)`, `var(--bs-nav-link-color)`)
 - Separator line: `rgba(255, 255, 255, 0.1)` for subtlety

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Stop DXDashboard's menu reopening on every page on a phone. The sidebar's
+  visibility was saved to `storageKey` and restored on each page load at any
+  width, so after opening the menu on a phone and tapping a link, an app that
+  navigates with full page loads showed the next page with the menu still
+  open. Below 576px the menu now always starts closed, and opening or closing
+  it there is not saved, so the desktop preference is kept. It also closes
+  when a link in it is followed (including client-side router links), on
+  Escape, and from a close button in its header.
+
+### Changed
+
+- DModal is full screen below 576px by default (`fullscreen="sm"`, Bootstrap's
+  `.modal-fullscreen-sm-down`), with the header and footer pinned and the body
+  scrolling. DXTable's edit modal inherits it. A `size="sm"` modal (a short
+  confirmation) stays a centred dialog; pass `:fullscreen="false"` to opt any
+  other modal out.
+- DXDashboard's open sidebar covers the whole screen below 576px instead of
+  squeezing the page beside it, and the page behind it does not scroll while
+  it is open (`dx-dashboard-menu-open` on `<html>`). From 576px up the sidebar
+  is unchanged.
+
 ## [0.42.2] - 2026-10-05
 
 ### Bug Fixes

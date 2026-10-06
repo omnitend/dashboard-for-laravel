@@ -33,9 +33,19 @@
           </div>
         </slot>
       </div>
+      <!-- Below `sm` the open sidebar covers the whole screen, navbar toggle
+           included, so it carries its own way out, at the far end of the
+           header row. Hidden from `sm` up, where the navbar toggle stays in
+           view. -->
+      <button
+        type="button"
+        class="sidebar-close btn-close btn-close-white d-sm-none flex-shrink-0 ms-auto"
+        aria-label="Close menu"
+        @click="$emit('close')"
+      />
     </div>
 
-    <nav ref="navRef" class="sidebar-nav px-3 pb-3 pt-2">
+    <nav ref="navRef" class="sidebar-nav px-3 pb-3 pt-2" @click="onNavClick">
       <template v-for="(group, groupIndex) in navigation" :key="groupIndex">
         <div
           v-if="group.visible !== false"
@@ -183,10 +193,31 @@ const props = withDefaults(defineProps<{
   autoCollapseInactiveGroups: true,
 });
 
-defineEmits<{
+const emit = defineEmits<{
   /** Emitted to request toggling the sidebar's collapsed/expanded state. */
   toggle: [];
+  /** Emitted by the close button shown below `sm`, where the open sidebar covers the screen. */
+  close: [];
+  /**
+   * Emitted when a link inside the navigation is followed (a plain click, not
+   * one that opens a new tab), including links rendered through the `link`
+   * slot. DXDashboard uses it to close the full-screen menu on a phone.
+   */
+  navigate: [];
 }>();
+
+// Delegated, so a custom `link` slot's anchors count too. A modified click
+// opens a new tab or window and leaves this page where it is. A cancelled
+// click still counts: a client-side router's link (Inertia's <Link>) cancels
+// the browser navigation and routes itself.
+const onNavClick = (event: MouseEvent): void => {
+  if (event.button !== 0) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const target = event.target as Element | null;
+  if (target?.closest('a[href]')) {
+    emit('navigate');
+  }
+};
 
 const sidebarRef = ref<HTMLElement | null>(null);
 const navRef = ref<HTMLElement | null>(null);

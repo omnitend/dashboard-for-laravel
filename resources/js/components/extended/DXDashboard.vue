@@ -18,6 +18,8 @@
       :collapsible-groups="collapsibleGroups"
       :auto-collapse-inactive-groups="autoCollapseInactiveGroups"
       @toggle="toggleSidebar"
+      @close="closePhoneMenu"
+      @navigate="onSidebarNavigate"
     >
       <!-- Dynamically forward all sidebar-* slots by stripping the prefix -->
       <template
@@ -96,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, useSlots } from 'vue';
+import { ref, computed, useSlots, watch, onMounted, onBeforeUnmount } from 'vue';
 import DXDashboardSidebar from './DXDashboardSidebar.vue';
 import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
@@ -224,65 +226,131 @@ const navbarSlots = computed(() => {
   return result;
 });
 
-// Initialize sidebar visibility from localStorage
-const getInitialHiddenState = (): boolean => {
-  // Skip during SSR - no access to localStorage or document
-  if (typeof window === 'undefined') {
-    return !props.dashboardId; // Default: hidden for global, visible for scoped
-  }
+/**
+ * Phone width: below Bootstrap's `sm` breakpoint (576px), the same breakpoint
+ * at which DModal goes full screen. There the open sidebar covers the whole
+ * viewport (theme.scss), so it behaves as a menu rather than a rail: it always
+ * starts closed, closes when a link is followed or on Escape, and its state is
+ * never written to (or read from) `storageKey`, which keeps the desktop
+ * preference. Consumer apps navigate with full page loads, so restoring an
+ * "open" preference on a phone reopened the menu over every new page.
+ */
+const PHONE_MEDIA_QUERY = '(max-width: 575.98px)';
 
+const phoneMediaQuery: MediaQueryList | null =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia(PHONE_MEDIA_QUERY)
+    : null;
+
+const isPhone = ref(phoneMediaQuery?.matches ?? false);
+
+// Default with nothing stored: hidden for global instances (docs), visible for
+// scoped instances (examples).
+const defaultHidden = (): boolean => !props.dashboardId;
+
+// The remembered desktop preference, or the default when none is stored.
+const readDesktopHidden = (): boolean => {
   try {
     const savedHidden = localStorage.getItem(props.storageKey);
     if (savedHidden !== null) {
-      const isHidden = JSON.parse(savedHidden);
-
-      // If no dashboard ID (global instance), update HTML class for SSR compatibility
-      if (!props.dashboardId) {
-        if (isHidden) {
-          document.documentElement.classList.remove('sidebar-visible');
-        } else {
-          document.documentElement.classList.add('sidebar-visible');
-        }
-      }
-
-      return isHidden;
+      return JSON.parse(savedHidden);
     }
   } catch (error) {
     console.error('Error loading sidebar state:', error);
   }
+  return defaultHidden();
+};
 
-  // Default: hidden for global instances (docs), visible for scoped instances (examples)
-  if (!props.dashboardId) {
-    document.documentElement.classList.remove('sidebar-visible');
-    return true;
+// The global instance (no dashboardId) mirrors visibility onto <html> so
+// layout CSS can follow it before hydration (see the docs' inline script).
+const syncHtmlClass = (isHidden: boolean): void => {
+  if (props.dashboardId || typeof document === 'undefined') return;
+  document.documentElement.classList.toggle('sidebar-visible', !isHidden);
+};
+
+// Initial state, decided synchronously so the first paint is already right:
+// on a phone the menu is closed whatever is stored.
+const getInitialHiddenState = (): boolean => {
+  // Skip during SSR - no access to localStorage or document
+  if (typeof window === 'undefined') {
+    return defaultHidden();
   }
-  return false; // Show sidebar in scoped instances by default
+  const initialHidden = isPhone.value ? true : readDesktopHidden();
+  syncHtmlClass(initialHidden);
+  return initialHidden;
 };
 
 const hidden = ref(getInitialHiddenState());
 
-const toggleSidebar = () => {
-  hidden.value = !hidden.value;
-
-  // Skip during SSR
+const setHidden = (isHidden: boolean): void => {
+  hidden.value = isHidden;
   if (typeof window === 'undefined') return;
+  syncHtmlClass(isHidden);
 
-  // If no dashboard ID (global instance), update HTML class
-  if (!props.dashboardId) {
-    if (hidden.value) {
-      document.documentElement.classList.remove('sidebar-visible');
-    } else {
-      document.documentElement.classList.add('sidebar-visible');
-    }
-  }
-
-  // Save to localStorage
+  // Only desktop toggles are remembered; a phone's open/closed menu is not a
+  // preference.
+  if (isPhone.value) return;
   try {
-    localStorage.setItem(props.storageKey, JSON.stringify(hidden.value));
+    localStorage.setItem(props.storageKey, JSON.stringify(isHidden));
   } catch (error) {
     console.error('Error saving sidebar state:', error);
   }
 };
+
+const toggleSidebar = () => {
+  setHidden(!hidden.value);
+};
+
+// Close the phone menu without touching the stored desktop preference.
+const closePhoneMenu = (): void => {
+  if (isPhone.value && !hidden.value) {
+    setHidden(true);
+  }
+};
+
+// A sidebar link was followed: on a phone, get the menu out of the way (for
+// client-side routing, and so it is gone before a slow full page load).
+const onSidebarNavigate = (): void => {
+  closePhoneMenu();
+};
+
+const onKeydown = (event: KeyboardEvent): void => {
+  if (event.key === 'Escape') {
+    closePhoneMenu();
+  }
+};
+
+// Crossing the breakpoint (rotation, a resized window): entering phone width
+// closes the menu; leaving it restores the remembered desktop preference.
+const onPhoneMediaChange = (event: MediaQueryListEvent): void => {
+  isPhone.value = event.matches;
+  hidden.value = event.matches ? true : readDesktopHidden();
+  syncHtmlClass(hidden.value);
+};
+
+// While the phone menu is open the page behind it must not scroll. A class on
+// <html> (styled in theme.scss, below `sm` only) rather than inline styles, so
+// it is a no-op on desktop and removed on unmount.
+const PHONE_MENU_OPEN_CLASS = 'dx-dashboard-menu-open';
+watch(
+  [isPhone, hidden],
+  ([phone, isHidden]) => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.classList.toggle(PHONE_MENU_OPEN_CLASS, phone && !isHidden);
+  },
+  { immediate: true },
+);
+
+onMounted(() => {
+  phoneMediaQuery?.addEventListener('change', onPhoneMediaChange);
+  document.addEventListener('keydown', onKeydown);
+});
+
+onBeforeUnmount(() => {
+  phoneMediaQuery?.removeEventListener('change', onPhoneMediaChange);
+  document.removeEventListener('keydown', onKeydown);
+  document.documentElement.classList.remove(PHONE_MENU_OPEN_CLASS);
+});
 
 defineExpose({
   /**

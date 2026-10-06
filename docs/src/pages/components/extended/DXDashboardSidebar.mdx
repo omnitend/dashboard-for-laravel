@@ -86,6 +86,8 @@ const handleNavClick = (item) => {
 
 <EventsTable client:load events={[
   { name: 'toggle', params: 'none', description: 'Emitted when the sidebar should toggle between collapsed and expanded states' },
+  { name: 'close', params: 'none', description: 'Emitted by the close button in the header, shown only below 576px, where the open sidebar covers the screen' },
+  { name: 'navigate', params: 'none', description: 'Emitted when a link in the navigation is followed (a plain click; new-tab clicks are ignored), including links from the link slot. DXDashboard closes its phone menu on it' },
 ]} />
 
 ## Slots
