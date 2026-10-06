@@ -240,9 +240,12 @@ screen instead of squeezing the page beside it, and it behaves as a menu:
   `sidebar-brand` and `sidebar-footer` slots, and client-side router links that
   cancel the click), as do Escape and the close button in its header, which
   shows only at this width because the menu covers the navbar's toggle.
-- Opening it moves keyboard focus into it, Tab stays inside it and the page
-  behind is inert; closing it returns focus to the navbar toggle, whose
-  `aria-expanded` follows the sidebar.
+- Opening it moves keyboard focus into it and makes the navbar and page
+  behind it inert, so, as with a native modal `<dialog>`, Tab moves between
+  the menu's controls and the browser's own and never reaches what the menu
+  covers. A modal opened from the menu keeps its own Tab order. Closing it
+  returns focus to the navbar toggle, whose `aria-expanded` follows the
+  sidebar.
 - While it is open, `<html>` carries `dx-dashboard-menu-open` and the page
   behind it does not scroll. Several dashboards on one page each hold their
   own share of that lock, and a dashboard cached by `<KeepAlive>` closes its
@@ -255,7 +258,8 @@ state is remembered. Crossing the breakpoint (rotating a tablet, resizing a
 window) closes the menu on the way down and restores the remembered state on
 the way up. The theme publishes the breakpoint as
 `--dx-dashboard-phone-max-width` (from `$grid-breakpoints`) and DXDashboard
-reads it, so a theme compiled with its own `sm` moves the behaviour and the
+reads it whenever it decides (so also when the stylesheet loads after the
+dashboard), so a theme compiled with its own `sm` moves the behaviour and the
 full-screen styles together (575.98px if the theme's CSS is not loaded).
 
 These are DXDashboard's: a `DXDashboardSidebar` used on its own keeps its rail

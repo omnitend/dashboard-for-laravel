@@ -11,6 +11,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-vue';
 import { createSSRApp, createApp, defineComponent, h, KeepAlive, ref, nextTick, type App } from 'vue';
+import { BApp } from 'bootstrap-vue-next';
+import DModal from '../../resources/js/components/base/DModal.vue';
 import { renderToString } from 'vue/server-renderer';
 import DXDashboard from '../../resources/js/components/extended/DXDashboard.vue';
 import DXDashboardSidebar from '../../resources/js/components/extended/DXDashboardSidebar.vue';
@@ -132,7 +134,7 @@ describe('a standalone DXDashboardSidebar on a phone', () => {
 });
 
 describe('keyboard focus', () => {
-  it('moves focus into the open menu, keeps Tab inside it, and returns it to the toggle on Escape', async () => {
+  it('moves focus into the open menu, keeps Tab off the page and navbar, and returns it to the toggle on Escape', async () => {
     const screen = render(DXDashboard, {
       props: dashboardProps(),
       slots: { default: '<p>Page</p><button class="page-button">Behind</button>' },
@@ -153,17 +155,26 @@ describe('keyboard focus', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(sidebar.contains(document.activeElement)).toBe(true);
 
-    // Tab and Shift+Tab well past the number of focusable things in the menu.
+    // Tab and Shift+Tab well past the number of focusable things in the
+    // menu: focus may leave the document (the browser's own chrome, as with
+    // a native modal <dialog>) but never lands on what the menu covers.
+    const layout = screen.container.querySelector('.dashboard-layout') as HTMLElement;
+    const landedBehindMenu = () =>
+      layout.contains(document.activeElement) && !sidebar.contains(document.activeElement);
     const focusableCount = sidebar.querySelectorAll('a[href], button').length;
     expect(focusableCount).toBeGreaterThan(2);
-    for (let index = 0; index < focusableCount + 2; index++) {
+    let reachedSidebarAfterWrap = 0;
+    for (let index = 0; index < focusableCount * 2 + 4; index++) {
       await userEvent.keyboard('{Tab}');
-      expect(sidebar.contains(document.activeElement)).toBe(true);
+      expect(landedBehindMenu()).toBe(false);
+      if (sidebar.contains(document.activeElement)) reachedSidebarAfterWrap++;
     }
-    for (let index = 0; index < focusableCount + 2; index++) {
+    for (let index = 0; index < focusableCount * 2 + 4; index++) {
       await userEvent.keyboard('{Shift>}{Tab}{/Shift}');
-      expect(sidebar.contains(document.activeElement)).toBe(true);
+      expect(landedBehindMenu()).toBe(false);
     }
+    // Positive control: Tab really was moving through the menu.
+    expect(reachedSidebarAfterWrap).toBeGreaterThan(focusableCount);
 
     await userEvent.keyboard('{Escape}');
     await settled();
@@ -189,6 +200,143 @@ describe('keyboard focus', () => {
 
     expect(isDisplayed(sidebarOf(screen.container))).toBe(false);
     expect(document.activeElement).toBe(toggle);
+  });
+});
+
+describe('keyboard focus: what the menu covers', () => {
+  it('rejects focus on the page and the navbar while open, and allows it after closing', async () => {
+    const screen = render(DXDashboard, {
+      props: dashboardProps(),
+      slots: { default: '<p>Page</p><button class="page-button">Behind</button>' },
+    });
+    await expect.element(screen.getByText('Page')).toBeInTheDocument();
+    await settled();
+    const pageButton = screen.container.querySelector('.page-button') as HTMLElement;
+    const toggle = navbarToggle(screen.container);
+
+    // Positive control: focusable while the menu is closed.
+    pageButton.focus();
+    expect(document.activeElement).toBe(pageButton);
+
+    toggle.click();
+    await settled();
+    pageButton.focus();
+    expect(document.activeElement).not.toBe(pageButton);
+    toggle.focus();
+    expect(document.activeElement).not.toBe(toggle);
+
+    await userEvent.keyboard('{Escape}');
+    await settled();
+    pageButton.focus();
+    expect(document.activeElement).toBe(pageButton);
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
+  });
+
+  it('does not throw, and leaves no focus in the closed menu, when there is no toggle to return to', async () => {
+    const screen = render(DXDashboard, { props: dashboardProps(), slots: { default: '<p>Page</p>' } });
+    await expect.element(screen.getByText('Page')).toBeInTheDocument();
+    await settled();
+    navbarToggle(screen.container).click();
+    await settled();
+    const sidebar = sidebarOf(screen.container);
+    expect(sidebar.contains(document.activeElement)).toBe(true);
+
+    navbarToggle(screen.container).remove();
+    // Vue reports a throwing watcher as a warning (and an error) rather than
+    // letting it reach window.onerror.
+    const warn = vi.spyOn(console, 'warn');
+    const error = vi.spyOn(console, 'error');
+    await userEvent.keyboard('{Escape}');
+    await settled();
+    const reported = [...warn.mock.calls, ...error.mock.calls].map((call) => String(call[0]));
+    warn.mockRestore();
+    error.mockRestore();
+
+    expect(reported.filter((message) => /Unhandled error|TypeError/.test(message))).toEqual([]);
+    expect(isDisplayed(sidebar)).toBe(false);
+    expect(sidebar.contains(document.activeElement)).toBe(false);
+  });
+
+  it('never focuses a tabindex="-1" link, and keeps Tab off the page', async () => {
+    const screen = render(DXDashboard, {
+      props: dashboardProps(),
+      slots: {
+        default: '<p>Page</p><button class="page-button">Behind</button>',
+        'sidebar-footer': '<button class="footer-help">Help</button><a href="/skip" tabindex="-1" class="footer-skip">Skip</a>',
+      },
+    });
+    await expect.element(screen.getByText('Page')).toBeInTheDocument();
+    await settled();
+    const sidebar = sidebarOf(screen.container);
+    const layout = screen.container.querySelector('.dashboard-layout') as HTMLElement;
+    const skip = screen.container.querySelector('.footer-skip') as HTMLElement;
+    navbarToggle(screen.container).focus();
+    await userEvent.keyboard('{Enter}');
+    await settled();
+    expect(sidebar.contains(document.activeElement)).toBe(true);
+
+    for (const key of ['{Tab}', '{Shift>}{Tab}{/Shift}']) {
+      for (let index = 0; index < 16; index++) {
+        await userEvent.keyboard(key);
+        expect(document.activeElement).not.toBe(skip);
+        expect(layout.contains(document.activeElement) && !sidebar.contains(document.activeElement)).toBe(false);
+      }
+    }
+  });
+
+  it('lets a modal opened from the menu move Tab between its own controls', async () => {
+    const showModal = ref(false);
+    const screen = render(
+      defineComponent({
+        setup: () => () =>
+          h(BApp, null, () => [
+            h(DXDashboard, dashboardProps(), {
+              default: () => h('p', 'Page'),
+              'sidebar-footer': () =>
+                h('button', { class: 'open-modal', onClick: () => (showModal.value = true) }, 'Settings'),
+            }),
+            h(
+              DModal,
+              { modelValue: showModal.value, 'onUpdate:modelValue': (value: boolean) => (showModal.value = value), title: 'Settings', noFooter: true },
+              () => [h('button', { class: 'modal-first' }, 'First'), h('button', { class: 'modal-second' }, 'Second')],
+            ),
+          ]),
+      }),
+    );
+    await expect.element(screen.getByText('Page')).toBeInTheDocument();
+    await settled();
+    navbarToggle(screen.container).click();
+    await settled();
+    (screen.container.querySelector('.open-modal') as HTMLElement).click();
+    await settled();
+    const first = await vi.waitFor(() => {
+      // (bvn's `.show` class follows a fade transition this harness does not
+      // always finish, so wait for the control to be rendered and laid out.)
+      const button = document.querySelector('.modal .modal-first') as HTMLElement | null;
+      if (!button || button.getClientRects().length === 0) throw new Error('modal not shown');
+      return button;
+    }, { timeout: 3000 });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const second = document.querySelector('.modal .modal-second') as HTMLElement;
+
+    first.focus();
+    expect(document.activeElement).toBe(first);
+    await userEvent.keyboard('{Tab}');
+    expect(document.activeElement).toBe(second);
+    // The menu is still open underneath.
+    expect(isDisplayed(sidebarOf(screen.container))).toBe(true);
+
+    // Escape in the modal is the modal's: the menu stays open beneath it.
+    await userEvent.keyboard('{Escape}');
+    await expect.poll(() => showModal.value).toBe(false);
+    await settled();
+    expect(isDisplayed(sidebarOf(screen.container))).toBe(true);
+    // Positive control: Escape with focus back in the menu closes it.
+    (sidebarOf(screen.container).querySelector('.sidebar-close') as HTMLElement).focus();
+    await userEvent.keyboard('{Escape}');
+    await settled();
+    expect(isDisplayed(sidebarOf(screen.container))).toBe(false);
   });
 });
 
@@ -218,6 +366,16 @@ describe('<KeepAlive>', () => {
     await settled();
     expect(lockHeld()).toBe(false);
     expect(getComputedStyle(document.body).overflow).not.toBe('hidden');
+
+    // Back again: closed, nothing inert, the page focusable.
+    showDashboard.value = true;
+    await expect.element(screen.getByText('Page')).toBeInTheDocument();
+    await settled();
+    expect(isDisplayed(sidebarOf(screen.container))).toBe(false);
+    expect(screen.container.querySelector('[inert]')).toBeNull();
+    const toggle = navbarToggle(screen.container);
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
   });
 });
 
@@ -254,6 +412,44 @@ describe('several dashboards on one page', () => {
   });
 });
 
+describe('two open menus', () => {
+  it('keeps the scroll lock until the last open menu releases it', async () => {
+    const mountOne = async (id: string) => {
+      const screen = render(DXDashboard, {
+        props: dashboardProps({ dashboardId: id }),
+        slots: { default: `<p>${id}</p>` },
+      });
+      await expect.element(screen.getByText(id)).toBeInTheDocument();
+      await settled();
+      navbarToggle(screen.container).click();
+      await settled();
+      expect(isDisplayed(sidebarOf(screen.container))).toBe(true);
+      return screen;
+    };
+    const first = await mountOne('first-open');
+    const second = await mountOne('second-open');
+    expect(lockHeld()).toBe(true);
+
+    // Close one: the other still holds it.
+    (first.container.querySelector('.sidebar-close') as HTMLElement).click();
+    await settled();
+    expect(isDisplayed(sidebarOf(first.container))).toBe(false);
+    expect(lockHeld()).toBe(true);
+
+    // Reopen it, then unmount the other: still held.
+    navbarToggle(first.container).click();
+    await settled();
+    second.unmount();
+    await settled();
+    expect(lockHeld()).toBe(true);
+
+    // The survivor releases it.
+    (first.container.querySelector('.sidebar-close') as HTMLElement).click();
+    await settled();
+    expect(lockHeld()).toBe(false);
+  });
+});
+
 describe('a custom sm breakpoint', () => {
   it('the default theme publishes the phone width the JS reads', () => {
     expect(
@@ -279,6 +475,26 @@ describe('a custom sm breakpoint', () => {
     await userEvent.keyboard('{Escape}');
     await settled();
     expect(sidebarOf(screen.container).classList.contains('sidebar-hidden')).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('false');
+  });
+});
+
+describe('a breakpoint that arrives after mount', () => {
+  it('re-reads the published width when it next decides, so close and Escape work', async () => {
+    await page.viewport(640, 844);
+    localStorage.setItem(STORAGE_KEY, 'false');
+    const screen = render(DXDashboard, { props: dashboardProps(), slots: { default: '<p>Page</p>' } });
+    await expect.element(screen.getByText('Page')).toBeInTheDocument();
+    await settled();
+    // Desktop so far (the 575.98px fallback): the stored preference shows it.
+    expect(sidebarOf(screen.container).classList.contains('sidebar-hidden')).toBe(false);
+
+    // The theme's stylesheet (compiled with sm: 700px) arrives late.
+    document.documentElement.style.setProperty('--dx-dashboard-phone-max-width', '699.98px');
+    await userEvent.keyboard('{Escape}');
+    await settled();
+    expect(sidebarOf(screen.container).classList.contains('sidebar-hidden')).toBe(true);
+    // A phone close is not a desktop preference.
     expect(localStorage.getItem(STORAGE_KEY)).toBe('false');
   });
 });

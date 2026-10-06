@@ -44,8 +44,12 @@
       </template>
     </DXDashboardSidebar>
 
-    <!-- Main Content Area. Inert behind the open phone menu, so neither Tab
-         nor a screen reader reaches what the menu covers. -->
+    <!-- Main Content Area: the navbar and the page. Inert behind the open
+         phone menu, which covers both, so neither Tab, a click-through nor a
+         screen reader reaches them: focus is contained the way a native modal
+         <dialog> contains it, Tab moving between the sidebar's controls and
+         the browser's own. Modals teleported to <body> are outside and
+         unaffected. -->
     <div class="dashboard-content flex-grow-1" :inert="phoneMenuOpen ? true : undefined">
       <!-- Top Navbar -->
       <DXDashboardNavbar
@@ -258,12 +262,30 @@ const readPhoneMaxWidth = (): string => {
   return published !== '' ? published : DEFAULT_PHONE_MAX_WIDTH;
 };
 
-const phoneMediaQuery: MediaQueryList | null =
-  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia(`(max-width: ${readPhoneMaxWidth()})`)
-    : null;
+// The query for the width last read. Re-read whenever the phone check runs
+// (setup, mount, toggle, close, Escape), not once: a theme stylesheet that
+// loads after the dashboard mounts must still take effect.
+let phoneMediaQuery: MediaQueryList | null = null;
+let phoneMediaQueryWidth = '';
+let listeningForPhoneChanges = false;
 
-const isPhone = ref(phoneMediaQuery?.matches ?? false);
+const isPhone = ref(false);
+
+const refreshPhoneQuery = (): void => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+  const width = readPhoneMaxWidth();
+  if (phoneMediaQuery === null || width !== phoneMediaQueryWidth) {
+    if (listeningForPhoneChanges) {
+      phoneMediaQuery?.removeEventListener('change', onPhoneMediaChange);
+    }
+    phoneMediaQuery = window.matchMedia(`(max-width: ${width})`);
+    phoneMediaQueryWidth = width;
+    if (listeningForPhoneChanges) {
+      phoneMediaQuery.addEventListener('change', onPhoneMediaChange);
+    }
+  }
+  isPhone.value = phoneMediaQuery.matches;
+};
 
 // Default with nothing stored: hidden for global instances (docs), visible for
 // scoped instances (examples). Also what a server renders, having no storage.
@@ -299,6 +321,7 @@ const getClientHiddenState = (): boolean => (isPhone.value ? true : readDesktopH
 // client-only mount. The global <html> class, which layout CSS reads before
 // hydration, is set from the client's state straight away.
 if (typeof window !== 'undefined') {
+  refreshPhoneQuery();
   syncHtmlClass(getClientHiddenState());
 }
 const hidden = ref(defaultHidden());
@@ -332,11 +355,13 @@ const setHidden = (isHidden: boolean): void => {
 };
 
 const toggleSidebar = () => {
+  refreshPhoneQuery();
   setHidden(!hidden.value);
 };
 
 // Close the phone menu without touching the stored desktop preference.
 const closePhoneMenu = (): void => {
+  refreshPhoneQuery();
   if (isPhone.value && !hidden.value) {
     setHidden(true);
   }
@@ -351,71 +376,32 @@ const onSidebarNavigate = (): void => {
 const sidebarElement = (): HTMLElement | null =>
   (sidebarComponent.value?.$el as HTMLElement | undefined) ?? null;
 
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled]):not([type="hidden"])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(',');
-
-// What Tab can reach in the open menu: rendered, visible, and not inside a
-// collapsed (inert) group.
-const focusableInSidebar = (): HTMLElement[] => {
-  const sidebar = sidebarElement();
-  if (!sidebar) return [];
-  return Array.from(sidebar.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (element) =>
-      element.getClientRects().length > 0 &&
-      element.closest('[inert]') === null &&
-      getComputedStyle(element).visibility !== 'hidden',
-  );
-};
-
-// Tab and Shift+Tab cycle inside the open menu. The page behind is also inert,
-// but without this Tab would leave the document for the browser's own chrome,
-// or reach page content outside a scoped dashboard.
-const keepTabInSidebar = (event: KeyboardEvent): void => {
-  const focusable = focusableInSidebar();
-  if (focusable.length === 0) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  const sidebar = sidebarElement();
-  const active = document.activeElement as HTMLElement | null;
-  const focusInside = active !== null && sidebar !== null && sidebar.contains(active);
-  if (event.shiftKey && (!focusInside || active === first)) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && (!focusInside || active === last)) {
-    event.preventDefault();
-    first.focus();
-  }
-};
-
 const onKeydown = (event: KeyboardEvent): void => {
-  if (!phoneMenuOpen.value) return;
-  if (event.key === 'Escape') {
+  if (event.key !== 'Escape') return;
+  // An Escape aimed at something outside the dashboard (a modal opened from
+  // the menu, teleported to <body>) is that thing's, not the menu's.
+  const target = event.target;
+  if (target instanceof Node && target !== document.body && !layoutRef.value?.contains(target)) return;
+  refreshPhoneQuery();
+  if (phoneMenuOpen.value) {
     closePhoneMenu();
-  } else if (event.key === 'Tab') {
-    keepTabInSidebar(event);
   }
 };
 
 const sidebarToggle = (): HTMLElement | null =>
   layoutRef.value?.querySelector<HTMLElement>(`[aria-controls="${sidebarId}"]`) ?? null;
 
-// Opening the phone menu moves focus into it (its close button, first in the
-// header's tab order after any brand link); closing it hands focus back to
-// the navbar toggle, unless focus has already gone somewhere else on purpose.
-// After the DOM update, so the page is no longer inert when focus returns.
+// Opening the phone menu moves focus into it (its close button); closing it
+// hands focus back to the navbar toggle, unless focus has already gone
+// somewhere else on purpose. With no toggle to return to (a consumer removed
+// it), nothing is focused: the hidden menu has already lost focus to <body>.
+// After the DOM update, so the navbar is no longer inert when focus returns.
 watch(
   phoneMenuOpen,
   (isOpen, wasOpen) => {
     const sidebar = sidebarElement();
     if (isOpen) {
-      const closeButton = sidebar?.querySelector<HTMLElement>('.sidebar-close') ?? null;
-      (closeButton ?? focusableInSidebar()[0] ?? null)?.focus();
+      sidebar?.querySelector<HTMLElement>('.sidebar-close')?.focus();
       return;
     }
     if (!wasOpen || !hidden.value || !layoutRef.value?.isConnected) return;
@@ -450,9 +436,11 @@ watch(phoneMenuOpen, (isOpen) => {
 });
 
 onMounted(() => {
+  refreshPhoneQuery();
+  listeningForPhoneChanges = true;
+  phoneMediaQuery?.addEventListener('change', onPhoneMediaChange);
   isMounted.value = true;
   hidden.value = getClientHiddenState();
-  phoneMediaQuery?.addEventListener('change', onPhoneMediaChange);
   document.addEventListener('keydown', onKeydown);
 });
 
@@ -469,6 +457,7 @@ onActivated(() => {
 
 onBeforeUnmount(() => {
   phoneMediaQuery?.removeEventListener('change', onPhoneMediaChange);
+  listeningForPhoneChanges = false;
   document.removeEventListener('keydown', onKeydown);
   releasePageScrollLock(scrollLockOwner);
 });
