@@ -379,12 +379,15 @@ body row into a card when the WRAPPER is narrower than `stackBelow` (576),
 via `useContainerWidth` with DXForm's 24px hysteresis. Stacked until measured
 (DXForm's choice). All styling is global in theme.scss under
 `.dx-stacking-table--stacked > table` (slot content can't see scoped styles).
-Labels are derived from the last `thead` row and written by a
-MutationObserver to `data-dx-stack-label` (never to the consumer's
+Labels are derived from a column map of the whole `thead` (each column
+takes the lowest header cell over it; `rowspan`/`colspan` followed, body rows
+too) and written by a MutationObserver (which also watches `class`/`aria-hidden`,
+acting on those only inside the thead) to `data-dx-stack-label` (never to the consumer's
 `data-label`, which wins in CSS); `colspan` cells get none, and an empty
 unlabelled cell gets `data-dx-stack-empty` (hidden). Opt-outs:
 `.dx-stack-span`, `.dx-stack-hide`, row `.dx-stack-continue` (joins the
-previous card through `:has(+ …)`). Card lines use a fixed label column
+previous card through `:has(+ …)`); `.dx-stack-hide` is EXCLUDED from the
+labelled-cell `display:flex` selector, which out-ranks the hide rule. Card lines use a fixed label column
 (`--dx-stacking-table-label-width`, read with a fallback and never declared,
 so an ancestor's value isn't shadowed; default `clamp(5rem, 33%, 10rem)`);
 non-button content is `flex: 1 1 0` and `text-align: start !important`

@@ -31,8 +31,10 @@ wide layout). Put your `<table>` directly inside it:
 </DXStackingTable>
 ```
 
-The labels come from the header row, so you do not repeat them on every cell.
-They are recalculated when rows are added or removed.
+The labels come from the header, so you do not repeat them on every cell. With
+several header rows, each column takes the lowest heading over it, following
+`rowspan` and `colspan`. They are recalculated when rows are added or removed,
+or when header text or its hidden helper text changes.
 
 ## Live Examples
 

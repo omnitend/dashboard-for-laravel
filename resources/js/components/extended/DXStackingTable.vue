@@ -107,16 +107,55 @@ function headerCellLabel(headerCell: HTMLTableCellElement): string {
     return text.replace(/\s+/g, " ").trim();
 }
 
-/** One label per column, from the LAST header row (the one naming the columns). */
+/**
+ * The first column of every cell in a row group, accounting for cells from
+ * earlier rows that reach down into a row (`rowspan`) as well as `colspan`:
+ * the table's own grid, not each row's cell index.
+ */
+function cellStartColumns(
+    rows: HTMLCollectionOf<HTMLTableRowElement>,
+): Map<HTMLTableCellElement, number> {
+    const startColumns = new Map<HTMLTableCellElement, number>();
+    /** Columns taken in each row by a cell starting in an earlier row. */
+    const occupiedByRow: Array<Set<number>> = Array.from(
+        { length: rows.length },
+        () => new Set<number>(),
+    );
+    Array.from(rows).forEach((row, rowIndex) => {
+        const occupied = occupiedByRow[rowIndex];
+        let column = 0;
+        for (const cell of Array.from(row.cells)) {
+            while (occupied.has(column)) column++;
+            startColumns.set(cell, column);
+            // rowspan="0" reaches to the end of the row group.
+            const rowSpan =
+                cell.rowSpan === 0 ? rows.length - rowIndex : cell.rowSpan;
+            const lastRow = Math.min(rowIndex + rowSpan, rows.length);
+            for (let spannedRow = rowIndex; spannedRow < lastRow; spannedRow++) {
+                for (let offset = 0; offset < cell.colSpan; offset++) {
+                    occupiedByRow[spannedRow].add(column + offset);
+                }
+            }
+            column += cell.colSpan;
+        }
+    });
+    return startColumns;
+}
+
+/**
+ * One label per column: the LOWEST header cell over it, so a group heading
+ * ("Pricing" over Price and Quantity) gives way to the names beneath it, and a
+ * heading spanning every header row ("Product") names its own column.
+ */
 function columnLabels(table: HTMLTableElement): string[] {
     const headerRows = table.tHead?.rows;
     if (headerRows === undefined || headerRows.length === 0) return [];
-    const namingRow = headerRows[headerRows.length - 1];
     const labels: string[] = [];
-    for (const headerCell of Array.from(namingRow.cells)) {
+    // Row order, so a lower row's cell overwrites the group heading above it.
+    for (const [headerCell, startColumn] of cellStartColumns(headerRows)) {
         const label = headerCellLabel(headerCell);
-        for (let spanned = 0; spanned < headerCell.colSpan; spanned++) {
-            labels.push(label);
+        for (let offset = 0; offset < headerCell.colSpan; offset++) {
+            labels[startColumn + offset] = label;
         }
     }
     return labels;
@@ -153,47 +192,66 @@ function labelCells(): void {
     if (table.tFoot !== null) rowGroups.push(table.tFoot);
 
     for (const rowGroup of rowGroups) {
-        for (const row of Array.from(rowGroup.rows)) {
-            let columnIndex = 0;
-            for (const cell of Array.from(row.cells)) {
-                // A cell spanning several columns belongs to none of them.
-                const derivedLabel =
-                    cell.colSpan === 1 ? labels[columnIndex] ?? "" : "";
-                setAttributeIfChanged(
-                    cell,
-                    DERIVED_LABEL_ATTRIBUTE,
-                    derivedLabel === "" ? null : derivedLabel,
-                );
-                const hasLabel =
-                    derivedLabel !== "" || cell.hasAttribute("data-label");
-                setAttributeIfChanged(
-                    cell,
-                    EMPTY_CELL_ATTRIBUTE,
-                    !hasLabel && isBlank(cell) ? "" : null,
-                );
-                columnIndex += cell.colSpan;
-            }
+        for (const [cell, startColumn] of cellStartColumns(rowGroup.rows)) {
+            // A cell spanning several columns belongs to none of them.
+            const derivedLabel =
+                cell.colSpan === 1 ? labels[startColumn] ?? "" : "";
+            setAttributeIfChanged(
+                cell,
+                DERIVED_LABEL_ATTRIBUTE,
+                derivedLabel === "" ? null : derivedLabel,
+            );
+            const hasLabel =
+                derivedLabel !== "" || cell.hasAttribute("data-label");
+            setAttributeIfChanged(
+                cell,
+                EMPTY_CELL_ATTRIBUTE,
+                !hasLabel && isBlank(cell) ? "" : null,
+            );
         }
     }
 }
 
 // Rows come and go (v-for), and header text can change: relabel on any change
-// to the table's structure or text. Only `data-label`/`colspan` attribute
-// changes are watched, so our own attribute writes never re-trigger this.
+// to the table's structure or text. Only the attributes labelling reads are
+// watched, so our own `data-dx-stack-*` writes never re-trigger this.
 let mutationObserver: MutationObserver | null = null;
+
+/** Attributes whose change can alter a label or a cell's column. */
+const STRUCTURE_ATTRIBUTES = ["data-label", "colspan", "rowspan"];
+/**
+ * Attributes that hide header helper text (HIDDEN_HEADER_CONTENT). They count
+ * only inside a `thead`: a body cell's classes change all the time (a row's
+ * state, a validation style) and say nothing about labels.
+ */
+const HEADER_VISIBILITY_ATTRIBUTES = ["class", "aria-hidden"];
+
+function changesLabels(mutation: MutationRecord): boolean {
+    if (mutation.type !== "attributes") return true;
+    if (STRUCTURE_ATTRIBUTES.includes(mutation.attributeName ?? "")) return true;
+    return (
+        mutation.target instanceof Element &&
+        mutation.target.closest("thead") !== null
+    );
+}
 
 onMounted(() => {
     labelCells();
     if (typeof MutationObserver === "undefined" || containerRef.value === null) {
         return;
     }
-    mutationObserver = new MutationObserver(labelCells);
+    mutationObserver = new MutationObserver((mutations) => {
+        if (mutations.some(changesLabels)) labelCells();
+    });
     mutationObserver.observe(containerRef.value, {
         childList: true,
         subtree: true,
         characterData: true,
         attributes: true,
-        attributeFilter: ["data-label", "colspan"],
+        attributeFilter: [
+            ...STRUCTURE_ATTRIBUTES,
+            ...HEADER_VISIBILITY_ATTRIBUTES,
+        ],
     });
 });
 

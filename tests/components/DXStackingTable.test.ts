@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-vue';
-import { h, nextTick, ref } from 'vue';
+import { h, nextTick, ref, type VNode } from 'vue';
 import DXStackingTable from '../../resources/js/components/extended/DXStackingTable.vue';
 
 const HOST = 'stacking-table-host';
@@ -123,6 +123,30 @@ function mountOrderLines(
   const wrapper = screen.container.querySelector('.dx-stacking-table') as HTMLElement;
   const table = wrapper.querySelector('table') as HTMLTableElement;
   return { screen, host, wrapper, table, lines };
+}
+
+/** A bare table: header rows and body rows supplied by the test (reactive when given as functions). */
+function mountPlainTable(
+  hostWidth: number,
+  headerRows: VNode[] | (() => VNode[]),
+  bodyRows: () => VNode[],
+) {
+  const screen = render({
+    setup() {
+      return () =>
+        h('div', { class: HOST, style: `width:${hostWidth}px` }, [
+          h(DXStackingTable, null, () =>
+            h('table', { class: 'table align-middle mb-0' }, [
+              h('thead', typeof headerRows === 'function' ? headerRows() : headerRows),
+              h('tbody', bodyRows()),
+            ]),
+          ),
+        ]);
+    },
+  });
+  const wrapper = screen.container.querySelector('.dx-stacking-table') as HTMLElement;
+  const table = wrapper.querySelector('table') as HTMLTableElement;
+  return { screen, wrapper, table };
 }
 
 async function setHostWidth(host: HTMLElement, wrapper: HTMLElement, width: number) {
@@ -408,6 +432,115 @@ describe('DXStackingTable', () => {
 
     expect(isStackedClass(wrapper)).toBe(true);
     expect(getComputedStyle(table.tHead!).display).toBe('none');
+    screen.unmount();
+  });
+
+  it('hides a .dx-stack-hide cell even when it has a label (derived or its own data-label)', async () => {
+    // The Actions header is VISIBLE here, so the hidden cell carries a derived
+    // label, and the cell beside it carries its own data-label. A labelled
+    // cell is `display:flex`; the hide rule must still win over that.
+    const { screen, wrapper, table } = mountPlainTable(
+      400,
+      [h('tr', [h('th', 'Product'), h('th', 'Actions'), h('th', 'Notes')])],
+      () => [
+        h('tr', [
+          h('td', 'Oat milk'),
+          h('td', { class: 'dx-stack-hide' }, h('button', 'Remove')),
+          h('td', { class: 'dx-stack-hide', 'data-label': 'Own label' }, 'note'),
+        ]),
+      ],
+    );
+    await settleResize(wrapper);
+    expect(isStackedClass(wrapper)).toBe(true);
+
+    const [productCell, actionsCell, notesCell] = Array.from(table.tBodies[0].rows[0].cells);
+    // Positive control: these cells really are labelled, and an unhidden
+    // labelled cell is shown as a flex line.
+    expect(actionsCell.getAttribute('data-dx-stack-label')).toBe('Actions');
+    expect(notesCell.getAttribute('data-label')).toBe('Own label');
+    expect(getComputedStyle(productCell).display).toBe('flex');
+
+    expect(getComputedStyle(actionsCell).display).toBe('none');
+    expect(getComputedStyle(notesCell).display).toBe('none');
+    expect(actionsCell.getBoundingClientRect().height).toBe(0);
+
+    screen.unmount();
+  });
+
+  it('maps labels through rowspan and colspan header cells across every header row', async () => {
+    // "Product" spans both header rows; "Pricing" groups the two columns the
+    // second row names. Reading only the last row would shift every label.
+    const { screen, wrapper, table } = mountPlainTable(
+      400,
+      [
+        h('tr', [
+          h('th', { rowspan: 2 }, 'Product'),
+          h('th', { colspan: 2 }, 'Pricing'),
+          h('th', { rowspan: 2 }, 'Total'),
+        ]),
+        h('tr', [h('th', 'Price'), h('th', 'Quantity')]),
+      ],
+      () => [
+        h('tr', [h('td', 'Oat milk'), h('td', '£1.80'), h('td', '3'), h('td', '£5.40')]),
+        // A body cell spanning two rows: the second row's cells start one column in.
+        h('tr', [h('td', { rowspan: 2 }, 'Decaf'), h('td', '£9.00'), h('td', '1'), h('td', '£9.00')]),
+        h('tr', [h('td', '£8.50'), h('td', '2'), h('td', '£17.00')]),
+      ],
+    );
+    await settleResize(wrapper);
+
+    const labelsOfRow = (row: HTMLTableRowElement) =>
+      Array.from(row.cells).map((cell) => cell.getAttribute('data-dx-stack-label'));
+    const [plainRow, spanningRow, spannedRow] = Array.from(table.tBodies[0].rows);
+    expect(labelsOfRow(plainRow)).toEqual(['Product', 'Price', 'Quantity', 'Total']);
+    expect(labelsOfRow(spanningRow)).toEqual(['Product', 'Price', 'Quantity', 'Total']);
+    expect(labelsOfRow(spannedRow)).toEqual(['Price', 'Quantity', 'Total']);
+
+    screen.unmount();
+  });
+
+  it('relabels when header helper text is hidden or shown by class or aria-hidden', async () => {
+    const helperIsHidden = ref(false);
+    const helperAriaHidden = ref(false);
+    const quantityName = ref('Quantity');
+    const { screen, wrapper, table } = mountPlainTable(
+      400,
+      () => [
+        h('tr', [
+          h('th', ['Price', h('span', { class: helperIsHidden.value ? 'visually-hidden' : undefined }, ' each')]),
+          h('th', [quantityName.value, h('span', { 'aria-hidden': helperAriaHidden.value ? 'true' : undefined }, ' units')]),
+        ]),
+      ],
+      () => [h('tr', [h('td', '£1.80'), h('td', '3')])],
+    );
+    await settleResize(wrapper);
+    const [priceCell, quantityCell] = Array.from(table.tBodies[0].rows[0].cells);
+    const settleMutations = async () => {
+      await nextTick();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    };
+    expect(priceCell.getAttribute('data-dx-stack-label')).toBe('Price each');
+    expect(quantityCell.getAttribute('data-dx-stack-label')).toBe('Quantity units');
+
+    // Positive control: a TEXT change is picked up (the harness is live).
+    quantityName.value = 'Qty';
+    await settleMutations();
+    expect(quantityCell.getAttribute('data-dx-stack-label')).toBe('Qty units');
+
+    helperIsHidden.value = true;
+    await settleMutations();
+    expect(priceCell.getAttribute('data-dx-stack-label')).toBe('Price');
+
+    helperAriaHidden.value = true;
+    await settleMutations();
+    expect(quantityCell.getAttribute('data-dx-stack-label')).toBe('Qty');
+
+    helperIsHidden.value = false;
+    helperAriaHidden.value = false;
+    await settleMutations();
+    expect(priceCell.getAttribute('data-dx-stack-label')).toBe('Price each');
+    expect(quantityCell.getAttribute('data-dx-stack-label')).toBe('Qty units');
+
     screen.unmount();
   });
 

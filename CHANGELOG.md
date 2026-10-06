@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   It replaces the `.table-responsive` wrapper and scrolls sideways like it in
   the wide layout. Unmeasured (server rendering) it renders stacked, like
   `DXForm`'s `layout="auto"`.
+  Labels follow the table's real columns through every header row: a heading
+  that spans two rows ("Product" beside a "Pricing" group over Price and
+  Quantity) labels its own column, and `rowspan`/`colspan` cells in the body
+  no longer shift the labels of the cells after them. Hiding or showing
+  header helper text (`.visually-hidden`, `aria-hidden`) relabels the cells,
+  and `.dx-stack-hide` hides a cell even when its column has a visible label.
 
 ### Bug Fixes
 

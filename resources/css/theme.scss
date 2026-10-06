@@ -1191,8 +1191,12 @@ $dx-stack-fill: ':is(#{$dx-stack-controls}):not(button, .btn), :not(button, .btn
   // `.text-end`/`.text-center`, which only meant something in a column):
   // a total reads as one more line of the same column, not a stray figure at
   // the far right.
-  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span),
-  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span) {
+  //
+  // `.dx-stack-hide` is excluded HERE rather than out-ranked below: this
+  // selector is (0,2,0) to the hide rule's (0,1,0), so a hidden cell that has a
+  // label would otherwise stay on screen as a flex line.
+  > tbody > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span, .dx-stack-hide),
+  > tfoot > tr > :is([data-dx-stack-label], [data-label]):not(.dx-stack-span, .dx-stack-hide) {
     display: flex;
     align-items: center;
     justify-content: flex-start;
