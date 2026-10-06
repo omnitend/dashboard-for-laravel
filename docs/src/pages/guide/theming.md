@@ -364,9 +364,13 @@ in a stylesheet loaded after `theme.css`:
 | `--dx-sidebar-active-font-weight` | `600` | Current link weight (dark: 500) |
 | `--dx-sidebar-group-font-weight` | `600` | Group header weight |
 
-Two shell tokens sit beside these. `--dx-dashboard-header-height` (64px) is
+Three shell tokens sit beside these. `--dx-dashboard-header-height` (64px) is
 the height of both the sidebar header and the navbar, so their bottom edges
-always meet; change it there, never on either element. `--dx-dashboard-gutter-x`
+always meet; change it there, never on either element.
+`--dx-dashboard-header-bg` (`var(--bs-light)`) is the top band's background,
+used by the navbar AND the light sidebar's brand row, so the band runs the
+full width; `--dx-dashboard-header-border-width` is the line under it (`0`,
+and `1px` beside the dark sidebar, whose brand row stays navy). `--dx-dashboard-gutter-x`
 is the page and navbar side gutter: 20px, and 16px below 576px (the full-screen
 modal's edge).
 

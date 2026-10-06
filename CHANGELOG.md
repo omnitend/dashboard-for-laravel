@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   typeface and its weights, with the light values on `:root` and the dark ones
   on `.dashboard-sidebar--dark`, so either scheme can be rebranded in CSS
   (for example `--dx-sidebar-active-bg`). Listed in the theming guide.
+- `--dx-dashboard-header-bg` and `--dx-dashboard-header-border-width`: one
+  background for the navbar and the light sidebar's brand row, so the top
+  band runs the full width, and the line under it (none by default; 1px with
+  the dark sidebar, which keeps its navy brand row).
 - `--dx-dashboard-header-height`, the one height for the sidebar header and
   the navbar, and `--dx-sidebar-header-border-width` for the line under the
   brand row (none on the light sidebar, 1px on the dark one).
@@ -53,6 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `dx-navbar-search` for slot content to query.
 - The dashboard's side gutter is 16px below 576px (was 20px), matching the
   full-screen modal's edge, for the page content and the navbar alike.
+- The dashboard's top band runs the full width with no line under it: the
+  light sidebar's brand row takes the navbar's background (both from
+  `--dx-dashboard-header-bg`) and the navbar's bottom border is gone. The
+  navbar's content budget grows from 47px to 48px accordingly. With
+  `sidebar-variant="dark"` the band and line are as before.
 - The sidebar header and the navbar take their height from one property,
   `--dx-dashboard-header-height` (64px), so their bottom edges always meet.
   Override that property to change the header height; a consumer that sized

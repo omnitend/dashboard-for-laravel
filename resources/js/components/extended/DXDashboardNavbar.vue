@@ -6,7 +6,7 @@
   with a `navbar-` prefix.
 -->
 <template>
-  <header ref="headerRef" class="dashboard-navbar border-bottom">
+  <header ref="headerRef" class="dashboard-navbar">
     <DContainer fluid>
       <!-- Flex bar: toggle (and title from `md` up), search filling the
            middle, user menu, all on one row at every width. Below `md` the

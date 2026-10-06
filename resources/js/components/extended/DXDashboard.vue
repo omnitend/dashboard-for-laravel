@@ -7,7 +7,11 @@
   any `navbar-*` slot to the navbar, stripping the prefix.
 -->
 <template>
-  <div class="dashboard-layout d-flex" :data-dashboard-id="dashboardId">
+  <div
+    class="dashboard-layout d-flex"
+    :class="`dashboard-layout--sidebar-${sidebarVariant}`"
+    :data-dashboard-id="dashboardId"
+  >
     <!-- Sidebar -->
     <DXDashboardSidebar
       :navigation="navigation"

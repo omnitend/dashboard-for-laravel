@@ -382,7 +382,7 @@ $dashboard-navbar-border-width: 1px; // Bootstrap's $border-width
 // runtime is the more correct answer anyway, since the padding then still scales
 // with the root font size.
 $dashboard-navbar-content-height: calc(
-  var(--dx-dashboard-header-height) - #{$dashboard-navbar-border-width} -
+  var(--dx-dashboard-header-height) - var(--dx-dashboard-header-border-width) -
     #{$dashboard-navbar-bar-padding-y} * 2
 );
 
@@ -741,6 +741,16 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 :root {
   --dx-dashboard-gutter-x: #{$dashboard-gutter-x};
   --dx-dashboard-header-height: #{$dashboard-navbar-height};
+  // The top band (2026-10-06, "A2"): ONE background for the navbar AND the
+  // light sidebar's brand row, so the band runs the full width and the two can
+  // never differ, and no line under it. The dark sidebar keeps its own navy
+  // brand row and the line under both (`.dashboard-layout--sidebar-dark`).
+  --dx-dashboard-header-bg: var(--bs-light);
+  --dx-dashboard-header-border-width: 0px; // with a unit: it is subtracted in calc()
+}
+
+.dashboard-layout--sidebar-dark {
+  --dx-dashboard-header-border-width: #{$dashboard-navbar-border-width};
 }
 
 @include media-breakpoint-down(sm) {
@@ -833,6 +843,7 @@ $dx-sidebar-group-font-weight: 600 !default;
   --dx-sidebar-edge-width: 0;
   --dx-sidebar-edge-color: transparent;
   --dx-sidebar-header-border-width: 1px;
+  --dx-sidebar-header-bg: transparent;
   --dx-sidebar-separator-color: #{$navbar-dark-toggler-border-color};
   --dx-sidebar-group-color: #{$navbar-dark-color};
   --dx-sidebar-group-bg: transparent;
@@ -865,6 +876,10 @@ $dx-sidebar-group-font-weight: 600 !default;
 
   .sidebar-header {
     height: var(--dx-dashboard-header-height);
+    // Light: the navbar's band colour, read from the same token at this
+    // element, so a consumer override anywhere above reaches both. Dark sets
+    // `--dx-sidebar-header-bg: transparent` (the navy pane shows through).
+    background-color: var(--dx-sidebar-header-bg, var(--dx-dashboard-header-bg));
   }
 
   .sidebar-nav,
@@ -993,9 +1008,11 @@ aside.dashboard-sidebar--light {
   // aligned with the sidebar header.
   min-height: var(--dx-dashboard-header-height);
   // A light grey top bar over the white content panel (higher contrast than a
-  // grey-everywhere layout). The navbar markup drops its `bg-white` class so
-  // this wins without `!important`.
-  background-color: var(--bs-light);
+  // grey-everywhere layout), from the band token the light sidebar's brand row
+  // shares. The bottom line is a token too (none by default); the markup has no
+  // `border-bottom` utility, whose `!important` would pin it.
+  background-color: var(--dx-dashboard-header-bg);
+  border-bottom: var(--dx-dashboard-header-border-width) var(--bs-border-style) var(--bs-border-color);
 }
 
 // The avatar dropdown trigger (DXDashboardNavbar sets this via toggle-class, so
@@ -1684,7 +1701,7 @@ $dx-chart-edge-dark: $body-bg-dark;
 // The bar fills the header (less its bottom border), so its single row is
 // centred in the same height as the sidebar's brand row.
 .dashboard-navbar__bar {
-  min-height: calc(var(--dx-dashboard-header-height) - #{$dashboard-navbar-border-width});
+  min-height: calc(var(--dx-dashboard-header-height) - var(--dx-dashboard-header-border-width));
   padding: $dashboard-navbar-bar-padding-y 0;
 }
 

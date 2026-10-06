@@ -676,6 +676,14 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   horizontal padding back on `<main>` or the navbar's container; pinned by
   `tests/components/DXDashboard.gutter.test.ts` (rendered rects, both sidebar
   states, both content branches, the wrapped navbar below `md`).
+- **One top band**: `--dx-dashboard-header-bg` paints the navbar AND the
+  light sidebar's brand row (the latter reads it at the element, via
+  `var(--dx-sidebar-header-bg, var(--dx-dashboard-header-bg))`, so an override
+  anywhere above reaches both); `--dx-dashboard-header-border-width` is the
+  line under it, `0px` by default (a unit, because it is subtracted in the
+  content-budget calc) and 1px under `.dashboard-layout--sidebar-dark`, where
+  the brand row stays navy (`--dx-sidebar-header-bg: transparent`). The
+  navbar has no `border-bottom` utility class any more.
 - **One header height** (`--dx-dashboard-header-height`, 64px): the sidebar
   header's `height`, the navbar's `min-height` and its bar's floor, and the
   navbar content budget all derive from it, so the two bottom edges meet. Never

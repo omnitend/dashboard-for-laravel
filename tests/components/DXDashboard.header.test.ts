@@ -205,3 +205,67 @@ describe('Page gutter', () => {
     expect(rectOf(screen.container, 'button[aria-label="Toggle sidebar"]').left - area.left).toBe(gutter);
   });
 });
+
+/*
+ * The top band (2026-10-06, "A2"): one background, `--dx-dashboard-header-bg`,
+ * for the navbar and the light sidebar's brand row, so it runs the full width;
+ * no line under it. The dark sidebar keeps its navy brand row and the line
+ * under both.
+ */
+describe('Header band', () => {
+  beforeEach(async () => {
+    await page.viewport(1280, 800);
+    localStorage.setItem(STORAGE_KEY, 'false');
+  });
+  afterEach(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    document.documentElement.style.removeProperty('--dx-dashboard-header-bg');
+  });
+
+  const styleOf = (root: Element, selector: string) => getComputedStyle(root.querySelector(selector)!);
+
+  it('paints the light brand row and the navbar from one token, with no line', async () => {
+    const screen = await mountDashboard();
+    const navbar = styleOf(screen.container, '.dashboard-navbar');
+    const brandRow = styleOf(screen.container, '.sidebar-header');
+    expect(navbar.backgroundColor).toBe('rgb(248, 250, 252)');
+    expect(brandRow.backgroundColor).toBe(navbar.backgroundColor);
+    expect(navbar.borderBottomWidth).toBe('0px');
+    expect(brandRow.borderBottomWidth).toBe('0px');
+  });
+
+  it('moves both when the token is overridden', async () => {
+    document.documentElement.style.setProperty('--dx-dashboard-header-bg', 'rgb(1, 2, 3)');
+    const screen = await mountDashboard();
+    expect(styleOf(screen.container, '.dashboard-navbar').backgroundColor).toBe('rgb(1, 2, 3)');
+    expect(styleOf(screen.container, '.sidebar-header').backgroundColor).toBe('rgb(1, 2, 3)');
+  });
+
+  it('keeps the dark brand row navy and the line under both', async () => {
+    const screen = await mountDashboard({ sidebarVariant: 'dark' });
+    const navbar = styleOf(screen.container, '.dashboard-navbar');
+    const brandRow = styleOf(screen.container, '.sidebar-header');
+    expect(navbar.backgroundColor).toBe('rgb(248, 250, 252)');
+    expect(brandRow.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(navbar.borderBottomWidth).toBe('1px');
+    expect(brandRow.borderBottomWidth).toBe('1px');
+    expect(rectOf(screen.container, '.dashboard-navbar').bottom).toBe(rectOf(screen.container, '.sidebar-header').bottom);
+  });
+
+  it('gives the collapsed rail and the phone menu the band colour', async () => {
+    const rail = render(DXDashboardSidebar, {
+      props: { navigation: sampleNavigation, currentUrl: '/dashboard', collapsed: true },
+    });
+    await settled();
+    expect(styleOf(rail.container, '.sidebar-header').backgroundColor).toBe('rgb(248, 250, 252)');
+    rail.unmount();
+
+    await page.viewport(390, 844);
+    localStorage.setItem(STORAGE_KEY, 'true');
+    const screen = await mountDashboard();
+    (screen.container.querySelector('button[aria-label="Toggle sidebar"]') as HTMLElement).click();
+    await settled();
+    expect(rectOf(screen.container, '.dashboard-sidebar').width).toBe(390);
+    expect(styleOf(screen.container, '.sidebar-header').backgroundColor).toBe('rgb(248, 250, 252)');
+  });
+});
