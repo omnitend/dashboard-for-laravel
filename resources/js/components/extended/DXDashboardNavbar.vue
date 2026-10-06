@@ -6,10 +6,12 @@
   with a `navbar-` prefix.
 -->
 <template>
-  <header ref="headerRef" class="dashboard-navbar border-bottom">
+  <header ref="headerRef" class="dashboard-navbar">
     <DContainer fluid>
-      <!-- Flex bar that wraps: below `md` the search drops to its own
-           full-width row beneath the toggle/title/user-menu row. -->
+      <!-- Flex bar: toggle (and title from `md` up), search filling the
+           middle, user menu, all on one row at every width. Below `md` the
+           actions wrap to a row of their own (theme.scss, "Dashboard navbar
+           layout"). -->
       <div ref="barRef" class="dashboard-navbar__bar d-flex flex-wrap align-items-center gap-3">
         <div class="dashboard-navbar__start d-flex align-items-center gap-3">
           <DButton
@@ -45,7 +47,7 @@
           class="dashboard-navbar__search d-flex"
           :class="searchAlignClass"
         >
-          <!-- @slot Search input or component. Aligned per `searchAlign` within its region (inline in the bar from `md` up; its own full-width row below). -->
+          <!-- @slot Search input or component. Fills the middle of the bar at every width, aligned per `searchAlign`. The region is a size container named `dx-navbar-search`; a `<kbd>` hint inside it is hidden when it is narrower than 16rem. -->
           <slot name="search" />
         </div>
 
@@ -134,9 +136,8 @@ const props = withDefaults(
     pageTitle?: string;
     /**
      * Horizontal alignment of the search slot content within its region
-     * (`"start"` = flush left, `"center"` = centred). Applies at every size:
-     * the region sits inline after the title from `md` up, and is its own
-     * full-width row below.
+     * (`"start"` = flush left, `"center"` = centred). The region sits inline
+     * between the toggle/title and the user menu at every width.
      */
     searchAlign?: NavbarSearchAlign;
     /**
@@ -279,12 +280,9 @@ const getUserInitial = (user: { name: string } | null) => {
   z-index: 1000;
 }
 
-/* The bar's vertical padding — and the single-row content budget derived from
-   it — is owned by theme.scss (`$dashboard-navbar-bar-padding-y`), so the
-   geometry has one source (#102). Only the floor lives here. */
-.dashboard-navbar__bar {
-  min-height: 3.5rem;
-}
+/* The bar's vertical padding, its height floor and the single-row content
+   budget are all owned by theme.scss, derived from `--dx-dashboard-header-height`,
+   so the geometry has one source (#102). */
 
 /*
  * The bar's responsive LAYOUT (the order/flex rules and the `md` switch) lives

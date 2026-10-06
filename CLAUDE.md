@@ -321,6 +321,20 @@ interface NavigationItem {
 - `#brand="{ collapsed }"` - Custom brand/logo content
 - `#link="{ item, isActive, collapsed }"` - Custom link rendering
 
+**Variants (`variant` / DXDashboard `sidebarVariant`):** `light` (default,
+legacy Omni Tend look, Poppins) and `dark` (the old navy rail). ALL colours,
+the typeface and weights are `--dx-sidebar-*` tokens in theme.scss: light on
+`:root`, dark on `.dashboard-sidebar--dark`, where the typeface and link
+size/weight are `initial` so those declarations fall back to inheriting, as
+before the tokens. Keep colours out of the scoped block (it lands AFTER the
+theme in dist/style.css, so a scoped colour beats the token rule); light
+geometry uses `aside.dashboard-sidebar--light ...` to outrank scoped padding.
+Group headers carry no `px-2`/`mb-2`/`fw-semibold` utilities on purpose (their
+`!important` would block the light pills). The dark variant is checked
+byte-identical against the pre-variant build; pinned by
+`tests/components/DXDashboardSidebar.variant.test.ts` (rendered styles, token
+rebrand, WCAG contrast of the light defaults).
+
 **On phones (below `sm`, 576px):** inside DXDashboard the open sidebar is a
 full-screen menu (theme.scss, `aside.dashboard-sidebar--phone-menu`), not a
 rail. DXDashboard sets the sidebar's `phoneMenu` prop; a STANDALONE sidebar
@@ -672,9 +686,10 @@ browser's bold) in `--dx-table-header-color`. Pinned by
 
 ### Layout tokens: dashboard gutter and form label column
 
-- **One dashboard gutter, 20px** (`$dashboard-gutter-x` →
-  `--dx-dashboard-gutter-x` on `:root`). theme.scss applies it as the
-  horizontal padding of the `.container-fluid` directly inside
+- **One dashboard gutter, 20px; 16px below `sm`** (`$dashboard-gutter-x` /
+  `$dashboard-gutter-x-phone` → `--dx-dashboard-gutter-x` on `:root`, the
+  phone value matching the full-screen modal's 1rem padding).
+  theme.scss applies it as the horizontal padding of the `.container-fluid` directly inside
   `.dashboard-navbar` AND inside `.dashboard-main` (which keeps only `py-4`), so
   the navbar's first item starts exactly where page content starts. In
   DXDashboard's centred branch the `DRow`'s negative margins and the `DCol`'s
@@ -682,6 +697,21 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   horizontal padding back on `<main>` or the navbar's container; pinned by
   `tests/components/DXDashboard.gutter.test.ts` (rendered rects, both sidebar
   states, both content branches, the wrapped navbar below `md`).
+- **One top band**: `--dx-dashboard-header-bg` paints the navbar AND the
+  light sidebar's brand row (the latter reads it at the element, via
+  `var(--dx-sidebar-header-bg, var(--dx-dashboard-header-bg))`, so an override
+  anywhere above reaches both); `--dx-dashboard-header-border-width` is the
+  line under it, `0px` by default (a unit, because it is subtracted in the
+  content-budget calc) and 1px under `.dashboard-layout--sidebar-dark`, where
+  the brand row stays navy (`--dx-sidebar-header-bg: transparent`). The
+  navbar has no `border-bottom` utility class any more.
+- **One header height** (`--dx-dashboard-header-height`, 64px): the sidebar
+  header's `height`, the navbar's `min-height` and its bar's floor, and the
+  navbar content budget all derive from it, so the two bottom edges meet. Never
+  size either element on its own (greendragon's stepped corner came from
+  exactly that). Pinned by `tests/components/DXDashboard.header.test.ts`,
+  which also pins the one-row phone navbar (search `flex: 1 1 0`, 9rem floor,
+  `kbd` hidden by the `dx-navbar-search` container query below 16rem).
 - **Default horizontal label column is 45%** (`$dx-form-label-width` →
   `--dx-form-label-width`). With no `labelCols` from the form or field,
   DXField passes BFormGroup `labelColsSm: true` (a `col-sm`, so it stacks below

@@ -77,18 +77,29 @@ const handleLogout = () => {
 <PropsTable client:load props={[
   { name: 'user', type: '{ name: string; email: string; [key: string]: any } | null', required: 'No', default: 'null', description: 'Current user object with name and email' },
   { name: 'pageTitle', type: 'string', required: 'No', default: 'Dashboard', description: 'Page title displayed in the navbar' },
-  { name: 'searchAlign', type: "'start' | 'center'", required: 'No', default: "'start'", description: 'Horizontal alignment of the search slot content within its region: flush left (start) or centred (center). The region is inline in the bar from md up, its own full-width row below' },
+  { name: 'searchAlign', type: "'start' | 'center'", required: 'No', default: "'start'", description: 'Horizontal alignment of the search slot content within its region: flush left (start) or centred (center). The region sits inline between the toggle and the user menu at every width' },
   { name: 'actionsOnMobile', type: "'wrap' | 'hide'", required: 'No', default: "'wrap'", description: 'What the actions slot does below md: wrap moves it to its own full-width row (the bar grows), hide removes it entirely (for apps that relocate page actions into the page on phones)' },
   { name: 'userMenuLabel', type: 'string', required: 'No', default: "'User menu'", description: "Accessible name for the user-menu trigger. Without one, a screen reader announces it as the avatar's initial rather than as a menu" },
   { name: 'sidebarExpanded', type: 'boolean', required: 'No', default: 'unset', description: "Whether the sidebar the toggle controls is showing, exposed as the toggle's aria-expanded. Unset, the toggle carries none. DXDashboard sets it" },
   { name: 'sidebarId', type: 'string', required: 'No', default: "''", description: "id of the sidebar the toggle controls, exposed as its aria-controls" },
 ]} />
 
-**Height note:** on desktop the bar is exactly 64px (aligned with the sidebar
-header) as long as single-row content stays within its 48px budget (64px minus
-the bar's padding) — default-size buttons and inputs fit. Taller content (e.g.
-`btn-lg`, or a tall custom `user-menu` slot) makes the bar grow past 64px, so
-it no longer lines up with the sidebar header.
+**Height note:** the bar is exactly `--dx-dashboard-header-height` tall (64px
+by default), the same token that sizes the sidebar header, so their bottom
+edges line up. To make the shell's header shorter or taller, override that one
+property; never size the navbar and the sidebar header separately. Single-row
+content must fit `--dx-navbar-content-height` (the header height minus the
+bar's padding and border); default-size buttons and inputs do. Taller content
+(e.g. `btn-lg`, or a tall custom `user-menu` slot) makes the bar grow, so it no
+longer lines up with the sidebar header.
+
+**On phones** the bar is one row: the toggle, the search filling the middle,
+and the user menu. Page actions take a row below unless `actionsOnMobile` is
+`hide`. A shortcut hint in a `<kbd>` inside the search is hidden when the
+search is narrower than 16rem; slot content can query the `dx-navbar-search`
+container for anything else (for example a shorter placeholder, which CSS
+cannot change, so swap it with a container query on two elements or in
+script).
 
 ## Events
 
@@ -100,7 +111,7 @@ it no longer lines up with the sidebar header.
 
 <SlotsTable client:load slots={[
   { name: 'menu-icon', description: 'Custom hamburger menu icon (default: three horizontal lines SVG)' },
-  { name: 'search', description: 'Search input or component. Aligned per searchAlign within its region; drops to its own full-width row below the md breakpoint' },
+  { name: 'search', description: 'Search input or component. Fills the middle of the bar at every width (one row on a phone), aligned per searchAlign. Never narrower than 9rem: below that it wraps to its own row. The region is a size container named dx-navbar-search, and a kbd hint inside it is hidden when it is narrower than 16rem' },
   { name: 'actions', props: 'pageTitle', description: 'Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from md up; below, wraps to its own full-width row or is hidden entirely per actionsOnMobile. Receives pageTitle as slot prop' },
   { name: 'user-menu', description: 'Complete custom user menu (replaces default dropdown). Receives user as slot prop' },
   { name: 'user-icon', description: 'Custom user avatar/icon (defaults to DXUserAvatar). Receives initial (first letter of name) and user as slot props. To decorate the default avatar rather than replace it — e.g. add an unread dot — render DXUserAvatar in the slot so the styling comes with it' },

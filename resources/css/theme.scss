@@ -338,6 +338,11 @@ $dx-form-label-width: 45%;
 
 $dashboard-sidebar-width: 280px;
 $dashboard-sidebar-collapsed-width: 80px;
+// The height of BOTH halves of the dashboard's top edge: the sidebar header
+// (brand row) and the navbar. Published as `--dx-dashboard-header-height` on
+// `:root` and read by both, so their bottom edges line up by construction; a
+// consumer retunes the shell's header height by overriding that ONE property
+// (never by sizing the two separately, which is how a stepped corner appears).
 $dashboard-navbar-height: 64px;
 
 // The shell's one horizontal gutter: the navbar's inner padding AND the page
@@ -347,6 +352,10 @@ $dashboard-navbar-height: 64px;
 // anything on the page. Published as `--dx-dashboard-gutter-x` on `:root`;
 // a consumer can retune both edges together by overriding that.
 $dashboard-gutter-x: 20px;
+
+// Below `sm` the gutter tightens to the full-screen modal's (Bootstrap's
+// `$modal-inner-padding`, 1rem), so phone pages and phone modals share an edge.
+$dashboard-gutter-x-phone: 16px;
 
 // The bar's vertical padding, and the single-row CONTENT BUDGET that follows
 // from it. Everything on the bar's single row — the avatar toggle, whatever a
@@ -373,9 +382,18 @@ $dashboard-navbar-border-width: 1px; // Bootstrap's $border-width
 // runtime is the more correct answer anyway, since the padding then still scales
 // with the root font size.
 $dashboard-navbar-content-height: calc(
-  #{$dashboard-navbar-height} - #{$dashboard-navbar-border-width} -
+  var(--dx-dashboard-header-height) - var(--dx-dashboard-header-border-width) -
     #{$dashboard-navbar-bar-padding-y} * 2
 );
+
+// The narrowest the navbar search region may get on the toggle / search /
+// user-menu row before it wraps onto a row of its own, and the width below
+// which a `<kbd>` shortcut hint inside it (e.g. "⌘K") is hidden to give the
+// input room. The region is a size container named `dx-navbar-search`, so
+// slot content can make its own container queries against it (a shorter
+// placeholder, say).
+$dashboard-navbar-search-min-width: 9rem;
+$dashboard-navbar-search-hint-min-width: 16rem;
 
 // ----------------------------------------------------------------------------
 // Import Bootstrap
@@ -722,6 +740,23 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 
 :root {
   --dx-dashboard-gutter-x: #{$dashboard-gutter-x};
+  --dx-dashboard-header-height: #{$dashboard-navbar-height};
+  // The top band (2026-10-06, "A2"): ONE background for the navbar AND the
+  // light sidebar's brand row, so the band runs the full width and the two can
+  // never differ, and no line under it. The dark sidebar keeps its own navy
+  // brand row and the line under both (`.dashboard-layout--sidebar-dark`).
+  --dx-dashboard-header-bg: var(--bs-light);
+  --dx-dashboard-header-border-width: 0px; // with a unit: it is subtracted in calc()
+}
+
+.dashboard-layout--sidebar-dark {
+  --dx-dashboard-header-border-width: #{$dashboard-navbar-border-width};
+}
+
+@include media-breakpoint-down(sm) {
+  :root {
+    --dx-dashboard-gutter-x: #{$dashboard-gutter-x-phone};
+  }
 }
 
 // Both are the `DContainer fluid` directly inside the navbar header and the
@@ -736,8 +771,103 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   padding-right: var(--dx-dashboard-gutter-x);
 }
 
+// Sidebar colour schemes (DXDashboard `sidebarVariant`, DXDashboardSidebar
+// `variant`). Every colour, the typeface and the weights come from a
+// `--dx-sidebar-*` custom property, so an install can rebrand either scheme in
+// CSS without Sass: override on `:root` for the light default, on
+// `.dashboard-sidebar--dark` for the dark one.
+//
+// LIGHT (the default since 0.43) follows the legacy Omni Tend admin: a white
+// pane with no edge line and no line under the brand row, tinted group-header
+// pills, grey links, a green active
+// item, Poppins (500 links, 600 active and headers). Links are #6b7182
+// (4.87:1 on white); the legacy #7c8293 is 3.84:1 and fails WCAG AA.
+//
+// DARK is the navy rail dfl shipped before, value for value. Its typeface and
+// link size/weight are `initial` (no value), which makes those declarations
+// fall back to inheriting from the page, exactly as before the tokens existed.
+$dx-sidebar-bg: #ffffff !default;
+$dx-sidebar-color: #121419 !default;
+$dx-sidebar-edge-width: 0 !default;
+$dx-sidebar-edge-color: #e6e9f0 !default;
+$dx-sidebar-header-border-width: 0 !default;
+$dx-sidebar-separator-color: #e6e9f0 !default;
+$dx-sidebar-group-color: #121419 !default;
+$dx-sidebar-group-bg: #f5f8fe !default;
+$dx-sidebar-group-hover-bg: #ebf0fb !default;
+$dx-sidebar-link-color: #6b7182 !default;
+$dx-sidebar-link-hover-color: #363e4d !default;
+$dx-sidebar-link-hover-bg: #f9f9fc !default;
+$dx-sidebar-active-color: #121419 !default;
+$dx-sidebar-active-bg: #c3faaa !default;
+$dx-sidebar-focus-ring: #6b7182 !default;
+$dx-sidebar-scrollbar-track: rgba($black, 0.04) !default;
+$dx-sidebar-scrollbar-thumb: rgba($black, 0.18) !default;
+$dx-sidebar-scrollbar-thumb-hover: rgba($black, 0.28) !default;
+$dx-sidebar-font-family: var(--dx-font-family-display) !default;
+$dx-sidebar-link-font-size: 0.9375rem !default;
+$dx-sidebar-link-font-weight: 500 !default;
+$dx-sidebar-active-font-weight: 600 !default;
+$dx-sidebar-group-font-weight: 600 !default;
+
+:root {
+  --dx-sidebar-bg: #{$dx-sidebar-bg};
+  --dx-sidebar-color: #{$dx-sidebar-color};
+  --dx-sidebar-edge-width: #{$dx-sidebar-edge-width};
+  --dx-sidebar-edge-color: #{$dx-sidebar-edge-color};
+  --dx-sidebar-header-border-width: #{$dx-sidebar-header-border-width};
+  --dx-sidebar-separator-color: #{$dx-sidebar-separator-color};
+  --dx-sidebar-group-color: #{$dx-sidebar-group-color};
+  --dx-sidebar-group-bg: #{$dx-sidebar-group-bg};
+  --dx-sidebar-group-hover-bg: #{$dx-sidebar-group-hover-bg};
+  --dx-sidebar-link-color: #{$dx-sidebar-link-color};
+  --dx-sidebar-link-hover-color: #{$dx-sidebar-link-hover-color};
+  --dx-sidebar-link-hover-bg: #{$dx-sidebar-link-hover-bg};
+  --dx-sidebar-active-color: #{$dx-sidebar-active-color};
+  --dx-sidebar-active-bg: #{$dx-sidebar-active-bg};
+  --dx-sidebar-focus-ring: #{$dx-sidebar-focus-ring};
+  --dx-sidebar-divider-color: rgba(var(--bs-secondary-rgb), 1);
+  --dx-sidebar-scrollbar-track: #{$dx-sidebar-scrollbar-track};
+  --dx-sidebar-scrollbar-thumb: #{$dx-sidebar-scrollbar-thumb};
+  --dx-sidebar-scrollbar-thumb-hover: #{$dx-sidebar-scrollbar-thumb-hover};
+  --dx-sidebar-font-family: #{$dx-sidebar-font-family};
+  --dx-sidebar-link-font-size: #{$dx-sidebar-link-font-size};
+  --dx-sidebar-link-font-weight: #{$dx-sidebar-link-font-weight};
+  --dx-sidebar-active-font-weight: #{$dx-sidebar-active-font-weight};
+  --dx-sidebar-group-font-weight: #{$dx-sidebar-group-font-weight};
+}
+
+.dashboard-sidebar--dark {
+  --dx-sidebar-bg: #{$dark};
+  --dx-sidebar-color: #{$white};
+  --dx-sidebar-edge-width: 0;
+  --dx-sidebar-edge-color: transparent;
+  --dx-sidebar-header-border-width: 1px;
+  --dx-sidebar-header-bg: transparent;
+  --dx-sidebar-separator-color: #{$navbar-dark-toggler-border-color};
+  --dx-sidebar-group-color: #{$navbar-dark-color};
+  --dx-sidebar-group-bg: transparent;
+  --dx-sidebar-group-hover-bg: #{rgba($white, 0.08)};
+  --dx-sidebar-link-color: #{$navbar-dark-hover-color};
+  --dx-sidebar-link-hover-color: #{$navbar-dark-active-color};
+  --dx-sidebar-link-hover-bg: #{rgba($white, 0.1)};
+  --dx-sidebar-active-color: #{$navbar-dark-active-color};
+  --dx-sidebar-active-bg: #{rgba($white, 0.15)};
+  --dx-sidebar-focus-ring: #{rgba($white, 0.5)};
+  --dx-sidebar-scrollbar-track: #{rgba($black, 0.1)};
+  --dx-sidebar-scrollbar-thumb: #{rgba($white, 0.2)};
+  --dx-sidebar-scrollbar-thumb-hover: #{rgba($white, 0.3)};
+  --dx-sidebar-font-family: initial;
+  --dx-sidebar-link-font-size: initial;
+  --dx-sidebar-link-font-weight: initial;
+  --dx-sidebar-active-font-weight: 500;
+  --dx-sidebar-group-font-weight: 600;
+}
+
 .dashboard-sidebar {
-  background-color: $dark;
+  background-color: var(--dx-sidebar-bg);
+  color: var(--dx-sidebar-color);
+  border-right: var(--dx-sidebar-edge-width) solid var(--dx-sidebar-edge-color);
   width: $dashboard-sidebar-width;
 
   &.sidebar-collapsed {
@@ -745,32 +875,99 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   }
 
   .sidebar-header {
-    height: $dashboard-navbar-height;
-    border-bottom-color: $navbar-dark-toggler-border-color;
+    height: var(--dx-dashboard-header-height);
+    // Light: the navbar's band colour, read from the same token at this
+    // element, so a consumer override anywhere above reaches both. Dark sets
+    // `--dx-sidebar-header-bg: transparent` (the navy pane shows through).
+    background-color: var(--dx-sidebar-header-bg, var(--dx-dashboard-header-bg));
+  }
+
+  .sidebar-nav,
+  .sidebar-footer {
+    font-family: var(--dx-sidebar-font-family);
   }
 
   .nav-group-label,
   .nav-group-toggle {
-    color: $navbar-dark-color;
+    color: var(--dx-sidebar-group-color);
+    font-weight: var(--dx-sidebar-group-font-weight);
   }
 
-  .nav-group-divider {
-    border-color: $navbar-dark-toggler-border-color;
+  .nav-group-toggle {
+    background-color: var(--dx-sidebar-group-bg);
+
+    &:hover {
+      background-color: var(--dx-sidebar-group-hover-bg);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--dx-sidebar-focus-ring);
+      outline-offset: 2px;
+    }
+  }
+
+  .nav-group-divider hr {
+    border-color: var(--dx-sidebar-divider-color);
   }
 
   .nav-link {
-    color: $navbar-dark-hover-color;
+    color: var(--dx-sidebar-link-color);
+    font-size: var(--dx-sidebar-link-font-size);
+    font-weight: var(--dx-sidebar-link-font-weight);
 
     &:hover {
-      color: $navbar-dark-active-color;
-      background-color: rgba($white, 0.1);
+      color: var(--dx-sidebar-link-hover-color);
+      background-color: var(--dx-sidebar-link-hover-bg);
+    }
+
+    // Bootstrap's own ring is a primary-tinted box-shadow, which disappears
+    // against the dark pane; an outline in the scheme's ring colour shows on
+    // both.
+    &:focus-visible {
+      outline: 2px solid var(--dx-sidebar-focus-ring);
+      outline-offset: 2px;
+      box-shadow: none;
     }
 
     &.active {
-      color: $navbar-dark-active-color;
-      background-color: rgba($white, 0.15);
-      font-weight: 500;
+      color: var(--dx-sidebar-active-color);
+      background-color: var(--dx-sidebar-active-bg);
+      font-weight: var(--dx-sidebar-active-font-weight);
     }
+  }
+}
+
+// Light geometry: the group headers are pills (static labels too, so the
+// default non-collapsible sidebar has them) and the links line up with the
+// pill text. `aside` outranks the component's scoped padding and margin (same
+// class count, but those land later in the stylesheet). The collapsed rail
+// keeps its centred icon padding.
+//
+// The gap under a pill is on its first item rather than the pill itself:
+// inside a closed collapsible group that item is clipped away with the rest,
+// so closed pills sit exactly the group gap (1rem) apart, as in the legacy
+// admin, instead of 1rem plus the header's own margin.
+aside.dashboard-sidebar--light {
+  .nav-group-label,
+  .nav-group-toggle {
+    display: flex;
+    align-items: center;
+    min-height: 2.2rem;
+    margin-bottom: 0;
+    padding-left: 1rem;
+    padding-right: 0.9rem;
+    background-color: var(--dx-sidebar-group-bg);
+    border-radius: $border-radius;
+  }
+
+  .nav-group-label + .nav-group-items > .nav > .nav-item:first-child,
+  .nav-group-toggle + .nav-group-items > .nav > .nav-item:first-child {
+    margin-top: 0.25rem;
+  }
+
+  &:not(.sidebar-collapsed) .nav-link {
+    padding-left: 1rem;
+    border-radius: $border-radius;
   }
 }
 
@@ -815,18 +1012,20 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 .dashboard-navbar {
   // Published so slot content can size itself to the budget rather than guess:
   //   .my-navbar-action { height: var(--dx-navbar-content-height); }
-  --dx-navbar-height: #{$dashboard-navbar-height};
+  --dx-navbar-height: var(--dx-dashboard-header-height);
   --dx-navbar-content-height: #{$dashboard-navbar-content-height};
 
   // Floor, not a fixed height: below `md` the search (and actions) drop to
   // their own rows and the bar must grow to contain them (#93). Single-row
   // content is shorter than this, so desktop stays exactly this height,
   // aligned with the sidebar header.
-  min-height: $dashboard-navbar-height;
+  min-height: var(--dx-dashboard-header-height);
   // A light grey top bar over the white content panel (higher contrast than a
-  // grey-everywhere layout). The navbar markup drops its `bg-white` class so
-  // this wins without `!important`.
-  background-color: var(--bs-light);
+  // grey-everywhere layout), from the band token the light sidebar's brand row
+  // shares. The bottom line is a token too (none by default); the markup has no
+  // `border-bottom` utility, whose `!important` would pin it.
+  background-color: var(--dx-dashboard-header-bg);
+  border-bottom: var(--dx-dashboard-header-border-width) var(--bs-border-style) var(--bs-border-color);
 }
 
 // The avatar dropdown trigger (DXDashboardNavbar sets this via toggle-class, so
@@ -1501,17 +1700,21 @@ $dx-chart-edge-dark: $body-bg-dark;
 // utilities and not the media query, leaving a band of widths where the two
 // disagree (#101).
 //
-// Mobile-first: the actions and the search each take their own full-width row
-// below the toggle / title / user-menu row (flex-basis 100% forces the wrap; the
-// bar and the sticky header grow to contain them — #93). The actions row itself
-// wraps, so a wide button group stacks instead of overflowing the viewport.
+// At every width the search sits inline between the toggle (and title, from
+// `md` up) and the user menu, filling the middle: one row on a phone, with the
+// region never narrower than $dashboard-navbar-search-min-width (below that it
+// wraps onto a row of its own rather than becoming unusable).
 //
-// From `md` up everything goes inline: search between the title and the actions
-// (filling the middle; `searchAlign` places its content), actions right-aligned
-// next to the user menu. The actions' `order: 2` holds at every size — only the
-// search and the user-menu cluster swap order across the breakpoint.
+// Mobile-first: the actions take their own full-width row below that one
+// (flex-basis 100% forces the wrap; the bar and the sticky header grow to
+// contain it — #93). The actions row itself wraps, so a wide button group
+// stacks instead of overflowing the viewport. From `md` up the actions go
+// inline too, right-aligned next to the user menu.
 
+// The bar fills the header (less its bottom border), so its single row is
+// centred in the same height as the sidebar's brand row.
 .dashboard-navbar__bar {
+  min-height: calc(var(--dx-dashboard-header-height) - var(--dx-dashboard-header-border-width));
   padding: $dashboard-navbar-bar-padding-y 0;
 }
 
@@ -1519,24 +1722,32 @@ $dx-chart-edge-dark: $body-bg-dark;
   margin-left: auto;
 }
 
-.dashboard-navbar__actions {
+.dashboard-navbar__search {
+  order: 1;
+  flex: 1 1 0;
+  min-width: $dashboard-navbar-search-min-width;
+  container: dx-navbar-search / inline-size;
+}
+
+@container dx-navbar-search (max-width: #{$dashboard-navbar-search-hint-min-width}) {
+  .dashboard-navbar__search kbd {
+    display: none;
+  }
+}
+
+.dashboard-navbar__end {
   order: 2;
+}
+
+.dashboard-navbar__actions {
+  order: 3;
   flex: 0 0 100%;
   flex-wrap: wrap;
 }
 
-.dashboard-navbar__search {
-  order: 3;
-  flex: 0 0 100%;
-}
-
 @include media-breakpoint-up(md) {
-  .dashboard-navbar__search {
-    order: 1;
-    flex: 1 1 auto;
-  }
-
   .dashboard-navbar__actions {
+    order: 2;
     flex: 0 1 auto;
     flex-wrap: nowrap;
     margin-left: auto;

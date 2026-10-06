@@ -10,8 +10,9 @@
 <template>
   <aside
     ref="sidebarRef"
-    class="dashboard-sidebar text-white"
+    class="dashboard-sidebar"
     :class="{
+      [`dashboard-sidebar--${variant}`]: true,
       'sidebar-collapsed': collapsed,
       'sidebar-hidden': hidden,
       'sidebar-collapsible-groups': collapsibleGroups && !collapsed,
@@ -44,7 +45,8 @@
       <button
         v-if="phoneMenu"
         type="button"
-        class="sidebar-close btn-close btn-close-white d-sm-none flex-shrink-0 ms-auto"
+        class="sidebar-close btn-close d-sm-none flex-shrink-0 ms-auto"
+        :class="{ 'btn-close-white': variant === 'dark' }"
         aria-label="Close menu"
         @click="$emit('close')"
       />
@@ -61,7 +63,7 @@
           <button
             v-if="isGroupToggle(group)"
             type="button"
-            class="nav-group-toggle fw-semibold mb-2 px-2"
+            class="nav-group-toggle"
             :aria-expanded="isGroupExpanded(groupIndex, group)"
             :aria-controls="groupItemsId(groupIndex)"
             @click="toggleGroup(groupKey(group, groupIndex))"
@@ -90,14 +92,14 @@
           <!-- Static group label (non-collapsible, expanded sidebar) -->
           <div
             v-else-if="group.label && !collapsed"
-            class="nav-group-label fw-semibold mb-2 px-2"
+            class="nav-group-label"
           >
             {{ group.label }}
           </div>
 
           <!-- Divider shown in place of the label when the sidebar rail is collapsed -->
           <div v-if="group.label && collapsed" class="nav-group-divider">
-            <hr class="my-2 border-secondary" />
+            <hr class="my-2" />
           </div>
 
           <div
@@ -165,7 +167,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, watch, nextTick, useId } from 'vue';
-import type { Navigation, NavigationGroup } from '../../types/navigation';
+import type { Navigation, NavigationGroup, SidebarVariant } from '../../types/navigation';
 
 const props = withDefaults(defineProps<{
   /** Grouped navigation to render: an array of groups, each with a label and items. */
@@ -191,6 +193,12 @@ const props = withDefaults(defineProps<{
    */
   autoCollapseInactiveGroups?: boolean;
   /**
+   * Colour scheme: `'light'` (default) or `'dark'`. Colours come from the
+   * `--dx-sidebar-*` custom properties (see the theming guide), so either
+   * scheme can be rebranded in CSS.
+   */
+  variant?: SidebarVariant;
+  /**
    * Below `sm`, show the open sidebar as a full-screen menu over the page,
    * with a close button (which emits `close`), instead of a rail beside it;
    * hidden there until opened. The owner must answer `close`, Escape and
@@ -204,6 +212,7 @@ const props = withDefaults(defineProps<{
   title: 'Dashboard',
   collapsibleGroups: false,
   autoCollapseInactiveGroups: true,
+  variant: 'light',
   phoneMenu: false,
 });
 
@@ -480,13 +489,16 @@ watch(activeGroupIndex, () => {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: var(--dx-sidebar-header-border-width) solid var(--dx-sidebar-separator-color);
 }
 
 .sidebar-footer {
   flex-shrink: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--dx-sidebar-separator-color);
 }
+
+/* Colours, typeface and weights come from the `--dx-sidebar-*` tokens in
+   theme.scss (per variant), not from here, so a consumer can rebrand them. */
 
 .brand-container {
   display: flex;
@@ -538,6 +550,16 @@ watch(activeGroupIndex, () => {
   font-size: 0.875rem;
 }
 
+/* Padding and the gap below live here rather than in `px-2`/`mb-2`
+   utilities, whose `!important` would stop the light variant reshaping the
+   headers into pills (theme.scss). */
+.nav-group-label,
+.nav-group-toggle {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 /* When collapsible groups are on, give the static (non-collapsible) group
    labels the same height as the toggle headers so a sidebar mixing both keeps
    an even vertical rhythm. */
@@ -560,24 +582,15 @@ watch(activeGroupIndex, () => {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
   font-size: 0.875rem;
-  background: transparent;
   border: 0;
-  /* No `color` here on purpose: theme.scss sets `.nav-group-toggle` to
-     $navbar-dark-color so the toggle matches the static .nav-group-label.
-     A scoped `color` would override that (equal specificity, later source order). */
+  /* No `color` or `background-color` here on purpose: theme.scss sets both
+     from the `--dx-sidebar-group-*` tokens (also for :hover and
+     :focus-visible), and a scoped declaration would override them (equal
+     specificity, later source order). */
   cursor: pointer;
   text-align: left;
   border-radius: var(--bs-border-radius, 0.375rem);
   transition: background-color 0.2s ease;
-}
-
-.nav-group-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.nav-group-toggle:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
-  outline-offset: 2px;
 }
 
 .nav-group-toggle-label {
@@ -655,10 +668,6 @@ watch(activeGroupIndex, () => {
   white-space: nowrap;
 }
 
-:deep(.nav-link.active) {
-  font-weight: 500;
-}
-
 :deep(.nav-icon) {
   flex-shrink: 0;
 }
@@ -677,16 +686,16 @@ watch(activeGroupIndex, () => {
 }
 
 .sidebar-nav::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--dx-sidebar-scrollbar-track);
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--dx-sidebar-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--dx-sidebar-scrollbar-thumb-hover);
 }
 
 .sidebar-hidden {

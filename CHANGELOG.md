@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `sidebarVariant` on DXDashboard (`variant` on DXDashboardSidebar):
+  `'light'` (default) or `'dark'`, the navy rail as it was. The `SidebarVariant`
+  type is exported.
+- `--dx-sidebar-*` custom properties for every sidebar colour, the menu
+  typeface and its weights, with the light values on `:root` and the dark ones
+  on `.dashboard-sidebar--dark`, so either scheme can be rebranded in CSS
+  (for example `--dx-sidebar-active-bg`). Listed in the theming guide.
+- `--dx-dashboard-header-bg` and `--dx-dashboard-header-border-width`: one
+  background for the navbar and the light sidebar's brand row, so the top
+  band runs the full width, and the line under it (none by default; 1px with
+  the dark sidebar, which keeps its navy brand row).
+- `--dx-dashboard-header-height`, the one height for the sidebar header and
+  the navbar, and `--dx-sidebar-header-border-width` for the line under the
+  brand row (none on the light sidebar, 1px on the dark one).
+
 ### Bug Fixes
 
 - Stop DXDashboard's menu reopening on every page on a phone. The sidebar's
@@ -43,6 +60,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- DXDashboard's sidebar is light by default: a white pane with no line
+  along its edge or under the brand row, tinted group-header pills, grey links (#6b7182, 4.87:1 on white), a green
+  active item, in Poppins (links 500, the active link and headers 600). It
+  follows the legacy Omni Tend admin, except that the legacy link grey failed
+  WCAG AA. Pass `sidebar-variant="dark"` to keep the navy rail, which renders
+  pixel for pixel as before. A custom `sidebar-brand` slot that shows a white
+  logo needs a dark one on the light default.
+- DXDashboardSidebar's group headers and labels no longer carry the `px-2`,
+  `mb-2` and `fw-semibold` utility classes; the same values now come from the
+  component and theme CSS, so they can differ per variant without
+  `!important`. CSS that targeted those classes inside the sidebar needs
+  updating.
+- DXDashboard's navbar is one row on phones: the toggle, the search filling
+  the middle (never narrower than 9rem; below that it wraps to its own row),
+  and the user menu. Page actions still take a row below `md`. A `<kbd>` hint
+  inside the search (such as "⌘K") is hidden when the search is narrower
+  than 16rem, and the search region is a size container named
+  `dx-navbar-search` for slot content to query.
+- The dashboard's side gutter is 16px below 576px (was 20px), matching the
+  full-screen modal's edge, for the page content and the navbar alike.
+- The dashboard's top band runs the full width with no line under it: the
+  light sidebar's brand row takes the navbar's background (both from
+  `--dx-dashboard-header-bg`) and the navbar's bottom border is gone. The
+  navbar's content budget grows from 47px to 48px accordingly. With
+  `sidebar-variant="dark"` the band and line are as before.
+- The sidebar header and the navbar take their height from one property,
+  `--dx-dashboard-header-height` (64px), so their bottom edges always meet.
+  Override that property to change the header height; a consumer that sized
+  `.sidebar-header` or the navbar bar separately should remove that CSS.
 - DModal is full screen below 576px by default (`fullscreen="sm"`, Bootstrap's
   `.modal-fullscreen-sm-down`), with the header and footer pinned and the body
   scrolling. DXTable's edit modal inherits it. A `size="sm"` modal (a short
