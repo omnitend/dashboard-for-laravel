@@ -45,8 +45,10 @@ const pageTitle = title === 'Home' ? '' : title;
       (function() {
         try {
           const hidden = localStorage.getItem('dashboard-sidebar-hidden');
-          // If sidebar should be visible (hidden is 'false' or not set), add class
-          if (hidden === 'false') {
+          // Show the sidebar only if it was left open on a desktop: below
+          // 576px DXDashboard always starts with its menu closed.
+          const isPhone = window.matchMedia('(max-width: 575.98px)').matches;
+          if (hidden === 'false' && !isPhone) {
             document.documentElement.classList.add('sidebar-visible');
           }
         } catch (e) {

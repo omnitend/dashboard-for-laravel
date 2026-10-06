@@ -10,12 +10,16 @@
 <template>
   <aside
     ref="sidebarRef"
-    class="dashboard-sidebar text-white"
+    class="dashboard-sidebar"
     :class="{
+      [`dashboard-sidebar--${variant}`]: true,
       'sidebar-collapsed': collapsed,
       'sidebar-hidden': hidden,
-      'sidebar-collapsible-groups': collapsibleGroups && !collapsed
+      'sidebar-collapsible-groups': collapsibleGroups && !collapsed,
+      'dashboard-sidebar--phone-menu': phoneMenu,
+      'dashboard-sidebar--phone-menu-open': phoneMenuOpen
     }"
+    @click="onLinkClick"
   >
     <div class="sidebar-header p-3">
       <div class="d-flex align-items-center justify-content-between">
@@ -33,6 +37,19 @@
           </div>
         </slot>
       </div>
+      <!-- With `phoneMenu`, below `sm` the open sidebar covers the whole
+           screen, navbar toggle included, so it carries its own way out, at
+           the far end of the header row. Hidden from `sm` up, where the navbar
+           toggle stays in view. Not rendered without `phoneMenu`: nothing
+           would answer its `close`. -->
+      <button
+        v-if="phoneMenu"
+        type="button"
+        class="sidebar-close btn-close d-sm-none flex-shrink-0 ms-auto"
+        :class="{ 'btn-close-white': variant === 'dark' }"
+        aria-label="Close menu"
+        @click="$emit('close')"
+      />
     </div>
 
     <nav ref="navRef" class="sidebar-nav px-3 pb-3 pt-2">
@@ -46,7 +63,7 @@
           <button
             v-if="isGroupToggle(group)"
             type="button"
-            class="nav-group-toggle fw-semibold mb-2 px-2"
+            class="nav-group-toggle"
             :aria-expanded="isGroupExpanded(groupIndex, group)"
             :aria-controls="groupItemsId(groupIndex)"
             @click="toggleGroup(groupKey(group, groupIndex))"
@@ -75,14 +92,14 @@
           <!-- Static group label (non-collapsible, expanded sidebar) -->
           <div
             v-else-if="group.label && !collapsed"
-            class="nav-group-label fw-semibold mb-2 px-2"
+            class="nav-group-label"
           >
             {{ group.label }}
           </div>
 
           <!-- Divider shown in place of the label when the sidebar rail is collapsed -->
           <div v-if="group.label && collapsed" class="nav-group-divider">
-            <hr class="my-2 border-secondary" />
+            <hr class="my-2" />
           </div>
 
           <div
@@ -150,7 +167,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, watch, nextTick, useId } from 'vue';
-import type { Navigation, NavigationGroup } from '../../types/navigation';
+import type { Navigation, NavigationGroup, SidebarVariant } from '../../types/navigation';
 
 const props = withDefaults(defineProps<{
   /** Grouped navigation to render: an array of groups, each with a label and items. */
@@ -175,20 +192,68 @@ const props = withDefaults(defineProps<{
    * `false`: all groups start open and toggle independently.
    */
   autoCollapseInactiveGroups?: boolean;
+  /**
+   * Colour scheme: `'light'` (default) or `'dark'`. Colours come from the
+   * `--dx-sidebar-*` custom properties (see the theming guide), so either
+   * scheme can be rebranded in CSS.
+   */
+  variant?: SidebarVariant;
+  /**
+   * Below `sm`, show the open sidebar as a full-screen menu over the page,
+   * with a close button (which emits `close`), instead of a rail beside it;
+   * hidden there until opened. The owner must answer `close`, Escape and
+   * `navigate`: DXDashboard sets this and does. Off by default, so a
+   * standalone sidebar keeps its rail on phones.
+   */
+  phoneMenu?: boolean;
 }>(), {
   collapsed: false,
   hidden: false,
   title: 'Dashboard',
   collapsibleGroups: false,
   autoCollapseInactiveGroups: true,
+  variant: 'light',
+  phoneMenu: false,
 });
 
-defineEmits<{
+const emit = defineEmits<{
   /** Emitted to request toggling the sidebar's collapsed/expanded state. */
   toggle: [];
+  /** Emitted by the close button shown below `sm`, where the open sidebar covers the screen. */
+  close: [];
+  /**
+   * Emitted when a link anywhere in the sidebar is followed (a plain click,
+   * not one that opens a new tab): the navigation, including links rendered
+   * through the `link` slot, and the `brand` and `footer` slots. DXDashboard
+   * uses it to close the full-screen menu on a phone.
+   */
+  navigate: [];
 }>();
 
+// Delegated from the whole sidebar, so `link`, `brand` and `footer` slot
+// anchors count too. A modified click opens a new tab or window and leaves
+// this page where it is. A cancelled click still counts: a client-side
+// router's link (Inertia's <Link>) cancels the browser navigation and routes
+// itself.
+const onLinkClick = (event: MouseEvent): void => {
+  if (event.button !== 0) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const target = event.target as Element | null;
+  if (target?.closest('a[href]')) {
+    emit('navigate');
+  }
+};
+
 const sidebarRef = ref<HTMLElement | null>(null);
+
+// The open phone menu's class waits for mount, so a server-rendered page
+// (which cannot know the width) never paints an open menu on a phone before
+// hydration, and hydration sees the same classes the server sent.
+const isMounted = ref(false);
+onMounted(() => {
+  isMounted.value = true;
+});
+const phoneMenuOpen = computed(() => props.phoneMenu && isMounted.value && !props.hidden);
 const navRef = ref<HTMLElement | null>(null);
 
 const uid = useId();
@@ -377,6 +442,15 @@ onMounted(() => {
   scrollToActiveItem(false);
 });
 
+// A hidden sidebar has no layout to scroll, so the mount-time scroll does
+// nothing; centre the active item whenever it is shown (opening the phone
+// menu, or a dashboard that restores its visibility after mount).
+watch(() => props.hidden, (isHidden) => {
+  if (!isHidden) {
+    scrollToActiveItem(false);
+  }
+});
+
 // Client-side route change: open the newly active group, then scroll to it.
 // Scrolling into a group that was collapsed kicks off its 0.2s expand, so the
 // first scroll centres against a still-growing group; re-centre once it settles.
@@ -415,13 +489,16 @@ watch(activeGroupIndex, () => {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: var(--dx-sidebar-header-border-width) solid var(--dx-sidebar-separator-color);
 }
 
 .sidebar-footer {
   flex-shrink: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--dx-sidebar-separator-color);
 }
+
+/* Colours, typeface and weights come from the `--dx-sidebar-*` tokens in
+   theme.scss (per variant), not from here, so a consumer can rebrand them. */
 
 .brand-container {
   display: flex;
@@ -473,6 +550,16 @@ watch(activeGroupIndex, () => {
   font-size: 0.875rem;
 }
 
+/* Padding and the gap below live here rather than in `px-2`/`mb-2`
+   utilities, whose `!important` would stop the light variant reshaping the
+   headers into pills (theme.scss). */
+.nav-group-label,
+.nav-group-toggle {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 /* When collapsible groups are on, give the static (non-collapsible) group
    labels the same height as the toggle headers so a sidebar mixing both keeps
    an even vertical rhythm. */
@@ -495,24 +582,15 @@ watch(activeGroupIndex, () => {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
   font-size: 0.875rem;
-  background: transparent;
   border: 0;
-  /* No `color` here on purpose: theme.scss sets `.nav-group-toggle` to
-     $navbar-dark-color so the toggle matches the static .nav-group-label.
-     A scoped `color` would override that (equal specificity, later source order). */
+  /* No `color` or `background-color` here on purpose: theme.scss sets both
+     from the `--dx-sidebar-group-*` tokens (also for :hover and
+     :focus-visible), and a scoped declaration would override them (equal
+     specificity, later source order). */
   cursor: pointer;
   text-align: left;
   border-radius: var(--bs-border-radius, 0.375rem);
   transition: background-color 0.2s ease;
-}
-
-.nav-group-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.nav-group-toggle:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
-  outline-offset: 2px;
 }
 
 .nav-group-toggle-label {
@@ -590,10 +668,6 @@ watch(activeGroupIndex, () => {
   white-space: nowrap;
 }
 
-:deep(.nav-link.active) {
-  font-weight: 500;
-}
-
 :deep(.nav-icon) {
   flex-shrink: 0;
 }
@@ -612,16 +686,16 @@ watch(activeGroupIndex, () => {
 }
 
 .sidebar-nav::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--dx-sidebar-scrollbar-track);
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--dx-sidebar-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--dx-sidebar-scrollbar-thumb-hover);
 }
 
 .sidebar-hidden {

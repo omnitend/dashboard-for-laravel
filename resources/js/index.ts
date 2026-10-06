@@ -203,4 +203,5 @@ export type {
     Navigation,
     NavbarSearchAlign,
     NavbarActionsOnMobile,
+    SidebarVariant,
 } from "./types/navigation";

@@ -207,18 +207,20 @@ describe('DXDashboardNavbar responsive layout (#93)', () => {
  * only test used the DEFAULT avatar — so non-default slot content broke the
  * alignment silently. These use non-default content on purpose.
  *
- * The budget is published as `--dx-navbar-content-height`, and it is 47px, not
- * the 48px the old comment claimed: `.dashboard-navbar` is border-box, so its
- * 64px must contain the bar AND its own 1px `border-bottom`. That uncounted
- * pixel is exactly what pushed the header to 65px.
+ * The budget is published as `--dx-navbar-content-height`: 64px less the bar's
+ * padding (16px) and the header's own bottom line. `.dashboard-navbar` is
+ * border-box, so its 64px must contain the bar AND that line; the uncounted
+ * pixel is exactly what once pushed the header to 65px. The line is
+ * `--dx-dashboard-header-border-width`: none by default (48px budget), 1px
+ * beside the dark sidebar (47px).
  */
 describe('DXDashboardNavbar 64px budget with non-default content (#102)', () => {
-  const renderNavbar = (slots: Record<string, any> = {}) =>
+  const renderNavbar = (slots: Record<string, any> = {}, wrapperClass = '') =>
     render(
       defineComponent({
         setup() {
           return () =>
-            h('div', {}, [
+            h('div', { class: wrapperClass }, [
               h(DXDashboardNavbar, { pageTitle: 'Customers', user: sampleUser }, slots),
             ]);
         },
@@ -229,9 +231,12 @@ describe('DXDashboardNavbar 64px budget with non-default content (#102)', () => 
     (screen.container.querySelector('.dashboard-navbar') as HTMLElement).getBoundingClientRect()
       .height;
 
-  it('publishes the content budget as a CSS variable', async () => {
+  it.each([
+    { line: 'none (default)', wrapperClass: '', budget: 48 },
+    { line: '1px (dark sidebar)', wrapperClass: 'dashboard-layout--sidebar-dark', budget: 47 },
+  ])('publishes the content budget as a CSS variable, header line $line', async ({ wrapperClass, budget: expectedBudget }) => {
     await page.viewport(1280, 800);
-    const screen = renderNavbar();
+    const screen = renderNavbar({}, wrapperClass);
     await settled();
 
     const header = screen.container.querySelector('.dashboard-navbar') as HTMLElement;
@@ -240,13 +245,11 @@ describe('DXDashboardNavbar 64px budget with non-default content (#102)', () => 
     // Consumers size slot content against this rather than guessing at it.
     expect(budget).not.toBe('');
 
-    // 47, not 48: `.dashboard-navbar` is border-box, so its 64px has to contain
-    // the bar AND its own 1px border-bottom. That uncounted pixel is exactly
-    // what used to push the header to 65.
     const toggle = screen.container.querySelector(
       '.dashboard-navbar__user-menu-toggle',
     ) as HTMLElement;
-    expect(toggle.getBoundingClientRect().height).toBe(47);
+    expect(toggle.getBoundingClientRect().height).toBe(expectedBudget);
+    expect(headerHeight(screen)).toBe(64);
   });
 
   it('holds the header at 64px with an oversized avatar in the user-icon slot', async () => {
@@ -264,7 +267,7 @@ describe('DXDashboardNavbar 64px budget with non-default content (#102)', () => 
     const toggle = screen.container.querySelector(
       '.dashboard-navbar__user-menu-toggle',
     ) as HTMLElement;
-    expect(toggle.getBoundingClientRect().height).toBe(47);
+    expect(toggle.getBoundingClientRect().height).toBe(48);
   });
 
   // The library can't cap arbitrary slot content without clipping it, which

@@ -7,9 +7,17 @@
   any `navbar-*` slot to the navbar, stripping the prefix.
 -->
 <template>
-  <div class="dashboard-layout d-flex" :data-dashboard-id="dashboardId">
+  <div
+    ref="layoutRef"
+    class="dashboard-layout d-flex"
+    :class="`dashboard-layout--sidebar-${sidebarVariant}`"
+    :data-dashboard-id="dashboardId"
+  >
     <!-- Sidebar -->
     <DXDashboardSidebar
+      :id="sidebarId"
+      ref="sidebarComponent"
+      phone-menu
       :navigation="navigation"
       :current-url="currentUrl"
       :title="title"
@@ -17,7 +25,10 @@
       :hidden="hidden"
       :collapsible-groups="collapsibleGroups"
       :auto-collapse-inactive-groups="autoCollapseInactiveGroups"
+      :variant="sidebarVariant"
       @toggle="toggleSidebar"
+      @close="closePhoneMenu"
+      @navigate="onSidebarNavigate"
     >
       <!-- Dynamically forward all sidebar-* slots by stripping the prefix -->
       <template
@@ -39,8 +50,13 @@
       </template>
     </DXDashboardSidebar>
 
-    <!-- Main Content Area -->
-    <div class="dashboard-content flex-grow-1">
+    <!-- Main Content Area: the navbar and the page. Inert behind the open
+         phone menu, which covers both, so neither Tab, a click-through nor a
+         screen reader reaches them: focus is contained the way a native modal
+         <dialog> contains it, Tab moving between the sidebar's controls and
+         the browser's own. Modals teleported to <body> are outside and
+         unaffected. -->
+    <div class="dashboard-content flex-grow-1" :inert="phoneMenuOpen ? true : undefined">
       <!-- Top Navbar -->
       <DXDashboardNavbar
         :page-title="pageTitle"
@@ -48,6 +64,8 @@
         :search-align="searchAlign"
         :actions-on-mobile="actionsOnMobile"
         :user-menu-label="userMenuLabel"
+        :sidebar-expanded="!hidden"
+        :sidebar-id="sidebarId"
         @toggle-sidebar="toggleSidebar"
       >
         <!-- Dynamically forward all navbar-* slots by stripping the prefix -->
@@ -96,13 +114,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, useSlots } from 'vue';
+import { ref, computed, useSlots, useId, watch, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
 import DXDashboardSidebar from './DXDashboardSidebar.vue';
 import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
 import DRow from '../base/DRow.vue';
 import DCol from '../base/DCol.vue';
-import type { Navigation, NavbarActionsOnMobile, NavbarSearchAlign } from '../../types/navigation';
+import { acquirePageScrollLock, releasePageScrollLock } from '../../utils/pageScrollLock';
+import type { Navigation, NavbarActionsOnMobile, NavbarSearchAlign, SidebarVariant } from '../../types/navigation';
 
 const slots = useSlots();
 
@@ -173,6 +192,14 @@ interface Props {
    */
   autoCollapseInactiveGroups?: boolean;
 
+  /**
+   * Sidebar colour scheme, forwarded to DXDashboardSidebar as `variant`:
+   * `'light'` (default: white pane, tinted group headers, green active item,
+   * Poppins) or `'dark'` (the navy rail). Colours come from the
+   * `--dx-sidebar-*` custom properties, so either can be rebranded in CSS.
+   */
+  sidebarVariant?: SidebarVariant;
+
   /** LocalStorage key for sidebar state persistence */
   storageKey?: string;
 
@@ -190,6 +217,7 @@ const props = withDefaults(defineProps<Props>(), {
   user: null,
   collapsibleGroups: false,
   autoCollapseInactiveGroups: true,
+  sidebarVariant: 'light',
   storageKey: 'dashboard-sidebar-hidden',
   dashboardId: '',
   contentMaxWidth: '1140px',
@@ -224,65 +252,230 @@ const navbarSlots = computed(() => {
   return result;
 });
 
-// Initialize sidebar visibility from localStorage
-const getInitialHiddenState = (): boolean => {
-  // Skip during SSR - no access to localStorage or document
-  if (typeof window === 'undefined') {
-    return !props.dashboardId; // Default: hidden for global, visible for scoped
-  }
+/**
+ * Phone width: below Bootstrap's `sm` breakpoint (576px by default), the same
+ * breakpoint at which DModal goes full screen. There the open sidebar covers
+ * the whole viewport (theme.scss), so it behaves as a menu rather than a rail:
+ * it always starts closed, closes when a link is followed or on Escape, holds
+ * keyboard focus while open, and its state is never written to (or read from)
+ * `storageKey`, which keeps the desktop preference. Consumer apps navigate
+ * with full page loads, so restoring an "open" preference on a phone reopened
+ * the menu over every new page.
+ *
+ * The width comes from the theme, which publishes `breakpoint-max(sm)` as
+ * `--dx-dashboard-phone-max-width` on :root, so a theme compiled with its own
+ * `$grid-breakpoints` moves this behaviour and the full-screen styles
+ * together. 575.98px if the theme's CSS is not loaded.
+ */
+const PHONE_MAX_WIDTH_PROPERTY = '--dx-dashboard-phone-max-width';
+const DEFAULT_PHONE_MAX_WIDTH = '575.98px';
 
+const readPhoneMaxWidth = (): string => {
+  const published = getComputedStyle(document.documentElement)
+    .getPropertyValue(PHONE_MAX_WIDTH_PROPERTY)
+    .trim();
+  return published !== '' ? published : DEFAULT_PHONE_MAX_WIDTH;
+};
+
+// The query for the width last read. Re-read whenever the phone check runs
+// (setup, mount, toggle, close, Escape), not once: a theme stylesheet that
+// loads after the dashboard mounts must still take effect.
+let phoneMediaQuery: MediaQueryList | null = null;
+let phoneMediaQueryWidth = '';
+let listeningForPhoneChanges = false;
+
+const isPhone = ref(false);
+
+const refreshPhoneQuery = (): void => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+  const width = readPhoneMaxWidth();
+  if (phoneMediaQuery === null || width !== phoneMediaQueryWidth) {
+    if (listeningForPhoneChanges) {
+      phoneMediaQuery?.removeEventListener('change', onPhoneMediaChange);
+    }
+    phoneMediaQuery = window.matchMedia(`(max-width: ${width})`);
+    phoneMediaQueryWidth = width;
+    if (listeningForPhoneChanges) {
+      phoneMediaQuery.addEventListener('change', onPhoneMediaChange);
+    }
+  }
+  isPhone.value = phoneMediaQuery.matches;
+};
+
+// Default with nothing stored: hidden for global instances (docs), visible for
+// scoped instances (examples). Also what a server renders, having no storage.
+const defaultHidden = (): boolean => !props.dashboardId;
+
+// The remembered desktop preference, or the default when none is stored.
+const readDesktopHidden = (): boolean => {
   try {
     const savedHidden = localStorage.getItem(props.storageKey);
     if (savedHidden !== null) {
-      const isHidden = JSON.parse(savedHidden);
-
-      // If no dashboard ID (global instance), update HTML class for SSR compatibility
-      if (!props.dashboardId) {
-        if (isHidden) {
-          document.documentElement.classList.remove('sidebar-visible');
-        } else {
-          document.documentElement.classList.add('sidebar-visible');
-        }
-      }
-
-      return isHidden;
+      return JSON.parse(savedHidden);
     }
   } catch (error) {
     console.error('Error loading sidebar state:', error);
   }
-
-  // Default: hidden for global instances (docs), visible for scoped instances (examples)
-  if (!props.dashboardId) {
-    document.documentElement.classList.remove('sidebar-visible');
-    return true;
-  }
-  return false; // Show sidebar in scoped instances by default
+  return defaultHidden();
 };
 
-const hidden = ref(getInitialHiddenState());
+// The global instance (no dashboardId) mirrors visibility onto <html> so
+// layout CSS can follow it before hydration (see the docs' inline script).
+const syncHtmlClass = (isHidden: boolean): void => {
+  if (props.dashboardId || typeof document === 'undefined') return;
+  document.documentElement.classList.toggle('sidebar-visible', !isHidden);
+};
 
-const toggleSidebar = () => {
-  hidden.value = !hidden.value;
+// The state this browser should show: on a phone the menu is closed whatever
+// is stored.
+const getClientHiddenState = (): boolean => (isPhone.value ? true : readDesktopHidden());
 
-  // Skip during SSR
+// The first render uses what a server renders (`defaultHidden`), on the client
+// too, so hydration sees the server's own markup and the state agrees with it;
+// the client's state is applied on mount, before the browser paints a
+// client-only mount. The global <html> class, which layout CSS reads before
+// hydration, is set from the client's state straight away.
+if (typeof window !== 'undefined') {
+  refreshPhoneQuery();
+  syncHtmlClass(getClientHiddenState());
+}
+const hidden = ref(defaultHidden());
+
+const isMounted = ref(false);
+// False while a <KeepAlive> holds the dashboard out of the page.
+const isActive = ref(true);
+
+/** The full-screen phone menu is open (and this dashboard is on the page). */
+const phoneMenuOpen = computed(
+  () => isMounted.value && isActive.value && isPhone.value && !hidden.value,
+);
+
+const sidebarId = `${useId()}-sidebar`;
+const layoutRef = ref<HTMLElement | null>(null);
+const sidebarComponent = ref<InstanceType<typeof DXDashboardSidebar> | null>(null);
+
+const setHidden = (isHidden: boolean): void => {
+  hidden.value = isHidden;
   if (typeof window === 'undefined') return;
+  syncHtmlClass(isHidden);
 
-  // If no dashboard ID (global instance), update HTML class
-  if (!props.dashboardId) {
-    if (hidden.value) {
-      document.documentElement.classList.remove('sidebar-visible');
-    } else {
-      document.documentElement.classList.add('sidebar-visible');
-    }
-  }
-
-  // Save to localStorage
+  // Only desktop toggles are remembered; a phone's open/closed menu is not a
+  // preference.
+  if (isPhone.value) return;
   try {
-    localStorage.setItem(props.storageKey, JSON.stringify(hidden.value));
+    localStorage.setItem(props.storageKey, JSON.stringify(isHidden));
   } catch (error) {
     console.error('Error saving sidebar state:', error);
   }
 };
+
+const toggleSidebar = () => {
+  refreshPhoneQuery();
+  setHidden(!hidden.value);
+};
+
+// Close the phone menu without touching the stored desktop preference.
+const closePhoneMenu = (): void => {
+  refreshPhoneQuery();
+  if (isPhone.value && !hidden.value) {
+    setHidden(true);
+  }
+};
+
+// A link in the sidebar was followed: on a phone, get the menu out of the way
+// (for client-side routing, and so it is gone before a slow full page load).
+const onSidebarNavigate = (): void => {
+  closePhoneMenu();
+};
+
+const sidebarElement = (): HTMLElement | null =>
+  (sidebarComponent.value?.$el as HTMLElement | undefined) ?? null;
+
+const onKeydown = (event: KeyboardEvent): void => {
+  if (event.key !== 'Escape') return;
+  // An Escape aimed at something outside the dashboard (a modal opened from
+  // the menu, teleported to <body>) is that thing's, not the menu's.
+  const target = event.target;
+  if (target instanceof Node && target !== document.body && !layoutRef.value?.contains(target)) return;
+  refreshPhoneQuery();
+  if (phoneMenuOpen.value) {
+    closePhoneMenu();
+  }
+};
+
+const sidebarToggle = (): HTMLElement | null =>
+  layoutRef.value?.querySelector<HTMLElement>(`[aria-controls="${sidebarId}"]`) ?? null;
+
+// Opening the phone menu moves focus into it (its close button); closing it
+// hands focus back to the navbar toggle, unless focus has already gone
+// somewhere else on purpose. With no toggle to return to (a consumer removed
+// it), nothing is focused: the hidden menu has already lost focus to <body>.
+// After the DOM update, so the navbar is no longer inert when focus returns.
+watch(
+  phoneMenuOpen,
+  (isOpen, wasOpen) => {
+    const sidebar = sidebarElement();
+    if (isOpen) {
+      sidebar?.querySelector<HTMLElement>('.sidebar-close')?.focus();
+      return;
+    }
+    if (!wasOpen || !hidden.value || !layoutRef.value?.isConnected) return;
+    const active = document.activeElement;
+    const focusWasInMenu =
+      active === null || active === document.body || (sidebar !== null && sidebar.contains(active));
+    if (focusWasInMenu) {
+      sidebarToggle()?.focus();
+    }
+  },
+  { flush: 'post' },
+);
+
+// Crossing the breakpoint (rotation, a resized window): entering phone width
+// closes the menu; leaving it restores the remembered desktop preference.
+const onPhoneMediaChange = (event: MediaQueryListEvent): void => {
+  isPhone.value = event.matches;
+  hidden.value = event.matches ? true : readDesktopHidden();
+  syncHtmlClass(hidden.value);
+};
+
+// While the phone menu is open the page behind it must not scroll: a class on
+// <html> (styled in theme.scss, below `sm` only), held per dashboard so one
+// closing or unmounting cannot unlock another's open menu.
+const scrollLockOwner = {};
+watch(phoneMenuOpen, (isOpen) => {
+  if (isOpen) {
+    acquirePageScrollLock(scrollLockOwner);
+  } else {
+    releasePageScrollLock(scrollLockOwner);
+  }
+});
+
+onMounted(() => {
+  refreshPhoneQuery();
+  listeningForPhoneChanges = true;
+  phoneMediaQuery?.addEventListener('change', onPhoneMediaChange);
+  isMounted.value = true;
+  hidden.value = getClientHiddenState();
+  document.addEventListener('keydown', onKeydown);
+});
+
+// A <KeepAlive> keeps the dashboard alive off the page: whatever took its
+// place must scroll, and the menu should not reappear open on return.
+onDeactivated(() => {
+  closePhoneMenu();
+  isActive.value = false;
+});
+
+onActivated(() => {
+  isActive.value = true;
+});
+
+onBeforeUnmount(() => {
+  phoneMediaQuery?.removeEventListener('change', onPhoneMediaChange);
+  listeningForPhoneChanges = false;
+  document.removeEventListener('keydown', onKeydown);
+  releasePageScrollLock(scrollLockOwner);
+});
 
 defineExpose({
   /**
