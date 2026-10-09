@@ -216,6 +216,47 @@ describe('DXTable modal: each open is a new session (#194 review)', () => {
     expect(modalButton('Save')!.disabled).toBe(false);
   });
 
+  it("a slow create success does not close the row modal opened since", async () => {
+    const { resolvers } = deferredFetches();
+    const rowCreated = vi.fn();
+    const screen = renderTable({ onRowCreated: rowCreated });
+
+    await openCreate(screen);
+    modalButton('Create')!.click();
+    await wait(100);
+    await cancel();
+    await openRow(screen, 1);
+
+    resolvers[0](json(201, { data: { id: 3 } }));
+    await wait(400);
+
+    expect(rowCreated).toHaveBeenCalledTimes(1);
+    expect(visibleModal()).toBeTruthy();
+    expect(modalButton('Save')).toBeTruthy();
+  });
+
+  it("a slow delete success does not close the row modal opened since; rowDeleted names the deleted row", async () => {
+    const { resolvers } = deferredFetches();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const rowDeleted = vi.fn();
+    const screen = renderTable({ onRowDeleted: rowDeleted, deleteUrl: '/api/categories/:id' });
+
+    await openRow(screen, 0);
+    modalButton('Delete')!.click();
+    await wait(100);
+    expect(resolvers.length).toBe(1);
+    await cancel();
+    await openRow(screen, 1);
+
+    resolvers[0](json(200, {}));
+    await wait(400);
+
+    expect(rowDeleted).toHaveBeenCalledTimes(1);
+    expect(rowDeleted.mock.calls[0][0].id).toBe(1);
+    expect(visibleModal()).toBeTruthy();
+    expect(modalButton('Save')).toBeTruthy();
+  });
+
   it('emits exactly one deleteError per failed delete', async () => {
     immediate(() => json(500, { message: 'Internal Server Error' }));
     vi.spyOn(window, 'confirm').mockReturnValue(true);
