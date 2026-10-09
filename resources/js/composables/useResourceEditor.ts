@@ -1,6 +1,6 @@
 import { computed, ref, watch, type Ref } from "vue";
 import { api } from "../utils/api";
-import { useForm } from "./useForm";
+import { useForm, type FormError } from "./useForm";
 import { useToast } from "./useToast";
 import type { FieldDefinition } from "../types";
 import {
@@ -429,6 +429,30 @@ export function useResourceEditor<T = any>(
         );
     };
 
+    /**
+     * A failed create/edit save. `useForm` hands `onError` the `ApiError`
+     * (`{ message, errors, status }`), not an errors map: the old
+     * `Object.values(errors).flat()[0]` read its `message`, and a 422 toasted
+     * the server's summary line for 5 s. A validation failure (422) now
+     * toasts nothing: the modal footer's error summary lists every message,
+     * beside Save, until the next submit (#194). Any other failure keeps a
+     * toast with the client's message for it ("Server error. Please try
+     * again later.") or `fallback` for a non-HTTP failure.
+     */
+    const toastSaveFailure = (error: FormError | unknown, fallback: string) => {
+        const status = (error as FormError | null)?.status;
+        if (status === 422) return;
+        // Only an HTTP failure's message is written for users; a thrown
+        // TypeError ("Failed to fetch") gets the fallback.
+        const message = typeof status === 'number' ? (error as FormError).message : '';
+        createToast?.({
+            title: 'Error',
+            body: typeof message === 'string' && message !== '' ? message : fallback,
+            variant: 'danger',
+            modelValue: 5000,
+        });
+    };
+
     const performSave = async () => {
         // Create mode: POST to createUrl
         if (isCreateMode.value && props.createUrl) {
@@ -450,25 +474,9 @@ export function useResourceEditor<T = any>(
 
                         refresh();
                     },
-                    onError: (errors: any) => {
-                        let errorMessage = 'Failed to create. Please check the form for errors.';
-                        if (errors && typeof errors === 'object') {
-                            const firstError = Object.values(errors).flat()[0];
-                            if (typeof firstError === 'string') {
-                                errorMessage = firstError;
-                            }
-                        }
-
-                        createToast?.({
-                            title: 'Error',
-                            body: errorMessage,
-                            variant: 'danger',
-                            modelValue: 5000,
-                        });
-
-                        // DXForm switches to the first errored tab via its
-                        // own watcher on editForm.errors.
-                        emit('createError', errors);
+                    onError: (error: FormError) => {
+                        toastSaveFailure(error, 'Failed to create. Please try again.');
+                        emit('createError', error);
                     }
                 });
             } catch (error) {
@@ -504,27 +512,9 @@ export function useResourceEditor<T = any>(
                         // Refresh table data to show updated values
                         refresh();
                     },
-                    onError: (errors: any) => {
-                        // Extract first error message for toast
-                        let errorMessage = 'Failed to update. Please check the form for errors.';
-                        if (errors && typeof errors === 'object') {
-                            const firstError = Object.values(errors).flat()[0];
-                            if (typeof firstError === 'string') {
-                                errorMessage = firstError;
-                            }
-                        }
-
-                        // Show error toast with specific message
-                        createToast?.({
-                            title: 'Error',
-                            body: errorMessage,
-                            variant: 'danger',
-                            modelValue: 5000, // Auto-dismiss after 5 seconds
-                        });
-
-                        // DXForm switches to the first errored tab via its
-                        // own watcher on editForm.errors.
-                        emit('editError', selectedItem.value as T, errors);
+                    onError: (error: FormError) => {
+                        toastSaveFailure(error, 'Failed to update. Please try again.');
+                        emit('editError', selectedItem.value as T, error);
                     }
                 });
             } else {

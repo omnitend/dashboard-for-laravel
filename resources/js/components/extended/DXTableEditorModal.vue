@@ -55,6 +55,7 @@
             :aria-busy="loading ? 'true' : undefined"
         >
             <DXForm
+                ref="innerForm"
                 :key="formInstanceKey"
                 :active-tab="activeTab"
                 :form="form"
@@ -66,6 +67,7 @@
                 :card-tabs="false"
                 :context="item ?? undefined"
                 :show-submit="false"
+                :error-summary="false"
                 @update:active-tab="emit('update:activeTab', $event)"
                 @submit="emit('save')"
             >
@@ -154,6 +156,21 @@
         </fieldset>
 
         <template #footer>
+            <!-- What the last failed save returned, beside the Save button it
+                 answers (#194). The inner DXForm shows no summary or alert of
+                 its own (`error-summary="false"`), so a failure shows one
+                 alert. Rows come from the inner form's own resolution, and a
+                 row click drives the inner form's tab and focus. -->
+            <DXFormErrorSummary
+                v-if="form"
+                class="dx-edit-error-summary w-100"
+                :form="form"
+                :fields="fields"
+                :tabs="tabs"
+                :context="item ?? undefined"
+                :targets="innerForm?.errorTargets ?? null"
+                @select-target="innerForm?.focusErrorTarget($event)"
+            />
             <div class="d-flex justify-content-between w-100">
                 <div>
                     <DButton
@@ -187,11 +204,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useSlots } from "vue";
+import { computed, ref, useSlots } from "vue";
 import DModal from "../base/DModal.vue";
 import DButton from "../base/DButton.vue";
 import DSpinner from "../base/DSpinner.vue";
 import DXForm from "./DXForm.vue";
+import DXFormErrorSummary from "./DXFormErrorSummary.vue";
 import type { EditTab } from "./DXTable.vue";
 import type { LabelCols } from "../../types";
 
@@ -244,6 +262,9 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+/** The inner form: its resolved error rows, and focusing an errored field. */
+const innerForm = ref<InstanceType<typeof DXForm> | null>(null);
 
 // Title-case the singular item noun for button labels ("customer" → "Customer",
 // "sales order" → "Sales Order") — capitalize the first letter of each word.
