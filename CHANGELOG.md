@@ -7,14 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-10-09
+
+### Added
+
+- `editOnRowClick` on DXTable (default `true`). Set it `false` to keep the
+  create modal that `editFields` define while a row click only emits
+  `row-clicked`: a page that opens the record elsewhere no longer gets the
+  edit modal on top. Rows then look clickable only when something listens
+  for `row-clicked` (#200).
+
 ### Changed
 
+- Docs and MCP tooling are no longer runtime dependencies: a minimal
+  consumer install (the library plus `vue`) drops from 226 packages to 87
+  (#181). `highlight.js`,
+  `rehype-autolink-headings`, `rehype-slug` and `vue-docgen-api` are now
+  devDependencies; nothing in `dist/` used them, and the build is
+  byte-identical.
+- `@modelcontextprotocol/sdk` is now an **optional peer dependency** of the
+  `dashboard-docs-mcp` bin, so consumers no longer install express, hono,
+  ajv and the rest of its server stack. **If you use the docs MCP server**,
+  install the SDK in the project (`npm install --save-dev
+  @modelcontextprotocol/sdk`) and point `.mcp.json` at `npx --no
+  dashboard-docs-mcp`; a global config with no local install passes
+  `-p @modelcontextprotocol/sdk -p @omnitend/dashboard-for-laravel` to `npx`
+  (see `MCP_SERVER.md`). Without the SDK the bin exits with an install
+  instruction instead of a module-not-found stack trace.
 - `DFormSelect`'s `options` accept any object option, as bvn's `BFormSelect`
   does (`object | string | number | boolean`), not only
   `Record<string, unknown>`, so an array typed with an option interface
   (DXTable's `FilterOption`, or your own) needs no cast. Types only.
 
-### Bug Fixes
+### Fixed
 
 - A searchable select (`DXField` `select` + `searchable`) with an
   `optionsLoader` no longer swaps a stand-in input for the real control when
