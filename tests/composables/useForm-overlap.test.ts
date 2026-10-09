@@ -414,16 +414,19 @@ describe('useForm: aborted and never-sent submits', () => {
       const submitA = form.post('/api/a').catch(() => {});
       await settle();
       const onError = vi.fn();
+      const onFinish = vi.fn();
       const submitB = form.post('/api/b', {
         [hook]: () => {
           throw new Error(`${hook} bug`);
         },
         onError,
+        onFinish,
       });
       await expect(submitB).rejects.toThrow(`${hook} bug`);
       // B was never sent and calls no callbacks (as before).
       expect(resolvers.length).toBe(1);
       expect(onError).not.toHaveBeenCalled();
+      expect(onFinish).not.toHaveBeenCalled();
       expect(form.processing).toBe(true); // A is still in flight
 
       resolvers[0](invalid(A_ERRORS));
@@ -443,17 +446,50 @@ describe('useForm: aborted and never-sent submits', () => {
       await form.post('/api/a').catch(() => {});
       expect(form.submitFailure).not.toBeNull();
 
+      const onError = vi.fn();
+      const onFinish = vi.fn();
       await expect(
         form.post('/api/b', {
           [hook]: () => {
             throw new Error(`${hook} bug`);
           },
+          onError,
+          onFinish,
         }),
       ).rejects.toThrow(`${hook} bug`);
 
       expect(form.processing).toBe(false);
       expect(form.submitFailure).toEqual({ message: GENERIC, errors: A_ERRORS });
       expect((globalThis.fetch as any).mock.calls.length).toBe(1);
+      expect(onError).not.toHaveBeenCalled();
+      expect(onFinish).not.toHaveBeenCalled();
     });
   }
+
+  it('a held success recorded after a newer submit aborts does not run resetOnSuccess', async () => {
+    const { resolvers } = deferredFetches();
+    const form = useForm({ name: '' });
+    const controller = new AbortController();
+    const onSuccessA = vi.fn();
+    const submitA = form.post('/api/a', { resetOnSuccess: true, onSuccess: onSuccessA });
+    const submitB = form.post('/api/b', { signal: controller.signal }).catch(() => {});
+    await settle();
+
+    resolvers[0](jsonResponse(200, {}));
+    await submitA;
+    expect(onSuccessA).toHaveBeenCalledTimes(1); // positive control: A succeeded
+    expect(form.wasSuccessful).toBe(false); // held back while B is pending
+
+    // The user edits while B is still pending.
+    form.field('name').value = 'typed after A landed';
+
+    controller.abort();
+    await submitB;
+
+    // Positive control: A's held success was recorded by the abort ...
+    expect(form.wasSuccessful).toBe(true);
+    // ... without resetting the form.
+    expect(form.data.name).toBe('typed after A landed');
+    expect(form.touched.name).toBe(true);
+  });
 });
