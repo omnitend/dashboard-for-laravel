@@ -40,7 +40,7 @@ accepts either a `useForm` return or a `defineForm` return (with the latter,
   { name: 'context', type: 'Record<string, any>', required: 'No', default: '-', description: 'Extra context merged under the live form data when evaluating predicates (label/hint/when/disabled).' },
   { name: 'activeTab', type: 'number (v-model)', required: 'No', default: '0', description: 'Active tab, as an index into the VISIBLE tabs. Two-way bindable via v-model:active-tab. The form tracks the tab by key, so the same tab stays shown when tabs reorder or an earlier one hides (the index is re-emitted), and an initial index other than 0 is honoured.' },
   { name: 'autoErrorTab', type: 'boolean', required: 'No', default: 'true', description: 'After a failed submit (and for errors already on the form at mount), select the first visible tab holding a visible field with an error. Fixing a field never moves the tab.' },
-  { name: 'errorSummary', type: '"footer" | "top" | false', required: 'No', default: '"footer"', description: 'Where to list what the last failed submit returned: directly above the submit button ("footer"), above the fields ("top"), or nowhere (false, the form-level alert as before). See Validation errors below.' },
+  { name: 'errorSummary', type: '"footer" | "top" | "external" | false', required: 'No', default: '"footer"', description: 'Where to list what the last failed submit returned: directly above the submit button ("footer"), above the fields ("top"), in a DXFormErrorSummary the host renders elsewhere ("external": DXForm shows neither a summary nor its alert), or nowhere (false, the form-level alert as before). See Validation errors below.' },
   { name: 'scrollToError', type: 'boolean', required: 'No', default: 'true', description: 'After a failed submit, scroll the first field with an error into view once its tab is shown. Never moves focus.' },
   { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text.' },
   { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text.' },
@@ -77,7 +77,7 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
   { name: 'hint(<key>)', props: 'field, model', description: 'Override the hint text rendered below the field.' },
   { name: 'repeater-row(<key>)', props: 'row, index, fields, remove, path', description: 'Custom row layout for a repeater field.' },
   { name: 'switch-list-item(<key>)', props: 'option, on', description: 'Extra content beside a switch-list row\'s toggle (e.g. a notes input bound to your own model).' },
-  { name: 'field(<key>)', props: 'field, model', description: 'Fully replace a field\'s rendering (including its label), bypassing DXField entirely. Supersedes field-before/field-after for the same key.' },
+  { name: 'field(<key>)', props: 'field, model', description: 'Fully replace a field\'s rendering (including its label), bypassing DXField entirely. Supersedes field-before/field-after for the same key. Rendered inside an unstyled `<div class="dx-form-field-slot" data-dx-field-key="<key>">`, so a failed submit can scroll to and focus it.' },
   { name: 'field-before(<key>)', props: 'field, model', description: 'Content rendered directly above a field (e.g. a quick-create button above a select).' },
   { name: 'field-after(<key>)', props: 'field, model', description: 'Content rendered directly below a field.' },
   { name: 'tab-content(<key>)', props: 'tab, model', description: 'Replace the entire body of a tab.' },
@@ -148,7 +148,10 @@ message with a readable label ("Price (line 1): Must be positive.").
   failures (`errors: {}`) are listed too, as plain text, so a 422 is never
   invisible.
 - A row naming a visible field is a button: it selects the field's tab,
-  scrolls to the field and focuses it.
+  scrolls to the field and focuses its input (for a repeater row, that row's
+  field; a field's info button is never focused instead; an async editor is
+  waited for). Content from a `field(<key>)` slot is reached through its
+  wrapper.
 - The form also takes the user to the first problem: it selects the first
   tab holding an error (`autoErrorTab`) and scrolls the field into view
   (`scrollToError`), including on a `lazy` tab. A `preserveErrors` resubmit
@@ -184,16 +187,20 @@ const tabs: FormTab[] = [
 ### A summary outside the form
 
 When the submit control lives outside DXForm (a modal footer, a sticky
-action bar), turn the form's summary off and render
+action bar), set `error-summary="external"` and render
 [DXFormErrorSummary](/components/extended/DXFormErrorSummary) beside the
 button. Pass the form's own resolved rows (`errorTargets`) and let a row click
 drive the form through its exposed `focusErrorTarget`, so the summary and the
-form agree on every row. DXTable's create/edit modal does exactly this.
+form agree on every row. `"external"` tells DXForm another summary lists the
+failure, so it renders neither its own summary nor its form-level alert
+(`false` would bring that alert back for a message-only failure, or once the
+last field error is fixed: two alerts). DXTable's create/edit modal does
+exactly this.
 
 ```vue
 <template>
   <DXForm ref="formRef" :form="form" :fields="fields" :tabs="tabs"
-    :show-submit="false" :error-summary="false" @submit="save" />
+    :show-submit="false" error-summary="external" @submit="save" />
 
   <footer>
     <DXFormErrorSummary

@@ -17,13 +17,22 @@
 -->
 <template>
   <!-- Full replacement slot bypasses DXField entirely (mirrors tab-content):
-       also supersedes field-before/field-after for the same key. -->
-  <slot
+       also supersedes field-before/field-after for the same key. The plain
+       wrapper carries `data-dx-field-key` (as DXField's root does), so a
+       failed submit can scroll to and focus replaced content (#194). Its class
+       is unstyled (no margin, padding or border), so the content's own
+       margins collapse through it and the layout is unchanged. -->
+  <div
     v-if="$slots[`field(${field.key})`]"
-    :name="`field(${field.key})`"
-    :field="field"
-    :model="model"
-  />
+    class="dx-form-field-slot"
+    :data-dx-field-key="field.key"
+  >
+    <slot
+      :name="`field(${field.key})`"
+      :field="field"
+      :model="model"
+    />
+  </div>
   <template v-else>
     <!-- Content inserted directly above the field. -->
     <slot :name="`field-before(${field.key})`" :field="field" :model="model" />

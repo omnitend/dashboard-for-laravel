@@ -19,13 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   summary directly above its submit button (below any tabs) after a failed
   submit, and its form-level alert steps aside while it does, so a failure
   shows one alert. This is a visible change for every DXForm; `'top'` puts it
-  above the fields, `false` restores the old alert exactly (#194).
+  above the fields, `'external'` leaves it to a summary the host renders
+  elsewhere (DXForm then shows neither a summary nor its alert, as in
+  DXTable's modal), `false` restores the old alert exactly (#194).
 - DXForm `scrollToError` prop (default `true`): after a failed submit the
   first field with an error is scrolled into view once its tab is shown,
   lazy tabs included. Focus does not move (#194).
 - DXForm exposes `focusErrorTarget(target)` and `errorTargets`, for a summary
-  rendered outside the form. DXField roots carry `data-dx-field-key` (the
-  field's data path) (#194).
+  rendered outside the form. It goes to the exact errored path (a repeater
+  row's field, not the repeater), focuses the field's editable control
+  before any button in it (an info button), and waits up to a second for an
+  async editor's control. Auto-scroll skips a target that never renders for
+  the next one. DXField roots carry `data-dx-field-key` (the field's data
+  path), and so does a new unstyled wrapper around `field(<key>)` slot
+  content (`<div class="dx-form-field-slot">`) (#194).
 - `errorKeys` field option: patterns (`*` matches one dot segment, e.g.
   `['lines.*.*']`) for error keys a field owns although they are not under
   its key, such as a `span` field editing `form.data.lines` (#194).
@@ -34,13 +41,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `failedSubmitCount` (#194).
 - `resolveErrorTargets(errors, options)` and its types, the resolver that
   decides which field and tab each error key belongs to, as used by DXForm
-  and the summary (#194).
+  and the summary. A repeater sub-field's label resolves against its row,
+  as DXRepeater renders it (`resolveLabel` receives that model as its second
+  argument), and a label function that throws falls back to the humanised
+  key rather than hiding the errors (#194).
 
 ### Changed
 
 - DXForm tracks the active tab by key. The same tab stays shown when tabs
   reorder or an earlier tab hides (`v-model:active-tab` is re-emitted with
-  its new index), and pane ids are opaque and stable per tab (#194).
+  its new index), and pane ids are opaque and stable per tab (#194). A tab
+  index the parent sets while every tab is hidden (or at mount) is held and
+  applied when tabs appear, rather than replaced by the first tab.
 - DXTable's create/edit modal lists every validation message in its footer,
   beside Save, and no longer toasts on a 422. Its `onError` was reading the
   `ApiError` as if it were an errors map, so the toast showed the server's

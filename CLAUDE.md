@@ -470,16 +470,29 @@ Three owners, nothing else writes their state:
 The summary (`DXFormErrorSummary`) renders at `errorSummary: 'footer'` by
 default, directly above the submit button, never inside a tab pane; while it
 shows a failure the top `DAlert` (`shouldShowMessage`) does not render.
-`scrollToError` scrolls the first owned field (`[data-dx-field-key]`, set on
-DXField's roots to the data path) into view after the pane mounts; no focus.
-A summary row (or the exposed `focusErrorTarget`) selects the tab and focuses
-the field. DXTable's modal renders the summary in its footer with the inner
-form on `error-summary="false"`, and `useResourceEditor` toasts only
+`scrollToError` scrolls the first owned field on the selected tab
+(`[data-dx-field-key]`, set on DXField's roots to the data path, and on the
+unstyled `.dx-form-field-slot` wrapper of a `field(<key>)` slot) into view
+after the pane mounts, skipping a target that never renders; no focus.
+Both prefer the element for the EXACT error path (`lines.1.price`, a
+repeater row) and fall back to the owner after the render frames. A summary
+row (or the exposed `focusErrorTarget`) selects the tab and focuses the
+field's EDITABLE control first (never its info button), waiting about a
+second for an async editor's control. Sub-field labels in the resolver
+resolve against the ROW, as DXRepeater does, and a throwing label falls back
+to the humanised key. A tab index the parent sets while every tab is hidden
+is held (`pendingRequestedIndex`) until tabs appear. DXTable's modal
+renders the summary in its footer with the inner form on
+`error-summary="external"` (NOT `false`, which brings the top alert back for
+message-only failures: two alerts), and `useResourceEditor` toasts only
 non-422 failures (`onError` receives the `ApiError`, not an errors map).
 Bootstrap sets `scroll-behavior: smooth` on `:root`, so a scroll test must
-wait for `scrollY` to settle (two equal reads) before reading rects. Pinned
-by `DXForm-ErrorSummary.test.ts`, `DXForm-ErrorTab.test.ts`,
-`DXForm-TabState.test.ts`, `DXTable-ValidationSummary.test.ts`.
+wait for `scrollY` to settle (two equal reads) before reading rects; a scroll
+that STARTS late (after a skipped target's frames) needs a fixed wait first,
+or two equal reads of 0 pass before it begins. Pinned by
+`DXForm-ErrorSummary.test.ts`, `DXForm-ErrorReach.test.ts`,
+`DXForm-ErrorTab.test.ts`, `DXForm-TabState.test.ts`,
+`DXTable-ValidationSummary.test.ts`, `utils/formErrorTargets.test.ts`.
 
 ### DXBasicForm
 

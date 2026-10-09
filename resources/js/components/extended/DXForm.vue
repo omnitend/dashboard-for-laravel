@@ -349,13 +349,17 @@ interface Props {
      * - `"footer"` (default) — directly above the submit button, below any
      *   tabs, next to the control the user just pressed.
      * - `"top"` — above the fields, where the form-level alert sits.
+     * - `"external"` — the host renders a `DXFormErrorSummary` of its own
+     *   elsewhere (beside a submit button outside the form, as DXTable's
+     *   modal does). DXForm renders neither a summary nor, while a failure
+     *   is listed, the form-level alert.
      * - `false` — no summary; the form-level alert behaves as before.
      *
-     * While the summary shows a failure the form-level alert does not
-     * render, so a failure shows exactly one alert. Each row naming a visible
-     * field is a button that selects the field's tab and focuses it.
+     * While a summary shows a failure the form-level alert does not render,
+     * so a failure shows exactly one alert. Each row naming a visible field is
+     * a button that selects the field's tab and focuses it.
      */
-    errorSummary?: "footer" | "top" | false;
+    errorSummary?: "footer" | "top" | "external" | false;
 
     /**
      * After a failed submit, scroll the first field with an error into view
@@ -564,11 +568,6 @@ const visibleTabKeys = computed<string[]>(() =>
     visibleTabs.value.map((tab) => tab.key),
 );
 
-/** A field's label as DXField shows it (a function label reads the model). */
-function resolveFieldLabel(field: FieldDefinition): string | undefined {
-    return typeof field.label === "function" ? field.label(model.value) : field.label;
-}
-
 /**
  * Where each error key belongs, decided by the one resolver the summary also
  * uses (#194), under THIS form's visibility rules: a field hidden by `when`,
@@ -585,7 +584,6 @@ function errorTargetsFor(errors: ValidationErrors | null | undefined): ErrorTarg
         model: model.value,
         isFieldVisible,
         isTabVisible: (tab) => visibleTabKeys.value.includes(tab.key),
-        resolveLabel: resolveFieldLabel,
     });
 }
 
@@ -623,11 +621,14 @@ const activeTabKey = ref<string | null>(null);
 // reorder or hide, and would make bvn show a different pane).
 const tabIdBase = useId();
 const paneNumbers = new Map<string, number>();
+/** Monotonic: a pruned key's number is never handed out again. */
+let nextPaneNumber = 0;
 
 function paneIdFor(key: string): string {
     let paneNumber = paneNumbers.get(key);
     if (paneNumber === undefined) {
-        paneNumber = paneNumbers.size;
+        paneNumber = nextPaneNumber;
+        nextPaneNumber += 1;
         paneNumbers.set(key, paneNumber);
     }
     return `${tabIdBase}-tab-${paneNumber}`;
@@ -677,11 +678,19 @@ function commitTabKey(key: string | null): void {
  * at mount), the first visible tab owning a visible errored field; a tab
  * index the parent just set; the current tab while it is still visible; the
  * first visible tab. With no visible tabs the key is kept, so the same tab
- * returns when they come back.
+ * returns when they come back, and an index the parent sets meanwhile (or
+ * at mount) is held until they do: it cannot be resolved to a key yet.
  */
-function decideTabKey(failed: boolean, requestedIndex: number | null): string | null {
+let pendingRequestedIndex: number | null = null;
+
+function decideTabKey(failed: boolean, incomingIndex: number | null): string | null {
     const keys = visibleTabKeys.value;
-    if (keys.length === 0) return activeTabKey.value;
+    if (keys.length === 0) {
+        if (incomingIndex !== null) pendingRequestedIndex = incomingIndex;
+        return activeTabKey.value;
+    }
+    const requestedIndex = incomingIndex ?? pendingRequestedIndex;
+    pendingRequestedIndex = null;
     if (failed && props.autoErrorTab) {
         const errorTabKey = firstErrorTabKey();
         if (errorTabKey !== null) return errorTabKey;
@@ -786,6 +795,23 @@ function tabControlsFor(key: string): TabControls {
     return controls;
 }
 
+// Forget the ids and controls of keys no longer in `props.tabs`, so a form
+// whose tab list is rebuilt over its life does not keep every key it ever
+// had. A tab hidden by `when` is still in `props.tabs` and keeps its id, so
+// it returns as the same pane.
+watch(
+    () => (props.tabs ?? []).map((tab) => tab.key),
+    (keys) => {
+        const current = new Set(keys);
+        for (const key of [...paneNumbers.keys()]) {
+            if (!current.has(key)) paneNumbers.delete(key);
+        }
+        for (const key of [...tabControlsByKey.keys()]) {
+            if (!current.has(key)) tabControlsByKey.delete(key);
+        }
+    },
+);
+
 function tabButtonAttrs(key: string): Record<string, unknown> {
     const controls = tabControlsFor(key);
     return key === activeTabKey.value
@@ -838,33 +864,90 @@ function goToErrorTab(): void {
 
 // ————————————————— taking the user to an errored field (#194)
 
-const FOCUSABLE_CONTROL = [
-    'input:not([type="hidden"]):not(:disabled)',
+/**
+ * Controls a user types into or picks from: what a focus request lands on.
+ * Looked for before anything else focusable, so a field whose label carries
+ * an info button ("More information", earlier in document order) focuses
+ * its input, not the button.
+ */
+const EDITABLE_CONTROL = [
+    'input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not(:disabled)',
     "select:not(:disabled)",
     "textarea:not(:disabled)",
-    "button:not(:disabled)",
     '[contenteditable="true"]',
+    '[contenteditable=""]',
+    '[role="combobox"]:not([aria-disabled="true"])',
+    '[role="textbox"]:not([aria-disabled="true"])',
+    '[role="spinbutton"]:not([aria-disabled="true"])',
+    '[role="listbox"]:not([aria-disabled="true"])',
+].join(", ");
+
+/** The fallback for a widget with no editable control (a button picker). */
+const ANY_FOCUSABLE = [
+    "button:not(:disabled)",
+    "a[href]",
     '[tabindex]:not([tabindex="-1"])',
 ].join(", ");
 
-/** Frames to wait for a lazy tab's pane (and its async pieces) to render. */
+/**
+ * Frames to wait for a field's element: a lazy tab mounts its pane a render
+ * or two after it is selected, and a repeater (an async component) renders
+ * its rows after that. After this many, a nested key that never rendered an
+ * element of its own (a media map's `image_media.<uuid>`) settles for its
+ * owning field.
+ */
 const FIELD_RENDER_ATTEMPTS = 10;
 
 /**
- * A field's rendered element (DXField's root carries `data-dx-field-key`),
- * once it is laid out. A lazy tab mounts its pane a render or two after it is
- * selected, so this waits a few frames. Null when the field never renders (a
- * `field(<key>)` replacement slot, a tab that cannot be shown).
+ * Further frames a FOCUS request waits for the field's control (about a
+ * second): an async editor's wrapper renders before its control does.
  */
-async function renderedFieldElement(fieldKey: string): Promise<HTMLElement | null> {
-    const selector = `[data-dx-field-key="${CSS.escape(fieldKey)}"]`;
-    for (let attempt = 0; attempt < FIELD_RENDER_ATTEMPTS; attempt += 1) {
-        await nextTick();
-        const element = resolveFormElement()?.querySelector<HTMLElement>(selector) ?? null;
-        if (element !== null && element.offsetParent !== null) return element;
-        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+const CONTROL_RENDER_ATTEMPTS = 60;
+
+const nextFrame = () =>
+    new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+
+function isShown(element: HTMLElement): boolean {
+    return element.offsetParent !== null;
+}
+
+/** The first shown element matching `selector`: `element` itself, or inside it. */
+function firstShown(element: HTMLElement, selector: string): HTMLElement | null {
+    if (element.matches(selector) && isShown(element)) return element;
+    for (const candidate of Array.from(element.querySelectorAll<HTMLElement>(selector))) {
+        if (isShown(candidate)) return candidate;
     }
     return null;
+}
+
+/** A rendered, laid-out element marked with this data path, or null. */
+function shownFieldElement(path: string): HTMLElement | null {
+    const element =
+        resolveFormElement()?.querySelector<HTMLElement>(
+            `[data-dx-field-key="${CSS.escape(path)}"]`,
+        ) ?? null;
+    return element !== null && isShown(element) ? element : null;
+}
+
+/**
+ * The element to take the user to for an error: the one rendered for the
+ * EXACT error path (`lines.1.price`, a repeater row's field) when there is
+ * one, else the owning field's (`lines`). DXField's roots, and the wrapper of
+ * a `field(<key>)` replacement slot, carry `data-dx-field-key`. Null when
+ * neither renders (content a consumer renders without the marker, a tab that
+ * cannot be shown).
+ */
+async function renderedErrorElement(
+    errorKey: string,
+    fieldKey: string,
+): Promise<HTMLElement | null> {
+    for (let attempt = 0; attempt < FIELD_RENDER_ATTEMPTS; attempt += 1) {
+        await nextTick();
+        const exact = shownFieldElement(errorKey);
+        if (exact !== null) return exact;
+        if (attempt < FIELD_RENDER_ATTEMPTS - 1) await nextFrame();
+    }
+    return errorKey === fieldKey ? null : shownFieldElement(fieldKey);
 }
 
 /** Bumped per scroll/focus request, so only the latest one acts. */
@@ -872,38 +955,60 @@ let revealToken = 0;
 
 /**
  * After a failed submit: once the decision has selected the tab and its pane
- * has rendered, scroll the first owned field into view. No focus, so a phone
- * does not raise its keyboard over the summary.
+ * has rendered, scroll the first owned field on that tab into view. A target
+ * that never renders (consumer content without the marker) is skipped for
+ * the next one. No focus, so a phone does not raise its keyboard over the
+ * summary.
  */
 function scrollToFirstError(): void {
-    const first = liveErrorTargets.value.find((target) => target.fieldKey !== null);
-    if (first === undefined || first.fieldKey === null) return;
-    const fieldKey = first.fieldKey;
+    const selectedKey = activeTabKey.value;
+    const targets = liveErrorTargets.value.filter(
+        (target) =>
+            target.fieldKey !== null &&
+            (target.tabKey === null || target.tabKey === selectedKey),
+    );
+    if (targets.length === 0) return;
     const token = ++revealToken;
-    void renderedFieldElement(fieldKey).then((element) => {
-        if (token !== revealToken || element === null) return;
-        element.scrollIntoView({ block: "nearest" });
-    });
+    void (async () => {
+        for (const target of targets) {
+            const element = await renderedErrorElement(target.errorKey, target.fieldKey!);
+            if (token !== revealToken) return;
+            if (element !== null) {
+                element.scrollIntoView({ block: "nearest" });
+                return;
+            }
+        }
+    })();
 }
 
 /**
  * Take the user to an error a summary lists: select its tab, wait for the
- * pane to render, scroll the field into view and focus its first control.
- * Exposed so a summary rendered OUTSIDE the form (DXTable's modal footer)
- * can drive it.
+ * pane to render, scroll the field into view and focus its control (an
+ * editable control first, waiting for one an async editor has yet to
+ * render; anything else focusable only as a fallback). Exposed so a summary
+ * rendered OUTSIDE the form (DXTable's modal footer) can drive it.
  */
 async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
     if (target.tabKey !== null && visibleTabKeys.value.includes(target.tabKey)) {
         commitTabKey(target.tabKey);
     }
     const token = ++revealToken;
-    const element = await renderedFieldElement(target.fieldKey);
+    const element = await renderedErrorElement(
+        target.errorKey ?? target.fieldKey,
+        target.fieldKey,
+    );
     if (token !== revealToken || element === null) return;
     element.scrollIntoView({ block: "nearest" });
-    const control = element.matches(FOCUSABLE_CONTROL)
-        ? element
-        : element.querySelector<HTMLElement>(FOCUSABLE_CONTROL);
-    control?.focus({ preventScroll: true });
+    let control = firstShown(element, EDITABLE_CONTROL);
+    for (let attempt = 0; control === null && attempt < CONTROL_RENDER_ATTEMPTS; attempt += 1) {
+        await nextFrame();
+        if (token !== revealToken) return;
+        control = firstShown(element, EDITABLE_CONTROL);
+    }
+    control = control ?? firstShown(element, ANY_FOCUSABLE);
+    if (control === null) return;
+    control.focus({ preventScroll: true });
+    control.scrollIntoView({ block: "nearest" });
 }
 
 // ————————————————— failed-submit summary

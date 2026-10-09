@@ -67,7 +67,7 @@
                 :card-tabs="false"
                 :context="item ?? undefined"
                 :show-submit="false"
-                :error-summary="false"
+                error-summary="external"
                 @update:active-tab="emit('update:activeTab', $event)"
                 @submit="emit('save')"
             >
@@ -158,8 +158,9 @@
         <template #footer>
             <!-- What the last failed save returned, beside the Save button it
                  answers (#194). The inner DXForm shows no summary or alert of
-                 its own (`error-summary="false"`), so a failure shows one
-                 alert. Rows come from the inner form's own resolution, and a
+                 its own while this one lists a failure
+                 (`error-summary="external"`; `false` would bring its top
+                 alert back), so a failure shows one alert. Rows come from the inner form's own resolution, and a
                  row click drives the inner form's tab and focus. -->
             <DXFormErrorSummary
                 v-if="form"

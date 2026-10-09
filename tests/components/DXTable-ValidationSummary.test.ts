@@ -146,6 +146,56 @@ describe('DXTable modal validation summary (#194)', () => {
     expect(field!.contains(document.activeElement)).toBe(true);
   });
 
+  describe('exactly one visible alert in the modal (review finding 4)', () => {
+    const modalAlerts = () =>
+      Array.from(document.querySelectorAll<HTMLElement>('.modal .alert')).filter(
+        (alert) => alert.offsetParent !== null && alert.getBoundingClientRect().height > 0,
+      );
+
+    it('a message-only 422', async () => {
+      stubFailure(422, { message: 'Stock levels changed; reload.', errors: {} });
+      const screen = renderTable();
+      await openEdit(screen);
+      modalButton('Save')!.click();
+      await wait(300);
+      const alerts = modalAlerts();
+      expect(alerts.length).toBe(1);
+      expect(alerts[0].textContent).toContain('Stock levels changed; reload.');
+    });
+
+    it('a 500', async () => {
+      stubFailure(500, { message: 'Internal Server Error' });
+      const screen = renderTable();
+      await openEdit(screen);
+      modalButton('Save')!.click();
+      await wait(300);
+      const alerts = modalAlerts();
+      expect(alerts.length).toBe(1);
+      expect(alerts[0].textContent).toContain('Server error. Please try again later.');
+    });
+
+    it('a field-only 422, before and after the last field error is cleared', async () => {
+      stubFailure(422, { message: 'The given data was invalid.', errors: { code: THREE_ERRORS.code } });
+      const screen = renderTable();
+      await openEdit(screen);
+      modalButton('Save')!.click();
+      await wait(300);
+      expect(modalAlerts().length).toBe(1);
+
+      const input = document.querySelector<HTMLInputElement>('.modal [data-dx-field-key="code"] input')!;
+      expect(input).not.toBeNull();
+      // Positive control: the field shows its error before the edit.
+      expect(input.classList.contains('is-invalid')).toBe(true);
+      input.value = 'XY';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await wait(100);
+      expect(input.classList.contains('is-invalid')).toBe(false);
+      const alerts = modalAlerts();
+      expect(alerts.length).toBe(1);
+      expect(alerts[0].closest('.modal-footer')).not.toBeNull();
+    });
+  });
+
   it('create: a 500 still toasts the server error', async () => {
     stubFailure(500, { message: 'Internal Server Error' });
     const screen = renderTable();
