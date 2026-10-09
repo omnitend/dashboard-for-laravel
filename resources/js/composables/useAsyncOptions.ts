@@ -7,8 +7,9 @@ import type { FieldDefinition, FieldOption } from "../types";
  * exposing the loaded options. A monotonic request token guards against
  * out-of-order responses clobbering newer ones; loader failures are swallowed
  * so the last good options (or the static `field.options` fallback) stay put.
+ * Replacing the field's `optionsLoader` starts over from a first load.
  *
- * Extracted verbatim from DXField's inline logic (#135) — behaviour unchanged.
+ * Extracted from DXField's inline logic (#135).
  * `getField` is an accessor (props aren't destructurable without losing
  * reactivity); `effectiveModel` is the model passed to the loader.
  */
@@ -64,9 +65,29 @@ export function useAsyncOptions(
         void loadOptions();
     });
 
-    if (getField().reloadOptionsOnChange) {
-        watch(effectiveModel, () => void loadOptions(), { deep: true });
-    }
+    // Read from the CURRENT field: DXForm keys DXField by `field.key`, so
+    // recomputed `fields` hand this instance a new field object that may
+    // turn reloading on or off.
+    watch(
+        effectiveModel,
+        () => {
+            if (getField().reloadOptionsOnChange) void loadOptions();
+        },
+        { deep: true },
+    );
+
+    // A replaced loader is a different source: its first load starts from
+    // nothing. The previous loader's options and settled state do not carry
+    // over, and a request it still has out is dropped when it answers.
+    watch(
+        () => getField().optionsLoader,
+        (loader) => {
+            optionsRequestToken += 1;
+            loadedOptions.value = null;
+            firstLoadSettled.value = !loader;
+            void loadOptions();
+        },
+    );
 
     return { loadedOptions, firstLoadSettled, loadOptions };
 }

@@ -1347,6 +1347,80 @@ describe('DXField searchable select (#105)', () => {
     expect(input.disabled).toBe(true);
   });
 
+  /**
+   * DXForm keys DXField by `field.key`, so a consumer whose `fields` are
+   * recomputed hands the SAME DXField a new field object, possibly with a new
+   * loader. The old loader's state (settled, options, in-flight requests)
+   * must not carry over to the new one.
+   */
+  it('treats a replaced optionsLoader as a fresh first load', async () => {
+    const consoleError = console.error;
+    console.error = () => {};
+    try {
+      const otherAccounts = [{ value: 51, text: 'Stale label from A' }];
+      let resolveLateA: (options: typeof accounts) => void = () => {};
+      const resolversB: Array<(options: typeof accounts) => void> = [];
+      let callsA = 0;
+      const base: FieldDefinition = {
+        key: 'account_id',
+        type: 'select',
+        label: 'Payee',
+        searchable: true,
+        reloadOptionsOnChange: true,
+      };
+      const loaderA = () => {
+        callsA += 1;
+        // A's first load fails; its retry (after the model change below) is
+        // still out when the loader is swapped, and answers late.
+        return callsA === 1
+          ? Promise.reject(new Error('offline'))
+          : new Promise<typeof accounts>((resolve) => {
+              resolveLateA = resolve;
+            });
+      };
+      const loaderB = () =>
+        new Promise<typeof accounts>((resolve) => {
+          resolversB.push(resolve);
+        });
+      const field = ref<FieldDefinition>({ ...base, optionsLoader: loaderA });
+      const form = useForm({ account_id: 51 });
+      const screen = render({
+        render: () => h(BApp, {}, () => h(DXField, { field: field.value, form })),
+      });
+      const input = () => screen.container.querySelector('input') as HTMLInputElement;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      // A failed: settled, with nothing to label 51 with.
+      expect(input().disabled).toBe(false);
+
+      form.data.account_id = 42; // A's retry goes out and hangs
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(callsA).toBe(2);
+
+      field.value = { ...base, optionsLoader: loaderB };
+      form.data.account_id = 51;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      // B has not answered: a first load again, so held back, not raw "51".
+      expect(resolversB.length).toBeGreaterThan(0);
+      expect(input().value).toBe('');
+      expect(input().placeholder).toBe('Loading…');
+      expect(input().disabled).toBe(true);
+
+      resolversB.forEach((resolve) => resolve(accounts));
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      expect(input().value).toBe('Waitrose');
+      expect(input().disabled).toBe(false);
+
+      // A's obsolete request answering late changes nothing.
+      resolveLateA(otherAccounts);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      expect(input().value).toBe('Waitrose');
+      expect(form.data.account_id).toBe(51);
+    } finally {
+      console.error = consoleError;
+    }
+  });
+
   it('stays usable on its static options while a retry after a failed load is out', async () => {
     const consoleError = console.error;
     console.error = () => {};

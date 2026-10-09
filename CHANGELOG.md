@@ -24,7 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cannot re-enable it during that load, and it never writes the form from
   the held-back value. A loader that fails now falls back to the field's
   static `options`, and a later reload (`reloadOptionsOnChange`) keeps them
-  usable; before, the field stayed on "Loading…" for good.
+  usable; before, the field stayed on "Loading…" for good. A field whose
+  `optionsLoader` is replaced (recomputed `fields`) starts again from a first
+  load, and an answer from the old loader is ignored.
 
 ### Release tooling
 
