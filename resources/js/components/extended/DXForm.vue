@@ -38,7 +38,7 @@
              `.card-body` internally via its own `card` prop, so wrapping
              that in another `.card-body` would double up. -->
         <component :is="tabsInCard ? DCard : 'div'" v-if="hasTabs" v-bind="tabsInCard ? { noBody: true } : {}">
-            <DTabs v-model:index="activeTab" :card="tabsInCard">
+            <DTabs v-if="visibleTabs.length > 0" v-model:index="activeTab" :card="tabsInCard">
                 <DTab
                     v-for="tab in visibleTabs"
                     :key="tab.key"
@@ -524,6 +524,22 @@ watch(
         if (!props.autoErrorTab) return;
         const previous = new Set(previousKeys ?? []);
         if (keys.some((key) => !previous.has(key))) goToErrorTab();
+    },
+    { immediate: true },
+);
+
+// Keep `activeTab` pointing at a rendered tab. DTabs is driven by
+// `v-model:index` alone (no per-tab `active`, which reset every mount to the
+// first tab), so an index it cannot show (an initial `activeTab` past the
+// last visible tab, or a negative one) leaves every pane inactive. Fall back
+// to the first visible tab; a valid index is never touched. DTabs is also
+// only rendered while some tab is visible: once every tab was hidden, bvn
+// reported -1 and then fought a restored index when the tabs came back,
+// activating none of them; remounting it avoids that.
+watch(
+    [() => visibleTabs.value.length, activeTab],
+    ([tabCount, index]) => {
+        if (tabCount > 0 && (index < 0 || index >= tabCount)) activeTab.value = 0;
     },
     { immediate: true },
 );

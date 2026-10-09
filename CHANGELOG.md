@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hidden by its `when` no longer selects that field's tab (#194).
 - DXForm's tabs now honour `activeTab` at mount, so errors already on the
   form select their tab, and an initial `v-model:active-tab` other than 0 is
-  no longer reset to the first tab (#194).
+  no longer reset to the first tab. An `activeTab` with no visible tab at
+  that index falls back to the first one, and a tab is shown again when
+  every tab was hidden and some come back (#194).
 
 ## [0.43.0] - 2026-10-06
 

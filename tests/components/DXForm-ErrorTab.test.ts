@@ -163,10 +163,17 @@ describe('DXForm error tab (#194)', () => {
     await settle();
 
     await submitExpectingFailure(form);
+    // Positive control: the first failure did select the error tab, so the
+    // final assertion below cannot pass just because errors never registered.
+    expect(form.errors.sku).toEqual(['The SKU is required.']);
+    expect(shownLabels(screen.container)).toEqual(['SKU']);
+
     await userEvent.click(screen.container.querySelectorAll<HTMLElement>('.nav-link')[0]);
     await settle();
+    expect(shownLabels(screen.container)).toEqual(['Name']);
 
     await submitExpectingFailure(form, { preserveErrors: true });
+    expect(form.errors.sku).toEqual(['The SKU is required.']);
     expect(shownLabels(screen.container)).toEqual(['Name']);
   });
 
@@ -246,5 +253,35 @@ describe('DXForm error tab (#194)', () => {
     await settle();
 
     expect(shownLabels(screen.container)).toEqual(['SKU']);
+  });
+
+  it('falls back to the first tab when the initial activeTab is out of range', async () => {
+    const screen = render(DXForm, {
+      props: { form: makeForm(), fields, tabs: threeTabs, showSubmit: false, activeTab: 7 },
+    });
+    await settle();
+
+    expect(shownLabels(screen.container)).toEqual(['Name']);
+  });
+
+  it('shows a tab again when every tab is hidden and then returns', async () => {
+    const form = useForm({ name: 'Widget', sku: '', description: '', showTabs: true });
+    const tabs: FormTab[] = threeTabs.map((tab) => ({
+      ...tab,
+      when: (model: Record<string, unknown>) => model.showTabs === true,
+    }));
+    const screen = render(DXForm, {
+      props: { form, fields, tabs, showSubmit: false },
+    });
+    await settle();
+    expect(shownLabels(screen.container)).toEqual(['Name']);
+
+    form.data.showTabs = false;
+    await settle();
+    expect(screen.container.querySelectorAll('.nav-link').length).toBe(0);
+
+    form.data.showTabs = true;
+    await settle();
+    expect(shownLabels(screen.container)).toEqual(['Name']);
   });
 });
