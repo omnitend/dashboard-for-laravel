@@ -8,8 +8,8 @@ import EventsTable from '../../../components/EventsTable.vue';
 
 # DXFormErrorSummary
 
-Lists everything the last failed submit of a `useForm` returned: the server's
-message, then one row per validation message with a readable label
+Lists everything the last failed submit of a `useForm` returned: a heading,
+then one row per validation message with a readable label
 ("Price (line 1): Must be positive."). Place it next to the submit control.
 
 [DXForm](/components/extended/DXForm) renders one for you, directly above its
@@ -20,8 +20,20 @@ the submit control is outside the form, such as a modal footer; see
 - It reads `form.submitFailure`, so it renders nothing before a failure,
   keeps listing every message while the user edits, and disappears when the
   next submit starts or one succeeds.
-- Rows follow tab order, then field order; keys no visible field owns
-  (unrendered keys, hidden fields) come last as plain text.
+- **The heading** is `title` ("Couldn't save. Please check:") when the
+  failure has at least one field error. Laravel's default 422 message is the
+  first error plus "(and 3 more errors)", which only repeats the first row,
+  so it is not shown then. A failure with no field errors (a message-only
+  422, a 500, a network failure) is headed by the server's message, since
+  that is all there is.
+- Rows follow tab order, then field order. Keys no visible field owns
+  (unrendered keys, hidden fields) come last as plain text, in a second list
+  under `otherTitle` ("Other problems"). That sub-heading shows only when
+  some rows ARE owned; when none is, they are listed under the heading alone.
+- Field keys are humanised for unowned rows (and as a label fallback):
+  `delivery_date` reads "Delivery date", a trailing id is dropped
+  (`supplier_id` reads "Supplier", `lines.0.product_id` "Lines product
+  (line 1)"), and a bare `id` reads "ID".
 - A row is left without its "Label: " prefix when the message already names
   the field, and keeps it when the message holds a raw key (`delivery_date`)
   or two rows share a message.
@@ -56,6 +68,8 @@ per key, for building your own display.
   { name: 'isTabVisible', type: '(tab) => boolean', required: 'No', default: 'the tab\'s when', description: 'Tab visibility, replacing the default.' },
   { name: 'resolveLabel', type: '(field, labelModel) => string', required: 'No', default: 'the field\'s label', description: 'A field\'s label, replacing the default. labelModel is the form model, or the row for a repeater sub-field (as DXRepeater renders it). A label that throws falls back to the humanised key.' },
   { name: 'targets', type: 'ErrorTarget[] | null', required: 'No', default: '-', description: 'Rows already resolved by a host form (DXForm\'s exposed errorTargets). When given, nothing is resolved here; the message still comes from form.submitFailure.' },
+  { name: 'title', type: 'string', required: 'No', default: '"Couldn\'t save. Please check:"', description: 'The heading when the failure has field errors. A failure with none is headed by the server\'s message instead.' },
+  { name: 'otherTitle', type: 'string', required: 'No', default: '"Other problems"', description: 'The sub-heading over the rows no visible field owns, shown only when some rows are owned.' },
 ]} />
 
 ## Events

@@ -162,6 +162,8 @@ shows there too, with no toast. See
   { name: 'saveText', type: 'string', required: 'No', default: 'Save {item}', description: 'Override the modal Save button label' },
   { name: 'createText', type: 'string', required: 'No', default: 'Create {item}', description: 'Override the modal Create button label' },
   { name: 'deleteText', type: 'string', required: 'No', default: 'Delete {item}', description: 'Override the modal Delete button label' },
+  { name: 'errorSummaryTitle', type: 'string', required: 'No', default: '"Couldn\'t save. Please check:"', description: 'Heading of the modal\'s failed-save summary when the failure has field errors. A failure with none is headed by the server\'s message instead' },
+  { name: 'errorSummaryOtherTitle', type: 'string', required: 'No', default: '"Other problems"', description: 'Sub-heading over the summary rows no edit field owns, shown only when some rows are owned' },
   { name: 'editUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for updates (e.g., "/api/products/:id")' },
   { name: 'deleteUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern for deletions (e.g., "/api/products/:id")' },
   { name: 'showUrl', type: 'string', required: 'No', default: '-', description: 'API endpoint pattern to fetch the FULL record for the edit modal (e.g., "/api/products/:id"). Seeds the form from this fetch (with a loading state) instead of the thin list row. Unwraps data.data or uses the response as-is' },

@@ -470,6 +470,18 @@ Three owners, nothing else writes their state:
 The summary (`DXFormErrorSummary`) renders at `errorSummary: 'footer'` by
 default, directly above the submit button, never inside a tab pane; while it
 shows a failure the top `DAlert` (`shouldShowMessage`) does not render.
+**Its heading is NOT the server's message when there are field errors**:
+Laravel's default 422 message is the first error plus "(and N more
+errors)", which repeated the first row, so the heading is `title`
+("Couldn't save. Please check:"; `errorSummaryTitle` on DXForm/DXTable).
+With no field errors (message-only 422, 500, network) the server's
+message is the heading. Owned rows (buttons) come first; unowned rows
+(text) follow in a second `<ul>` under a `<p
+class="dx-form-error-summary__other-title">` ("Other problems",
+`otherTitle`/`errorSummaryOtherTitle`), only when both kinds exist; medium
+weight, one step under the semibold heading. `humaniseErrorKey` (unowned
+rows, label fallbacks, DXRepeater headers) drops a trailing `id` word
+(`supplier_id` → "Supplier") and reads a bare `id` as "ID".
 `scrollToError` scrolls the first owned field on the selected tab
 (`[data-dx-field-key]`, set on DXField's roots to the data path) into view
 after the pane mounts, skipping a target that never renders; no focus. A

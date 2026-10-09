@@ -41,6 +41,8 @@ accepts either a `useForm` return or a `defineForm` return (with the latter,
   { name: 'activeTab', type: 'number (v-model)', required: 'No', default: '0', description: 'Active tab, as an index into the VISIBLE tabs. Two-way bindable via v-model:active-tab. The form tracks the tab by key, so the same tab stays shown when tabs reorder or an earlier one hides (the index is re-emitted), and an initial index other than 0 is honoured.' },
   { name: 'autoErrorTab', type: 'boolean', required: 'No', default: 'true', description: 'After a failed submit (and for errors already on the form at mount), select the first visible tab holding a visible field with an error. Fixing a field never moves the tab.' },
   { name: 'errorSummary', type: '"footer" | "top" | "external" | false', required: 'No', default: '"footer"', description: 'Where to list what the last failed submit returned: directly above the submit button ("footer"), above the fields ("top"), in a DXFormErrorSummary the host renders elsewhere ("external": DXForm shows neither a summary nor its alert), or nowhere (false, the form-level alert as before). See Validation errors below.' },
+  { name: 'errorSummaryTitle', type: 'string', required: 'No', default: '"Couldn\'t save. Please check:"', description: 'The summary\'s heading when the failure has field errors. A failure with none (a message-only 422, a 500) is headed by the server\'s message instead.' },
+  { name: 'errorSummaryOtherTitle', type: 'string', required: 'No', default: '"Other problems"', description: 'The summary\'s sub-heading over the rows no visible field owns, shown only when some rows are owned.' },
   { name: 'scrollToError', type: 'boolean', required: 'No', default: 'true', description: 'After a failed submit, scroll the first field with an error into view once its tab is shown. Never moves focus.' },
   { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text.' },
   { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text.' },
@@ -138,8 +140,18 @@ While the request is in flight it shows the usual busy state
 
 When a submit through the form's own methods (`form.post`, `put`, `patch`…)
 fails, DXForm lists **everything** the server returned in one alert, directly
-above the submit button: the server's message, then one row per validation
-message with a readable label ("Price (line 1): Must be positive.").
+above the submit button: a heading, then one row per validation message with
+a readable label ("Price (line 1): Must be positive.").
+
+- The heading is "Couldn't save. Please check:" (`errorSummaryTitle`) when
+  the failure has field errors. Laravel's default 422 message (the first
+  error plus "(and 3 more errors)") would only repeat the first row, so it
+  is not shown then. A failure with no field errors (a message-only 422, a
+  500, a network failure) is headed by the server's message.
+- Rows for fields on the form come first, as buttons. Rows no visible field
+  owns follow as plain text under "Other problems"
+  (`errorSummaryOtherTitle`), a sub-heading shown only when both kinds are
+  present.
 
 - It is built from `form.submitFailure`, so it stays while the user edits
   (fixing a field does not remove its row or bring back a generic message)

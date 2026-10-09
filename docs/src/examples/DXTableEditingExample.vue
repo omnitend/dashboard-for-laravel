@@ -44,7 +44,7 @@ onMounted(() => {
   stopDemoServer = answerWith('PUT', /^\/demo\/suppliers\/\d+$/, () => ({
     status: 422,
     body: {
-      message: 'The given data was invalid.',
+      message: 'The email has already been taken. (and 1 more error)',
       errors: {
         email: ['The email has already been taken.'],
         // No edit field renders this key; the summary still lists it.

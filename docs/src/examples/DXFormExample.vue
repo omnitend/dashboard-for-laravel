@@ -116,7 +116,7 @@ onMounted(() => {
   stopDemoServer = answerWith('POST', '/demo/products', () => ({
     status: 422,
     body: {
-      message: 'The given data was invalid.',
+      message: 'A product with this name already exists. (and 3 more errors)',
       errors: {
         name: ['A product with this name already exists.'],
         sku: ['The SKU must look like ABC-123.'],

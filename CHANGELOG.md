@@ -10,11 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `DXFormErrorSummary`: one alert listing everything the last failed submit
-  returned, the server's message and every validation message with a
-  readable label ("Price (line 1): Must be positive."), including keys with
-  no rendered field. It stays while the user edits and clears on the next
-  submit or a success. A row naming a visible field selects its tab and
-  focuses it (#194).
+  returned, every validation message with a readable label ("Price (line
+  1): Must be positive."), including keys with no rendered field. It stays
+  while the user edits and clears on the next submit or a success. A row
+  naming a visible field selects its tab and focuses it; rows no visible
+  field owns follow as text under "Other problems" (`otherTitle`, shown only
+  when both kinds are present). The heading is "Couldn't save. Please
+  check:" (`title`) when there are field errors, since Laravel's default
+  422 message ("… (and 3 more errors)") only repeats the first row; a
+  failure with none (message-only 422, 500, network) is headed by the
+  server's message. DXForm and DXTable pass the two through as
+  `errorSummaryTitle` and `errorSummaryOtherTitle` (#194).
 - DXForm `errorSummary` prop, **default `'footer'`**: DXForm now shows that
   summary directly above its submit button (below any tabs) after a failed
   submit, and its form-level alert steps aside while it does, so a failure
@@ -55,7 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the summary. A repeater sub-field's label resolves against its row,
   as DXRepeater renders it (`resolveLabel` receives that model as its second
   argument), and a label function that throws falls back to the humanised
-  key rather than hiding the errors (#194).
+  key rather than hiding the errors (#194). `humaniseErrorKey` drops a
+  trailing id (`supplier_id` reads "Supplier", `lines.0.product_id` "Lines
+  product (line 1)") and reads a bare `id` as "ID".
 
 ### Changed
 
