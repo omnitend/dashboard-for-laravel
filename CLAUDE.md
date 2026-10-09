@@ -13,15 +13,15 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
 2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (57 base components)
-3. **DX* Extended Components** - Complex dashboard layouts, forms, tables, stat cards, and charts (19 on the main entry, plus 3 charts)
+3. **DX* Extended Components** - Complex dashboard layouts, forms, tables, stat cards, and charts (20 on the main entry, plus 3 charts)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 76 components on the main entry** (57 base + 19 extended), plus the 3
+**Total: 77 components on the main entry** (57 base + 20 extended), plus the 3
 chart components on `/charts`. Counted from the `D*`/`DX*` exports in
-`resources/js/index.ts` (2026-10-06, after DXStackingTable); the base count
+`resources/js/index.ts` (2026-10-09, after DXFormErrorSummary); the base count
 matches the 57 files in `components/base`.
 
 > **Chart components ship from a separate entry** (`#142`): `DXBarChart`,
@@ -447,6 +447,39 @@ non-button content is `flex: 1 1 0` and `text-align: start !important`
 beats a cell's `.text-end`, so controls and values share one left edge. Pinned by
 `tests/components/DXStackingTable.test.ts`, which reads the BUILT CSS:
 rebuild before running it after a theme change.
+
+### DXForm validation errors (#194)
+
+Three owners, nothing else writes their state:
+
+- **`useForm`** owns what the last submit failed with: `submitFailure`
+  (`{ message, errors }`, a copy; cleared when a submit starts and on
+  success, untouched by edits/`clearError`/`setErrors`) and
+  `failedSubmitCount`.
+- **`utils/formErrorTargets.ts`** (`resolveErrorTargets`, pure, no Vue) owns
+  which field/tab/label an error key belongs to (`errorKeys` patterns, then
+  exact key, then longest dot prefix; hidden fields own nothing). DXForm calls
+  it with ITS visibility (`visibleTabKeys`, `isFieldVisible`) for the tab
+  choice, the auto-scroll and the summary rows, so the three cannot disagree.
+  Don't add a second matcher.
+- **DXForm** owns the active tab, by key: one writer (`commitTabKey`), one
+  decision watcher. A failure is `failedSubmitCount` changing OR the errored
+  key set growing (so `setErrors` without a submit still selects its tab); an
+  error clearing never moves the tab; errors at mount select theirs.
+
+The summary (`DXFormErrorSummary`) renders at `errorSummary: 'footer'` by
+default, directly above the submit button, never inside a tab pane; while it
+shows a failure the top `DAlert` (`shouldShowMessage`) does not render.
+`scrollToError` scrolls the first owned field (`[data-dx-field-key]`, set on
+DXField's roots to the data path) into view after the pane mounts; no focus.
+A summary row (or the exposed `focusErrorTarget`) selects the tab and focuses
+the field. DXTable's modal renders the summary in its footer with the inner
+form on `error-summary="false"`, and `useResourceEditor` toasts only
+non-422 failures (`onError` receives the `ApiError`, not an errors map).
+Bootstrap sets `scroll-behavior: smooth` on `:root`, so a scroll test must
+wait for `scrollY` to settle (two equal reads) before reading rects. Pinned
+by `DXForm-ErrorSummary.test.ts`, `DXForm-ErrorTab.test.ts`,
+`DXForm-TabState.test.ts`, `DXTable-ValidationSummary.test.ts`.
 
 ### DXBasicForm
 

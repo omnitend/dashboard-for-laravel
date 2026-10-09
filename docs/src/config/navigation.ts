@@ -37,6 +37,7 @@ export const navigationConfig: Navigation = [
       { label: 'DXDashboardSidebar', url: '/components/extended/DXDashboardSidebar' },
       { label: 'DXCurrencyInput', url: '/components/extended/DXCurrencyInput' },
       { label: 'DXForm', url: '/components/extended/DXForm' },
+      { label: 'DXFormErrorSummary', url: '/components/extended/DXFormErrorSummary' },
       { label: 'DXField', url: '/components/extended/DXField' },
       { label: 'DXNumberStepper', url: '/components/extended/DXNumberStepper' },
       { label: 'DXRepeater', url: '/components/extended/DXRepeater' },

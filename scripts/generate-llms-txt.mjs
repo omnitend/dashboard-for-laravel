@@ -126,6 +126,7 @@ function getGuideDescription(slug) {
 function getExtendedDescription(name) {
   const descriptions = {
     'DXForm': 'Form renderer driven by field definitions, with optional tabs, conditional fields, per-field slots, async options, nested repeaters, and auto error-tab switching',
+    'DXFormErrorSummary': 'One alert listing every message of the last failed submit, with readable labels, placed next to the submit control',
     'DXField': 'Single-field renderer for any field type with value/span/info/hint slots',
     'DXRepeater': 'Repeatable nested sub-form (field array) primitive',
     'DXTable': 'Data table with pagination, filtering, and sorting',
