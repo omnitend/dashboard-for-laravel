@@ -276,3 +276,184 @@ describe('useForm overlapping submits', () => {
     expect(form.processing).toBe(false);
   });
 });
+
+/*
+ * Codex round 2: an abort, or a submit that throws before it is sent, is
+ * treated as if that submit had never started. An older outcome held back
+ * because of it is recorded once it is gone, and the abort itself records
+ * nothing (not even its "aborted" message).
+ */
+describe('useForm: aborted and never-sent submits', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const A_ERRORS = { name: ['The name has already been taken.'] };
+
+  it("A 422s while B is pending, then B is aborted: A's summary shows", async () => {
+    const { resolvers } = deferredFetches();
+    const form = useForm({ name: '' });
+    const screen = render(DXForm, { props: { form, fields } });
+    await settle();
+    const controller = new AbortController();
+
+    const submitA = form.post('/api/a').catch(() => {});
+    const submitB = form.post('/api/b', { signal: controller.signal }).catch(() => {});
+    await settle();
+
+    resolvers[0](invalid(A_ERRORS));
+    await submitA;
+    // Held back while B is pending.
+    expect(form.submitFailure).toBeNull();
+
+    controller.abort();
+    await submitB;
+    await settle();
+
+    expect(form.submitFailure).toEqual({ message: GENERIC, errors: A_ERRORS });
+    expect(form.errors).toEqual(A_ERRORS);
+    expect(form.message).toBe(GENERIC);
+    expect(form.failedSubmitCount).toBe(1);
+    expect(form.processing).toBe(false);
+    const alerts = visibleAlerts(screen.container);
+    expect(alerts.length).toBe(1);
+    expect(alerts[0].textContent).toContain('The name has already been taken.');
+    expect(alerts[0].textContent).not.toContain('aborted');
+  });
+
+  it('B aborted first, then A 422s: A\'s summary shows', async () => {
+    const { resolvers } = deferredFetches();
+    const form = useForm({ name: '' });
+    const screen = render(DXForm, { props: { form, fields } });
+    await settle();
+    const controller = new AbortController();
+
+    const submitA = form.post('/api/a').catch(() => {});
+    const submitB = form.post('/api/b', { signal: controller.signal }).catch(() => {});
+    await settle();
+    controller.abort();
+    await submitB;
+
+    resolvers[0](invalid(A_ERRORS));
+    await submitA;
+    await settle();
+
+    const alerts = visibleAlerts(screen.container);
+    expect(alerts.length).toBe(1);
+    expect(alerts[0].textContent).toContain('The name has already been taken.');
+  });
+
+  it("A succeeds while B is pending, then B is aborted: A's success is recorded", async () => {
+    const { resolvers } = deferredFetches();
+    const form = useForm({ name: '' });
+    const controller = new AbortController();
+    const submitA = form.post('/api/a');
+    const submitB = form.post('/api/b', { signal: controller.signal }).catch(() => {});
+    await settle();
+
+    resolvers[0](jsonResponse(200, {}));
+    await submitA;
+    expect(form.wasSuccessful).toBe(false);
+
+    controller.abort();
+    await submitB;
+    expect(form.wasSuccessful).toBe(true);
+    expect(form.submitFailure).toBeNull();
+  });
+
+  it('an older held-back outcome is dropped once a newer submit records', async () => {
+    const { resolvers } = deferredFetches();
+    const form = useForm({ name: '' });
+    const controller = new AbortController();
+    const submitA = form.post('/api/a').catch(() => {});
+    const submitB = form.post('/api/b');
+    const submitC = form.post('/api/c', { signal: controller.signal }).catch(() => {});
+    await settle();
+
+    resolvers[0](invalid(A_ERRORS)); // held back (B, C pending)
+    await submitA;
+    resolvers[1](jsonResponse(200, {})); // held back (C pending)
+    await submitB;
+    controller.abort();
+    await submitC;
+
+    // B is the newest real outcome; A's older failure must not surface.
+    expect(form.wasSuccessful).toBe(true);
+    expect(form.submitFailure).toBeNull();
+    expect(form.hasErrors).toBe(false);
+  });
+
+  it('an aborted submit records nothing: no abort message, no alert', async () => {
+    const { resolvers } = deferredFetches();
+    const form = useForm({ name: '' });
+    const screen = render(DXForm, { props: { form, fields } });
+    await settle();
+    const controller = new AbortController();
+
+    const submit = form.post('/api/a', { signal: controller.signal }).catch(() => {});
+    await settle();
+    expect(resolvers.length).toBe(1); // positive control: the request was sent
+    controller.abort();
+    await submit;
+    await settle();
+
+    expect(form.message).toBe('');
+    expect(form.shouldShowMessage).toBe(false);
+    expect(form.submitFailure).toBeNull();
+    expect(form.processing).toBe(false);
+    expect(visibleAlerts(screen.container)).toEqual([]);
+  });
+
+  for (const hook of ['transform', 'onBefore'] as const) {
+    it(`a ${hook} that throws while A is pending does not hide A's 422`, async () => {
+      const { resolvers } = deferredFetches();
+      const form = useForm({ name: '' });
+      const screen = render(DXForm, { props: { form, fields } });
+      await settle();
+
+      const submitA = form.post('/api/a').catch(() => {});
+      await settle();
+      const onError = vi.fn();
+      const submitB = form.post('/api/b', {
+        [hook]: () => {
+          throw new Error(`${hook} bug`);
+        },
+        onError,
+      });
+      await expect(submitB).rejects.toThrow(`${hook} bug`);
+      // B was never sent and calls no callbacks (as before).
+      expect(resolvers.length).toBe(1);
+      expect(onError).not.toHaveBeenCalled();
+      expect(form.processing).toBe(true); // A is still in flight
+
+      resolvers[0](invalid(A_ERRORS));
+      await submitA;
+      await settle();
+
+      expect(form.submitFailure).toEqual({ message: GENERIC, errors: A_ERRORS });
+      expect(form.processing).toBe(false);
+      const alerts = visibleAlerts(screen.container);
+      expect(alerts.length).toBe(1);
+      expect(alerts[0].textContent).toContain('The name has already been taken.');
+    });
+
+    it(`a ${hook} that throws on its own leaves processing false and the previous failure in place`, async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(invalid(A_ERRORS));
+      const form = useForm({ name: '' });
+      await form.post('/api/a').catch(() => {});
+      expect(form.submitFailure).not.toBeNull();
+
+      await expect(
+        form.post('/api/b', {
+          [hook]: () => {
+            throw new Error(`${hook} bug`);
+          },
+        }),
+      ).rejects.toThrow(`${hook} bug`);
+
+      expect(form.processing).toBe(false);
+      expect(form.submitFailure).toEqual({ message: GENERIC, errors: A_ERRORS });
+      expect((globalThis.fetch as any).mock.calls.length).toBe(1);
+    });
+  }
+});
