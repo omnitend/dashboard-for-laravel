@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
-import { h, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import DXField from '../../resources/js/components/extended/DXField.vue';
+import DXForm from '../../resources/js/components/extended/DXForm.vue';
 import { useForm } from '../../resources/js/composables/useForm';
 import type { FieldDefinition } from '../../resources/js/types';
 
@@ -1339,78 +1340,53 @@ describe('DXField searchable select (#105)', () => {
     expect(input.disabled).toBe(true);
   });
 
-  /**
-   * DXForm keys DXField by `field.key`, so a consumer whose `fields` are
-   * recomputed hands the SAME DXField a new field object, possibly with a new
-   * loader. The old loader's state (settled, options, in-flight requests)
-   * must not carry over to the new one.
-   */
-  it('treats a replaced optionsLoader as a fresh first load', async () => {
-    const consoleError = console.error;
-    console.error = () => {};
-    try {
-      const otherAccounts = [{ value: 51, text: 'Stale label from A' }];
-      let resolveLateA: (options: typeof accounts) => void = () => {};
-      const resolversB: Array<(options: typeof accounts) => void> = [];
-      let callsA = 0;
-      const base: FieldDefinition = {
-        key: 'account_id',
-        type: 'select',
-        label: 'Payee',
-        searchable: true,
-        reloadOptionsOnChange: true,
-      };
-      const loaderA = () => {
-        callsA += 1;
-        // A's first load fails; its retry (after the model change below) is
-        // still out when the loader is swapped, and answers late.
-        return callsA === 1
-          ? Promise.reject(new Error('offline'))
-          : new Promise<typeof accounts>((resolve) => {
-              resolveLateA = resolve;
-            });
-      };
-      const loaderB = () =>
-        new Promise<typeof accounts>((resolve) => {
-          resolversB.push(resolve);
-        });
-      const field = ref<FieldDefinition>({ ...base, optionsLoader: loaderA });
-      const form = useForm({ account_id: 51 });
-      const screen = render({
-        render: () => h(BApp, {}, () => h(DXField, { field: field.value, form })),
-      });
-      const input = () => screen.container.querySelector('input') as HTMLInputElement;
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      // A failed: settled, with nothing to label 51 with.
-      expect(input().disabled).toBe(false);
+  it('ignores a late answer from a request a newer load superseded', async () => {
+    const staleAccounts = [{ value: 51, text: 'Stale label' }];
+    const resolvers: Array<(options: typeof accounts) => void> = [];
+    const form = useForm({ account_id: 51 });
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXField, {
+            form,
+            field: {
+              key: 'account_id',
+              type: 'select',
+              label: 'Payee',
+              searchable: true,
+              reloadOptionsOnChange: true,
+              optionsLoader: () =>
+                new Promise<typeof accounts>((resolve) => {
+                  resolvers.push(resolve);
+                }),
+            },
+          }),
+        ),
+    });
+    const input = () => screen.container.querySelector('input') as HTMLInputElement;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(resolvers.length).toBe(1);
 
-      form.data.account_id = 42; // A's retry goes out and hangs
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(callsA).toBe(2);
+    form.data.account_id = 42; // a second request goes out; the first is obsolete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(resolvers.length).toBe(2);
 
-      field.value = { ...base, optionsLoader: loaderB };
-      form.data.account_id = 51;
-      await new Promise((resolve) => setTimeout(resolve, 150));
+    resolvers[1](accounts);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(input().value).toBe('Sainsbury');
 
-      // B has not answered: a first load again, so held back, not raw "51".
-      expect(resolversB.length).toBeGreaterThan(0);
-      expect(input().value).toBe('');
-      expect(input().placeholder).toBe('Loading…');
-      expect(input().disabled).toBe(true);
+    form.data.account_id = 51;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(resolvers.length).toBe(3);
+    resolvers[2](accounts);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(input().value).toBe('Waitrose');
 
-      resolversB.forEach((resolve) => resolve(accounts));
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      expect(input().value).toBe('Waitrose');
-      expect(input().disabled).toBe(false);
-
-      // A's obsolete request answering late changes nothing.
-      resolveLateA(otherAccounts);
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      expect(input().value).toBe('Waitrose');
-      expect(form.data.account_id).toBe(51);
-    } finally {
-      console.error = consoleError;
-    }
+    // The first, obsolete request answering last changes nothing.
+    resolvers[0](staleAccounts);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(input().value).toBe('Waitrose');
+    expect(form.data.account_id).toBe(51);
   });
 
   it('stays usable on its static options while a retry after a failed load is out', async () => {
@@ -1487,6 +1463,94 @@ describe('DXField searchable select (#105)', () => {
     } finally {
       console.error = consoleError;
     }
+  });
+});
+
+/**
+ * A common consumer pattern: `fields` is a computed that reads another form
+ * value and defines its loader inline, so every recompute hands the select a
+ * NEW `optionsLoader` function. Loader identity is therefore not a signal that
+ * the source changed: editing an unrelated field must neither blank the
+ * select back to "Loading…" nor send extra requests.
+ */
+describe('DXField searchable select inside DXForm with recomputed fields', () => {
+  const accounts = [
+    { value: 37, text: 'Tesco' },
+    { value: 42, text: 'Sainsbury' },
+    { value: 51, text: 'Waitrose' },
+  ];
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 150));
+
+  const mountForm = (reloadOptionsOnChange: boolean) => {
+    let loaderCalls = 0;
+    const form = useForm({ reference: 'INV-1', account_id: 51 });
+    const fields = computed<FieldDefinition[]>(() => [
+      { key: 'reference', type: 'text', label: 'Reference' },
+      {
+        key: 'account_id',
+        type: 'select',
+        label: 'Payee',
+        searchable: true,
+        reloadOptionsOnChange,
+        // Reads another form value, so this array (and this inline loader)
+        // is rebuilt whenever `reference` changes.
+        placeholder: `Payee for ${form.data.reference}`,
+        optionsLoader: () => {
+          loaderCalls += 1;
+          return Promise.resolve(accounts);
+        },
+      },
+    ]);
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () => h(DXForm, { form, fields: fields.value, showSubmit: false })),
+    });
+    const inputFor = (label: string) => {
+      const labelElement = Array.from(screen.container.querySelectorAll('label')).find(
+        (element) => element.textContent?.trim().startsWith(label),
+      ) as HTMLLabelElement;
+      return screen.container.querySelector(`#${CSS.escape(labelElement.htmlFor)}`) as HTMLInputElement;
+    };
+    return { form, inputFor, calls: () => loaderCalls };
+  };
+
+  it('keeps the loaded label and does not refetch when an unrelated field changes', async () => {
+    const { inputFor, calls } = mountForm(false);
+    await settle();
+    expect(inputFor('Payee').value).toBe('Waitrose');
+    expect(calls()).toBe(1);
+
+    await userEvent.fill(inputFor('Reference'), 'INV-2');
+    await settle();
+
+    // Positive control: the edit reached the form and recomputed the fields.
+    expect(inputFor('Payee').placeholder).toBe('Payee for INV-2');
+    expect(inputFor('Payee').value).toBe('Waitrose');
+    expect(inputFor('Payee').disabled).toBe(false);
+    expect(calls()).toBe(1);
+  });
+
+  it('with reloadOptionsOnChange, sends exactly one request per model change', async () => {
+    const { form, inputFor, calls } = mountForm(true);
+    await settle();
+    expect(inputFor('Payee').value).toBe('Waitrose');
+    expect(calls()).toBe(1);
+
+    // reloadOptionsOnChange watches the whole model (the loader receives it),
+    // so an unrelated edit reloads too, but ONCE, without blanking the select.
+    await userEvent.fill(inputFor('Reference'), 'INV-2');
+    await settle();
+    expect(inputFor('Payee').placeholder).toBe('Payee for INV-2');
+    expect(inputFor('Payee').value).toBe('Waitrose');
+    expect(inputFor('Payee').disabled).toBe(false);
+    expect(calls()).toBe(2);
+
+    // A change to the select's own value: one more request, label follows.
+    form.data.account_id = 42;
+    await settle();
+    expect(inputFor('Payee').value).toBe('Sainsbury');
+    expect(inputFor('Payee').disabled).toBe(false);
+    expect(calls()).toBe(3);
   });
 });
 
