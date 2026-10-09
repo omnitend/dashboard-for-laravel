@@ -368,6 +368,18 @@ export interface FieldDefinition {
     submit?: boolean;
 
     /**
+     * Extra validation-error keys this field owns (#194), for a field whose
+     * server-side errors arrive under keys other than its own: a span or
+     * component field that edits nested data, say. Patterns, where `*`
+     * matches exactly one dot segment: `["lines.*", "lines.*.*"]` claims
+     * `lines.0` and `lines.0.price` but not `lines` or `lines.0.a.b`.
+     * Checked before the usual matching (the field's own key, then any key
+     * nested under it), so it decides which field an error belongs to: the
+     * label it is listed under in the error summary and the tab it selects.
+     */
+    errorKeys?: string[];
+
+    /**
      * Conditionally show or hide this field. When omitted the field is
      * always visible. Boolean or a function of the form model; evaluated
      * reactively for cross-field conditional fields.
@@ -427,6 +439,7 @@ export interface BaseFieldDef {
     readonly?: MaybeFn<boolean>;
     plaintext?: MaybeFn<boolean>;
     submit?: boolean;
+    errorKeys?: string[];
     when?: MaybeFn<boolean>;
     show?: () => boolean;
 }

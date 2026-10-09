@@ -130,6 +130,12 @@ export {
     isFieldVisible,
     isSubmittableField,
 } from "./utils/formSchema";
+// Which field a validation-error key belongs to (#194): the one rule the
+// error summary, tab selection and scrolling share.
+export {
+    resolveErrorTargets,
+    humaniseErrorKey,
+} from "./utils/formErrorTargets";
 
 // Types
 export type {
@@ -168,7 +174,13 @@ export type {
     FormSubmitOptions,
     FormState,
     UseFormReturn,
+    SubmitFailure,
 } from "./composables/useForm";
+
+export type {
+    ErrorTarget,
+    ResolveErrorTargetsOptions,
+} from "./utils/formErrorTargets";
 
 export type {
     FormFieldDefinition,
