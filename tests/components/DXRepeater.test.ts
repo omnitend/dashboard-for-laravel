@@ -565,5 +565,47 @@ describe('DXRepeater', () => {
       );
       expect(headers).toContain('Name (GBP)');
     });
+
+    it('resolves a row-based function label against the first row for the column header', async () => {
+      const form = useForm({ lines: [{ currency: 'eur', qty: 1 }, { currency: 'gbp', qty: 2 }] });
+      const field: FieldDefinition = {
+        ...tableField,
+        fields: [
+          { key: 'price', type: 'number', label: (row: any) => `${row.currency.toUpperCase()} price` },
+          { key: 'qty', type: 'number', label: 'Quantity' },
+        ],
+      };
+      const screen = render(DXRepeater, {
+        props: { form, field, keyPath: 'lines', model: { currency: 'ignored' } },
+      });
+      await flush();
+
+      const headers = Array.from(screen.container.querySelectorAll('thead th')).map(
+        (th) => th.textContent?.trim(),
+      );
+      expect(headers).toContain('EUR price');
+      expect(headers).toContain('Quantity');
+    });
+
+    it('falls back to the humanised key when a header label throws (no rows)', async () => {
+      const form = useForm({ lines: [] as any[] });
+      const field: FieldDefinition = {
+        ...tableField,
+        fields: [
+          { key: 'unit_price', type: 'number', label: (row: any) => `${row.currency.toUpperCase()} price` },
+          { key: 'qty', type: 'number', label: 'Quantity' },
+        ],
+      };
+      const screen = render(DXRepeater, {
+        props: { form, field, keyPath: 'lines' },
+      });
+      await flush();
+
+      const headers = Array.from(screen.container.querySelectorAll('thead th')).map(
+        (th) => th.textContent?.trim(),
+      );
+      expect(headers).toContain('Unit price');
+      expect(headers).toContain('Quantity');
+    });
   });
 });
