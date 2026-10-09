@@ -206,107 +206,16 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
     expect(document.activeElement).toBe(editor);
   });
 
-  describe('field(key) replacement slots', () => {
-    const fields: FieldDefinition[] = [
-      { key: 'name', type: 'text', label: 'Name' },
-      { key: 'code', type: 'text', label: 'Code' },
-    ];
-    const slots = {
-      'field(code)': () =>
-        h('div', { class: 'code-replacement' }, [
-          h('label', { for: 'code-input' }, 'Code'),
-          h('input', { id: 'code-input', class: 'form-control' }),
-        ]),
-    };
-
-    it('a summary row focuses the replacement content', async () => {
-      stubResponses(invalid({ code: ['The code is taken.'] }));
-      const form = useForm({ name: '', code: '' });
-      const screen = render(DXForm, { props: { form, fields }, slots });
-      await settle();
-      await failSubmit(form);
-      await userEvent.click(summaryRow(screen.container, 'The code is taken.'));
-      await wait(200);
-      expect(document.activeElement).toBe(screen.container.querySelector('#code-input'));
-    });
-
-    it('the marker wrapper has no box: slot content lays out as before', async () => {
-      const form = useForm({ name: '', code: '' });
-      const screen = render(DXForm, { props: { form, fields }, slots });
-      await settle();
-      const replacement = screen.container.querySelector<HTMLElement>('.code-replacement')!;
-      const wrapper = replacement.parentElement!;
-      expect(wrapper.getAttribute('data-dx-field-key')).toBe('code');
-      expect(getComputedStyle(wrapper).display).toBe('contents');
-      // Lines up with a DXField sibling, as before.
-      const nameField = screen.container.querySelector<HTMLElement>('[data-dx-field-key="name"]')!;
-      expect(replacement.getBoundingClientRect().left).toBe(nameField.getBoundingClientRect().left);
-      expect(replacement.getBoundingClientRect().width).toBe(nameField.getBoundingClientRect().width);
-    });
-  });
-
-  describe('field(key) replacement slots in a grid or flex container (round 2)', () => {
-    // A consumer lays the flat form's field container out as a grid or a row.
-    let style: HTMLStyleElement;
-    beforeEach(() => {
-      style = document.createElement('style');
-      style.textContent = `
-        form.grid-probe > div { display: grid; grid-template-columns: 200px 200px; width: 400px; }
-        form.flex-probe > div { display: flex; width: 600px; }
-        form.flex-probe > div > * { flex: 0 0 150px; }
-      `;
-      document.head.appendChild(style);
-    });
-    afterEach(() => style.remove());
-
+  describe('field(key) replacement slots (round 3: no wrapper, opt-in targetAttrs)', () => {
     const fields: FieldDefinition[] = [
       { key: 'name', type: 'text', label: 'Name' },
       { key: 'code', type: 'text', label: 'Code' },
     ];
 
-    it('a replacement root spanning two grid columns still spans them', async () => {
+    it('renders exactly the slot DOM: no wrapper, the root a direct child of the field list', async () => {
       const form = useForm({ name: '', code: '' });
       const screen = render(DXForm, {
         props: { form, fields, showSubmit: false },
-        attrs: { class: 'grid-probe' },
-        slots: {
-          'field(code)': () =>
-            h('div', { class: 'code-replacement', style: 'grid-column: span 2' }, [
-              h('input', { id: 'code-input', class: 'form-control' }),
-            ]),
-        },
-      });
-      await settle();
-      const container = screen.container.querySelector<HTMLElement>('form.grid-probe > div')!;
-      // Positive control: the consumer's grid is in force.
-      expect(getComputedStyle(container).display).toBe('grid');
-      const replacement = screen.container.querySelector<HTMLElement>('.code-replacement')!;
-      expect(replacement.getBoundingClientRect().width).toBe(400);
-    });
-
-    it('a replacement root keeps its flex order and sizing', async () => {
-      const form = useForm({ name: '', code: '' });
-      const screen = render(DXForm, {
-        props: { form, fields, showSubmit: false },
-        attrs: { class: 'flex-probe' },
-        slots: {
-          'field(code)': () =>
-            h('div', { class: 'code-replacement', style: 'order: -1; flex: 0 0 250px' }, 'Code'),
-        },
-      });
-      await settle();
-      const replacement = screen.container.querySelector<HTMLElement>('.code-replacement')!;
-      const nameField = screen.container.querySelector<HTMLElement>('[data-dx-field-key="name"]')!;
-      expect(nameField.getBoundingClientRect().width).toBe(150);
-      expect(replacement.getBoundingClientRect().width).toBe(250);
-      expect(replacement.getBoundingClientRect().left).toBeLessThan(nameField.getBoundingClientRect().left);
-    });
-
-    it('each root of a multi-root slot is its own grid item', async () => {
-      const form = useForm({ name: '', code: '' });
-      const screen = render(DXForm, {
-        props: { form, fields, showSubmit: false },
-        attrs: { class: 'grid-probe' },
         slots: {
           'field(code)': () => [
             h('div', { class: 'root-a' }, 'A'),
@@ -315,63 +224,204 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
         },
       });
       await settle();
-      const rootA = screen.container.querySelector<HTMLElement>('.root-a')!.getBoundingClientRect();
-      const rootB = screen.container.querySelector<HTMLElement>('.root-b')!.getBoundingClientRect();
-      // name | A
-      // B    |
-      expect(rootA.width).toBe(200);
-      expect(rootB.left).toBeLessThan(rootA.left);
+      const fieldList = screen.container.querySelector('form > div')!;
+      const nameField = screen.container.querySelector('[data-dx-field-key="name"]')!;
+      const rootA = screen.container.querySelector('.root-a')!;
+      const rootB = screen.container.querySelector('.root-b')!;
+      // Positive control: the DXField sibling sits in the same list.
+      expect(nameField.parentElement).toBe(fieldList);
+      expect(rootA.parentElement).toBe(fieldList);
+      expect(rootB.parentElement).toBe(fieldList);
+      expect(Array.from(fieldList.children)).toEqual([nameField, rootA, rootB]);
+      expect(screen.container.querySelector('.dx-form-field-slot')).toBeNull();
+      // An unmarked slot carries no marker.
+      expect(screen.container.querySelector('[data-dx-field-key="code"]')).toBeNull();
     });
 
-    it('a summary row still focuses replacement content in a grid', async () => {
+    it('passes targetAttrs to the slot', async () => {
+      const seen: unknown[] = [];
+      const form = useForm({ name: '', code: '' });
+      render(DXForm, {
+        props: { form, fields, showSubmit: false },
+        slots: {
+          'field(code)': (slotProps: any) => {
+            seen.push(slotProps.targetAttrs);
+            return h('div', 'Code');
+          },
+        },
+      });
+      await settle();
+      expect(seen[0]).toEqual({ 'data-dx-field-key': 'code' });
+    });
+
+    it('a marked slot: a summary row focuses its input', async () => {
       stubResponses(invalid({ code: ['The code is taken.'] }));
       const form = useForm({ name: '', code: '' });
       const screen = render(DXForm, {
         props: { form, fields },
-        attrs: { class: 'grid-probe' },
         slots: {
-          'field(code)': () =>
-            h('div', { class: 'code-replacement', style: 'grid-column: span 2' }, [
+          'field(code)': ({ targetAttrs }: any) =>
+            h('div', { class: 'code-replacement', ...targetAttrs }, [
+              h('label', { for: 'code-input' }, 'Code'),
               h('input', { id: 'code-input', class: 'form-control' }),
             ]),
         },
       });
       await settle();
       await failSubmit(form);
-      await userEvent.click(summaryRow(screen.container, 'The code is taken.'));
+      const row = summaryRow(screen.container, 'The code is taken.');
+      expect(row.tagName).toBe('BUTTON');
+      await userEvent.click(row);
       await wait(200);
+      expect(document.activeElement).toBe(screen.container.querySelector('#code-input'));
+    });
+
+    it('an unmarked slot: the row is plain text with the field label, not a button', async () => {
+      stubResponses(invalid({ code: ['Must be two letters.'], name: ['Required.'] }));
+      const form = useForm({ name: '', code: '' });
+      const screen = render(DXForm, {
+        props: { form, fields },
+        slots: {
+          'field(code)': () => h('div', { class: 'code-replacement' }, [h('input', { id: 'code-input' })]),
+        },
+      });
+      await settle();
+      await failSubmit(form);
+      await settle();
+      const summary = screen.container.querySelector('.dx-form-error-summary')!;
+      const codeRow = Array.from(summary.querySelectorAll('[data-dx-error-key="code"]'));
+      expect(codeRow.length).toBe(1);
+      expect(codeRow[0].tagName).not.toBe('BUTTON');
+      expect(codeRow[0].textContent).toContain('Code');
+      expect(codeRow[0].textContent).toContain('Must be two letters.');
+      // Positive control: a reachable field's row in the same summary is a button.
+      expect(summary.querySelector('[data-dx-error-key="name"]')?.tagName).toBe('BUTTON');
+    });
+
+    it('an unmarked slot first: auto-scroll reaches the next target', async () => {
+      await page.viewport(900, 600);
+      const filler: FieldDefinition[] = Array.from({ length: 30 }, (_, index) => ({
+        key: `filler_${index}`,
+        type: 'text',
+        label: `Filler ${index}`,
+      }));
+      const tallFields: FieldDefinition[] = [
+        { key: 'code', type: 'text', label: 'Code' },
+        ...filler,
+        { key: 'qty', type: 'text', label: 'Quantity' },
+      ];
+      const data: Record<string, string> = { code: '', qty: '' };
+      for (const field of filler) data[field.key] = '';
+      stubResponses(invalid({ code: ['Bad code.'], qty: ['Quantity is required.'] }));
+      const form = useForm(data);
+      const screen = render(DXForm, {
+        props: { form, fields: tallFields, errorSummary: 'top' },
+        slots: { 'field(code)': () => h('p', { class: 'code-replacement' }, 'Code editor') },
+      });
+      await settle();
+      scrollToTop();
+      await settle();
+      const qty = screen.container.querySelector('[data-dx-field-key="qty"]')!;
+      expect(qty.getBoundingClientRect().top).toBeGreaterThan(window.innerHeight);
+      await failSubmit(form);
+      await wait(500);
+      await scrollSettled();
+      const rect = qty.getBoundingClientRect();
+      expect(window.scrollY).toBeGreaterThan(0);
+      expect(rect.top).toBeGreaterThanOrEqual(0);
+      expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+    });
+
+    it('a multi-root marked slot with a tall container: auto-scroll leaves the INPUT in view', async () => {
+      await page.viewport(900, 600);
+      const filler: FieldDefinition[] = Array.from({ length: 20 }, (_, index) => ({
+        key: `filler_${index}`,
+        type: 'text',
+        label: `Filler ${index}`,
+      }));
+      const tallFields: FieldDefinition[] = [...filler, { key: 'code', type: 'text', label: 'Code' }];
+      const data: Record<string, string> = { code: '' };
+      for (const field of filler) data[field.key] = '';
+      stubResponses(invalid({ code: ['Bad code.'] }));
+      const form = useForm(data);
+      const screen = render(DXForm, {
+        props: { form, fields: tallFields, errorSummary: 'top' },
+        slots: {
+          'field(code)': ({ targetAttrs }: any) => [
+            h('h5', 'Code'),
+            h('div', { class: 'code-container', ...targetAttrs }, [
+              h('div', { style: 'height: 900px' }, 'Long explanation of codes'),
+              h('input', { id: 'code-input', class: 'form-control' }),
+            ]),
+          ],
+        },
+      });
+      await settle();
+      scrollToTop();
+      await settle();
+      await failSubmit(form);
+      await wait(300);
+      await scrollSettled();
+      const input = screen.container.querySelector<HTMLElement>('#code-input')!;
+      const rect = input.getBoundingClientRect();
+      expect(rect.top).toBeGreaterThanOrEqual(0);
+      expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+      // Auto-scroll never focuses.
+      expect(document.activeElement).not.toBe(input);
+    });
+
+    it('a marked element replaced, with a gap, during a re-render: re-queried by key', async () => {
+      stubResponses(invalid({ code: ['The code is taken.'] }));
+      const phase = ref<'loading' | 'gap' | 'ready'>('loading');
+      const form = useForm({ name: '', code: '' });
+      const screen = render(DXForm, {
+        props: { form, fields },
+        slots: {
+          'field(code)': ({ targetAttrs }: any) => {
+            if (phase.value === 'loading') {
+              return h('div', { key: 'loading', class: 'code-loading', ...targetAttrs }, 'Loading…');
+            }
+            if (phase.value === 'gap') return h('span', { key: 'gap' }, '');
+            return h('div', { key: 'ready', class: 'code-ready', ...targetAttrs }, [
+              h('input', { id: 'code-input', class: 'form-control' }),
+            ]);
+          },
+        },
+      });
+      await settle();
+      await failSubmit(form);
+      await userEvent.click(summaryRow(screen.container, 'The code is taken.'));
+      await wait(50);
+      // Positive control: the first marked element is up, with no control.
+      expect(screen.container.querySelector('.code-loading')).not.toBeNull();
+      phase.value = 'gap';
+      await wait(150);
+      expect(screen.container.querySelector('[data-dx-field-key="code"]')).toBeNull();
+      phase.value = 'ready';
+      await wait(300);
       expect(document.activeElement).toBe(screen.container.querySelector('#code-input'));
     });
   });
 
-  it('auto-scroll reaches replacement content at the bottom of a tall form', async () => {
-    await page.viewport(900, 600);
-    const filler: FieldDefinition[] = Array.from({ length: 30 }, (_, index) => ({
-      key: `filler_${index}`,
-      type: 'text',
-      label: `Filler ${index}`,
-    }));
-    const fields: FieldDefinition[] = [...filler, { key: 'code', type: 'text', label: 'Code' }];
-    const data: Record<string, string> = { code: '' };
-    for (const field of filler) data[field.key] = '';
-    stubResponses(invalid({ code: ['The code is taken.'] }));
-    const form = useForm(data);
-    const screen = render(DXForm, {
-      props: { form, fields, errorSummary: 'top' },
-      slots: { 'field(code)': () => h('div', { class: 'code-replacement' }, 'Code editor') },
+  it('focuses a contenteditable editor with tabindex="-1"', async () => {
+    stubResponses(invalid({ body: ['Write something.'] }));
+    const Editor = defineComponent({
+      setup: () => () =>
+        h('div', { class: 'rich-editor' }, [
+          h('div', { class: 'rich-editor__surface', contenteditable: 'true', tabindex: '-1' }, ''),
+        ]),
     });
+    const fields: FieldDefinition[] = [
+      { key: 'name', type: 'text', label: 'Name' },
+      { key: 'body', type: 'component', label: 'Body', component: Editor as any },
+    ];
+    const form = useForm({ name: '', body: '' });
+    const screen = render(DXForm, { props: { form, fields } });
     await settle();
-    scrollToTop();
-    await settle();
-    const replacement = screen.container.querySelector<HTMLElement>('.code-replacement')!;
-    expect(replacement.getBoundingClientRect().top).toBeGreaterThan(window.innerHeight);
     await failSubmit(form);
-    await wait(300);
-    await scrollSettled();
-    const rect = replacement.getBoundingClientRect();
-    expect(window.scrollY).toBeGreaterThan(0);
-    expect(rect.top).toBeGreaterThanOrEqual(0);
-    expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+    await userEvent.click(summaryRow(screen.container, 'Write something.'));
+    await wait(1300);
+    expect(document.activeElement).toBe(screen.container.querySelector('.rich-editor__surface'));
   });
 
   it('waits for a widget that renders its control disabled and enables it later', async () => {
@@ -447,7 +497,7 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
     );
   });
 
-  it('a DXField inside a field(key) wrapper with the same key: the control is focused', async () => {
+  it('nested markers for one key (targetAttrs around a DXField): the control is focused', async () => {
     stubResponses(invalid({ code: ['The code is taken.'] }));
     const fields: FieldDefinition[] = [
       { key: 'name', type: 'text', label: 'Name' },
@@ -457,8 +507,8 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
     const screen = render(DXForm, {
       props: { form, fields },
       slots: {
-        'field(code)': ({ field }: { field: FieldDefinition }) =>
-          h('section', { class: 'code-section' }, [h(DXField, { field, form })]),
+        'field(code)': ({ field, targetAttrs }: any) =>
+          h('section', { class: 'code-section', ...targetAttrs }, [h(DXField, { field, form })]),
       },
     });
     await settle();

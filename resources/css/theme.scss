@@ -654,16 +654,6 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   }
 }
 
-// The wrapper DXForm puts around `field(<key>)` slot content to carry
-// `data-dx-field-key` (#194). `display: contents` so it takes no part in
-// layout: in a consumer's grid or flex container each slot root stays the
-// item (its grid-column, order and flex sizing apply as before), and a
-// multi-root slot stays several items. It has no box, so DXForm scrolls to
-// its first descendant that has one.
-.dx-form-field-slot {
-  display: contents;
-}
-
 // DXFormErrorSummary (#194): the failed submit's message, then one row per
 // validation message. The alert keeps the danger alert's subtle tint; a row
 // that points at a field is a button drawn as underlined text in the alert's
