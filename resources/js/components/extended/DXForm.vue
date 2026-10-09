@@ -97,7 +97,6 @@
                             :model="model"
                             :layout="resolvedLayout"
                             :label-cols="labelCols"
-                            @slot-target="recordSlotTarget"
                         >
                             <!-- Forward every DXForm slot so the field can render
                                  its keyed field(<key>)/field-before/field-after/
@@ -132,7 +131,6 @@
                     :model="model"
                     :layout="resolvedLayout"
                     :label-cols="labelCols"
-                    @slot-target="recordSlotTarget"
                 >
                     <!-- Forward every DXForm slot so the field can render its
                          keyed field(<key>)/field-before/field-after/value/span/
@@ -215,7 +213,6 @@ import {
     computed,
     nextTick,
     onBeforeUnmount,
-    reactive,
     ref,
     useId,
     watch,
@@ -596,36 +593,9 @@ const liveErrorTargets = computed<ErrorTarget[]>(() =>
 );
 
 /** Targets for what the last failed submit returned (the summary's rows). */
-/**
- * Fields rendered through a `field(<key>)` slot, by key: whether the slot's
- * DOM held the field's marker (`targetAttrs`) at its last render. A field
- * not in the map renders through DXField (always marked) or has not
- * rendered yet (a lazy tab never opened), and counts as reachable.
- */
-const slotTargetMarked = reactive(new Map<string, boolean>());
-
-function recordSlotTarget(fieldKey: string, marked: boolean | null): void {
-    if (marked === null) slotTargetMarked.delete(fieldKey);
-    else if (slotTargetMarked.get(fieldKey) !== marked) slotTargetMarked.set(fieldKey, marked);
-}
-
-/**
- * Whether a target can be scrolled to and focused: owned by a field, and
- * not a `field(<key>)` slot rendered without its marker. Computed from what
- * is rendered, so a summary row for an unmarked slot is plain text rather
- * than a button that would do nothing.
- */
-function isReachable(target: ErrorTarget): boolean {
-    return target.fieldKey !== null && slotTargetMarked.get(target.fieldKey) !== false;
-}
-
 const summaryTargets = computed<ErrorTarget[]>(() => {
     const failure = resolvedForm.value.submitFailure;
-    if (!failure) return [];
-    return errorTargetsFor(failure.errors).map((target) => ({
-        ...target,
-        reachable: isReachable(target),
-    }));
+    return failure ? errorTargetsFor(failure.errors) : [];
 });
 
 /** Key of the first visible tab owning a visible errored field, or null. */
@@ -1012,10 +982,13 @@ async function renderedErrorElement(
  * whole, so its label and the message under its input show too. One taller
  * than the viewport (a marked container with a long explanation above its
  * input) is scrolled by its first usable control, centred, since scrolling
- * by its own edge can leave the input below the fold. Never focuses.
+ * by its own edge can leave the input below the fold: an editable control
+ * when there is one, else anything focusable (a picker's button). Never
+ * focuses.
  */
 function scrollFieldIntoView(element: HTMLElement): void {
-    const control = firstFocusable(element, EDITABLE_CONTROL);
+    const control =
+        firstFocusable(element, EDITABLE_CONTROL) ?? firstFocusable(element, ANY_FOCUSABLE);
     if (control !== null && element.getBoundingClientRect().height > window.innerHeight) {
         control.scrollIntoView({ block: "center" });
         return;
@@ -1027,24 +1000,27 @@ function scrollFieldIntoView(element: HTMLElement): void {
 let revealToken = 0;
 
 /**
- * After a failed submit: once the decision has selected the tab and its pane
- * has rendered, scroll the first owned field on that tab into view. A target
- * known to be unreachable (an unmarked `field(<key>)` slot) is skipped, and
- * one that never renders its marker is skipped after its render frames, for
- * the next one. No focus, so a phone does not raise its keyboard over the
- * summary.
+ * After a failed submit: once the decision has selected the tab and the
+ * failure's render has flushed (its pane mounted), scroll the first owned
+ * field on that tab into view. Each target is looked up in the form's DOM
+ * at that moment, in order, never from an earlier render's record: a target
+ * whose marker never renders (an unmarked `field(<key>)` slot, consumer
+ * content) is skipped after its render frames, for the next one. No focus,
+ * so a phone does not raise its keyboard over the summary.
  */
 function scrollToFirstError(): void {
     const selectedKey = activeTabKey.value;
     const targets = liveErrorTargets.value.filter(
         (target) =>
-            isReachable(target) &&
+            target.fieldKey !== null &&
             (target.tabKey === null || target.tabKey === selectedKey),
     );
     if (targets.length === 0) return;
     const token = ++revealToken;
     void (async () => {
         for (const target of targets) {
+            // Its first lookup waits for the flush (nextTick), so a marker
+            // rendered by the failure itself is found.
             const element = await renderedErrorElement(target.errorKey, target.fieldKey!);
             if (token !== revealToken) return;
             if (element !== null) {
@@ -1056,16 +1032,33 @@ function scrollToFirstError(): void {
 }
 
 /**
+ * Where focus goes when the field cannot take it (nothing marked renders,
+ * or nothing in it can be focused): the selected tab's button, with its pane
+ * scrolled into view, so focus never drops to the body (a summary row of an
+ * unopened lazy tab, once the pane replaces what was shown). A form with no
+ * tabs leaves focus where it is (the summary row).
+ */
+function focusSelectedTab(): void {
+    const selectedKey = activeTabKey.value;
+    if (selectedKey === null) return;
+    document.getElementById(paneIdFor(selectedKey))?.scrollIntoView({ block: "nearest" });
+    document.getElementById(buttonIdFor(selectedKey))?.focus();
+}
+
+/**
  * Take the user to an error a summary lists: select its tab, wait for the
- * pane to render, scroll the field into view and focus its control: an
- * editable control that can take focus, waiting (about a second) while none
- * can, e.g. an async editor still loading or a widget rendered disabled
- * until its data arrives; anything else focusable only as a fallback. A
- * focus counts only once `document.activeElement` is the control. The field
- * is looked up again by its key whenever its element leaves the DOM (a
- * re-render replacing it), and a moment with none at all is waited out.
- * Exposed so a summary rendered OUTSIDE the form (DXTable's modal footer)
- * can drive it.
+ * pane to render, look the field up in the form (its marker, anywhere
+ * inside the form's element, a teleport target inside the form included),
+ * scroll it into view and focus its control: an editable control that can
+ * take focus, waiting (about a second) while none can, e.g. an async editor
+ * still loading or a widget rendered disabled until its data arrives;
+ * anything else focusable only as a fallback. A focus counts only once
+ * `document.activeElement` is the control. The field is looked up again by
+ * its key whenever its element leaves the DOM (a re-render replacing it),
+ * and a moment with none at all is waited out. When no marker renders
+ * within the field's render frames, or nothing in it takes focus, focus
+ * moves to the selected tab's button. Exposed so a summary rendered OUTSIDE
+ * the form (DXTable's modal footer) can drive it.
  */
 async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
     if (target.tabKey !== null && visibleTabKeys.value.includes(target.tabKey)) {
@@ -1076,7 +1069,11 @@ async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
         target.errorKey ?? target.fieldKey,
         target.fieldKey,
     );
-    if (token !== revealToken || element === null) return;
+    if (token !== revealToken) return;
+    if (element === null) {
+        focusSelectedTab();
+        return;
+    }
     const path = element.getAttribute("data-dx-field-key") ?? target.fieldKey;
     scrollFieldIntoView(element);
 
@@ -1097,7 +1094,8 @@ async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
         // for a moment: look it up again by its key.
         if (element === null || !element.isConnected) element = shownFieldElement(path);
     }
-    if (element !== null) tryFocus(firstFocusable(element, ANY_FOCUSABLE));
+    if (element !== null && tryFocus(firstFocusable(element, ANY_FOCUSABLE))) return;
+    focusSelectedTab();
 }
 
 // ————————————————— failed-submit summary

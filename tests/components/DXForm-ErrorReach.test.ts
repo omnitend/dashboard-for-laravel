@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent, page } from 'vitest/browser';
-import { defineAsyncComponent, defineComponent, h, ref } from 'vue';
+import { Teleport, defineAsyncComponent, defineComponent, h, ref, watch } from 'vue';
 import DXForm from '../../resources/js/components/extended/DXForm.vue';
 import DXField from '../../resources/js/components/extended/DXField.vue';
 import { useForm } from '../../resources/js/composables/useForm';
@@ -276,11 +276,15 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
       expect(document.activeElement).toBe(screen.container.querySelector('#code-input'));
     });
 
-    it('an unmarked slot: the row is plain text with the field label, not a button', async () => {
-      stubResponses(invalid({ code: ['Must be two letters.'], name: ['Required.'] }));
+    it('an unopened lazy tab, unmarked slot: the row is a button and focus lands on the tab button', async () => {
+      stubResponses(invalid({ name: ['Required.'], code: ['Must be two letters.'] }));
       const form = useForm({ name: '', code: '' });
+      const tabs: FormTab[] = [
+        { key: 'general', label: 'General', fieldKeys: ['name'] },
+        { key: 'more', label: 'More', fieldKeys: ['code'], lazy: true },
+      ];
       const screen = render(DXForm, {
-        props: { form, fields },
+        props: { form, fields, tabs },
         slots: {
           'field(code)': () => h('div', { class: 'code-replacement' }, [h('input', { id: 'code-input' })]),
         },
@@ -288,14 +292,236 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
       await settle();
       await failSubmit(form);
       await settle();
-      const summary = screen.container.querySelector('.dx-form-error-summary')!;
-      const codeRow = Array.from(summary.querySelectorAll('[data-dx-error-key="code"]'));
-      expect(codeRow.length).toBe(1);
-      expect(codeRow[0].tagName).not.toBe('BUTTON');
-      expect(codeRow[0].textContent).toContain('Code');
-      expect(codeRow[0].textContent).toContain('Must be two letters.');
-      // Positive control: a reachable field's row in the same summary is a button.
-      expect(summary.querySelector('[data-dx-error-key="name"]')?.tagName).toBe('BUTTON');
+      // Positive controls: General was chosen, so More's lazy pane has never mounted.
+      expect(activeTabText(screen.container)).toBe('General');
+      expect(screen.container.querySelector('.code-replacement')).toBeNull();
+      const row = summaryRow(screen.container, 'Must be two letters.');
+      expect(row.tagName).toBe('BUTTON');
+      expect(row.textContent).toContain('Code');
+      await userEvent.click(row);
+      await wait(400);
+      expect(activeTabText(screen.container)).toBe('More');
+      // The pane mounted, unmarked.
+      expect(screen.container.querySelector('.code-replacement')).not.toBeNull();
+      const moreButton = Array.from(screen.container.querySelectorAll<HTMLElement>('.nav-link')).find(
+        (link) => link.textContent?.trim() === 'More',
+      );
+      expect(document.activeElement).not.toBe(document.body);
+      expect(document.activeElement).toBe(moreButton);
+      // Still a button after the pane rendered.
+      expect(summaryRow(screen.container, 'Must be two letters.').tagName).toBe('BUTTON');
+    });
+
+    it('a child component that marks itself only after its own async state settles', async () => {
+      await page.viewport(900, 600);
+      // Marks its container only once its own (async) check of the error
+      // settles, a render the form never sees.
+      const LateMarked = defineComponent({
+        props: { targetAttrs: { type: Object, required: true }, hasError: Boolean },
+        setup(props) {
+          const ready = ref(false);
+          watch(
+            () => props.hasError,
+            (hasError) => {
+              ready.value = false;
+              if (hasError) setTimeout(() => (ready.value = true), 40);
+            },
+            { immediate: true },
+          );
+          return () =>
+            h('div', { class: 'late-marked', ...(ready.value ? props.targetAttrs : {}) }, [
+              h('input', { id: 'code-input', class: 'form-control' }),
+            ]);
+        },
+      });
+      const filler: FieldDefinition[] = Array.from({ length: 30 }, (_, index) => ({
+        key: `filler_${index}`,
+        type: 'text',
+        label: `Filler ${index}`,
+      }));
+      const tallFields: FieldDefinition[] = [...filler, { key: 'code', type: 'text', label: 'Code' }];
+      const data: Record<string, string> = { code: '' };
+      for (const field of filler) data[field.key] = '';
+      stubResponses(invalid({ code: ['The code is taken.'] }));
+      const form = useForm(data);
+      const screen = render(DXForm, {
+        props: { form, fields: tallFields, errorSummary: 'top' },
+        slots: {
+          'field(code)': ({ targetAttrs }: any) =>
+            h(LateMarked, { targetAttrs, hasError: Boolean(form.errors.code) }),
+        },
+      });
+      await settle();
+      scrollToTop();
+      await settle();
+      const input = screen.container.querySelector<HTMLElement>('#code-input')!;
+      // Positive controls: unmarked, and below the fold, before the failure.
+      expect(screen.container.querySelector('[data-dx-field-key="code"]')).toBeNull();
+      expect(input.getBoundingClientRect().top).toBeGreaterThan(window.innerHeight);
+
+      await failSubmit(form);
+      await wait(400);
+      await scrollSettled();
+      expect(screen.container.querySelector('[data-dx-field-key="code"]')).not.toBeNull();
+      // Auto-scroll reached it.
+      let rect = input.getBoundingClientRect();
+      expect(window.scrollY).toBeGreaterThan(0);
+      expect(rect.top).toBeGreaterThanOrEqual(0);
+      expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+
+      // And the summary row focuses it.
+      scrollToTop();
+      await settle();
+      const row = summaryRow(screen.container, 'The code is taken.');
+      expect(row.tagName).toBe('BUTTON');
+      await userEvent.click(row);
+      await wait(300);
+      await scrollSettled();
+      expect(document.activeElement).toBe(input);
+      rect = input.getBoundingClientRect();
+      expect(rect.top).toBeGreaterThanOrEqual(0);
+      expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+    });
+
+    it('a marker rendered by the failure itself: auto-scroll reaches it', async () => {
+      await page.viewport(900, 600);
+      const filler: FieldDefinition[] = Array.from({ length: 30 }, (_, index) => ({
+        key: `filler_${index}`,
+        type: 'text',
+        label: `Filler ${index}`,
+      }));
+      const tallFields: FieldDefinition[] = [...filler, { key: 'code', type: 'text', label: 'Code' }];
+      const data: Record<string, string> = { code: '' };
+      for (const field of filler) data[field.key] = '';
+      stubResponses(invalid({ code: ['The code is taken.'] }));
+      const form = useForm(data);
+      const screen = render(DXForm, {
+        props: { form, fields: tallFields, errorSummary: 'top' },
+        slots: {
+          // Marked only while the field has an error: the failure's own render.
+          'field(code)': ({ targetAttrs }: any) =>
+            form.errors.code
+              ? h('div', { class: 'code-marked', ...targetAttrs }, [
+                  h('input', { id: 'code-input', class: 'form-control' }),
+                ])
+              : h('div', { class: 'code-plain' }, [h('input', { class: 'form-control' })]),
+        },
+      });
+      await settle();
+      scrollToTop();
+      await settle();
+      const plain = screen.container.querySelector<HTMLElement>('.code-plain')!;
+      // Positive controls: unmarked and below the fold before the failure.
+      expect(screen.container.querySelector('[data-dx-field-key="code"]')).toBeNull();
+      expect(plain.getBoundingClientRect().top).toBeGreaterThan(window.innerHeight);
+
+      await failSubmit(form);
+      await wait(300);
+      await scrollSettled();
+      const marked = screen.container.querySelector<HTMLElement>('.code-marked')!;
+      expect(marked).not.toBeNull();
+      const rect = marked.getBoundingClientRect();
+      expect(window.scrollY).toBeGreaterThan(0);
+      expect(rect.top).toBeGreaterThanOrEqual(0);
+      expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+    });
+
+    describe('a slot teleporting its marked control', () => {
+      const tabs: FormTab[] = [{ key: 'main', label: 'Main', fieldKeys: ['name', 'code'] }];
+      let outside: HTMLElement | null = null;
+      afterEach(() => {
+        outside?.remove();
+        outside = null;
+      });
+
+      const teleported = (to: string) => ({ targetAttrs }: any) =>
+        h(Teleport, { to, defer: true }, [
+          h('div', { class: 'code-teleported', ...targetAttrs }, [
+            h('input', { id: 'code-input', class: 'form-control' }),
+          ]),
+        ]);
+
+      it('inside the form: the summary row focuses it', async () => {
+        stubResponses(invalid({ code: ['The code is taken.'] }));
+        const form = useForm({ name: '', code: '' });
+        const screen = render(DXForm, {
+          props: { form, fields, tabs },
+          slots: {
+            'field(code)': teleported('#code-inside-dest'),
+            'tab-after(main)': () => h('div', { id: 'code-inside-dest' }),
+          },
+        });
+        await settle();
+        await failSubmit(form);
+        // Positive control: it was teleported, inside the form.
+        const input = screen.container.querySelector<HTMLElement>('#code-input')!;
+        expect(input.closest('#code-inside-dest')).not.toBeNull();
+        expect(input.closest('form')).not.toBeNull();
+        await userEvent.click(summaryRow(screen.container, 'The code is taken.'));
+        await wait(300);
+        expect(document.activeElement).toBe(input);
+      });
+
+      it('outside the form: not reached; focus lands on the tab button', async () => {
+        outside = document.createElement('div');
+        outside.id = 'code-outside-dest';
+        document.body.appendChild(outside);
+        stubResponses(invalid({ code: ['The code is taken.'] }));
+        const form = useForm({ name: '', code: '' });
+        const screen = render(DXForm, {
+          props: { form, fields, tabs },
+          slots: { 'field(code)': teleported('#code-outside-dest') },
+        });
+        await settle();
+        await failSubmit(form);
+        // Positive control: it was teleported, outside the form.
+        const input = outside.querySelector<HTMLElement>('#code-input')!;
+        expect(input).not.toBeNull();
+        expect(input.closest('form')).toBeNull();
+        await userEvent.click(summaryRow(screen.container, 'The code is taken.'));
+        await wait(400);
+        expect(document.activeElement).not.toBe(input);
+        expect(document.activeElement).toBe(screen.container.querySelector('.nav-link.active'));
+      });
+    });
+
+    it('a tall marked container with only a picker button: auto-scroll leaves the button in view', async () => {
+      await page.viewport(900, 600);
+      const filler: FieldDefinition[] = Array.from({ length: 20 }, (_, index) => ({
+        key: `filler_${index}`,
+        type: 'text',
+        label: `Filler ${index}`,
+      }));
+      const tallFields: FieldDefinition[] = [...filler, { key: 'code', type: 'text', label: 'Code' }];
+      const data: Record<string, string> = { code: '' };
+      for (const field of filler) data[field.key] = '';
+      stubResponses(invalid({ code: ['Pick a code.'] }));
+      const form = useForm(data);
+      const screen = render(DXForm, {
+        props: { form, fields: tallFields, errorSummary: 'top' },
+        slots: {
+          'field(code)': ({ targetAttrs }: any) =>
+            h('div', { class: 'code-container', ...targetAttrs }, [
+              h('div', { style: 'height: 900px' }, 'Long explanation of codes'),
+              h('button', { type: 'button', class: 'btn btn-secondary code-picker' }, 'Pick a code'),
+            ]),
+        },
+      });
+      await settle();
+      scrollToTop();
+      await settle();
+      const picker = screen.container.querySelector<HTMLElement>('.code-picker')!;
+      // Positive control: the container is taller than the window.
+      expect(
+        screen.container.querySelector('.code-container')!.getBoundingClientRect().height,
+      ).toBeGreaterThan(window.innerHeight);
+      await failSubmit(form);
+      await wait(300);
+      await scrollSettled();
+      const rect = picker.getBoundingClientRect();
+      expect(rect.top).toBeGreaterThanOrEqual(0);
+      expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+      expect(document.activeElement).not.toBe(picker);
     });
 
     it('an unmarked slot first: auto-scroll reaches the next target', async () => {

@@ -473,16 +473,24 @@ shows a failure the top `DAlert` (`shouldShowMessage`) does not render.
 `scrollToError` scrolls the first owned field on the selected tab
 (`[data-dx-field-key]`, set on DXField's roots to the data path) into view
 after the pane mounts, skipping a target that never renders; no focus. A
-field taller than the window scrolls by its input (centred). **A
+field taller than the window scrolls by its input (centred), or by its
+first focusable when it has no editable control (a picker button). **A
 `field(<key>)` slot gets NO wrapper** (three review rounds broke layout with
 one: a block wrapper changed grid/flex items, `display: contents` broke
 scrolling): it renders exactly what the consumer wrote and opts in to being
-reachable by binding the `targetAttrs` slot prop. DXFormField reports
-whether the slot's rendered DOM (the nodes between its fragment anchors)
-holds the marker (`slot-target` event → DXForm's `slotTargetMarked`); an
-unmarked field's summary row is plain text (`ErrorTarget.reachable: false`)
-and auto-scroll skips it. A never-rendered lazy slot counts as reachable
-until it renders.
+reachable by binding the `targetAttrs` slot prop. Reachability is LOOKED
+UP ON USE, never precomputed: a summary click and the auto-scroll each query
+the form's root element for the marker at that moment (after the failure's
+render has flushed), so a child that marks itself after its own async
+state, a marker rendered by the failure itself, a lazy pane opened by the
+click and a teleport into the form all count; a teleport out of the form
+does not. (A round that had DXFormField report "marked" after each render
+went stale four ways, since a child's own re-render never reaches the
+parent's `onUpdated`.) Every row owned by a field is a button. A click that
+finds no marker within the render frames, or nothing focusable in it,
+moves focus to the selected tab's button and scrolls its pane into view,
+so focus never drops to the body; auto-scroll skips the target for the next
+one.
 Both prefer the element for the EXACT error path (`lines.1.price`, a
 repeater row) and fall back to the owner after the render frames. A summary
 row (or the exposed `focusErrorTarget`) selects the tab and focuses the

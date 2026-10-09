@@ -33,13 +33,6 @@ export interface ErrorTarget {
     tabKey: string | null;
     /** A readable name for the key: "Price (line 1)", "Delivery date". */
     label: string;
-    /**
-     * Set by a host form (never by the resolver): `false` when the owning
-     * field renders nothing the form can scroll to or focus (a `field(<key>)`
-     * slot that does not bind `targetAttrs`). A summary lists such a row as
-     * plain text. Absent means reachable whenever `fieldKey` is set.
-     */
-    reachable?: boolean;
 }
 
 export interface ResolveErrorTargetsOptions {

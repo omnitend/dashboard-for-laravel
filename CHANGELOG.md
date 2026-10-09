@@ -30,7 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   row's field, not the repeater), focuses the field's editable control
   before any button in it (an info button), and waits up to a second for an
   async editor's control. Auto-scroll skips a target that never renders for
-  the next one; a field taller than the window is scrolled by its input.
+  the next one; a field taller than the window is scrolled by its input (or,
+  with no input, its first button).
   DXField roots carry `data-dx-field-key` (the field's data path). Focus
   only lands on a control that can take it (not disabled, `aria-disabled`,
   inert or in a disabled fieldset; a `tabindex="-1"` editor surface is
@@ -38,8 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `field(<key>)` slots receive a `targetAttrs` slot prop. Bind it
   (`v-bind="targetAttrs"`) on the element holding your control to let a
   failed submit scroll to it and its summary row focus it. The slot still
-  renders exactly what you write; unbound, its summary row is plain text and
-  auto-scroll moves on to the next error (#194).
+  renders exactly what you write. The form looks for the marker anywhere
+  inside its own element (a teleport into the form counts) at the moment
+  it needs it, so a child that marks itself later is still reached.
+  Unbound, auto-scroll moves on to the next error, and its summary row
+  (still a button) selects its tab and focuses the tab's button (#194).
 - `errorKeys` field option: patterns (`*` matches one dot segment, e.g.
   `['lines.*.*']`) for error keys a field owns although they are not under
   its key, such as a `span` field editing `form.data.lines` (#194).
