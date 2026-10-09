@@ -13,6 +13,18 @@ MCP is a protocol that allows AI assistants like Claude Desktop and Claude Code 
 
 ## Setup
 
+**The MCP SDK is an optional peer dependency.** Installing the library does
+not install `@modelcontextprotocol/sdk` (and its server stack), so component
+consumers don't carry it. The `npx` commands below fetch it alongside the
+package with `-p`. If you run `dashboard-docs-mcp` from a project that has the
+library installed, add the SDK there first:
+
+```bash
+npm install --save-dev @modelcontextprotocol/sdk
+```
+
+Without it, `dashboard-docs-mcp` exits with an install instruction.
+
 ### Claude Code
 
 If you're working in a project that uses this library, add this to your `.mcp.json`:
@@ -24,6 +36,9 @@ If you're working in a project that uses this library, add this to your `.mcp.js
       "command": "npx",
       "args": [
         "-y",
+        "-p",
+        "@modelcontextprotocol/sdk",
+        "-p",
         "@omnitend/dashboard-for-laravel@latest",
         "dashboard-docs-mcp"
       ]
@@ -47,6 +62,9 @@ Add to your Claude Desktop config file:
       "command": "npx",
       "args": [
         "-y",
+        "-p",
+        "@modelcontextprotocol/sdk",
+        "-p",
         "@omnitend/dashboard-for-laravel",
         "dashboard-docs-mcp"
       ]

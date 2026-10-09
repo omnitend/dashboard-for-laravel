@@ -7,15 +7,35 @@
  * Works with Claude Desktop, Claude Code, and any MCP-compatible client.
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+// The MCP SDK is an OPTIONAL peer dependency (#181): consumers of the
+// component library should not install express/hono/ajv just to get Vue
+// components. Load it dynamically so a missing SDK produces an instruction
+// rather than an ERR_MODULE_NOT_FOUND stack trace.
+let Server, StdioServerTransport, CallToolRequestSchema, ListToolsRequestSchema;
+try {
+  ({ Server } = await import('@modelcontextprotocol/sdk/server/index.js'));
+  ({ StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js'));
+  ({ CallToolRequestSchema, ListToolsRequestSchema } = await import(
+    '@modelcontextprotocol/sdk/types.js'
+  ));
+} catch (error) {
+  const sdkIsMissing =
+    error?.code === 'ERR_MODULE_NOT_FOUND' &&
+    String(error.message).includes('@modelcontextprotocol/sdk');
+  if (!sdkIsMissing) throw error;
+  console.error(
+    'dashboard-docs-mcp needs @modelcontextprotocol/sdk, which is an optional peer dependency.\n' +
+      'Install @modelcontextprotocol/sdk to use dashboard-docs-mcp:\n\n' +
+      '  npm install --save-dev @modelcontextprotocol/sdk\n\n' +
+      'or run it through npx with both packages:\n\n' +
+      '  npx -y -p @modelcontextprotocol/sdk -p @omnitend/dashboard-for-laravel dashboard-docs-mcp',
+  );
+  process.exit(1);
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');

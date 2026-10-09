@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Docs and MCP tooling are no longer runtime dependencies: a minimal
+  consumer install (the library plus `vue`) drops from 226 packages to 87
+  (#181). `highlight.js`,
+  `rehype-autolink-headings`, `rehype-slug` and `vue-docgen-api` are now
+  devDependencies; nothing in `dist/` used them, and the build is
+  byte-identical.
+- `@modelcontextprotocol/sdk` is now an **optional peer dependency** of the
+  `dashboard-docs-mcp` bin, so consumers no longer install express, hono,
+  ajv and the rest of its server stack. **If you use the docs MCP server**,
+  install the SDK yourself (`npm install --save-dev @modelcontextprotocol/sdk`)
+  or add `-p @modelcontextprotocol/sdk -p @omnitend/dashboard-for-laravel` to
+  your `npx` command (see `MCP_SERVER.md`). Without it the bin exits with
+  that instruction instead of a module-not-found stack trace.
+
 ## [0.43.0] - 2026-10-06
 
 ### Added

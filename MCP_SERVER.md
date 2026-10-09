@@ -104,6 +104,18 @@ If you're working in this repository with Claude Code, the MCP server is already
 
 After publishing, other projects can use the MCP server by installing the package.
 
+**The MCP SDK is an optional peer dependency.** Installing the library does
+not install `@modelcontextprotocol/sdk` (and its server stack), so component
+consumers don't carry it. The `npx` commands below fetch it alongside the
+package with `-p`. If you run `dashboard-docs-mcp` from a project that has the
+library installed, add the SDK there first:
+
+```bash
+npm install --save-dev @modelcontextprotocol/sdk
+```
+
+Without it, `dashboard-docs-mcp` exits with an install instruction.
+
 **In the other project's `.mcp.json`:**
 ```json
 {
@@ -112,6 +124,9 @@ After publishing, other projects can use the MCP server by installing the packag
       "command": "npx",
       "args": [
         "-y",
+        "-p",
+        "@modelcontextprotocol/sdk",
+        "-p",
         "@omnitend/dashboard-for-laravel@latest",
         "dashboard-docs-mcp"
       ]
@@ -133,6 +148,9 @@ After publishing, other projects can use the MCP server by installing the packag
       "command": "npx",
       "args": [
         "-y",
+        "-p",
+        "@modelcontextprotocol/sdk",
+        "-p",
         "@omnitend/dashboard-for-laravel",
         "dashboard-docs-mcp"
       ]
