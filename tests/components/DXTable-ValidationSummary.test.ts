@@ -7,8 +7,8 @@ import DXTable from '../../resources/js/components/extended/DXTable.vue';
 /*
  * #194: a failed save in DXTable's create/edit modal must show EVERY message
  * next to the Save button, for as long as the user needs, rather than a toast
- * of one message that disappears after 5 s. Non-validation failures keep a
- * toast. Real responses through the real API client (`fetch` stubbed).
+ * of one message that disappears after 5 s. Non-validation failures show in
+ * the same summary, also without a toast. Real responses through the real API client (`fetch` stubbed).
  */
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -40,7 +40,7 @@ function stubFailure(status: number, body: Record<string, unknown>) {
   );
 }
 
-const renderTable = () =>
+const renderTable = (extraProps: Record<string, unknown> = {}) =>
   render({
     render: () =>
       h(BApp, {}, () =>
@@ -51,6 +51,7 @@ const renderTable = () =>
           itemName: 'category',
           editUrl: '/api/categories/:id',
           createUrl: '/api/categories',
+          ...extraProps,
         }),
       ),
   });
@@ -196,27 +197,70 @@ describe('DXTable modal validation summary (#194)', () => {
     });
   });
 
-  it('create: a 500 still toasts the server error', async () => {
-    stubFailure(500, { message: 'Internal Server Error' });
-    const screen = renderTable();
-    await openCreate(screen);
-    modalButton('Create')!.click();
-    await wait(300);
+  /*
+   * A non-validation failure is shown by the footer summary (it carries the
+   * client's message for the status), so a toast would say the same thing a
+   * second time. Exactly one visible alert, no toast, for every modal action.
+   */
+  describe('a non-validation failure shows once, in the summary, with no toast', () => {
+    const visibleModalAlerts = () =>
+      Array.from(document.querySelectorAll<HTMLElement>('.modal .alert')).filter(
+        (alert) => alert.offsetParent !== null && alert.getBoundingClientRect().height > 0,
+      );
 
-    const toasts = toastTexts();
-    expect(toasts.length).toBe(1);
-    expect(toasts[0]).toContain('Server error. Please try again later.');
-  });
+    const expectSummaryOnly = (text: string) => {
+      const alerts = visibleModalAlerts();
+      expect(alerts.length).toBe(1);
+      expect(alerts[0].closest('.modal-footer')).not.toBeNull();
+      expect(alerts[0].textContent).toContain(text);
+      expect(toastTexts()).toEqual([]);
+    };
 
-  it('edit: a 500 still toasts the server error', async () => {
-    stubFailure(500, { message: 'Internal Server Error' });
-    const screen = renderTable();
-    await openEdit(screen);
-    modalButton('Save')!.click();
-    await wait(300);
+    it('create: a 500', async () => {
+      const fetchSpy = stubFailure(500, { message: 'Internal Server Error' });
+      const screen = renderTable();
+      await openCreate(screen);
+      modalButton('Create')!.click();
+      await wait(300);
+      // Positive control: the request was made and failed.
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expectSummaryOnly('Server error. Please try again later.');
+    });
 
-    const toasts = toastTexts();
-    expect(toasts.length).toBe(1);
-    expect(toasts[0]).toContain('Server error. Please try again later.');
+    it('edit: a 500', async () => {
+      const fetchSpy = stubFailure(500, { message: 'Internal Server Error' });
+      const screen = renderTable();
+      await openEdit(screen);
+      modalButton('Save')!.click();
+      await wait(300);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expectSummaryOnly('Server error. Please try again later.');
+    });
+
+    it('delete: a 500', async () => {
+      const fetchSpy = stubFailure(500, { message: 'Internal Server Error' });
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const screen = renderTable({ deleteUrl: '/api/categories/:id' });
+      await openEdit(screen);
+      modalButton('Delete')!.click();
+      await wait(300);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expectSummaryOnly('Server error. Please try again later.');
+    });
+
+    it('edit: a network failure (no HTTP response) shows the generic message', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockRejectedValue(new TypeError('Failed to fetch'));
+      const screen = renderTable();
+      await openEdit(screen);
+      modalButton('Save')!.click();
+      await wait(300);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      const alerts = visibleModalAlerts();
+      expect(alerts.length).toBe(1);
+      expect(alerts[0].textContent).not.toContain('Failed to fetch');
+      expect(toastTexts()).toEqual([]);
+    });
   });
 });

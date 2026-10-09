@@ -257,6 +257,68 @@ describe('DXTable modal: each open is a new session (#194 review)', () => {
     expect(modalButton('Save')).toBeTruthy();
   });
 
+  /*
+   * A failure that settles after its modal has closed has no summary left to
+   * show it, so it keeps a toast (the summary owns it only while its session's
+   * modal is open).
+   */
+  const visibleToasts = () =>
+    Array.from(document.querySelectorAll<HTMLElement>('.toast'))
+      .filter((toast) => toast.offsetParent !== null)
+      .map((toast) => toast.textContent ?? '');
+
+  it('a slow save failure arriving after the modal closed toasts (no summary is left to show it)', async () => {
+    const { resolvers } = deferredFetches();
+    const screen = renderTable();
+    await openRow(screen, 0);
+    modalButton('Save')!.click();
+    await wait(100);
+    expect(resolvers.length).toBe(1);
+    await cancel();
+    expect(visibleModal()).toBeFalsy();
+
+    resolvers[0](json(500, { message: 'Internal Server Error' }));
+    await wait(300);
+
+    const toasts = visibleToasts();
+    expect(toasts.length).toBe(1);
+    expect(toasts[0]).toContain('Server error. Please try again later.');
+  });
+
+  it('a slow delete failure arriving after the modal closed toasts', async () => {
+    const { resolvers } = deferredFetches();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const screen = renderTable({ deleteUrl: '/api/categories/:id' });
+    await openRow(screen, 0);
+    modalButton('Delete')!.click();
+    await wait(100);
+    expect(resolvers.length).toBe(1);
+    await cancel();
+
+    resolvers[0](json(500, { message: 'Internal Server Error' }));
+    await wait(300);
+
+    const toasts = visibleToasts();
+    expect(toasts.length).toBe(1);
+    expect(toasts[0]).toContain('Server error. Please try again later.');
+  });
+
+  it('a slow 422 arriving after the modal closed toasts its message', async () => {
+    const { resolvers } = deferredFetches();
+    const screen = renderTable();
+    await openRow(screen, 0);
+    modalButton('Save')!.click();
+    await wait(100);
+    await cancel();
+
+    resolvers[0](json(422, { message: GENERIC, errors: UNRENDERED }));
+    await wait(300);
+
+    const toasts = visibleToasts();
+    expect(toasts.length).toBe(1);
+    expect(toasts[0]).toContain(GENERIC);
+  });
+
   it('emits exactly one deleteError per failed delete', async () => {
     immediate(() => json(500, { message: 'Internal Server Error' }));
     vi.spyOn(window, 'confirm').mockReturnValue(true);

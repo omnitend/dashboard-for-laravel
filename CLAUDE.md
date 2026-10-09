@@ -508,8 +508,10 @@ to the humanised key. A tab index the parent sets while every tab is hidden
 is held (`pendingRequestedIndex`) until tabs appear. DXTable's modal
 renders the summary in its footer with the inner form on
 `error-summary="external"` (NOT `false`, which brings the top alert back for
-message-only failures: two alerts), and `useResourceEditor` toasts only
-non-422 failures (`onError` receives the `ApiError`, not an errors map).
+message-only failures: two alerts), and `useResourceEditor` toasts a
+failure (save or delete, any status) only when its session's modal has
+closed; while it is open the footer summary is the report (`onError`
+receives the `ApiError`, not an errors map).
 Bootstrap sets `scroll-behavior: smooth` on `:root`, so a scroll test must
 wait for `scrollY` to settle (two equal reads) before reading rects; a scroll
 that STARTS late (after a skipped target's frames) needs a fixed wait first,

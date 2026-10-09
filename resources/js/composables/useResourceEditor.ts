@@ -1,6 +1,6 @@
 import { computed, ref, watch, type Ref } from "vue";
 import { api } from "../utils/api";
-import { useForm, type FormError } from "./useForm";
+import { isAbortError, useForm, type FormError } from "./useForm";
 import { useToast } from "./useToast";
 import type { FieldDefinition } from "../types";
 import {
@@ -443,18 +443,26 @@ export function useResourceEditor<T = any>(
     };
 
     /**
-     * A failed create/edit save. `useForm` hands `onError` the `ApiError`
-     * (`{ message, errors, status }`), not an errors map: the old
-     * `Object.values(errors).flat()[0]` read its `message`, and a 422 toasted
-     * the server's summary line for 5 s. A validation failure (422) now
-     * toasts nothing: the modal footer's error summary lists every message,
-     * beside Save, until the next submit (#194). Any other failure keeps a
-     * toast with the client's message for it ("Server error. Please try
-     * again later.") or `fallback` for a non-HTTP failure.
+     * A failed create/edit/delete request. `useForm` hands `onError` the
+     * `ApiError` (`{ message, errors, status }`), not an errors map, and
+     * records every non-abort failure in `form.submitFailure`, which the
+     * modal footer's error summary shows beside Save (the server's message
+     * and every validation message, #194). While the session that made the
+     * request still has its modal open, that summary IS the report, so a
+     * toast would only repeat it: nothing is toasted. A failure that settles
+     * after its modal closed (or another row opened) has no summary left, so
+     * it toasts the client's message for it ("Server error. Please try again
+     * later.", or the server's 422 line) or `fallback` for a non-HTTP failure.
+     * An abort is a cancellation, never reported.
      */
-    const toastSaveFailure = (error: FormError | unknown, fallback: string) => {
+    const reportFailure = (
+        error: FormError | unknown,
+        fallback: string,
+        generation: number,
+    ) => {
+        if (isAbortError(error)) return;
+        if (editGeneration.value === generation && showEditModal.value) return;
         const status = (error as FormError | null)?.status;
-        if (status === 422) return;
         // Only an HTTP failure's message is written for users; a thrown
         // TypeError ("Failed to fetch") gets the fallback.
         const message = typeof status === 'number' ? (error as FormError).message : '';
@@ -508,7 +516,7 @@ export function useResourceEditor<T = any>(
                     },
                     onError: (error: FormError) => {
                         errorReported = true;
-                        toastSaveFailure(error, 'Failed to create. Please try again.');
+                        reportFailure(error, 'Failed to create. Please try again.', generation);
                         emit('createError', error);
                     }
                 });
@@ -551,7 +559,7 @@ export function useResourceEditor<T = any>(
                     },
                     onError: (error: FormError) => {
                         errorReported = true;
-                        toastSaveFailure(error, 'Failed to update. Please try again.');
+                        reportFailure(error, 'Failed to update. Please try again.', generation);
                         emit('editError', item, error);
                     }
                 });
@@ -639,18 +647,7 @@ export function useResourceEditor<T = any>(
                     refresh();
                 },
                 onError: (error: any) => {
-                    // Extract error message from server response
-                    const errorData = error?.response?.data ?? error?.data ?? error;
-                    const errorMessage = errorData?.message ?? 'Failed to delete. Please try again.';
-
-                    // Show error toast with server message
-                    createToast?.({
-                        title: 'Error',
-                        body: errorMessage,
-                        variant: 'danger',
-                        modelValue: 5000, // Auto-dismiss after 5 seconds
-                    });
-
+                    reportFailure(error, 'Failed to delete. Please try again.', generation);
                     deleteErrorReported = true;
                     emit('deleteError', item, error);
                 }

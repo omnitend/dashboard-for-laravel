@@ -185,7 +185,7 @@ function copyValidationErrors(errors: unknown): ValidationErrors {
     return copy;
 }
 
-function isAbortError(error: unknown): boolean {
+export function isAbortError(error: unknown): boolean {
     return (
         error !== null &&
         typeof error === "object" &&

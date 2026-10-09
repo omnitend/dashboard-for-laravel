@@ -67,8 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DXTable's create/edit modal lists every validation message in its footer,
   beside Save, and no longer toasts on a 422. Its `onError` was reading the
   `ApiError` as if it were an errors map, so the toast showed the server's
-  summary line for 5 s and no field message. Other failures (a 500, a 403)
-  still toast (#194).
+  summary line for 5 s and no field message. Other failures (a 500, a 403,
+  no connection) show in the same summary rather than a toast, delete
+  included; a failure that arrives after its modal has closed still toasts,
+  since no summary is left to show it (#194).
 - `useForm`: when submits overlap, the newest submit's outcome wins,
   whichever finishes last. An older submit that fails after a newer one
   succeeded no longer turns `wasSuccessful` (and DXForm's saved state) off,
@@ -93,6 +95,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   select their tab (#194).
 - DXTable emits `createError`/`editError`/`deleteError` once per failure
   (it emitted twice).
+- A table-layout DXRepeater calls a sub-field's label function with the
+  first row (over the outer model) for its column header, as its rows do,
+  so a row-based label (`row => row.currency + ' price'`) no longer throws.
+  A header label that throws or returns nothing shows the humanised key.
 
 ## [0.43.0] - 2026-10-06
 
