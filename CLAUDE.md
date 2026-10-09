@@ -471,17 +471,26 @@ The summary (`DXFormErrorSummary`) renders at `errorSummary: 'footer'` by
 default, directly above the submit button, never inside a tab pane; while it
 shows a failure the top `DAlert` (`shouldShowMessage`) does not render.
 `scrollToError` scrolls the first owned field on the selected tab
-(`[data-dx-field-key]`, set on DXField's roots to the data path, and on the
-`display: contents` `.dx-form-field-slot` wrapper of a `field(<key>)` slot,
-so a consumer's grid/flex still sees the slot roots; it has no box, so
-`boxOf()` scrolls its first descendant with one) into view
-after the pane mounts, skipping a target that never renders; no focus.
+(`[data-dx-field-key]`, set on DXField's roots to the data path) into view
+after the pane mounts, skipping a target that never renders; no focus. A
+field taller than the window scrolls by its input (centred). **A
+`field(<key>)` slot gets NO wrapper** (three review rounds broke layout with
+one: a block wrapper changed grid/flex items, `display: contents` broke
+scrolling): it renders exactly what the consumer wrote and opts in to being
+reachable by binding the `targetAttrs` slot prop. DXFormField reports
+whether the slot's rendered DOM (the nodes between its fragment anchors)
+holds the marker (`slot-target` event → DXForm's `slotTargetMarked`); an
+unmarked field's summary row is plain text (`ErrorTarget.reachable: false`)
+and auto-scroll skips it. A never-rendered lazy slot counts as reachable
+until it renders.
 Both prefer the element for the EXACT error path (`lines.1.price`, a
 repeater row) and fall back to the owner after the render frames. A summary
 row (or the exposed `focusErrorTarget`) selects the tab and focuses the
 field's EDITABLE control first (never its info button), waiting about a
 second while no candidate passes `canTakeFocus` (disabled, `aria-disabled`,
-inert, disabled fieldset, not focusable) and counting a focus only when
+inert, disabled fieldset, not focusable; `tabindex="-1"` IS focusable, it
+only leaves the Tab order) and re-querying by key while the field's element
+is replaced or briefly absent, counting a focus only when
 `document.activeElement` is the control. Keys are matched by attribute
 VALUE, not a built selector, so quotes/brackets/uuids need no escaping; a
 removed tab key gets a fresh pane id when reintroduced (the cache is

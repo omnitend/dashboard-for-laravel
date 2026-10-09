@@ -77,7 +77,7 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
   { name: 'hint(<key>)', props: 'field, model', description: 'Override the hint text rendered below the field.' },
   { name: 'repeater-row(<key>)', props: 'row, index, fields, remove, path', description: 'Custom row layout for a repeater field.' },
   { name: 'switch-list-item(<key>)', props: 'option, on', description: 'Extra content beside a switch-list row\'s toggle (e.g. a notes input bound to your own model).' },
-  { name: 'field(<key>)', props: 'field, model', description: 'Fully replace a field\'s rendering (including its label), bypassing DXField entirely. Supersedes field-before/field-after for the same key. Rendered inside `<div class="dx-form-field-slot" data-dx-field-key="<key>">`, which is display: contents (each slot root stays the grid or flex item it was), so a failed submit can scroll to and focus it.' },
+  { name: 'field(<key>)', props: 'field, model, targetAttrs', description: 'Fully replace a field\'s rendering (including its label), bypassing DXField entirely. Supersedes field-before/field-after for the same key. Rendered exactly as you write it, with no wrapper. Bind targetAttrs (v-bind="targetAttrs") on the element holding your control so a failed submit can scroll to it and a summary row can focus it; without it the field\'s summary row is plain text and auto-scroll moves on to the next error.' },
   { name: 'field-before(<key>)', props: 'field, model', description: 'Content rendered directly above a field (e.g. a quick-create button above a select).' },
   { name: 'field-after(<key>)', props: 'field, model', description: 'Content rendered directly below a field.' },
   { name: 'tab-content(<key>)', props: 'tab, model', description: 'Replace the entire body of a tab.' },
@@ -150,8 +150,14 @@ message with a readable label ("Price (line 1): Must be positive.").
 - A row naming a visible field is a button: it selects the field's tab,
   scrolls to the field and focuses its input (for a repeater row, that row's
   field; a field's info button is never focused instead; an async editor is
-  waited for). Content from a `field(<key>)` slot is reached through its
-  wrapper.
+  waited for). A `field(<key>)` slot is reached only if it binds the
+  `targetAttrs` slot prop on the element holding its control
+  (`<div v-bind="targetAttrs">…</div>`); otherwise its row is plain text.
+  A slot on a lazy tab that has never been opened counts as reachable until
+  it renders: clicking its row opens the tab, and the row turns to plain
+  text if the slot turns out to be unmarked.
+- A field taller than the window (a long explanation above its input) is
+  scrolled by its input, centred, so the input is never left below the fold.
 - The form also takes the user to the first problem: it selects the first
   tab holding an error (`autoErrorTab`) and scrolls the field into view
   (`scrollToError`), including on a `lazy` tab. A `preserveErrors` resubmit

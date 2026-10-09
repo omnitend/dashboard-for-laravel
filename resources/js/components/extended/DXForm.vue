@@ -97,6 +97,7 @@
                             :model="model"
                             :layout="resolvedLayout"
                             :label-cols="labelCols"
+                            @slot-target="recordSlotTarget"
                         >
                             <!-- Forward every DXForm slot so the field can render
                                  its keyed field(<key>)/field-before/field-after/
@@ -131,6 +132,7 @@
                     :model="model"
                     :layout="resolvedLayout"
                     :label-cols="labelCols"
+                    @slot-target="recordSlotTarget"
                 >
                     <!-- Forward every DXForm slot so the field can render its
                          keyed field(<key>)/field-before/field-after/value/span/
@@ -213,6 +215,7 @@ import {
     computed,
     nextTick,
     onBeforeUnmount,
+    reactive,
     ref,
     useId,
     watch,
@@ -593,9 +596,36 @@ const liveErrorTargets = computed<ErrorTarget[]>(() =>
 );
 
 /** Targets for what the last failed submit returned (the summary's rows). */
+/**
+ * Fields rendered through a `field(<key>)` slot, by key: whether the slot's
+ * DOM held the field's marker (`targetAttrs`) at its last render. A field
+ * not in the map renders through DXField (always marked) or has not
+ * rendered yet (a lazy tab never opened), and counts as reachable.
+ */
+const slotTargetMarked = reactive(new Map<string, boolean>());
+
+function recordSlotTarget(fieldKey: string, marked: boolean | null): void {
+    if (marked === null) slotTargetMarked.delete(fieldKey);
+    else if (slotTargetMarked.get(fieldKey) !== marked) slotTargetMarked.set(fieldKey, marked);
+}
+
+/**
+ * Whether a target can be scrolled to and focused: owned by a field, and
+ * not a `field(<key>)` slot rendered without its marker. Computed from what
+ * is rendered, so a summary row for an unmarked slot is plain text rather
+ * than a button that would do nothing.
+ */
+function isReachable(target: ErrorTarget): boolean {
+    return target.fieldKey !== null && slotTargetMarked.get(target.fieldKey) !== false;
+}
+
 const summaryTargets = computed<ErrorTarget[]>(() => {
     const failure = resolvedForm.value.submitFailure;
-    return failure ? errorTargetsFor(failure.errors) : [];
+    if (!failure) return [];
+    return errorTargetsFor(failure.errors).map((target) => ({
+        ...target,
+        reachable: isReachable(target),
+    }));
 });
 
 /** Key of the first visible tab owning a visible errored field, or null. */
@@ -909,27 +939,12 @@ const nextFrame = () =>
     new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
 
 /**
- * The element whose box stands for `element`: itself, or, for a
- * `display: contents` element (the `field(<key>)` slot wrapper, which has no
- * box and cannot be scrolled to), its first descendant that has one.
- */
-function boxOf(element: HTMLElement): HTMLElement | null {
-    if (getComputedStyle(element).display !== "contents") {
-        return element.offsetParent !== null ? element : null;
-    }
-    for (const child of Array.from(element.children)) {
-        if (!(child instanceof HTMLElement)) continue;
-        const box = boxOf(child);
-        if (box !== null) return box;
-    }
-    return null;
-}
-
-/**
  * Whether `candidate` can take focus now: laid out, not disabled (itself or
  * through a disabled fieldset), not `aria-disabled`, not inside an `inert`
- * subtree, and focusable at all (a native control, contenteditable, or a
- * `tabindex`; a `div role="combobox"` with none is not).
+ * subtree, and focusable at all (a native control, contenteditable, or any
+ * `tabindex`; a `div role="combobox"` with none is not). A negative
+ * `tabindex` only takes an element out of the Tab order; it can still be
+ * focused, so an editor surface with `tabindex="-1"` qualifies.
  */
 function canTakeFocus(candidate: HTMLElement): boolean {
     if (candidate.offsetParent === null) return false;
@@ -937,11 +952,6 @@ function canTakeFocus(candidate: HTMLElement): boolean {
     if (candidate.closest("fieldset:disabled") !== null) return false;
     if (candidate.getAttribute("aria-disabled") === "true") return false;
     if (candidate.closest("[inert]") !== null) return false;
-    if (candidate.getAttribute("tabindex") === "-1" && !candidate.matches(NATIVELY_FOCUSABLE)) {
-        // Programmatically focusable, but a widget opting out of the tab
-        // order is not where a user would type.
-        return false;
-    }
     return (
         candidate.matches(NATIVELY_FOCUSABLE) ||
         candidate.isContentEditable ||
@@ -962,14 +972,14 @@ function firstFocusable(element: HTMLElement, selector: string): HTMLElement | n
  * The first shown element marked with this data path, or null. Compared as
  * an attribute value rather than built into a selector, so a key holding
  * quotes, brackets, spaces or dots (`image_media.<uuid>`) needs no escaping.
- * Nested markers for one key (a DXField inside a `field(<key>)` wrapper)
+ * Nested markers for one key (a slot binding `targetAttrs` around a DXField)
  * resolve to the outer one, whose subtree holds the inner one's control.
  */
 function shownFieldElement(path: string): HTMLElement | null {
     const root = resolveFormElement();
     if (root === null) return null;
     for (const element of Array.from(root.querySelectorAll<HTMLElement>("[data-dx-field-key]"))) {
-        if (element.getAttribute("data-dx-field-key") === path && boxOf(element) !== null) {
+        if (element.getAttribute("data-dx-field-key") === path && element.offsetParent !== null) {
             return element;
         }
     }
@@ -979,10 +989,10 @@ function shownFieldElement(path: string): HTMLElement | null {
 /**
  * The element to take the user to for an error: the one rendered for the
  * EXACT error path (`lines.1.price`, a repeater row's field) when there is
- * one, else the owning field's (`lines`). DXField's roots, and the wrapper of
- * a `field(<key>)` replacement slot, carry `data-dx-field-key`. Null when
- * neither renders (content a consumer renders without the marker, a tab that
- * cannot be shown).
+ * one, else the owning field's (`lines`). DXField's roots carry
+ * `data-dx-field-key`, as does whatever a `field(<key>)` slot binds
+ * `targetAttrs` to. Null when neither renders (an unmarked slot, consumer
+ * content, a tab that cannot be shown).
  */
 async function renderedErrorElement(
     errorKey: string,
@@ -997,9 +1007,20 @@ async function renderedErrorElement(
     return errorKey === fieldKey ? null : shownFieldElement(fieldKey);
 }
 
-/** Scroll the box standing for a field element into view, if it has one. */
+/**
+ * Scroll a field into view. A field that fits in the viewport is scrolled
+ * whole, so its label and the message under its input show too. One taller
+ * than the viewport (a marked container with a long explanation above its
+ * input) is scrolled by its first usable control, centred, since scrolling
+ * by its own edge can leave the input below the fold. Never focuses.
+ */
 function scrollFieldIntoView(element: HTMLElement): void {
-    boxOf(element)?.scrollIntoView({ block: "nearest" });
+    const control = firstFocusable(element, EDITABLE_CONTROL);
+    if (control !== null && element.getBoundingClientRect().height > window.innerHeight) {
+        control.scrollIntoView({ block: "center" });
+        return;
+    }
+    element.scrollIntoView({ block: "nearest" });
 }
 
 /** Bumped per scroll/focus request, so only the latest one acts. */
@@ -1008,7 +1029,8 @@ let revealToken = 0;
 /**
  * After a failed submit: once the decision has selected the tab and its pane
  * has rendered, scroll the first owned field on that tab into view. A target
- * that never renders (consumer content without the marker) is skipped for
+ * known to be unreachable (an unmarked `field(<key>)` slot) is skipped, and
+ * one that never renders its marker is skipped after its render frames, for
  * the next one. No focus, so a phone does not raise its keyboard over the
  * summary.
  */
@@ -1016,7 +1038,7 @@ function scrollToFirstError(): void {
     const selectedKey = activeTabKey.value;
     const targets = liveErrorTargets.value.filter(
         (target) =>
-            target.fieldKey !== null &&
+            isReachable(target) &&
             (target.tabKey === null || target.tabKey === selectedKey),
     );
     if (targets.length === 0) return;
@@ -1039,9 +1061,11 @@ function scrollToFirstError(): void {
  * editable control that can take focus, waiting (about a second) while none
  * can, e.g. an async editor still loading or a widget rendered disabled
  * until its data arrives; anything else focusable only as a fallback. A
- * focus counts only once `document.activeElement` is the control. Exposed
- * so a summary rendered OUTSIDE the form (DXTable's modal footer) can drive
- * it.
+ * focus counts only once `document.activeElement` is the control. The field
+ * is looked up again by its key whenever its element leaves the DOM (a
+ * re-render replacing it), and a moment with none at all is waited out.
+ * Exposed so a summary rendered OUTSIDE the form (DXTable's modal footer)
+ * can drive it.
  */
 async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
     if (target.tabKey !== null && visibleTabKeys.value.includes(target.tabKey)) {
@@ -1065,17 +1089,15 @@ async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
     };
 
     for (let attempt = 0; attempt <= CONTROL_RENDER_ATTEMPTS; attempt += 1) {
-        if (tryFocus(firstFocusable(element, EDITABLE_CONTROL))) return;
+        if (element !== null && tryFocus(firstFocusable(element, EDITABLE_CONTROL))) return;
         if (attempt === CONTROL_RENDER_ATTEMPTS) break;
         await nextFrame();
         if (token !== revealToken) return;
-        // A re-render may have replaced the field's element.
-        if (!element.isConnected) {
-            element = shownFieldElement(path);
-            if (element === null) return;
-        }
+        // A re-render may have replaced the field's element, or removed it
+        // for a moment: look it up again by its key.
+        if (element === null || !element.isConnected) element = shownFieldElement(path);
     }
-    tryFocus(firstFocusable(element, ANY_FOCUSABLE));
+    if (element !== null) tryFocus(firstFocusable(element, ANY_FOCUSABLE));
 }
 
 // ————————————————— failed-submit summary
