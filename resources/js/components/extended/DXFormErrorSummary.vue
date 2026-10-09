@@ -153,9 +153,7 @@ const rows = computed<Row[]>(() =>
             id: `${target.errorKey}#${index}`,
             text,
             errorKey: target.errorKey,
-            // A row the host cannot take the user to is plain text, not a
-            // button that would do nothing.
-            fieldKey: target.reachable === false ? null : target.fieldKey,
+            fieldKey: target.fieldKey,
             tabKey: target.tabKey,
         })),
     ),

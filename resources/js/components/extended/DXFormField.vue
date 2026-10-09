@@ -21,8 +21,8 @@
        as-is, with no wrapper (#194): `targetAttrs` is the marker DXForm
        looks for to scroll to and focus a field after a failed submit, and
        the consumer opts in by binding it (`v-bind="targetAttrs"`) on the
-       element holding the control. Whether they did is reported to DXForm
-       (`slot-target`), so an unmarked field's summary row is plain text. -->
+       element holding the control. DXForm looks the marker up when it
+       needs it (a summary click, auto-scroll), never ahead of time. -->
   <slot
     v-if="$slots[`field(${field.key})`]"
     :name="`field(${field.key})`"
@@ -58,14 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  getCurrentInstance,
-  onBeforeUnmount,
-  onMounted,
-  onUpdated,
-  useSlots,
-} from "vue";
+import { computed, useSlots } from "vue";
 import DXField from "./DXField.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { FieldDefinition, LabelCols } from "../../types";
@@ -86,66 +79,8 @@ interface Props {
 const props = defineProps<Props>();
 const slots = useSlots();
 
-const emit = defineEmits<{
-  /**
-   * For a `field(<key>)` slot, after each render: whether an element carrying
-   * the field's marker (`targetAttrs`) is in what the slot rendered. `null`
-   * when the field is not (or no longer) rendered through the slot.
-   */
-  "slot-target": [fieldKey: string, marked: boolean | null];
-}>();
-
-const MARKER_ATTRIBUTE = "data-dx-field-key";
-
 /** What a `field(<key>)` slot binds to opt in to scroll/focus (#194). */
-const targetAttrs = computed(() => ({ [MARKER_ATTRIBUTE]: props.field.key }));
-
-const instance = getCurrentInstance();
-
-function hasMarker(node: Node, key: string): boolean {
-  if (!(node instanceof Element)) return false;
-  if (node.getAttribute(MARKER_ATTRIBUTE) === key) return true;
-  for (const element of Array.from(node.querySelectorAll(`[${MARKER_ATTRIBUTE}]`))) {
-    if (element.getAttribute(MARKER_ATTRIBUTE) === key) return true;
-  }
-  return false;
-}
-
-/**
- * Whether the slot's rendered DOM holds the marker. The slot renders as a
- * fragment, so its nodes are the siblings between the fragment's start and
- * end anchors (Vue's own, present without the wrapper too).
- */
-function slotIsMarked(): boolean {
-  const subTree = instance?.subTree;
-  const start = subTree?.el as Node | null | undefined;
-  const end = subTree?.anchor as Node | null | undefined;
-  if (!start) return false;
-  if (!end) return hasMarker(start, props.field.key);
-  for (let node: Node | null = start; node !== null; node = node.nextSibling) {
-    if (hasMarker(node, props.field.key)) return true;
-    if (node === end) break;
-  }
-  return false;
-}
-
-let reported: { key: string; marked: boolean | null } | null = null;
-
-function report(): void {
-  const key = props.field.key;
-  const marked = slots[`field(${key})`] ? slotIsMarked() : null;
-  if (reported !== null && reported.key !== key) emit("slot-target", reported.key, null);
-  if (reported?.key === key && reported.marked === marked) return;
-  reported = { key, marked };
-  emit("slot-target", key, marked);
-}
-
-onMounted(report);
-onUpdated(report);
-onBeforeUnmount(() => {
-  if (reported !== null) emit("slot-target", reported.key, null);
-  reported = null;
-});
+const targetAttrs = computed(() => ({ "data-dx-field-key": props.field.key }));
 
 /**
  * Map a DXField slot name to this field's keyed parent slot, when present.

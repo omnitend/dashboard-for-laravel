@@ -25,7 +25,10 @@ the submit control is outside the form, such as a modal footer; see
 - A row is left without its "Label: " prefix when the message already names
   the field, and keeps it when the message holds a raw key (`delivery_date`)
   or two rows share a message.
-- A row naming a visible field is a button that emits `select-target`.
+- A row naming a visible field is a button that emits `select-target`,
+  whatever that field renders: the host decides where focus goes when it
+  finds nothing to focus (DXForm's `focusErrorTarget` moves it to the
+  field's tab button).
 - It is one `DAlert` (danger, the subtle tint) with `role="alert"`, remounted
   per failure so each new failure is announced once.
 
