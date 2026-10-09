@@ -7,6 +7,7 @@ export * from 'bootstrap-vue-next';
 // Extended components (custom functionality beyond Bootstrap Vue Next)
 export { default as DXDashboard } from "./components/extended/DXDashboard.vue";
 export { default as DXForm } from "./components/extended/DXForm.vue";
+export { default as DXFormErrorSummary } from "./components/extended/DXFormErrorSummary.vue";
 export { default as DXField } from "./components/extended/DXField.vue";
 export { default as DXFieldLabel } from "./components/extended/DXFieldLabel.vue";
 export { default as DXModalActions } from "./components/extended/DXModalActions.vue";
@@ -181,6 +182,8 @@ export type {
     ErrorTarget,
     ResolveErrorTargetsOptions,
 } from "./utils/formErrorTargets";
+
+export type { ErrorSummarySelection } from "./components/extended/DXFormErrorSummary.vue";
 
 export type {
     FormFieldDefinition,

@@ -654,6 +654,46 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   }
 }
 
+// DXFormErrorSummary (#194): the failed submit's message, then one row per
+// validation message. The alert keeps the danger alert's subtle tint; a row
+// that points at a field is a button drawn as underlined text in the alert's
+// own colour (an alert-coloured link, not the brand navy), so the list reads
+// as text and still says "you can click this". Global, not scoped: the rows
+// are rendered inside DAlert's slot.
+.dx-form-error-summary {
+  .dx-form-error-summary__message {
+    margin-bottom: 0;
+    font-weight: $font-weight-semibold;
+  }
+
+  .dx-form-error-summary__list {
+    margin: map.get($spacers, 2) 0 0;
+    padding-inline-start: 1.25rem;
+  }
+
+  .dx-form-error-summary__target {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    &:focus-visible {
+      outline: var(--bs-focus-ring-width) solid currentColor;
+      outline-offset: 2px;
+      border-radius: var(--bs-border-radius-sm);
+    }
+  }
+}
+
 // Switch-list option rows (DXField `switch-list`) are one line each: a label,
 // a switch and an optional trailing control (a notes input in the
 // `switch-list-item` slot). Centre all three in the row, instead of the
