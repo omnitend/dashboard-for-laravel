@@ -2630,3 +2630,100 @@ describe('DXTable show-count suppresses the item-count caption (#127)', () => {
     expect(footer?.textContent ?? '').not.toContain('items.');
   });
 });
+
+/**
+ * #200. `editFields` both define the create modal and open the edit modal on a
+ * row click. A page that keeps the create modal but opens the record elsewhere
+ * from `row-clicked` (Omni Tend's product list opens the product page) got both
+ * at once. `editOnRowClick: false` keeps the first without the second.
+ */
+describe('DXTable editOnRowClick (#200)', () => {
+  const editFields = [{ key: 'name', type: 'text', label: 'Name' }];
+
+  const renderTable = (rowName: string, props: Record<string, any> = {}) => {
+    const clicked: any[] = [];
+    const tableRef = ref<any>(null);
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            ref: tableRef,
+            items: [{ id: 1, name: rowName }],
+            fields: [{ key: 'name', label: 'Name' }],
+            itemName: 'widget',
+            editFields,
+            createUrl: '/api/widgets',
+            onRowClicked: (item: any) => clicked.push(item),
+            ...props,
+          }),
+        ),
+    });
+    return { screen, clicked, tableRef };
+  };
+
+  // The modal teleports out of the table, so look across the document for its
+  // form: an input seeded from the clicked row.
+  const editFormFor = (rowName: string) =>
+    [...document.querySelectorAll('input')].find((input) => input.value === rowName) ?? null;
+
+  const clickRow = async (screen: any) => {
+    (screen.container.querySelector('tbody tr') as HTMLElement).click();
+    await wait(120);
+  };
+
+  it('opens the edit modal on a row click by default', async () => {
+    // Positive control for the test below: the same click, default props.
+    const { screen, clicked } = renderTable('Default row');
+    await flush();
+
+    await clickRow(screen);
+
+    expect(clicked).toHaveLength(1);
+    expect(editFormFor('Default row')).not.toBeNull();
+  });
+
+  it('emits row-clicked without opening the edit modal when off', async () => {
+    const { screen, clicked } = renderTable('Opt-out row', { editOnRowClick: false });
+    await flush();
+
+    await clickRow(screen);
+
+    expect(clicked).toHaveLength(1);
+    expect(editFormFor('Opt-out row')).toBeNull();
+  });
+
+  it('keeps the create modal when off', async () => {
+    const { tableRef } = renderTable('Create row', { editOnRowClick: false });
+    await flush();
+
+    tableRef.value.openCreate();
+    await wait(120);
+
+    const nameInput = [...document.querySelectorAll('input')].find(
+      (input) => input.closest('.modal') !== null,
+    );
+    expect(nameInput).toBeDefined();
+  });
+
+  it('takes the pointer from row-clicked alone when off', async () => {
+    const cursorOf = async (props: Record<string, any>) => {
+      const screen = render({
+        render: () =>
+          h(BApp, {}, () =>
+            h(DXTable, {
+              items: [{ id: 1, name: 'A' }],
+              fields: [{ key: 'name', label: 'Name' }],
+              editFields,
+              editOnRowClick: false,
+              ...props,
+            }),
+          ),
+      });
+      await wait(80);
+      return getComputedStyle(screen.container.querySelector('tbody tr') as HTMLElement).cursor;
+    };
+
+    expect(await cursorOf({})).not.toBe('pointer');
+    expect(await cursorOf({ onRowClicked: () => {} })).toBe('pointer');
+  });
+});

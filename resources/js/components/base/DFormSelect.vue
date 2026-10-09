@@ -18,8 +18,11 @@ import { BFormSelect } from "bootstrap-vue-next";
 import { computed, useSlots } from "vue";
 
 // Mirrors the shapes BVN's BFormSelect accepts per option (primitive, object, or
-// group). Only object options can carry a `null` value.
-export type OptionItem = string | number | boolean | Record<string, unknown>;
+// group): bvn types them `object | string | number | boolean`. `object`, not
+// `Record<string, unknown>`, so an option INTERFACE such as DXTable's
+// `FilterOption` (no index signature) fits without a cast (#171). Only object
+// options can carry a `null` value.
+export type OptionItem = string | number | boolean | object;
 
 export interface Props<TValue = unknown> {
   modelValue?: TValue | TValue[] | null;

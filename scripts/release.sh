@@ -44,10 +44,9 @@ if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
 fi
 
 PACKAGE_NAME=$(node -p "require('./package.json').name")
-# The registry directly, NOT `npm view` — the CLI caches, and a stale cache
-# reporting the previous version after a successful publish is indistinguishable
-# from a publish that failed. Seen on the 0.40.0 release.
-REGISTRY_URL="https://registry.npmjs.org/${PACKAGE_NAME/\//%2F}"
+
+# npm_has_version (uncached) and wait_for_npm_version (retries for ~60 s).
+source "$(dirname "${BASH_SOURCE[0]}")/release-npm-check.sh"
 
 # ---------------------------------------------------------------------------
 # State — what is already true. Every one of these is a question the old script
@@ -72,20 +71,6 @@ main_is_pushed() {
     local_head=$(/usr/bin/git rev-parse main)
     remote_head=$(/usr/bin/git rev-parse origin/main 2>/dev/null || echo none)
     [ "$local_head" = "$remote_head" ]
-}
-
-npm_has_version() {
-    local body
-    body=$(curl -fsS --max-time 20 "$REGISTRY_URL" 2>/dev/null) || return 1
-    VERSION="$VERSION" node -e '
-        let raw = "";
-        process.stdin.on("data", d => raw += d).on("end", () => {
-            try {
-                const versions = JSON.parse(raw).versions || {};
-                process.exit(versions[process.env.VERSION] ? 0 : 1);
-            } catch { process.exit(1); }
-        });
-    ' <<< "$body"
 }
 
 # Release notes, in preference order:
@@ -322,13 +307,11 @@ check() {
     fi
 }
 
-# npm's registry is read through a CDN, so a just-published version can take a
-# moment to appear. Retry rather than reporting a false failure.
+# A just-published version can take a moment to appear, so this retries for
+# about a minute before reporting a false failure (#184).
+print_step "Checking npm for ${PACKAGE_NAME}@${VERSION} (a fresh publish can take up to a minute to appear)..."
 NPM_OK=false
-for _ in 1 2 3 4 5 6; do
-    if npm_has_version; then NPM_OK=true; break; fi
-    sleep 5
-done
+if wait_for_npm_version; then NPM_OK=true; fi
 
 check "npm has ${PACKAGE_NAME}@${VERSION}" "$NPM_OK"
 check "tag ${TAG} on origin"               "$(tag_exists_remotely && echo true || echo false)"
@@ -338,6 +321,11 @@ check "GitHub release ${TAG}"              "$(release_exists && echo true || ech
 if $FAILED; then
     echo ""
     print_error "Release ${VERSION} is INCOMPLETE — see the ✗ above."
+    if ! $NPM_OK; then
+        echo "npm did not show ${VERSION} within a minute. A fresh publish can take"
+        echo "a moment to appear, so check again before concluding it failed:"
+        echo "  npm view ${PACKAGE_NAME}@${VERSION} version --prefer-online"
+    fi
     echo "Re-run the same command to finish it; completed steps will be skipped:"
     echo "  npm run release ${VERSION}"
     exit 1

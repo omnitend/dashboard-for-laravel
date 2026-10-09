@@ -137,6 +137,7 @@ const items = ref([
   { name: 'columnSize', type: 'string | number', required: 'No', default: '12', description: 'Column size (Bootstrap grid)' },
   { name: 'card', type: 'boolean', required: 'No', default: 'true', description: 'Wrap the table in a card. The table renders flush to the card border (rows and stripes reach the edge) while the header and pagination stay padded; only the table region is rounded to follow the card corners, so the card itself does not clip and a position:absolute popover in the header slot can overhang it. Content in a cell slot is still bounded by the .table-responsive scroll container — teleport it (DDropdown and the filter menus already do) or pass responsive={false}. Set false for a plain, borderless variant on the page background.' },
   { name: 'editFields', type: 'FieldDefinition[]', required: 'No', default: '-', description: 'Form fields for edit modal (enables edit on row click)' },
+  { name: 'editOnRowClick', type: 'boolean', required: 'No', default: 'true', description: 'Whether a row click opens the edit modal. Set false when editFields exist only for the create modal and a row click does something else (row-clicked still fires)' },
   { name: 'editTabs', type: 'EditTab[]', required: 'No', default: '-', description: 'Tab definitions for organizing edit modal content' },
   { name: 'editModalTitle', type: 'string | ((item: any) => string)', required: 'No', default: '-', description: 'Edit modal title (string or function)' },
   { name: 'editModalSize', type: 'sm | md | lg | xl', required: 'No', default: 'lg', description: 'Edit modal size' },
@@ -1017,6 +1018,25 @@ const editFields = [
 - Success/error toasts shown automatically
 - Table refreshes after successful save
 - Validation errors displayed inline
+
+### Create modal only (`editOnRowClick`)
+
+`editFields` also define the create modal (`openCreate()` or the create
+button). When a row click should do something else, such as opening the
+record's own page from `row-clicked`, turn the edit modal off for row clicks:
+
+```vue
+<DXTable
+  :fields="fields"
+  :edit-fields="editFields"
+  create-url="/api/products"
+  :edit-on-row-click="false"
+  @row-clicked="(product) => openProductPage(product)"
+/>
+```
+
+The row still emits `row-clicked`, and rows look clickable only while
+something listens for it.
 
 ### Guarding a save (`saveGuard`)
 
