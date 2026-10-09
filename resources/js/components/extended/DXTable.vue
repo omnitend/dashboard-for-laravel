@@ -140,7 +140,7 @@
                                 <DFormSelect
                                     v-else-if="field.filter === 'select-native'"
                                     :model-value="nativeSelectFilterValue(field)"
-                                    :options="getFieldFilterOptions(field) as unknown as Record<string, unknown>[]"
+                                    :options="getFieldFilterOptions(field)"
                                     size="sm"
                                     @update:model-value="handleSelectFilterChange(field, $event)"
                                 />

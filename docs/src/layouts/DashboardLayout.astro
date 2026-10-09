@@ -39,15 +39,26 @@ const pageTitle = title === 'Home' ? '' : title;
     <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}/favicon.svg`} />
     <meta name="generator" content={Astro.generator} />
     <title>{title} | {dashboardTitle}</title>
-
-    <!-- Prevent sidebar flicker by applying state before first paint -->
+  </head>
+  <body>
+    <!--
+      Prevent sidebar flicker by applying state before first paint. It sits
+      at the start of <body>, not in <head>, because Astro emits the
+      stylesheet links after the layout's own <head> content: an inline
+      script waits for the stylesheets above it, so only here can it read
+      the theme's phone width.
+    -->
     <script is:inline>
       (function() {
         try {
           const hidden = localStorage.getItem('dashboard-sidebar-hidden');
-          // Show the sidebar only if it was left open on a desktop: below
-          // 576px DXDashboard always starts with its menu closed.
-          const isPhone = window.matchMedia('(max-width: 575.98px)').matches;
+          // Show the sidebar only if it was left open on a desktop: on a
+          // phone DXDashboard always starts with its menu closed. The phone
+          // width is the theme's, read the way DXDashboard reads it.
+          const phoneMaxWidth = getComputedStyle(document.documentElement)
+            .getPropertyValue('--dx-dashboard-phone-max-width')
+            .trim() || '575.98px';
+          const isPhone = window.matchMedia('(max-width: ' + phoneMaxWidth + ')').matches;
           if (hidden === 'false' && !isPhone) {
             document.documentElement.classList.add('sidebar-visible');
           }
@@ -56,8 +67,6 @@ const pageTitle = title === 'Home' ? '' : title;
         }
       })();
     </script>
-  </head>
-  <body>
     <DashboardLayoutWrapper
       client:load
       navigation={navigation}

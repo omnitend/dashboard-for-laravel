@@ -280,7 +280,16 @@ html.sidebar-visible .dashboard-sidebar {
 }
 ```
 
-For Astro projects with SSR, add an inline script to prevent flicker:
+For Astro projects with SSR, add an inline script to prevent flicker. It reads
+the phone width from the theme's `--dx-dashboard-phone-max-width`, as
+DXDashboard does, so a theme with its own `sm` breakpoint keeps the two in
+step. That only works once the theme's stylesheet has loaded: put the script
+after the stylesheet's `<link>` (an inline script waits for the stylesheets
+above it). Astro emits its stylesheet links after the layout's own `<head>`
+content, so put it at the start of `<body>`. Anywhere earlier, the property
+reads as empty and the script falls back to 575.98px, the default theme's
+value, so with a custom breakpoint the first paint can be wrong (DXDashboard
+corrects it when it mounts).
 
 ```html
 <script is:inline>
@@ -288,7 +297,10 @@ For Astro projects with SSR, add an inline script to prevent flicker:
     try {
       const hidden = localStorage.getItem('dashboard-sidebar-hidden');
       // Phones always start with the menu closed (see "On phones").
-      const isPhone = window.matchMedia('(max-width: 575.98px)').matches;
+      const phoneMaxWidth = getComputedStyle(document.documentElement)
+        .getPropertyValue('--dx-dashboard-phone-max-width')
+        .trim() || '575.98px';
+      const isPhone = window.matchMedia('(max-width: ' + phoneMaxWidth + ')').matches;
       if (hidden === 'false' && !isPhone) {
         document.documentElement.classList.add('sidebar-visible');
       }
