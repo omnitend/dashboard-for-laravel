@@ -51,7 +51,7 @@ per key, for building your own display.
   { name: 'context', type: 'Record<string, any>', required: 'No', default: '-', description: 'Merged under the form data when evaluating when and function labels, as on DXForm.' },
   { name: 'isFieldVisible', type: '(field) => boolean', required: 'No', default: 'when/show against the model', description: 'Field visibility, replacing the default.' },
   { name: 'isTabVisible', type: '(tab) => boolean', required: 'No', default: 'the tab\'s when', description: 'Tab visibility, replacing the default.' },
-  { name: 'resolveLabel', type: '(field) => string', required: 'No', default: 'the field\'s label', description: 'A field\'s label, replacing the default.' },
+  { name: 'resolveLabel', type: '(field, labelModel) => string', required: 'No', default: 'the field\'s label', description: 'A field\'s label, replacing the default. labelModel is the form model, or the row for a repeater sub-field (as DXRepeater renders it). A label that throws falls back to the humanised key.' },
   { name: 'targets', type: 'ErrorTarget[] | null', required: 'No', default: '-', description: 'Rows already resolved by a host form (DXForm\'s exposed errorTargets). When given, nothing is resolved here; the message still comes from form.submitFailure.' },
 ]} />
 

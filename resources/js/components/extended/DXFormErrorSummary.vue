@@ -80,8 +80,14 @@ interface Props {
     isFieldVisible?: (field: FieldDefinition) => boolean;
     /** Tab visibility, replacing the default (the tab's `when`). */
     isTabVisible?: (tab: FormTab) => boolean;
-    /** A field's label, replacing the default (its `label`, resolved). */
-    resolveLabel?: (field: FieldDefinition) => string | null | undefined;
+    /**
+     * A field's label, replacing the default (its `label`, resolved against
+     * `labelModel`: the form model, or the row for a repeater sub-field).
+     */
+    resolveLabel?: (
+        field: FieldDefinition,
+        labelModel: Record<string, any>,
+    ) => string | null | undefined;
     /**
      * Rows already resolved by the host (from `resolveErrorTargets` over
      * `form.submitFailure.errors`). When given, the summary lists these and

@@ -13,6 +13,7 @@ import {
     isFieldVisible as isFieldVisibleFor,
     resolvePredicate,
 } from "./formSchema";
+import { getByPath } from "./objectPath";
 
 /** One error key and where it belongs. */
 export interface ErrorTarget {
@@ -51,10 +52,16 @@ export interface ResolveErrorTargetsOptions {
     /** Tab visibility. Default: the tab's `when` against `model`. */
     isTabVisible?: (tab: FormTab) => boolean;
     /**
-     * A field's label. Default: its `label`, called with `model` when it is a
-     * function. An empty result falls back to the humanised key.
+     * A field's label. Default: its `label`, called with `labelModel` when it
+     * is a function. `labelModel` is `model` for a form field and the ROW
+     * (`model.lines[0]`) for a repeater sub-field, as DXRepeater renders it.
+     * An empty result, or a label function that throws, falls back to the
+     * humanised key, so a broken label can never hide an error.
      */
-    resolveLabel?: (field: FieldDefinition) => string | null | undefined;
+    resolveLabel?: (
+        field: FieldDefinition,
+        labelModel: Record<string, any>,
+    ) => string | null | undefined;
 }
 
 interface Candidate {
@@ -116,7 +123,7 @@ function isNestedUnder(errorKey: string, fieldKey: string): boolean {
 function defaultLabel(
     field: FieldDefinition,
     model: Record<string, any>,
-): string | undefined {
+): string | null | undefined {
     return typeof field.label === "function" ? field.label(model) : field.label;
 }
 
@@ -154,12 +161,20 @@ export function resolveErrorTargets(
     const isTabVisible =
         options.isTabVisible ??
         ((tab: FormTab) => resolvePredicate(tab.when, model, true));
-    const resolveLabel =
-        options.resolveLabel ??
-        ((field: FieldDefinition) => defaultLabel(field, model));
+    const resolveLabel = options.resolveLabel ?? defaultLabel;
 
-    const labelFor = (field: FieldDefinition): string => {
-        const label = resolveLabel(field);
+    const labelFor = (
+        field: FieldDefinition,
+        labelModel: Record<string, any> = model,
+    ): string => {
+        let label: string | null | undefined;
+        try {
+            label = resolveLabel(field, labelModel);
+        } catch {
+            // A consumer's label function threw (a row missing a property
+            // it reads): the error must still be listed, under its key.
+            label = undefined;
+        }
         return typeof label === "string" && label.trim() !== ""
             ? label
             : humaniseErrorKey(field.key);
@@ -225,7 +240,11 @@ export function resolveErrorTargets(
             second !== undefined
                 ? field.fields?.find((candidate) => candidate.key === second)
                 : undefined;
-        const base = subField ? labelFor(subField) : labelFor(field);
+        // DXRepeater renders a sub-field with the ROW as its model, so its
+        // label resolves against the row here too.
+        const row = getByPath(model, `${field.key}.${first}`);
+        const rowModel = row !== null && typeof row === "object" ? row : {};
+        const base = subField ? labelFor(subField, rowModel) : labelFor(field);
         return `${base} (line ${Number(first) + 1})`;
     };
 

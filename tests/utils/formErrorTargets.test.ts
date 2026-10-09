@@ -297,3 +297,75 @@ describe('humaniseErrorKey', () => {
     expect(humaniseErrorKey(key)).toBe(label);
   });
 });
+
+describe('resolveErrorTargets nested labels (review finding 3)', () => {
+  const fields: FieldDefinition[] = [
+    {
+      key: 'lines',
+      type: 'repeater',
+      label: 'Order lines',
+      fields: [
+        {
+          key: 'price',
+          type: 'currency',
+          // DXRepeater resolves a sub-field's label against its ROW.
+          label: (row) => `${row.currency.toUpperCase()} price`,
+        },
+      ],
+    },
+  ];
+
+  it('resolves a repeater sub-field label against its row, not the form', () => {
+    const [first, second] = resolveErrorTargets(
+      { 'lines.0.price': ['Bad.'], 'lines.1.price': ['Bad too.'] },
+      {
+        fields,
+        model: { currency: 'form-level', lines: [{ currency: 'gbp' }, { currency: 'eur' }] },
+      },
+    );
+    expect(first.label).toBe('GBP price (line 1)');
+    expect(second.label).toBe('EUR price (line 2)');
+  });
+
+  it('passes the row to a custom resolveLabel for a sub-field', () => {
+    const seen: unknown[] = [];
+    resolveErrorTargets(
+      { 'lines.1.price': ['Bad.'] },
+      {
+        fields,
+        model: { lines: [{ currency: 'gbp' }, { currency: 'eur' }] },
+        resolveLabel: (field, labelModel) => {
+          seen.push([field.key, labelModel]);
+          return field.key;
+        },
+      },
+    );
+    expect(seen).toContainEqual(['price', { currency: 'eur' }]);
+  });
+
+  it('never throws from a label function: falls back to the humanised key', () => {
+    let targets: ReturnType<typeof resolveErrorTargets> = [];
+    expect(() => {
+      targets = resolveErrorTargets(
+        { 'lines.3.price': ['Missing row.'], total: ['Bad total.'] },
+        {
+          fields: [
+            ...fields,
+            {
+              key: 'total',
+              type: 'currency',
+              label: () => {
+                throw new Error('consumer bug');
+              },
+            },
+          ],
+          model: { lines: [] },
+        },
+      );
+    }).not.toThrow();
+    expect(pick(targets)).toEqual([
+      { errorKey: 'lines.3.price', fieldKey: 'lines', tabKey: null, label: 'Price (line 4)' },
+      { errorKey: 'total', fieldKey: 'total', tabKey: null, label: 'Total' },
+    ]);
+  });
+});
