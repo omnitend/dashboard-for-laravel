@@ -17,6 +17,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edit modal on top. Rows then look clickable only when something listens
   for `row-clicked` (#200).
 
+### Changed
+
+- Docs and MCP tooling are no longer runtime dependencies: a minimal
+  consumer install (the library plus `vue`) drops from 226 packages to 87
+  (#181). `highlight.js`,
+  `rehype-autolink-headings`, `rehype-slug` and `vue-docgen-api` are now
+  devDependencies; nothing in `dist/` used them, and the build is
+  byte-identical.
+- `@modelcontextprotocol/sdk` is now an **optional peer dependency** of the
+  `dashboard-docs-mcp` bin, so consumers no longer install express, hono,
+  ajv and the rest of its server stack. **If you use the docs MCP server**,
+  install the SDK in the project (`npm install --save-dev
+  @modelcontextprotocol/sdk`) and point `.mcp.json` at `npx --no
+  dashboard-docs-mcp`; a global config with no local install passes
+  `-p @modelcontextprotocol/sdk -p @omnitend/dashboard-for-laravel` to `npx`
+  (see `MCP_SERVER.md`). Without the SDK the bin exits with an install
+  instruction instead of a module-not-found stack trace.
+
 ## [0.43.0] - 2026-10-06
 
 ### Added
@@ -149,7 +167,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   container, and a long `append` ("10L Bag in Box") now wraps onto two lines
   instead of crushing the amount input to about 32px.
 
-||||||| c8fd098
 
 ## [0.42.2] - 2026-10-05
 
