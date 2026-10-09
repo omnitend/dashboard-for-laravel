@@ -126,6 +126,31 @@ export function useResourceEditor<T = any>(
         { flush: 'sync' },
     );
 
+    /*
+     * Each open (edit or create) starts a new SESSION with a FRESH form
+     * (#194 review). The modal used to reuse one `useForm` and reseed it,
+     * which carried the previous session's `submitFailure` (row A's failure
+     * summary over row B, or over create) and let a request still in flight
+     * from the previous session record its outcome onto the new one. A fresh
+     * form makes both impossible by construction: an abandoned request settles
+     * into the OLD form object, which nothing renders any more. The DXForm
+     * subtree is already remounted per open (`editFormInstanceKey`), so no
+     * rendered state depended on the object surviving. Resetting one shared
+     * form instead would have needed every piece of per-submit state (failure,
+     * success flags, the in-flight counter, timers) reset in step, plus a
+     * guard against late responses: the fresh form is one line and cannot
+     * miss a field added later.
+     *
+     * The generation is bumped too, so the save/delete paths can tell a
+     * response for THIS session from one for an abandoned session, and the
+     * previous session's pending action no longer blocks this one.
+     */
+    const startSession = (formData: Record<string, any>) => {
+        editGeneration.value++;
+        pendingAction.value = null;
+        editForm.value = useForm(formData);
+    };
+
     // Monotonic token so a slow fetch for a previously-opened row can't overwrite
     // the form after the user has since opened a different row.
     let editFetchToken = 0;
@@ -235,23 +260,16 @@ export function useResourceEditor<T = any>(
         // Reset to first tab
         activeTabIndex.value = 0;
 
-        // Initialize form with item data. `useForm` is statically imported, so
-        // seeding is synchronous — no interleaving between successive row opens.
-        if (!editForm.value) {
-            const formData: Record<string, any> = {};
-            // Presentational fields (submit: false) lay the form out; they hold
-            // no data and must not be POSTed just because they were declared.
-            submittableEditFields.value.forEach(field => {
-                formData[field.key] = seedValueFor(field, item);
-            });
-            editForm.value = useForm(formData);
-        } else {
-            // Update existing form
-            submittableEditFields.value.forEach(field => {
-                editForm.value.data[field.key] = seedValueFor(field, item);
-            });
-            editForm.value.clearErrors();
-        }
+        // A fresh form seeded from the row (see `startSession`). `useForm` is
+        // statically imported, so seeding is synchronous — no interleaving
+        // between successive row opens. Presentational fields (submit: false)
+        // lay the form out; they hold no data and must not be POSTed just
+        // because they were declared.
+        const formData: Record<string, any> = {};
+        submittableEditFields.value.forEach(field => {
+            formData[field.key] = seedValueFor(field, item);
+        });
+        startSession(formData);
 
         // Open modal
         editFormInstanceKey.value++;
@@ -313,19 +331,12 @@ export function useResourceEditor<T = any>(
         editFetchToken++;
         editLoading.value = false;
 
-        if (!editForm.value) {
-            const formData: Record<string, any> = {};
-            submittableEditFields.value.forEach(field => {
-                formData[field.key] = resolveFieldDefault(field);
-            });
-            editForm.value = useForm(formData);
-        } else {
-            // Reset existing form to defaults
-            submittableEditFields.value.forEach(field => {
-                editForm.value.data[field.key] = resolveFieldDefault(field);
-            });
-            editForm.value.clearErrors();
-        }
+        // A fresh form seeded with the field defaults (see `startSession`).
+        const formData: Record<string, any> = {};
+        submittableEditFields.value.forEach(field => {
+            formData[field.key] = resolveFieldDefault(field);
+        });
+        startSession(formData);
         editFormInstanceKey.value++;
         showEditModal.value = true;
     };
@@ -359,9 +370,11 @@ export function useResourceEditor<T = any>(
             // performSave so it covers the whole class, not one call site.
             if (editGeneration.value !== generation) return;
 
-            await performSave();
+            await performSave(generation);
         } finally {
-            pendingAction.value = null;
+            // Only this session's own pending action: a session opened since
+            // has already cleared it, and may have started its own.
+            if (editGeneration.value === generation) pendingAction.value = null;
         }
     };
 
@@ -453,11 +466,28 @@ export function useResourceEditor<T = any>(
         });
     };
 
-    const performSave = async () => {
+    /*
+     * `generation` is the session that started this save. The request may
+     * settle after the user has closed the modal and opened another row (or
+     * create): the record was still written, so the success toast, the
+     * `rowCreated`/`rowUpdated` emit and the table refresh still happen, but
+     * only the SAME session's modal is closed. The edited row and the form
+     * are captured up front, so the emits name the row that was saved, not
+     * whichever row is open by the time the response arrives.
+     *
+     * One error emit per failure: `useForm` calls `onError` and then
+     * rethrows, so the `catch` emits only for a throw that never reached
+     * `onError` (one raised before the request was made).
+     */
+    const performSave = async (generation: number) => {
+        const form = editForm.value;
+        const isCurrentSession = () => editGeneration.value === generation;
+
         // Create mode: POST to createUrl
         if (isCreateMode.value && props.createUrl) {
+            let errorReported = false;
             try {
-                await editForm.value.post(props.createUrl, {
+                await form.post(props.createUrl, {
                     transform: stripNonSubmittedFields,
                     onSuccess: (data: any) => {
                         createToast?.({
@@ -468,33 +498,38 @@ export function useResourceEditor<T = any>(
                         });
 
                         emit('rowCreated', data?.data ?? data, data);
-                        showEditModal.value = false;
-                        selectedItem.value = null;
-                        isCreateMode.value = false;
+                        if (isCurrentSession()) {
+                            showEditModal.value = false;
+                            selectedItem.value = null;
+                            isCreateMode.value = false;
+                        }
 
                         refresh();
                     },
                     onError: (error: FormError) => {
+                        errorReported = true;
                         toastSaveFailure(error, 'Failed to create. Please try again.');
                         emit('createError', error);
                     }
                 });
             } catch (error) {
-                emit('createError', error);
+                if (!errorReported) emit('createError', error);
             }
             return;
         }
 
         // Edit mode: PUT to editUrl
-        if (!selectedItem.value) return;
+        const item = selectedItem.value as T | null;
+        if (!item) return;
 
+        let errorReported = false;
         try {
             // If editUrl provided, handle API call internally
             if (props.editUrl) {
-                const itemId = (selectedItem.value as any).id;
+                const itemId = (item as any).id;
                 const url = props.editUrl.replace(':id', itemId);
 
-                await editForm.value.put(url, {
+                await form.put(url, {
                     transform: stripNonSubmittedFields,
                     onSuccess: (data: any) => {
                         // Show success toast
@@ -505,26 +540,29 @@ export function useResourceEditor<T = any>(
                             modelValue: 3000, // Auto-dismiss after 3 seconds
                         });
 
-                        emit('rowUpdated', selectedItem.value as T, data);
-                        showEditModal.value = false;
-                        selectedItem.value = null;
+                        emit('rowUpdated', item, data);
+                        if (isCurrentSession()) {
+                            showEditModal.value = false;
+                            selectedItem.value = null;
+                        }
 
                         // Refresh table data to show updated values
                         refresh();
                     },
                     onError: (error: FormError) => {
+                        errorReported = true;
                         toastSaveFailure(error, 'Failed to update. Please try again.');
-                        emit('editError', selectedItem.value as T, error);
+                        emit('editError', item, error);
                     }
                 });
             } else {
                 // No editUrl - just emit event for custom handling
-                emit('rowUpdated', selectedItem.value as T, editForm.value.data);
+                emit('rowUpdated', item, form.data);
                 showEditModal.value = false;
                 selectedItem.value = null;
             }
         } catch (error) {
-            emit('editError', selectedItem.value as T, error);
+            if (!errorReported) emit('editError', item, error);
         }
     };
 
@@ -556,6 +594,11 @@ export function useResourceEditor<T = any>(
 
         pendingAction.value = 'delete';
         const generation = editGeneration.value;
+        // Captured for the same reasons as in `performSave`: a late response
+        // names the row it deleted and closes only its own session's modal.
+        const item = selectedItem.value as T;
+        const form = editForm.value;
+        let deleteErrorReported = false;
         try {
             // Delete guard: a non-null message means this item can't be deleted —
             // show it immediately and skip the confirm and the request entirely.
@@ -573,10 +616,10 @@ export function useResourceEditor<T = any>(
             // event loop, so nothing can slip in during it.
             if (editGeneration.value !== generation) return;
 
-            const itemId = (selectedItem.value as any).id;
+            const itemId = (item as any).id;
             const url = props.deleteUrl.replace(':id', itemId);
 
-            await editForm.value.delete(url, {
+            await form.delete(url, {
                 onSuccess: (data: any) => {
                     // Show success toast
                     createToast?.({
@@ -586,9 +629,11 @@ export function useResourceEditor<T = any>(
                         modelValue: 3000, // Auto-dismiss after 3 seconds
                     });
 
-                    emit('rowDeleted', selectedItem.value as T, data);
-                    showEditModal.value = false;
-                    selectedItem.value = null;
+                    emit('rowDeleted', item, data);
+                    if (editGeneration.value === generation) {
+                        showEditModal.value = false;
+                        selectedItem.value = null;
+                    }
 
                     // Refresh table data to remove deleted item
                     refresh();
@@ -606,13 +651,14 @@ export function useResourceEditor<T = any>(
                         modelValue: 5000, // Auto-dismiss after 5 seconds
                     });
 
-                    emit('deleteError', selectedItem.value as T, error);
+                    deleteErrorReported = true;
+                    emit('deleteError', item, error);
                 }
             });
         } catch (error) {
-            emit('deleteError', selectedItem.value as T, error);
+            if (!deleteErrorReported) emit('deleteError', item, error);
         } finally {
-            pendingAction.value = null;
+            if (editGeneration.value === generation) pendingAction.value = null;
         }
     };
 
