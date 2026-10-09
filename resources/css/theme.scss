@@ -681,6 +681,10 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
     text-decoration: underline;
     text-underline-offset: 0.15em;
     cursor: pointer;
+    // A button is an inline-block, and the list bullet sits on the line
+    // box's baseline, which a baseline-aligned inline-block takes from its
+    // LAST line: a row that wraps had its bullet beside its second line.
+    vertical-align: top;
 
     &:hover {
       text-decoration-thickness: 2px;

@@ -261,4 +261,34 @@ describe('DXFormErrorSummary', () => {
     const list = summary.querySelector('ul')!;
     expect(getComputedStyle(list).marginBottom).toBe('0px');
   });
+
+  it("puts a wrapped row's bullet beside its first line (built theme)", async () => {
+    stubResponses(
+      invalid({ name: ['A product with this name already exists in another catalogue.'] }),
+    );
+    const form = makeForm();
+    const { container } = render(DXFormErrorSummary, { props: { form, fields } });
+    (container as HTMLElement).style.width = '180px';
+    await form.post('/api/orders').catch(() => {});
+    await nextTick();
+
+    const button = summaryOf(container)!.querySelector<HTMLButtonElement>(
+      'button.dx-form-error-summary__target',
+    )!;
+    const lineHeight = parseFloat(getComputedStyle(button).lineHeight);
+    // Positive control: the row really wraps onto several lines.
+    expect(button.getBoundingClientRect().height).toBeGreaterThan(lineHeight * 1.5);
+
+    // The list bullet sits on the item's line box, which `::marker` does not
+    // expose; a zero-width probe at the start of the item shares that line.
+    const probe = document.createElement('span');
+    probe.textContent = '​';
+    button.parentElement!.insertBefore(probe, button);
+    const firstChar = document.createRange();
+    firstChar.setStart(button.firstChild!.nodeType === 3 ? button.firstChild! : button, 0);
+    firstChar.setEnd(firstChar.startContainer, 1);
+    const offset = probe.getBoundingClientRect().top - firstChar.getClientRects()[0].top;
+    probe.remove();
+    expect(Math.abs(offset)).toBeLessThan(lineHeight / 2);
+  });
 });
