@@ -140,7 +140,7 @@
                                 <DFormSelect
                                     v-else-if="field.filter === 'select-native'"
                                     :model-value="nativeSelectFilterValue(field)"
-                                    :options="getFieldFilterOptions(field) as unknown as Record<string, unknown>[]"
+                                    :options="getFieldFilterOptions(field)"
                                     size="sm"
                                     @update:model-value="handleSelectFilterChange(field, $event)"
                                 />
@@ -841,6 +841,16 @@ export interface Props<TItem = any> {
      */
     rowClickable?: (item: TItem, index: number) => boolean;
 
+    /**
+     * Whether clicking a row opens the edit modal (when `editFields` are set).
+     * Defaults to `true`. Set `false` when `editFields` exist only for the
+     * create modal (`openCreate()` / the create button) and a row click does
+     * something else, such as opening the record's own page from `row-clicked`:
+     * the row then emits `row-clicked` without also opening the edit modal, and
+     * only a `row-clicked` listener makes rows look clickable (#200).
+     */
+    editOnRowClick?: boolean;
+
     /** Enable client-side filtering, sorting, and pagination on items array */
     clientSide?: boolean;
 
@@ -901,6 +911,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     footClone: false,
     showEmpty: true,
     fixedLayout: false,
+    editOnRowClick: true,
 });
 
 const emit = defineEmits<{
@@ -1053,9 +1064,12 @@ const isControlled = {
  * The cursor and hover affordance follow from that — DXTable already knows,
  * so consumers shouldn't have to reach into `:deep(tbody tr)` to say it (#107).
  * The listener case was the gap: only `editFields` used to count.
+ * `editFields` count only while a row click opens them (`editOnRowClick`, #200).
  */
 const rowsAreInteractive = computed(
-    () => (props.editFields?.length ?? 0) > 0 || hasListener('rowClicked'),
+    () =>
+        (props.editOnRowClick && (props.editFields?.length ?? 0) > 0) ||
+        hasListener('rowClicked'),
 );
 
 /**
@@ -2466,7 +2480,8 @@ const getFieldSortState = (fieldKey: string) => {
 };
 
 // Handle row click. Emits `rowClicked` regardless (the seam consumers listen
-// on), then asks the editor to open — a no-op unless `editFields` are set.
+// on), then asks the editor to open — a no-op unless `editFields` are set, and
+// skipped when the consumer turned edit-on-click off (#200).
 const handleRowClick = (item: T, index: number, event: MouseEvent) => {
     // A row the consumer marked non-actionable doesn't look clickable, so it
     // must not BE clickable either — otherwise a click that looks dead quietly
@@ -2474,7 +2489,9 @@ const handleRowClick = (item: T, index: number, event: MouseEvent) => {
     if (props.rowClickable && !props.rowClickable(item, index)) return;
 
     emit('rowClicked', item, index, event);
-    editor.openEdit(item);
+    if (props.editOnRowClick) {
+        editor.openEdit(item);
+    }
 };
 
 defineExpose({

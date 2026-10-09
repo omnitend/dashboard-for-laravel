@@ -268,7 +268,7 @@
                     :state="fieldState"
                     :disabled="isDisabled || isReadonly || isPlaintext"
                     :control-props="controlPropsWithGuards"
-                    :options-ready="searchableOptionsReady"
+                    :options-pending="optionsPending"
                     @update:model-value="setValue"
                 />
 
@@ -784,12 +784,6 @@ const isPlaintext = computed(() => resolveMaybe(props.field.plaintext) ?? false)
 
 const passwordRevealed = ref(false);
 
-// See the template: the searchable select can't render before its options
-// resolve, or it shows the raw id instead of the option's label.
-const searchableOptionsReady = computed(
-    () => !props.field.optionsLoader || loadedOptions.value !== null,
-);
-
 const isRevealablePassword = computed(
     () =>
         props.field.type === "password" &&
@@ -860,7 +854,15 @@ const datalistId = useId();
 
 // ————————————————— async options
 
-const { loadedOptions } = useAsyncOptions(() => props.field, effectiveModel);
+const { loadedOptions, firstLoadSettled } = useAsyncOptions(
+    () => props.field,
+    effectiveModel,
+);
+
+// The first load has not settled: nothing to label the value with yet. Once
+// it has (even by failing, which leaves the static options), a reload never
+// makes the field pending again: it keeps what it already shows.
+const optionsPending = computed(() => !firstLoadSettled.value);
 
 const resolvedOptions = computed<FieldOption[] | undefined>(
     () => loadedOptions.value ?? props.field.options,

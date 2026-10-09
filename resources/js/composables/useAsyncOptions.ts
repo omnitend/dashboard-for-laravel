@@ -8,13 +8,26 @@ import type { FieldDefinition, FieldOption } from "../types";
  * out-of-order responses clobbering newer ones; loader failures are swallowed
  * so the last good options (or the static `field.options` fallback) stay put.
  *
- * Extracted verbatim from DXField's inline logic (#135) — behaviour unchanged.
+ * Known limit: replacing a field's `optionsLoader` at runtime does NOT restart
+ * the "first load" state (loaded options and `firstLoadSettled` carry over).
+ * Loader identity is not a stable signal: an inline loader in a computed
+ * `fields` array is a new function on every recompute, so treating each new
+ * function as a new source would blank the field and refetch on every
+ * unrelated edit.
+ *
+ * Extracted from DXField's inline logic (#135).
  * `getField` is an accessor (props aren't destructurable without losing
  * reactivity); `effectiveModel` is the model passed to the loader.
  */
 export interface UseAsyncOptionsReturn {
     /** Options returned by the most recent successful load, or null if none yet. */
     loadedOptions: Ref<FieldOption[] | null>;
+    /**
+     * False until the first load has SETTLED (succeeded or failed). Only that
+     * first load leaves a field with nothing to show; a later reload keeps the
+     * options it has, or the static fallback after a failure.
+     */
+    firstLoadSettled: Ref<boolean>;
     /** Trigger a load (no-op when the field has no `optionsLoader`). */
     loadOptions: () => Promise<void>;
 }
@@ -24,6 +37,9 @@ export function useAsyncOptions(
     effectiveModel: ComputedRef<any> | Ref<any>,
 ): UseAsyncOptionsReturn {
     const loadedOptions = ref<FieldOption[] | null>(null);
+    // False before mount when there is a loader, so the first render already
+    // knows options are on their way.
+    const firstLoadSettled = ref(!getField().optionsLoader);
 
     // Monotonic token so out-of-order async responses can't clobber newer ones.
     let optionsRequestToken = 0;
@@ -46,6 +62,8 @@ export function useAsyncOptions(
                     error,
                 );
             }
+        } finally {
+            if (token === optionsRequestToken) firstLoadSettled.value = true;
         }
     }
 
@@ -53,9 +71,16 @@ export function useAsyncOptions(
         void loadOptions();
     });
 
-    if (getField().reloadOptionsOnChange) {
-        watch(effectiveModel, () => void loadOptions(), { deep: true });
-    }
+    // Read from the CURRENT field: DXForm keys DXField by `field.key`, so
+    // recomputed `fields` hand this instance a new field object that may
+    // turn reloading on or off.
+    watch(
+        effectiveModel,
+        () => {
+            if (getField().reloadOptionsOnChange) void loadOptions();
+        },
+        { deep: true },
+    );
 
-    return { loadedOptions, loadOptions };
+    return { loadedOptions, firstLoadSettled, loadOptions };
 }

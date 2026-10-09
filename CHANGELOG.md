@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-10-09
+
 ### Added
 
+- `editOnRowClick` on DXTable (default `true`). Set it `false` to keep the
+  create modal that `editFields` define while a row click only emits
+  `row-clicked`: a page that opens the record elsewhere no longer gets the
+  edit modal on top. Rows then look clickable only when something listens
+  for `row-clicked` (#200).
 - `DXFormErrorSummary`: one alert listing everything the last failed submit
   returned, every validation message with a readable label ("Price (line
   1): Must be positive."), including keys with no rendered field. It stays
@@ -67,6 +74,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Docs and MCP tooling are no longer runtime dependencies: a minimal
+  consumer install (the library plus `vue`) drops from 226 packages to 87
+  (#181). `highlight.js`,
+  `rehype-autolink-headings`, `rehype-slug` and `vue-docgen-api` are now
+  devDependencies; nothing in `dist/` used them, and the build is
+  byte-identical.
+- `@modelcontextprotocol/sdk` is now an **optional peer dependency** of the
+  `dashboard-docs-mcp` bin, so consumers no longer install express, hono,
+  ajv and the rest of its server stack. **If you use the docs MCP server**,
+  install the SDK in the project (`npm install --save-dev
+  @modelcontextprotocol/sdk`) and point `.mcp.json` at `npx --no
+  dashboard-docs-mcp`; a global config with no local install passes
+  `-p @modelcontextprotocol/sdk -p @omnitend/dashboard-for-laravel` to `npx`
+  (see `MCP_SERVER.md`). Without the SDK the bin exits with an install
+  instruction instead of a module-not-found stack trace.
+- `DFormSelect`'s `options` accept any object option, as bvn's `BFormSelect`
+  does (`object | string | number | boolean`), not only
+  `Record<string, unknown>`, so an array typed with an option interface
+  (DXTable's `FilterOption`, or your own) needs no cast. Types only.
 - DXForm tracks the active tab by key. The same tab stays shown when tabs
   reorder or an earlier tab hides (`v-model:active-tab` is re-emitted with
   its new index), and pane ids are opaque and stable per tab (#194). A tab
@@ -90,6 +116,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A searchable select (`DXField` `select` + `searchable`) with an
+  `optionsLoader` no longer swaps a stand-in input for the real control when
+  its options arrive. The control is there from the start, disabled and
+  reading "Loading…" until the first load lands (its value is held back, so
+  it never shows the raw id), then shows the option's label. `inputProps`
+  cannot re-enable it during that load, and it never writes the form from
+  the held-back value. A loader that fails now falls back to the field's
+  static `options`, and a later reload (`reloadOptionsOnChange`) keeps them
+  usable; before, the field stayed on "Loading…" for good.
 - DXForm no longer moves to another tab when you fix a field. It selects the
   first tab with an error only after a failed submit (or when errors are
   added with `setErrors`), not when one clears (#194).
@@ -107,6 +142,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   first row (over the outer model) for its column header, as its rows do,
   so a row-based label (`row => row.currency + ' price'`) no longer throws.
   A header label that throws or returns nothing shows the humanised key.
+
+### Release tooling
+
+- `scripts/release.sh` checks npm uncached (`npm view … --prefer-online`)
+  instead of curling the CDN-cached registry document, and its final check
+  retries for about a minute with backoff before reporting the version
+  missing, saying that a fresh publish can take a moment to appear. 0.42.0,
+  0.42.1 and 0.42.2 each reported a successful publish as missing. Each
+  check gives up after 15 s and the whole verify after 90 s, so a stalled
+  registry no longer holds the release for npm's 5-minute fetch timeout.
+
+### Docs
+
+- The pre-paint snippet on the DXDashboard page (and the docs site's own
+  layout) reads the phone width from `--dx-dashboard-phone-max-width`, as
+  DXDashboard does, instead of hard-coding 575.98px, so a theme with its own
+  `sm` breakpoint keeps the first paint in step. The example says where the
+  script must go to see the theme (after its stylesheet; in Astro, the start
+  of `<body>`).
 
 ## [0.43.0] - 2026-10-06
 
@@ -239,8 +293,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DXCurrencyInput` keeps the amount at least 5.5rem wide in a narrow
   container, and a long `append` ("10L Bag in Box") now wraps onto two lines
   instead of crushing the amount input to about 32px.
-
-||||||| c8fd098
 
 ## [0.42.2] - 2026-10-05
 
@@ -514,6 +566,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   — the footer button is disabled throughout) saved the thin list row, and ran
   `saveGuard` against it: a guard keyed on a field only the full record carries
   saw `undefined` and allowed the save. Delete is likewise no longer re-entrant.
+
+## [0.39.1] - 2026-08-14
+
+Tagged and released on GitHub but **never published to npm**: the release
+script stopped before its publish step (it is resumable now). npm goes from
+0.39.0 to 0.40.0, and 0.40.0 contains this fix, so upgrade to 0.40.0 or later.
+
+### Bug Fixes
+
+- DXTable (API mode): changing a column filter resets to page 1. From page 2
+  or later, the narrowed set was requested at the old page number, usually
+  past its end, so the table said no rows matched over a non-zero total.
 
 ## [0.39.0] - 2026-07-24
 

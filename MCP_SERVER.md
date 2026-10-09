@@ -104,25 +104,39 @@ If you're working in this repository with Claude Code, the MCP server is already
 
 After publishing, other projects can use the MCP server by installing the package.
 
+**The MCP SDK is an optional peer dependency.** Installing the library does
+not install `@modelcontextprotocol/sdk` (and its server stack), so component
+consumers don't carry it. In a project that has the library installed, add
+the SDK as a dev dependency:
+
+```bash
+npm install --save-dev @modelcontextprotocol/sdk
+```
+
+Without it, `dashboard-docs-mcp` exits with that instruction. (Adding
+`-p @modelcontextprotocol/sdk` to an `npx` command does not help inside such a
+project: npx sees the library already installed, runs the project's own copy,
+and that copy cannot see the SDK npx fetched into its cache.)
+
 **In the other project's `.mcp.json`:**
 ```json
 {
   "mcpServers": {
     "dashboard-for-laravel-docs": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@omnitend/dashboard-for-laravel@latest",
-        "dashboard-docs-mcp"
-      ]
+      "args": ["--no", "dashboard-docs-mcp"]
     }
   }
 }
 ```
 
-**Note:** Specify `@latest` or a specific version (e.g., `@0.3.3`) to avoid npm cache issues.
+`--no` stops npx from looking for a package called `dashboard-docs-mcp` on the
+registry if the project's install is missing; it runs the project's own copy, so
+it always matches the library version the project uses.
 
 **Or for Claude Desktop:**
+
+Outside a project, npx fetches both packages, so pass the SDK with `-p`:
 
 **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 
@@ -133,6 +147,9 @@ After publishing, other projects can use the MCP server by installing the packag
       "command": "npx",
       "args": [
         "-y",
+        "-p",
+        "@modelcontextprotocol/sdk",
+        "-p",
         "@omnitend/dashboard-for-laravel",
         "dashboard-docs-mcp"
       ]
@@ -237,13 +254,3 @@ npm run docs:generate:ai  # Regenerate doc files
 ✅ **Structured** - Type-safe tool calls with validated schemas
 ✅ **Fast** - Pre-generated data means instant responses
 ✅ **Reusable** - Works with any MCP-compatible AI assistant
-
-## Package Integration
-
-This MCP server can also be published as a standalone NPM package for users to install:
-
-```bash
-npm install -g @omnitend/dashboard-for-laravel-mcp
-```
-
-Then users can add it to their Claude config without cloning the repo.

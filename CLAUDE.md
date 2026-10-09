@@ -1314,13 +1314,14 @@ Both the npm CLI and the registry's CDN serve a stale document for a while
 after a successful publish, so a plain `curl` of the registry is as stale as a
 cached `npm view` — that is what `release.sh`'s own verify step hit for
 0.42.0, 0.42.1 and 0.42.2 (each reported "✗ npm has …" and each was in fact
-published; #184 tracks making the script retry). Use
+published). Since #184 the script reads
 `npm view @omnitend/dashboard-for-laravel@<version> version --prefer-online`
-(or `curl` with `-H 'Cache-Control: no-cache'` and a `?t=$(date +%s)` query),
-and poll for up to a minute before concluding anything. Do NOT re-run the
-release on a ✗ alone: a re-run whose publish step finds the version already
-taken fails with "cannot publish over the previously published versions",
-which is itself the proof it landed.
+(`scripts/release-npm-check.sh`, used by both the resume check and the final
+verify) and the verify retries for about a minute, so a ✗ there now means a
+minute of misses. Checking by hand, use the same command (or `curl` with
+`-H 'Cache-Control: no-cache'` and a `?t=$(date +%s)` query) and give it a
+minute. If a re-run's publish step fails with "cannot publish over the
+previously published versions", that is itself the proof it landed.
 
 **`npm run test:headless` does not rebuild `dist` first** (its `pretest:headless`
 hook does not run with this npm config), and the browser tests read `dist`. A
