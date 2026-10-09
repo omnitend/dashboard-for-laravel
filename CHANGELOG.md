@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fails now falls back to the field's static `options`; before, the field
   stayed on "Loading…" for good.
 
+### Release tooling
+
+- `scripts/release.sh` checks npm uncached (`npm view … --prefer-online`)
+  instead of curling the CDN-cached registry document, and its final check
+  retries for about a minute with backoff before reporting the version
+  missing, saying that a fresh publish can take a moment to appear. 0.42.0,
+  0.42.1 and 0.42.2 each reported a successful publish as missing.
+
 ### Docs
 
 - The pre-paint snippet on the DXDashboard page (and the docs site's own
