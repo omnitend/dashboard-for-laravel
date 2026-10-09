@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- DXForm no longer moves to another tab when you fix a field. It selects the
+  first tab with an error only when errors are added (a failed submit), not
+  when one clears. A `preserveErrors` resubmit that returns exactly the
+  errors already on the form adds none, so it leaves the tab as it is (#194).
+- DXForm picks the error tab from visible fields only: an error on a field
+  hidden by its `when` no longer selects that field's tab (#194).
+
 ## [0.43.0] - 2026-10-06
 
 ### Added
