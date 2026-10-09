@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `editOnRowClick` on DXTable (default `true`). Set it `false` to keep the
+  create modal that `editFields` define while a row click only emits
+  `row-clicked`: a page that opens the record elsewhere no longer gets the
+  edit modal on top. Rows then look clickable only when something listens
+  for `row-clicked` (#200).
+
 ## [0.43.0] - 2026-10-06
 
 ### Added
