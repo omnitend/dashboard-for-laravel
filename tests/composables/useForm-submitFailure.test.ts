@@ -116,7 +116,9 @@ describe('useForm submitFailure', () => {
 
     respondFirst(invalid({ name: ['Required.'] })());
     await first;
-    expect(form.submitFailure).not.toBeNull();
+    // The older failure is not recorded while the newer submit is pending
+    // (the newest submit's outcome wins; see useForm-overlap.test.ts).
+    expect(form.submitFailure).toBeNull();
 
     respondSecond(jsonResponse(200, {}));
     await second;
