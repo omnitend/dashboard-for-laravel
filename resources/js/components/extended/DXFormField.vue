@@ -19,9 +19,11 @@
   <!-- Full replacement slot bypasses DXField entirely (mirrors tab-content):
        also supersedes field-before/field-after for the same key. The plain
        wrapper carries `data-dx-field-key` (as DXField's root does), so a
-       failed submit can scroll to and focus replaced content (#194). Its class
-       is unstyled (no margin, padding or border), so the content's own
-       margins collapse through it and the layout is unchanged. -->
+       failed submit can scroll to and focus replaced content (#194). Its
+       class is `display: contents` (theme.scss), so it takes no part in
+       layout: in a grid or flex container the slot's roots stay the items.
+       Chosen over marking the slot's root vnodes, which can be components,
+       text or fragments with no single element to mark. -->
   <div
     v-if="$slots[`field(${field.key})`]"
     class="dx-form-field-slot"
