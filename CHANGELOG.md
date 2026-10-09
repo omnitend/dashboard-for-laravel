@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs
+
+- The pre-paint snippet on the DXDashboard page (and the docs site's own
+  layout) reads the phone width from `--dx-dashboard-phone-max-width`, as
+  DXDashboard does, instead of hard-coding 575.98px, so a theme with its own
+  `sm` breakpoint keeps the first paint in step. The example says where the
+  script must go to see the theme (after its stylesheet; in Astro, the start
+  of `<body>`).
+
 ## [0.43.0] - 2026-10-06
 
 ### Added
