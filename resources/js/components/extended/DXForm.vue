@@ -929,11 +929,22 @@ function canTakeFocus(candidate: HTMLElement): boolean {
     );
 }
 
+/**
+ * True when an element belongs to THIS form rather than to a DXForm nested in
+ * one of its slots, whose fields can carry the same `data-dx-field-key`.
+ */
+function belongsToThisForm(element: HTMLElement): boolean {
+    const root = resolveFormElement();
+    return root !== null && element.closest("form") === root;
+}
+
 /** The first element matching `selector` (itself or inside) that can take focus. */
 function firstFocusable(element: HTMLElement, selector: string): HTMLElement | null {
-    if (element.matches(selector) && canTakeFocus(element)) return element;
+    if (element.matches(selector) && canTakeFocus(element) && belongsToThisForm(element)) {
+        return element;
+    }
     for (const candidate of Array.from(element.querySelectorAll<HTMLElement>(selector))) {
-        if (canTakeFocus(candidate)) return candidate;
+        if (canTakeFocus(candidate) && belongsToThisForm(candidate)) return candidate;
     }
     return null;
 }
@@ -949,7 +960,11 @@ function shownFieldElement(path: string): HTMLElement | null {
     const root = resolveFormElement();
     if (root === null) return null;
     for (const element of Array.from(root.querySelectorAll<HTMLElement>("[data-dx-field-key]"))) {
-        if (element.getAttribute("data-dx-field-key") === path && element.offsetParent !== null) {
+        if (
+            element.getAttribute("data-dx-field-key") === path &&
+            element.offsetParent !== null &&
+            element.closest("form") === root
+        ) {
             return element;
         }
     }

@@ -750,6 +750,41 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
     expect(document.activeElement).toBe(markers[1].querySelector('input'));
   });
 
+  it("never reaches into a nested DXForm's field with the same key", async () => {
+    stubResponses(invalid({ code: ['The code is taken.'] }));
+    const fields: FieldDefinition[] = [
+      { key: 'name', type: 'text', label: 'Name' },
+      { key: 'code', type: 'text', label: 'Code' },
+    ];
+    const form = useForm({ name: '', code: '' });
+    const innerForm = useForm({ code: '' });
+    const innerFields: FieldDefinition[] = [{ key: 'code', type: 'text', label: 'Inner code' }];
+    const screen = render(DXForm, {
+      props: { form, fields },
+      slots: {
+        // Unmarked replacement: no targetAttrs, but a nested form inside it
+        // has its own `code` field, which carries the same marker.
+        'field(code)': () =>
+          h('div', { class: 'nested-host' }, [
+            h(DXForm, { form: innerForm, fields: innerFields, showSubmit: false }),
+          ]),
+      },
+    });
+    await settle();
+    const innerInput = screen.container.querySelector<HTMLInputElement>(
+      '.nested-host [data-dx-field-key="code"] input',
+    );
+    // Positive control: the nested form really renders a `code` marker.
+    expect(innerInput).toBeTruthy();
+    await failSubmit(form);
+    const row = summaryRow(screen.container, 'The code is taken.');
+    await userEvent.click(row);
+    await wait(400);
+    expect(document.activeElement).not.toBe(innerInput);
+    // Untabbed form, no reachable target: focus stays on the row.
+    expect(document.activeElement).toBe(row);
+  });
+
   it('auto-scroll falls through an unreachable first target to the next one', async () => {
     await page.viewport(900, 600);
     const filler: FieldDefinition[] = Array.from({ length: 30 }, (_, index) => ({
