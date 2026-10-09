@@ -13,6 +13,19 @@ export interface ValidationErrors {
 
 export type FormError = ApiError;
 
+/**
+ * What the most recent failed submit returned (#194): the server's message and
+ * a COPY of its validation errors, frozen at the moment the submit failed.
+ * The live `form.errors` empties as the user fixes fields; this does not, so a
+ * summary built from it keeps listing every message until the next submit.
+ */
+export interface SubmitFailure {
+    /** A message fit to show a user (never empty, never a raw exception). */
+    message: string;
+    /** The validation errors the submit returned (`{}` when none). */
+    errors: ValidationErrors;
+}
+
 export interface FormSubmitOptions<TPayload = unknown, TResponse = unknown> {
     onSuccess?: (data: TResponse) => void;
     onError?: (error: FormError) => void;
@@ -39,6 +52,19 @@ export interface FormState<TData extends Record<string, any>> {
      */
     wasSuccessful: boolean;
     shouldShowMessage: boolean;
+    /**
+     * What the most recent submit failed with, or `null`. Set when a submit
+     * fails (validation or otherwise; an aborted submit does not count),
+     * cleared when a submit starts and when one succeeds. Untouched by
+     * `clearError`, `clearErrors`, `setErrors` and field edits.
+     */
+    submitFailure: SubmitFailure | null;
+    /**
+     * How many submits have failed, counting every failure (including a
+     * `preserveErrors` resubmit that returned the same errors), so a watcher
+     * can react to "a submit just failed" even when nothing else changed.
+     */
+    failedSubmitCount: number;
 }
 
 export interface UseFormReturn<TData extends Record<string, any>>
@@ -143,6 +169,59 @@ function objectToFormData(payload: Record<string, unknown>): FormData {
     return fd;
 }
 
+const GENERIC_FAILURE_MESSAGE = "An error occurred";
+
+/** Copy an errors map, keeping only non-empty string messages. */
+function copyValidationErrors(errors: unknown): ValidationErrors {
+    const copy: ValidationErrors = {};
+    if (errors === null || typeof errors !== "object") return copy;
+    for (const [key, value] of Object.entries(errors as Record<string, unknown>)) {
+        const messages = (Array.isArray(value) ? value : [value]).filter(
+            (message): message is string =>
+                typeof message === "string" && message !== "",
+        );
+        if (messages.length > 0) copy[key] = messages;
+    }
+    return copy;
+}
+
+function isAbortError(error: unknown): boolean {
+    return (
+        error !== null &&
+        typeof error === "object" &&
+        (error as { name?: unknown }).name === "AbortError"
+    );
+}
+
+/**
+ * The `submitFailure` for a rejected submit, or `null` for an abort (the
+ * caller cancelled it; nothing failed). Only an `ApiError` from the client
+ * (an HTTP failure: it carries a numeric `status`, and the client has already
+ * replaced 401/403/404/419/500 bodies with user-facing text) supplies the
+ * message. Anything else (a network `TypeError`, an exception thrown from
+ * `onSuccess`) gets the generic message, so a summary never shows
+ * "Failed to fetch" or a stack-trace line.
+ */
+function submitFailureFrom(error: unknown): SubmitFailure | null {
+    if (isAbortError(error)) return null;
+    const isApiError =
+        error !== null &&
+        typeof error === "object" &&
+        typeof (error as ApiError).status === "number";
+    if (isApiError) {
+        const apiError = error as ApiError;
+        const message =
+            typeof apiError.message === "string" && apiError.message.trim() !== ""
+                ? apiError.message
+                : GENERIC_FAILURE_MESSAGE;
+        return { message, errors: copyValidationErrors(apiError.errors) };
+    }
+    return {
+        message: GENERIC_FAILURE_MESSAGE,
+        errors: copyValidationErrors(errorsFromLaravel(error).errors),
+    };
+}
+
 function errorsFromLaravel(error: any): {
     errors: ValidationErrors;
     message: string;
@@ -181,6 +260,8 @@ export function useForm<TData extends Record<string, any>>(
         recentlySuccessful: false,
         wasSuccessful: false,
         shouldShowMessage: false,
+        submitFailure: null,
+        failedSubmitCount: 0,
     });
 
     const hasErrors = computed(() =>
@@ -272,6 +353,7 @@ export function useForm<TData extends Record<string, any>>(
         inFlightCount += 1;
         state.processing = true;
         state.wasSuccessful = false;
+        state.submitFailure = null;
         if (!options.preserveErrors) clearErrors();
 
         const payloadRaw = (
@@ -336,6 +418,7 @@ export function useForm<TData extends Record<string, any>>(
 
             state.recentlySuccessful = true;
             state.wasSuccessful = true;
+            state.submitFailure = null;
             if (successTimer !== null) clearTimeout(successTimer);
             successTimer = setTimeout(() => {
                 state.recentlySuccessful = false;
@@ -352,6 +435,11 @@ export function useForm<TData extends Record<string, any>>(
             const { errors, message } = errorsFromLaravel(err);
             setErrors(errors);
             setMessage(message);
+            const failure = submitFailureFrom(err);
+            if (failure) {
+                state.submitFailure = failure;
+                state.failedSubmitCount += 1;
+            }
             options.onError?.(err as FormError);
             throw err;
         } finally {
