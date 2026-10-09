@@ -312,4 +312,60 @@ describe('DXForm error tab (#194)', () => {
     expect(shownLabels(screen.container)).toEqual(['Description']);
     expect(boundIndex.value).toBe(2);
   });
+
+  describe.each([
+    ['shrink then error', ['shrink', 'error'] as const],
+    ['error then shrink', ['error', 'shrink'] as const],
+  ])('a parent-bound activeTab when tabs shrink and an error lands in one tick (%s)', (_label, order) => {
+    it('selects the error tab, emitting it once', async () => {
+      // Would this pass with the bug present? No: a range watcher and an error
+      // watcher both wrote the tab, and later `pre` watchers run in queue
+      // order, so the range fallback (0) landed after the error tab (1),
+      // whichever mutation came first. Emissions were [1, 0].
+      const form = useForm({ name: 'Widget', sku: '', description: '', hideGeneral: false });
+      const tabs: FormTab[] = [
+        {
+          key: 'general',
+          label: 'General',
+          fieldKeys: ['name'],
+          when: (model: Record<string, unknown>) => model.hideGeneral !== true,
+        },
+        { key: 'details', label: 'Details', fieldKeys: ['sku'] },
+        { key: 'extra', label: 'Extra', fieldKeys: ['description'] },
+      ];
+      const boundIndex = ref(2);
+      const emissions: number[] = [];
+      const Parent = defineComponent({
+        setup: () => () =>
+          h(DXForm, {
+            form,
+            fields,
+            tabs,
+            showSubmit: false,
+            activeTab: boundIndex.value,
+            'onUpdate:activeTab': (index: number) => {
+              emissions.push(index);
+              boundIndex.value = index;
+            },
+          }),
+      });
+      const screen = render(Parent);
+      await settle();
+      // Positive control: the bound index was valid and shown, and nothing
+      // has been emitted yet.
+      expect(shownLabels(screen.container)).toEqual(['Description']);
+      expect(emissions).toEqual([]);
+
+      for (const step of order) {
+        if (step === 'shrink') form.data.hideGeneral = true;
+        else form.setErrors({ description: ['The description is required.'] });
+      }
+      await settle();
+
+      expect(screen.container.querySelectorAll('.nav-link').length).toBe(2);
+      expect(shownLabels(screen.container)).toEqual(['Description']);
+      expect(boundIndex.value).toBe(1);
+      expect(emissions).toEqual([1]);
+    });
+  });
 });

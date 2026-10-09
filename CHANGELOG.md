@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no longer reset to the first tab. An `activeTab` with no visible tab at
   that index falls back to the first one, and a tab is shown again when
   every tab was hidden and some come back (#194).
+- DXForm selects the error tab when, in the same update, an earlier tab
+  hides and an error lands on a later one; before, the form could fall back
+  to the first tab and hide the error. DXForm now drives its tabs by pane ID
+  (each tab's pane gets an `id` derived from its key), so the selection
+  survives tabs appearing and disappearing around it (#194).
 
 ## [0.43.0] - 2026-10-06
 

@@ -38,10 +38,11 @@
              `.card-body` internally via its own `card` prop, so wrapping
              that in another `.card-body` would double up. -->
         <component :is="tabsInCard ? DCard : 'div'" v-if="hasTabs" v-bind="tabsInCard ? { noBody: true } : {}">
-            <DTabs v-if="visibleTabs.length > 0" v-model:index="activeTab" :card="tabsInCard">
+            <DTabs v-if="visibleTabs.length > 0" v-model="activeTabId" :card="tabsInCard">
                 <DTab
                     v-for="tab in visibleTabs"
                     :key="tab.key"
+                    :id="tabPaneId(tab)"
                     :title="resolveTabLabel(tab)"
                     :lazy="tab.lazy"
                 >
@@ -172,6 +173,7 @@ import {
     computed,
     onBeforeUnmount,
     ref,
+    useId,
     watch,
     type ComponentPublicInstance,
 } from "vue";
@@ -471,6 +473,45 @@ const visibleFlatFields = computed<FieldDefinition[]>(() =>
     resolvedFields.value.filter(isFieldVisible),
 );
 
+/**
+ * The index DXForm has chosen but a parent-bound `v-model:active-tab` has not
+ * echoed back yet. The prop lags our emit (the parent re-renders after us,
+ * or, at mount, after our first render), and anything reading the stale prop
+ * in between, DTabs included, would act on the old index. Cleared the moment
+ * the prop changes, so the parent stays in charge of what it binds.
+ */
+const pendingActiveTab = ref<number | null>(null);
+watch(activeTab, () => {
+    pendingActiveTab.value = null;
+}, { flush: "sync" });
+const currentActiveTab = computed(() => pendingActiveTab.value ?? activeTab.value);
+function selectTab(index: number): void {
+    pendingActiveTab.value = index;
+    activeTab.value = index;
+}
+
+// DTabs is driven by the active tab's pane ID, not its index. bvn keeps an
+// index and an ID in step, and syncs the index against its tab list BEFORE
+// a hidden tab unregisters: an index change landing in the same tick as an
+// earlier tab hiding resolved to the wrong tab's ID, which bvn then mapped
+// back to the wrong index. A pane ID names the same tab before and after
+// the list changes, so bvn never has to translate. `activeTab` stays the
+// public index; this only translates at the DTabs boundary.
+const tabIdPrefix = useId();
+function tabPaneId(tab: FormTab): string {
+    return `${tabIdPrefix}-tab-${tab.key}`;
+}
+const activeTabId = computed<string | undefined>({
+    get: () => {
+        const tab = visibleTabs.value[currentActiveTab.value];
+        return tab ? tabPaneId(tab) : undefined;
+    },
+    set: (id) => {
+        const index = visibleTabs.value.findIndex((tab) => tabPaneId(tab) === id);
+        if (index !== -1 && index !== currentActiveTab.value) selectTab(index);
+    },
+});
+
 // ————————————————— auto-switch to the first error tab
 
 /** Keys that currently carry at least one validation error. */
@@ -498,54 +539,70 @@ function errorTargetKeysFor(tab: FormTab): string[] {
     });
 }
 
-function goToErrorTab(): void {
-    if (!hasTabs.value || erroredKeys.value.length === 0) return;
-    const tabIndex = visibleTabs.value.findIndex((tab) =>
+/** Index of the first visible tab holding a visible errored field, or -1. */
+function firstErrorTabIndex(): number {
+    if (!hasTabs.value || erroredKeys.value.length === 0) return -1;
+    return visibleTabs.value.findIndex((tab) =>
         errorTargetKeysFor(tab).some((key) =>
             erroredKeys.value.some((errorKey) => errorKeyMatches(errorKey, key)),
         ),
     );
-    if (tabIndex !== -1) activeTab.value = tabIndex;
 }
 
-// Keep `activeTab` pointing at a rendered tab. DTabs is driven by
-// `v-model:index` alone (no per-tab `active`, which reset every mount to the
-// first tab), so an index it cannot show (an initial `activeTab` past the
-// last visible tab, or a negative one) leaves every pane inactive. Fall back
-// to the first visible tab; a valid index is never touched. DTabs is also
-// only rendered while some tab is visible: once every tab was hidden, bvn
-// reported -1 and then fought a restored index when the tabs came back,
-// activating none of them; remounting it avoids that.
-//
-// Declared BEFORE the error watcher on purpose: watchers in one flush run in
-// creation order, and a parent-bound `v-model:active-tab` lags our emit, so
-// a range check running after the error selection would still see the old
-// out-of-range value and reset the error tab to 0. Running first, it falls
-// back to 0 and the error selection then overrides it.
-watch(
-    [() => visibleTabs.value.length, activeTab],
-    ([tabCount, index]) => {
-        if (tabCount > 0 && (index < 0 || index >= tabCount)) activeTab.value = 0;
-    },
-    { immediate: true },
-);
+function goToErrorTab(): void {
+    const tabIndex = firstErrorTabIndex();
+    if (tabIndex !== -1) selectTab(tabIndex);
+}
 
-// Select the error tab only when error keys are ADDED, never when they are
-// removed: editing a field clears its error, and re-running the selection
-// then threw the user onto another tab mid-fix (#194). A submit clears the
-// errors before it is sent (unless `preserveErrors`), so a failed resubmit
-// goes empty → full and counts as added. A `preserveErrors` resubmit that
-// returns exactly the set already on the form adds nothing and leaves the
-// tab alone. Watching the set (not DXForm's own submit) covers forms
-// submitted outside DXForm too. `erroredKeys` is a new array on every change
-// of the errors object, so the watcher fires on additions and removals
-// alike; `immediate` handles errors already present before mount.
+/**
+ * The one place that moves `activeTab` on its own. Everything that can make
+ * the selection wrong (the visible tabs, the index, the error set) feeds a
+ * single watcher, which decides the final index once per change and emits it
+ * at most once. Two separate watchers writing the tab raced: later `pre`
+ * watchers run in queue order, and a parent-bound `v-model:active-tab` lags
+ * the emit, so a range fallback could land after the error selection and
+ * hide the error. Priority, highest first:
+ *
+ * 1. Error keys were ADDED since the last decision, and a visible tab holds a
+ *    visible errored field: select that tab. Removals never move the tab:
+ *    editing a field clears its error, and re-running the selection then
+ *    threw the user onto another tab mid-fix (#194). A submit clears the
+ *    errors before it is sent (unless `preserveErrors`), so a failed
+ *    resubmit goes empty → full and counts as added; a `preserveErrors`
+ *    resubmit returning exactly the set already on the form adds nothing.
+ *    Watching the set (not DXForm's own submit) covers forms submitted
+ *    outside DXForm too. Errors present at mount count as added.
+ * 2. The index is out of range (negative, or past the last visible tab):
+ *    fall back to the first tab. DTabs is driven by `v-model:index` alone,
+ *    so an index it cannot show leaves every pane inactive.
+ * 3. Otherwise leave it; a valid index is never touched.
+ *
+ * DTabs is also only rendered while some tab is visible: once every tab was
+ * hidden, bvn reported -1 and then fought a restored index when the tabs came
+ * back, activating none of them; remounting it avoids that.
+ */
+function decideActiveTab(
+    index: number,
+    tabCount: number,
+    errorKeysAdded: boolean,
+): number {
+    if (tabCount === 0) return index;
+    if (errorKeysAdded && props.autoErrorTab) {
+        const errorTab = firstErrorTabIndex();
+        if (errorTab !== -1) return errorTab;
+    }
+    if (index < 0 || index >= tabCount) return 0;
+    return index;
+}
+
+let lastErroredKeys = new Set<string>();
 watch(
-    erroredKeys,
-    (keys, previousKeys) => {
-        if (!props.autoErrorTab) return;
-        const previous = new Set(previousKeys ?? []);
-        if (keys.some((key) => !previous.has(key))) goToErrorTab();
+    [() => visibleTabs.value.length, currentActiveTab, erroredKeys],
+    ([tabCount, index, keys]) => {
+        const errorKeysAdded = keys.some((key) => !lastErroredKeys.has(key));
+        lastErroredKeys = new Set(keys);
+        const nextIndex = decideActiveTab(index, tabCount, errorKeysAdded);
+        if (nextIndex !== index) selectTab(nextIndex);
     },
     { immediate: true },
 );
