@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
+import { defineComponent, h, ref } from 'vue';
 import DXForm from '../../resources/js/components/extended/DXForm.vue';
 import { useForm } from '../../resources/js/composables/useForm';
 import type { FieldDefinition, FormTab } from '../../resources/js/types';
@@ -231,5 +232,70 @@ describe('DXForm error tab (#194)', () => {
     await settle();
 
     expect(shownLabels(screen.container)).toEqual(['Description']);
+  });
+
+  it('selects the error tab for errors already on the form at mount', async () => {
+    // Would this pass with the bug present? No: the index-based watcher wrote
+    // the error tab during setup and bvn's `active` on the first DTab reset it.
+    const form = makeForm();
+    form.setErrors({ description: ['The description is required.'] });
+    const screen = render(DXForm, {
+      props: { form, fields, tabs: threeTabs, showSubmit: false },
+    });
+    await settle();
+
+    expect(shownLabels(screen.container)).toEqual(['Description']);
+  });
+
+  it('selects the error tab over an out-of-range index bound by a parent', async () => {
+    const form = makeForm();
+    form.setErrors({ description: ['The description is required.'] });
+    const boundIndex = ref(7);
+    const Parent = defineComponent({
+      setup: () => () =>
+        h(DXForm, {
+          form,
+          fields,
+          tabs: threeTabs,
+          showSubmit: false,
+          activeTab: boundIndex.value,
+          'onUpdate:activeTab': (index: number) => {
+            boundIndex.value = index;
+          },
+        }),
+    });
+    const screen = render(Parent);
+    await settle();
+
+    expect(shownLabels(screen.container)).toEqual(['Description']);
+    expect(boundIndex.value).toBe(2);
+  });
+
+  it('goToErrorTab() selects the first error tab when auto-switching is off', async () => {
+    stubValidationFailures({ sku: ['The SKU is required.'] });
+    const form = makeForm();
+    const formComponent = ref<{ goToErrorTab: () => void } | null>(null);
+    const Parent = defineComponent({
+      setup: () => () =>
+        h(DXForm, {
+          ref: formComponent,
+          form,
+          fields,
+          tabs: threeTabs,
+          showSubmit: false,
+          autoErrorTab: false,
+        }),
+    });
+    const screen = render(Parent);
+    await settle();
+
+    await submitExpectingFailure(form);
+    // Positive control: the errors landed, and auto-switching really is off.
+    expect(form.errors.sku).toEqual(['The SKU is required.']);
+    expect(shownLabels(screen.container)).toEqual(['Name']);
+
+    formComponent.value!.goToErrorTab();
+    await settle();
+    expect(shownLabels(screen.container)).toEqual(['SKU']);
   });
 });

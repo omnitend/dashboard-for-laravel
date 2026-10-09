@@ -27,8 +27,13 @@
             {{ resolvedForm.message }}
         </DAlert>
 
-        <!-- Tabbed layout. BTabs exposes the active *index* via v-model:index
-             (plain v-model is the active tab id), which is what we track.
+        <!-- Tabbed layout. DXForm owns the selection (`activeTabKey`); DTabs
+             only renders it. DTabs gets the active PANE ID, controlled: its
+             own writes back (`update:modelValue`) are ignored, because bvn
+             re-derives ids from its registered-tab list, which lags a render
+             behind ours. Clicks and keys reach DXForm through each tab's own
+             click handler and button attributes, by tab key, never by
+             index; `no-key-nav` hands the arrow keys to DXForm.
              `card` needs BOTH: DTabs' own `card` prop (adds `card-header`/
              `card-body` classes to its nav/content internally) AND an outer
              `.card` element wrapping it (BVN's `card` prop does not add the
@@ -38,13 +43,21 @@
              `.card-body` internally via its own `card` prop, so wrapping
              that in another `.card-body` would double up. -->
         <component :is="tabsInCard ? DCard : 'div'" v-if="hasTabs" v-bind="tabsInCard ? { noBody: true } : {}">
-            <DTabs v-model:index="activeTab" :card="tabsInCard">
+            <DTabs
+                :modelValue="activePaneId"
+                :card="tabsInCard"
+                :noKeyNav="true"
+                @update:modelValue="ignoreTabsWrite"
+            >
                 <DTab
-                    v-for="(tab, index) in visibleTabs"
+                    v-for="tab in visibleTabs"
                     :key="tab.key"
+                    :id="paneIdFor(tab.key)"
+                    :buttonId="buttonIdFor(tab.key)"
                     :title="resolveTabLabel(tab)"
                     :lazy="tab.lazy"
-                    :active="index === 0"
+                    :titleLinkAttrs="tabButtonAttrs(tab.key)"
+                    :onClick="tabControlsFor(tab.key).onClick"
                 >
                     <!--
                       @slot Replaces the entire body of a tab, keyed by tab (slot name `tab-content(<tabKey>)`).
@@ -171,8 +184,10 @@
 <script setup lang="ts">
 import {
     computed,
+    nextTick,
     onBeforeUnmount,
     ref,
+    useId,
     watch,
     type ComponentPublicInstance,
 } from "vue";
@@ -318,7 +333,10 @@ const emit = defineEmits<{
 
 const slots = defineSlots<Record<string, (props: any) => any>>();
 
-/** v-model for the active tab index. */
+/**
+ * v-model for the active tab, as an index into the VISIBLE tabs. It is a
+ * view of `activeTabKey` (below), which is what DXForm actually tracks.
+ */
 const activeTab = defineModel<number>("activeTab", { default: 0 });
 
 // ————————————————— container-driven layout (`layout: "auto"`)
@@ -472,7 +490,14 @@ const visibleFlatFields = computed<FieldDefinition[]>(() =>
     resolvedFields.value.filter(isFieldVisible),
 );
 
-// ————————————————— auto-switch to the first error tab
+// ————————————————— active tab, tracked by key (#194)
+//
+// One owner: `activeTabKey`. The pane bvn shows (`activePaneId`) and the
+// index the `activeTab` model reports are both derived from it, and every
+// change goes through `commitTabKey`, the one writer. Tracking an index
+// instead broke whenever the tab list changed under it: an earlier tab
+// hiding or tabs reordering silently showed a different tab, and bvn (which
+// tracks tabs by id) mapped indexes against a stale list.
 
 /** Keys that currently carry at least one validation error. */
 const erroredKeys = computed<string[]>(() =>
@@ -499,35 +524,250 @@ function errorTargetKeysFor(tab: FormTab): string[] {
     });
 }
 
-function goToErrorTab(): void {
-    if (!hasTabs.value || erroredKeys.value.length === 0) return;
-    const tabIndex = visibleTabs.value.findIndex((tab) =>
+/** Key of the first visible tab owning a visible errored field, or null. */
+function firstErrorTabKey(): string | null {
+    if (erroredKeys.value.length === 0) return null;
+    const errorTab = visibleTabs.value.find((tab) =>
         errorTargetKeysFor(tab).some((key) =>
             erroredKeys.value.some((errorKey) => errorKeyMatches(errorKey, key)),
         ),
     );
-    if (tabIndex !== -1) activeTab.value = tabIndex;
+    return errorTab ? errorTab.key : null;
 }
 
-// Select the error tab only when error keys are ADDED, never when they are
-// removed: editing a field clears its error, and re-running the selection
-// then threw the user onto another tab mid-fix (#194). A submit clears the
+const visibleTabKeys = computed<string[]>(() =>
+    visibleTabs.value.map((tab) => tab.key),
+);
+
+function sameKeys(keys: readonly string[], otherKeys: readonly string[] | undefined): boolean {
+    return (
+        otherKeys !== undefined &&
+        keys.length === otherKeys.length &&
+        keys.every((key, index) => key === otherKeys[index])
+    );
+}
+
+/** The selected tab's key: the single source of truth for the active tab. */
+const activeTabKey = ref<string | null>(null);
+
+// Pane ids are opaque and stable per tab KEY: a number assigned the first
+// time a key is seen, never derived from the key's text (which may hold
+// spaces, invalid in an id) or from its position (which changes when tabs
+// reorder or hide, and would make bvn show a different pane).
+const tabIdBase = useId();
+const paneNumbers = new Map<string, number>();
+
+function paneIdFor(key: string): string {
+    let paneNumber = paneNumbers.get(key);
+    if (paneNumber === undefined) {
+        paneNumber = paneNumbers.size;
+        paneNumbers.set(key, paneNumber);
+    }
+    return `${tabIdBase}-tab-${paneNumber}`;
+}
+
+function buttonIdFor(key: string): string {
+    return `${paneIdFor(key)}-button`;
+}
+
+/** The pane DTabs shows; undefined while the selected tab is not rendered. */
+const activePaneId = computed<string | undefined>(() =>
+    activeTabKey.value !== null && visibleTabKeys.value.includes(activeTabKey.value)
+        ? paneIdFor(activeTabKey.value)
+        : undefined,
+);
+
+/** Invalidates a pending parent-answer check when a newer write happens. */
+let modelWriteToken = 0;
+
+/**
+ * The one writer of the active tab. Sets the key, then reports its visible
+ * index through the `activeTab` model when that differs from what the model
+ * holds (a new selection, or the same tab at a new position).
+ *
+ * A parent binding the model may reject or normalise the index it is sent.
+ * Once the flush has carried its answer back, the parent's value wins
+ * (controlled behaviour). With no binding the model updates locally, so the
+ * check finds the value it wrote and nothing changes.
+ */
+function commitTabKey(key: string | null): void {
+    activeTabKey.value = key;
+    const index = key === null ? -1 : visibleTabKeys.value.indexOf(key);
+    if (index === -1 || index === activeTab.value) return;
+    activeTab.value = index;
+    const writeToken = ++modelWriteToken;
+    nextTick(() => {
+        if (writeToken !== modelWriteToken) return;
+        const answeredIndex = activeTab.value;
+        if (answeredIndex === index) return;
+        const answeredKey = visibleTabKeys.value[answeredIndex];
+        if (answeredKey !== undefined) commitTabKey(answeredKey);
+    });
+}
+
+/**
+ * Which tab to show. In order: after a failed submit (or with errors present
+ * at mount), the first visible tab owning a visible errored field; a tab
+ * index the parent just set; the current tab while it is still visible; the
+ * first visible tab. With no visible tabs the key is kept, so the same tab
+ * returns when they come back.
+ */
+function decideTabKey(failed: boolean, requestedIndex: number | null): string | null {
+    const keys = visibleTabKeys.value;
+    if (keys.length === 0) return activeTabKey.value;
+    if (failed && props.autoErrorTab) {
+        const errorTabKey = firstErrorTabKey();
+        if (errorTabKey !== null) return errorTabKey;
+    }
+    if (requestedIndex !== null) {
+        const requestedKey = keys[requestedIndex];
+        if (requestedKey !== undefined) return requestedKey;
+    }
+    const currentKey = activeTabKey.value;
+    if (currentKey !== null && keys.includes(currentKey)) return currentKey;
+    return keys[0];
+}
+
+// "A submit failed": the input that sends the form to its error tab, as a
+// signal value plus the test for "it changed because a submit failed".
+// useForm does not report failed submits yet, so for now the signal is the
+// errored-key set and a failure is that set GROWING. A submit clears the
 // errors before it is sent (unless `preserveErrors`), so a failed resubmit
-// goes empty → full and counts as added. A `preserveErrors` resubmit that
-// returns exactly the set already on the form adds nothing and leaves the
-// tab alone. Watching the set (not DXForm's own submit) covers forms
-// submitted outside DXForm too. `erroredKeys` is a new array on every change
-// of the errors object, so the watcher fires on additions and removals
-// alike; `immediate` handles errors already present before mount.
+// goes empty → full and counts; a `preserveErrors` resubmit returning exactly
+// the same set adds nothing and does not count. An error CLEARING (a field
+// edit) never counts, so fixing a field never moves the tab. Watching the
+// errors (not DXForm's own submit) covers forms submitted outside DXForm too.
+// The comparison is between flushes, never inside one: `setErrors` empties
+// the set and refills it synchronously, which a sync watcher would misread
+// as an addition.
+// INTEGRATION: when useForm exposes `submitCount`, make the signal
+// `() => resolvedForm.value.submitCount` and the test `signal !== previous`.
+const failureSignal = (): readonly string[] => erroredKeys.value;
+
+function isNewFailure(
+    signal: readonly string[],
+    previousSignal: readonly string[] | undefined,
+): boolean {
+    const previous = new Set(previousSignal ?? []);
+    return signal.some((key) => !previous.has(key));
+}
+
+// The decision runs ONCE per tick for every input that changed in it (the
+// visible tabs, the failure signal, the model index), so two concerns can
+// never write competing values in one flush.
+let hasDecided = false;
 watch(
-    erroredKeys,
-    (keys, previousKeys) => {
-        if (!props.autoErrorTab) return;
-        const previous = new Set(previousKeys ?? []);
-        if (keys.some((key) => !previous.has(key))) goToErrorTab();
+    [visibleTabKeys, failureSignal, () => activeTab.value] as const,
+    ([keys, signal, index], previous) => {
+        if (!hasDecided) {
+            hasDecided = true;
+            commitTabKey(decideTabKey(erroredKeys.value.length > 0, index));
+            return;
+        }
+        const [previousKeys, previousSignal, previousIndex] = previous;
+        const failed = isNewFailure(signal, previousSignal);
+        const requestedIndex = index !== previousIndex ? index : null;
+        if (!failed && requestedIndex === null && sameKeys(keys, previousKeys)) return;
+        commitTabKey(decideTabKey(failed, requestedIndex));
     },
     { immediate: true },
 );
+
+/** A tab button the user clicked or reached with the keyboard. */
+function selectTabFromUser(key: string): void {
+    if (visibleTabKeys.value.includes(key)) commitTabKey(key);
+}
+
+/**
+ * DTabs' own writes of the active pane id are ignored: they come from bvn
+ * re-deriving the selection from its registered-tab list, which can lag
+ * DXForm's by a render. The listener stays so the binding is controlled
+ * (without it bvn would overwrite the id locally).
+ */
+function ignoreTabsWrite(): void {}
+
+/**
+ * A tab's click handler and its nav button's attributes: a roving tabindex
+ * (only the selected tab is in the tab order) and the arrow-key handler,
+ * which DXForm owns because DTabs runs with `no-key-nav`.
+ *
+ * Cached per key (and selection state), so every value keeps its identity
+ * across renders. bvn re-evaluates this slot on every BTabs render and folds
+ * each tab's `onClick` and `titleLinkAttrs` into its tab list, so a fresh
+ * function or object each time re-renders BTabs, which re-evaluates the
+ * slot: an endless update loop ("Maximum recursive updates").
+ */
+interface TabControls {
+    onClick: () => void;
+    selectedButtonAttrs: Record<string, unknown>;
+    unselectedButtonAttrs: Record<string, unknown>;
+}
+
+const tabControlsByKey = new Map<string, TabControls>();
+
+function tabControlsFor(key: string): TabControls {
+    let controls = tabControlsByKey.get(key);
+    if (controls === undefined) {
+        const onKeydown = (event: KeyboardEvent) => handleTabKeydown(event, key);
+        controls = {
+            onClick: () => selectTabFromUser(key),
+            selectedButtonAttrs: { tabindex: 0, onKeydown },
+            unselectedButtonAttrs: { tabindex: -1, onKeydown },
+        };
+        tabControlsByKey.set(key, controls);
+    }
+    return controls;
+}
+
+function tabButtonAttrs(key: string): Record<string, unknown> {
+    const controls = tabControlsFor(key);
+    return key === activeTabKey.value
+        ? controls.selectedButtonAttrs
+        : controls.unselectedButtonAttrs;
+}
+
+/** bvn's horizontal key map: ←/→ step (Shift: to the end), Home/End/PageUp/PageDown jump. */
+function handleTabKeydown(event: KeyboardEvent, key: string): void {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const keys = visibleTabKeys.value;
+    const fromIndex = keys.indexOf(key);
+    if (fromIndex === -1) return;
+    const lastIndex = keys.length - 1;
+    let targetIndex: number;
+    switch (event.key) {
+        case "ArrowLeft":
+            targetIndex = event.shiftKey ? 0 : Math.max(fromIndex - 1, 0);
+            break;
+        case "ArrowRight":
+            targetIndex = event.shiftKey ? lastIndex : Math.min(fromIndex + 1, lastIndex);
+            break;
+        case "Home":
+        case "PageUp":
+            targetIndex = 0;
+            break;
+        case "End":
+        case "PageDown":
+            targetIndex = lastIndex;
+            break;
+        default:
+            return;
+    }
+    event.preventDefault();
+    selectTabFromUser(keys[targetIndex]);
+    // Focus follows the tab that ends up selected, after any parent answer
+    // (commitTabKey's check was queued first, so it has run by now).
+    nextTick(() => {
+        const selectedKey = activeTabKey.value;
+        if (selectedKey === null) return;
+        document.getElementById(buttonIdFor(selectedKey))?.focus();
+    });
+}
+
+/** Select the first visible tab owning a visible errored field, if any. */
+function goToErrorTab(): void {
+    const errorTabKey = firstErrorTabKey();
+    if (errorTabKey !== null) commitTabKey(errorTabKey);
+}
 
 // ————————————————— saved state (submit button shows "✓ Saved")
 
