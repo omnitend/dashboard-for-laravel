@@ -448,6 +448,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `saveGuard` against it: a guard keyed on a field only the full record carries
   saw `undefined` and allowed the save. Delete is likewise no longer re-entrant.
 
+## [0.39.1] - 2026-08-14
+
+Tagged and released on GitHub but **never published to npm**: the release
+script stopped before its publish step (it is resumable now). npm goes from
+0.39.0 to 0.40.0, and 0.40.0 contains this fix, so upgrade to 0.40.0 or later.
+
+### Bug Fixes
+
+- DXTable (API mode): changing a column filter resets to page 1. From page 2
+  or later, the narrowed set was requested at the old page number, usually
+  past its end, so the table said no rows matched over a non-zero total.
+
 ## [0.39.0] - 2026-07-24
 
 ### Changed
