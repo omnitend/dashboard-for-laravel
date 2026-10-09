@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `DFormSelect`'s `options` accept any object option, as bvn's `BFormSelect`
+  does (`object | string | number | boolean`), not only
+  `Record<string, unknown>`, so an array typed with an option interface
+  (DXTable's `FilterOption`, or your own) needs no cast. Types only.
+
 ### Bug Fixes
 
 - A searchable select (`DXField` `select` + `searchable`) with an
