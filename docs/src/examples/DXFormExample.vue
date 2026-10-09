@@ -2,8 +2,12 @@
   <div class="tabbed-form-example">
     <h5>Product Editor</h5>
     <p class="text-muted">
-      A tabbed form with conditional fields, a currency input, and
-      auto-switching to the tab containing the first validation error.
+      A tabbed form with a conditional field and a custom stock editor. Press
+      <strong>Save product</strong>: the demo server rejects it with a 422
+      carrying errors on two tabs, on the stock editor's rows and on a key no
+      field renders. The form moves to the first tab with an error, and the
+      summary above the button lists every message. Click a row to go to its
+      field.
     </p>
 
     <DXForm
@@ -12,19 +16,27 @@
       :tabs="tabs"
       card
       submit-text="Save product"
-      @submit="handleSubmit"
+      @submit="save"
     >
-      <!-- Per-field slot: content rendered directly below a named field. -->
-      <template #field-after(sku)>
-        <DButton size="sm" variant="outline-secondary" class="mb-3" @click="generateSku">
-          Generate SKU
-        </DButton>
+      <!-- A span field renders its own editor. It edits form.data.stock_levels,
+           so it claims those error keys with `errorKeys` (see `fields`). -->
+      <template #span(stock_editor)>
+        <p class="fw-medium mb-2">Stock by warehouse</p>
+        <DFormGroup
+          v-for="(level, index) in form.data.stock_levels"
+          :key="level.warehouse"
+          :label="level.warehouse"
+          label-cols="4"
+          class="mb-2"
+        >
+          <DFormInput
+            v-model.number="level.quantity"
+            type="number"
+            :state="form.errors[`stock_levels.${index}.quantity`] ? false : null"
+          />
+        </DFormGroup>
       </template>
     </DXForm>
-
-    <p v-if="lastError" class="text-danger mt-2 mb-0">
-      Validation failed — the form jumped to the “{{ lastError }}” tab.
-    </p>
 
     <h5 class="mt-4">Horizontal layout</h5>
     <p class="text-muted">
@@ -42,22 +54,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeUnmount, onMounted } from 'vue';
 import {
-  DButton,
+  DFormGroup,
+  DFormInput,
   DXForm,
   useForm,
   type FieldDefinition,
   type FormTab,
 } from '@omnitend/dashboard-for-laravel';
+import { answerWith } from './support/demoServer';
 
 const form = useForm({
-  name: '',
-  price: 0,
+  name: 'Desk lamp',
+  price: 24,
   on_sale: false,
   sale_price: 0,
-  sku: '',
-  stock: 0,
+  sku: 'lamp 1',
+  stock_levels: [
+    { warehouse: 'Leeds', quantity: -3 },
+    { warehouse: 'Bristol', quantity: 12 },
+  ],
 });
 
 const fields: FieldDefinition[] = [
@@ -73,15 +90,44 @@ const fields: FieldDefinition[] = [
     when: (model) => model.on_sale === true,
   },
   { key: 'sku', type: 'text', label: 'SKU', hint: 'Format: ABC-123' },
-  { key: 'stock', type: 'number', label: 'Stock on hand' },
+  {
+    key: 'stock_editor',
+    type: 'text',
+    label: 'Stock',
+    span: true,
+    submit: false,
+    // Errors such as `stock_levels.0.quantity` belong to this field.
+    errorKeys: ['stock_levels.*.*'],
+  },
 ];
 
 const tabs: FormTab[] = [
   { key: 'general', label: 'General', fieldKeys: ['name', 'price', 'on_sale', 'sale_price'] },
-  { key: 'inventory', label: 'Inventory', fieldKeys: ['sku', 'stock'] },
+  { key: 'inventory', label: 'Inventory', fieldKeys: ['sku', 'stock_editor'] },
 ];
 
-const lastError = ref('');
+// A real app posts to its own endpoint; errors come back as a Laravel 422.
+const save = () => form.post('/demo/products').catch(() => {});
+
+// Docs only: the site has no server, so answer that one request with the
+// 422 a Laravel controller would return.
+let stopDemoServer = () => {};
+onMounted(() => {
+  stopDemoServer = answerWith('POST', '/demo/products', () => ({
+    status: 422,
+    body: {
+      message: 'The given data was invalid.',
+      errors: {
+        name: ['A product with this name already exists.'],
+        sku: ['The SKU must look like ABC-123.'],
+        'stock_levels.0.quantity': ['Stock in Leeds cannot be negative.'],
+        // No field renders this key, so only the summary can show it.
+        supplier_id: ['The supplier account is on hold.'],
+      },
+    },
+  }));
+});
+onBeforeUnmount(() => stopDemoServer());
 
 const contactForm = useForm({
   full_name: '',
@@ -94,23 +140,6 @@ const contactFields: FieldDefinition[] = [
   { key: 'email', type: 'email', label: 'Email', required: true },
   { key: 'subscribe', type: 'checkbox', label: 'Subscribe to updates' },
 ];
-
-let skuCounter = 1;
-const generateSku = () => {
-  form.data.sku = `ABC-${String(skuCounter++).padStart(3, '0')}`;
-};
-
-const handleSubmit = () => {
-  // Pretend the server rejected an Inventory-tab field. Setting errors makes
-  // DXForm switch to the tab that contains the first errored field.
-  if (!form.data.sku) {
-    form.setErrors({ sku: ['SKU is required.'] });
-    lastError.value = 'Inventory';
-    return;
-  }
-  lastError.value = '';
-  alert(`Saved ${form.data.name} at £${form.data.price}`);
-};
 </script>
 
 <style scoped>

@@ -5,6 +5,7 @@ title: DXTable
 
 import ComponentExample from '../../../components/ComponentExample.vue';
 import DXTableExample from '../../../examples/DXTableExample.vue';
+import DXTableEditingExampleRaw from '../../../examples/DXTableEditingExample.vue?raw';
 import PropsTable from '../../../components/PropsTable.vue';
 import EventsTable from '../../../components/EventsTable.vue';
 import SlotsTable from '../../../components/SlotsTable.vue';
@@ -93,6 +94,21 @@ const items = ref([
   />
 </template>`}
   example="DXTableExample"
+/>
+
+### Editing rows: a failed save
+
+With `edit-fields` and `edit-url`, a row click opens an edit modal. When the
+save fails, the modal's footer lists what the server returned, beside Save:
+the server's message and every validation message, including keys no edit
+field renders. A failure that is not a validation error (a 500, no connection)
+shows there too, with no toast. See
+[DXForm's validation errors](/components/extended/DXForm#validation-errors).
+
+<ComponentExample
+  client:load
+  code={DXTableEditingExampleRaw}
+  example="DXTableEditingExample"
 />
 
 ## Props
