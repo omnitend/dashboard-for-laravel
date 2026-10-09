@@ -40,11 +40,10 @@
         <component :is="tabsInCard ? DCard : 'div'" v-if="hasTabs" v-bind="tabsInCard ? { noBody: true } : {}">
             <DTabs v-model:index="activeTab" :card="tabsInCard">
                 <DTab
-                    v-for="(tab, index) in visibleTabs"
+                    v-for="tab in visibleTabs"
                     :key="tab.key"
                     :title="resolveTabLabel(tab)"
                     :lazy="tab.lazy"
-                    :active="index === 0"
                 >
                     <!--
                       @slot Replaces the entire body of a tab, keyed by tab (slot name `tab-content(<tabKey>)`).
@@ -481,27 +480,50 @@ const erroredKeys = computed<string[]>(() =>
     ),
 );
 
+/** True when an error key belongs to a field key: exact, or nested under it. */
+function errorKeyMatches(errorKey: string, fieldKey: string): boolean {
+    return errorKey === fieldKey || errorKey.startsWith(`${fieldKey}.`);
+}
+
+/**
+ * Field keys of a tab that can show an error: the visible fields only, so a
+ * field hidden by its `when` never pulls the form onto its tab. A key with
+ * no field definition is rendered by the consumer (a `tab-content` slot, for
+ * example), so DXForm cannot tell whether it is shown and keeps it.
+ */
+function errorTargetKeysFor(tab: FormTab): string[] {
+    return tab.fieldKeys.filter((key) => {
+        const field = fieldByKey.value[key];
+        return !field || isFieldVisible(field);
+    });
+}
+
 function goToErrorTab(): void {
     if (!hasTabs.value || erroredKeys.value.length === 0) return;
     const tabIndex = visibleTabs.value.findIndex((tab) =>
-        tab.fieldKeys.some((key) =>
-            erroredKeys.value.some(
-                // Match exact keys and nested (repeater) error keys.
-                (errorKey) => errorKey === key || errorKey.startsWith(`${key}.`),
-            ),
+        errorTargetKeysFor(tab).some((key) =>
+            erroredKeys.value.some((errorKey) => errorKeyMatches(errorKey, key)),
         ),
     );
     if (tabIndex !== -1) activeTab.value = tabIndex;
 }
 
-// Watch a primitive derived from the error keys so the effect reliably
-// re-runs when errors are set (deep-watching the stable reactive object
-// reference does not fire on key additions). `immediate` handles errors
-// already present on the form before mount.
+// Select the error tab only when error keys are ADDED, never when they are
+// removed: editing a field clears its error, and re-running the selection
+// then threw the user onto another tab mid-fix (#194). A submit clears the
+// errors before it is sent (unless `preserveErrors`), so a failed resubmit
+// goes empty → full and counts as added. A `preserveErrors` resubmit that
+// returns exactly the set already on the form adds nothing and leaves the
+// tab alone. Watching the set (not DXForm's own submit) covers forms
+// submitted outside DXForm too. `erroredKeys` is a new array on every change
+// of the errors object, so the watcher fires on additions and removals
+// alike; `immediate` handles errors already present before mount.
 watch(
-    () => erroredKeys.value.join("|"),
-    (joined) => {
-        if (props.autoErrorTab && joined) goToErrorTab();
+    erroredKeys,
+    (keys, previousKeys) => {
+        if (!props.autoErrorTab) return;
+        const previous = new Set(previousKeys ?? []);
+        if (keys.some((key) => !previous.has(key))) goToErrorTab();
     },
     { immediate: true },
 );
