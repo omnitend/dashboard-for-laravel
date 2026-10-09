@@ -149,10 +149,10 @@ describe('DXForm error tab (#194)', () => {
     expect(shownLabels(screen.container)).toEqual(['SKU']);
   });
 
-  it('leaves the tab alone on a preserveErrors resubmit that returns the same set', async () => {
-    // Documented trade-off: with `preserveErrors` the keys never leave the
-    // form, so an identical set adds nothing and the watcher cannot tell the
-    // response from no change at all.
+  it('selects the error tab again on a preserveErrors resubmit that returns the same set', async () => {
+    // With `preserveErrors` the keys never leave the form, so an identical
+    // set adds nothing; only useForm's failed-submit count tells this
+    // response apart from no change at all (#194).
     stubValidationFailures(
       { sku: ['The SKU is required.'] },
       { sku: ['The SKU is required.'] },
@@ -175,7 +175,7 @@ describe('DXForm error tab (#194)', () => {
 
     await submitExpectingFailure(form, { preserveErrors: true });
     expect(form.errors.sku).toEqual(['The SKU is required.']);
-    expect(shownLabels(screen.container)).toEqual(['Name']);
+    expect(shownLabels(screen.container)).toEqual(['SKU']);
   });
 
   it('ignores an error on a hidden field when picking the tab', async () => {

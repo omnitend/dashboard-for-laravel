@@ -17,9 +17,19 @@
         @submit.prevent="handleSubmit"
         :class="{ 'dx-form--horizontal': resolvedLayout === 'horizontal' }"
     >
-        <!-- Form-level error message -->
+        <!-- What the last failed submit returned (#194), when the consumer
+             asked for it at the top rather than beside the submit button. -->
+        <DXFormErrorSummary
+            v-if="errorSummary === 'top'"
+            class="mb-3"
+            v-bind="summaryBindings"
+            @select-target="focusErrorTarget"
+        />
+
+        <!-- Form-level error message. Not while the summary shows a failure:
+             one alert, never two (the summary already carries the message). -->
         <DAlert
-            v-if="resolvedForm.shouldShowMessage"
+            v-if="resolvedForm.shouldShowMessage && !isSummaryShowing"
             :model-value="resolvedForm.shouldShowMessage"
             variant="danger"
             class="mb-3"
@@ -130,6 +140,14 @@
                     </template>
                 </DXFormField>
 
+                <!-- Failed-submit summary, directly above the submit button. -->
+                <DXFormErrorSummary
+                    v-if="errorSummary === 'footer'"
+                    class="mt-3"
+                    v-bind="summaryBindings"
+                    @select-target="focusErrorTarget"
+                />
+
                 <!-- Submit button -->
                 <DXSaveButton
                     v-if="showSubmit"
@@ -158,6 +176,15 @@
              DTabs' own card-body padding belongs to its tab content, not to
              trailing form-level actions. -->
         <template v-else>
+            <!-- Failed-submit summary: below the tabs (never inside a pane,
+                 which may be hidden), directly above the submit button. -->
+            <DXFormErrorSummary
+                v-if="errorSummary === 'footer'"
+                class="mt-3"
+                v-bind="summaryBindings"
+                @select-target="focusErrorTarget"
+            />
+
             <!-- Submit button -->
             <DXSaveButton
                 v-if="showSubmit"
@@ -198,7 +225,9 @@ import DTabs from "../base/DTabs.vue";
 import { BTab as DTab } from "bootstrap-vue-next"; // raw BTab: BTabs scans slot vnodes for it (#119)
 import DXFormField from "./DXFormField.vue";
 import DXSaveButton from "./DXSaveButton.vue";
-import type { UseFormReturn } from "../../composables/useForm";
+import DXFormErrorSummary, { type ErrorSummarySelection } from "./DXFormErrorSummary.vue";
+import { resolveErrorTargets, type ErrorTarget } from "../../utils/formErrorTargets";
+import type { UseFormReturn, ValidationErrors } from "../../composables/useForm";
 import type { DefineFormReturn } from "../../composables/defineForm";
 import { useContainerWidth } from "../../composables/useContainerWidth";
 import type { FieldDefinition, FormTab, LabelCols, MaybeFn } from "../../types";
@@ -311,6 +340,29 @@ interface Props {
      * `sm` up and stacks above the input below `sm`.
      */
     labelCols?: LabelCols;
+
+    /**
+     * Where to list what the last failed submit returned (`form.submitFailure`:
+     * the server's message and every validation message, with readable
+     * labels):
+     *
+     * - `"footer"` (default) — directly above the submit button, below any
+     *   tabs, next to the control the user just pressed.
+     * - `"top"` — above the fields, where the form-level alert sits.
+     * - `false` — no summary; the form-level alert behaves as before.
+     *
+     * While the summary shows a failure the form-level alert does not
+     * render, so a failure shows exactly one alert. Each row naming a visible
+     * field is a button that selects the field's tab and focuses it.
+     */
+    errorSummary?: "footer" | "top" | false;
+
+    /**
+     * After a failed submit, scroll the first field with an error into view
+     * (once its tab is selected and rendered). Never moves focus. On by
+     * default.
+     */
+    scrollToError?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -324,6 +376,8 @@ const props = withDefaults(defineProps<Props>(), {
     cardTabs: true,
     layout: "vertical",
     layoutThreshold: 640,
+    errorSummary: "footer",
+    scrollToError: true,
 });
 
 const emit = defineEmits<{
@@ -506,38 +560,51 @@ const erroredKeys = computed<string[]>(() =>
     ),
 );
 
-/** True when an error key belongs to a field key: exact, or nested under it. */
-function errorKeyMatches(errorKey: string, fieldKey: string): boolean {
-    return errorKey === fieldKey || errorKey.startsWith(`${fieldKey}.`);
-}
-
-/**
- * Field keys of a tab that can show an error: the visible fields only, so a
- * field hidden by its `when` never pulls the form onto its tab. A key with
- * no field definition is rendered by the consumer (a `tab-content` slot, for
- * example), so DXForm cannot tell whether it is shown and keeps it.
- */
-function errorTargetKeysFor(tab: FormTab): string[] {
-    return tab.fieldKeys.filter((key) => {
-        const field = fieldByKey.value[key];
-        return !field || isFieldVisible(field);
-    });
-}
-
-/** Key of the first visible tab owning a visible errored field, or null. */
-function firstErrorTabKey(): string | null {
-    if (erroredKeys.value.length === 0) return null;
-    const errorTab = visibleTabs.value.find((tab) =>
-        errorTargetKeysFor(tab).some((key) =>
-            erroredKeys.value.some((errorKey) => errorKeyMatches(errorKey, key)),
-        ),
-    );
-    return errorTab ? errorTab.key : null;
-}
-
 const visibleTabKeys = computed<string[]>(() =>
     visibleTabs.value.map((tab) => tab.key),
 );
+
+/** A field's label as DXField shows it (a function label reads the model). */
+function resolveFieldLabel(field: FieldDefinition): string | undefined {
+    return typeof field.label === "function" ? field.label(model.value) : field.label;
+}
+
+/**
+ * Where each error key belongs, decided by the one resolver the summary also
+ * uses (#194), under THIS form's visibility rules: a field hidden by `when`,
+ * or on a tab DXForm does not render, owns nothing. So the tab a failure
+ * selects, the field it scrolls to and the summary's rows always agree,
+ * including nested keys a field claims with `errorKeys`. A tab key with no
+ * field definition (consumer-rendered content) still owns its own key and
+ * keys nested under it.
+ */
+function errorTargetsFor(errors: ValidationErrors | null | undefined): ErrorTarget[] {
+    return resolveErrorTargets(errors, {
+        fields: resolvedFields.value,
+        tabs: hasTabs.value ? props.tabs : undefined,
+        model: model.value,
+        isFieldVisible,
+        isTabVisible: (tab) => visibleTabKeys.value.includes(tab.key),
+        resolveLabel: resolveFieldLabel,
+    });
+}
+
+/** Targets for the errors on the form now (tab choice, scrolling). */
+const liveErrorTargets = computed<ErrorTarget[]>(() =>
+    erroredKeys.value.length === 0 ? [] : errorTargetsFor(resolvedForm.value.errors),
+);
+
+/** Targets for what the last failed submit returned (the summary's rows). */
+const summaryTargets = computed<ErrorTarget[]>(() => {
+    const failure = resolvedForm.value.submitFailure;
+    return failure ? errorTargetsFor(failure.errors) : [];
+});
+
+/** Key of the first visible tab owning a visible errored field, or null. */
+function firstErrorTabKey(): string | null {
+    const owned = liveErrorTargets.value.find((target) => target.tabKey !== null);
+    return owned ? owned.tabKey : null;
+}
 
 function sameKeys(keys: readonly string[], otherKeys: readonly string[] | undefined): boolean {
     return (
@@ -628,47 +695,47 @@ function decideTabKey(failed: boolean, requestedIndex: number | null): string | 
     return keys[0];
 }
 
-// "A submit failed": the input that sends the form to its error tab, as a
-// signal value plus the test for "it changed because a submit failed".
-// useForm does not report failed submits yet, so for now the signal is the
-// errored-key set and a failure is that set GROWING. A submit clears the
-// errors before it is sent (unless `preserveErrors`), so a failed resubmit
-// goes empty → full and counts; a `preserveErrors` resubmit returning exactly
-// the same set adds nothing and does not count. An error CLEARING (a field
-// edit) never counts, so fixing a field never moves the tab. Watching the
-// errors (not DXForm's own submit) covers forms submitted outside DXForm too.
-// The comparison is between flushes, never inside one: `setErrors` empties
-// the set and refills it synchronously, which a sync watcher would misread
-// as an addition.
-// INTEGRATION: when useForm exposes `submitCount`, make the signal
-// `() => resolvedForm.value.submitCount` and the test `signal !== previous`.
-const failureSignal = (): readonly string[] => erroredKeys.value;
+// "A submit failed": what sends the form to its error tab. Either signal
+// counts:
+//
+// - `failedSubmitCount` changing. useForm counts every failed submit, so a
+//   `preserveErrors` resubmit that returns exactly the same set (its keys
+//   never leave the form) still takes the user back to the error.
+// - the errored-key set GROWING. Errors set without a submit through useForm
+//   (`form.setErrors()` after a client-side check, or after a consumer's own
+//   request) keep selecting their tab, as they always have.
+//
+// An error CLEARING (a field edit) is neither, so fixing a field never moves
+// the tab. The key comparison is between flushes, never inside one:
+// `setErrors` empties the set and refills it synchronously, which a sync
+// watcher would misread as an addition.
+const failureCount = (): number => resolvedForm.value.failedSubmitCount ?? 0;
 
-function isNewFailure(
-    signal: readonly string[],
-    previousSignal: readonly string[] | undefined,
-): boolean {
-    const previous = new Set(previousSignal ?? []);
-    return signal.some((key) => !previous.has(key));
+function keysGrew(keys: readonly string[], previousKeys: readonly string[] | undefined): boolean {
+    const previous = new Set(previousKeys ?? []);
+    return keys.some((key) => !previous.has(key));
 }
 
 // The decision runs ONCE per tick for every input that changed in it (the
-// visible tabs, the failure signal, the model index), so two concerns can
+// visible tabs, the failure signals, the model index), so two concerns can
 // never write competing values in one flush.
 let hasDecided = false;
 watch(
-    [visibleTabKeys, failureSignal, () => activeTab.value] as const,
-    ([keys, signal, index], previous) => {
+    [visibleTabKeys, () => erroredKeys.value, failureCount, () => activeTab.value] as const,
+    ([keys, errorKeys, count, index], previous) => {
         if (!hasDecided) {
+            // Errors already on the form at mount select their tab.
             hasDecided = true;
-            commitTabKey(decideTabKey(erroredKeys.value.length > 0, index));
+            commitTabKey(decideTabKey(errorKeys.length > 0, index));
             return;
         }
-        const [previousKeys, previousSignal, previousIndex] = previous;
-        const failed = isNewFailure(signal, previousSignal);
+        const [previousKeys, previousErrorKeys, previousCount, previousIndex] = previous;
+        const submitFailed = count !== previousCount;
+        const failed = submitFailed || keysGrew(errorKeys, previousErrorKeys);
         const requestedIndex = index !== previousIndex ? index : null;
         if (!failed && requestedIndex === null && sameKeys(keys, previousKeys)) return;
         commitTabKey(decideTabKey(failed, requestedIndex));
+        if (submitFailed && props.scrollToError) scrollToFirstError();
     },
     { immediate: true },
 );
@@ -769,6 +836,94 @@ function goToErrorTab(): void {
     if (errorTabKey !== null) commitTabKey(errorTabKey);
 }
 
+// ————————————————— taking the user to an errored field (#194)
+
+const FOCUSABLE_CONTROL = [
+    'input:not([type="hidden"]):not(:disabled)',
+    "select:not(:disabled)",
+    "textarea:not(:disabled)",
+    "button:not(:disabled)",
+    '[contenteditable="true"]',
+    '[tabindex]:not([tabindex="-1"])',
+].join(", ");
+
+/** Frames to wait for a lazy tab's pane (and its async pieces) to render. */
+const FIELD_RENDER_ATTEMPTS = 10;
+
+/**
+ * A field's rendered element (DXField's root carries `data-dx-field-key`),
+ * once it is laid out. A lazy tab mounts its pane a render or two after it is
+ * selected, so this waits a few frames. Null when the field never renders (a
+ * `field(<key>)` replacement slot, a tab that cannot be shown).
+ */
+async function renderedFieldElement(fieldKey: string): Promise<HTMLElement | null> {
+    const selector = `[data-dx-field-key="${CSS.escape(fieldKey)}"]`;
+    for (let attempt = 0; attempt < FIELD_RENDER_ATTEMPTS; attempt += 1) {
+        await nextTick();
+        const element = resolveFormElement()?.querySelector<HTMLElement>(selector) ?? null;
+        if (element !== null && element.offsetParent !== null) return element;
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    }
+    return null;
+}
+
+/** Bumped per scroll/focus request, so only the latest one acts. */
+let revealToken = 0;
+
+/**
+ * After a failed submit: once the decision has selected the tab and its pane
+ * has rendered, scroll the first owned field into view. No focus, so a phone
+ * does not raise its keyboard over the summary.
+ */
+function scrollToFirstError(): void {
+    const first = liveErrorTargets.value.find((target) => target.fieldKey !== null);
+    if (first === undefined || first.fieldKey === null) return;
+    const fieldKey = first.fieldKey;
+    const token = ++revealToken;
+    void renderedFieldElement(fieldKey).then((element) => {
+        if (token !== revealToken || element === null) return;
+        element.scrollIntoView({ block: "nearest" });
+    });
+}
+
+/**
+ * Take the user to an error a summary lists: select its tab, wait for the
+ * pane to render, scroll the field into view and focus its first control.
+ * Exposed so a summary rendered OUTSIDE the form (DXTable's modal footer)
+ * can drive it.
+ */
+async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
+    if (target.tabKey !== null && visibleTabKeys.value.includes(target.tabKey)) {
+        commitTabKey(target.tabKey);
+    }
+    const token = ++revealToken;
+    const element = await renderedFieldElement(target.fieldKey);
+    if (token !== revealToken || element === null) return;
+    element.scrollIntoView({ block: "nearest" });
+    const control = element.matches(FOCUSABLE_CONTROL)
+        ? element
+        : element.querySelector<HTMLElement>(FOCUSABLE_CONTROL);
+    control?.focus({ preventScroll: true });
+}
+
+// ————————————————— failed-submit summary
+
+/** A summary is listing a failure, so the form-level alert steps aside. */
+const isSummaryShowing = computed(
+    () =>
+        props.errorSummary !== false &&
+        resolvedForm.value.submitFailure !== null &&
+        resolvedForm.value.submitFailure !== undefined,
+);
+
+const summaryBindings = computed(() => ({
+    form: resolvedForm.value,
+    fields: resolvedFields.value,
+    tabs: props.tabs,
+    context: props.context,
+    targets: summaryTargets.value,
+}));
+
 // ————————————————— saved state (submit button shows "✓ Saved")
 
 /**
@@ -848,5 +1003,12 @@ function handleSubmit(): void {
     emit("submit");
 }
 
-defineExpose({ goToErrorTab });
+defineExpose({
+    /** Select the first visible tab owning a visible errored field, if any. */
+    goToErrorTab,
+    /** Select an error's tab, then scroll to and focus its field. */
+    focusErrorTarget,
+    /** What the last failed submit returned, resolved by this form's rules. */
+    errorTargets: summaryTargets,
+});
 </script>
