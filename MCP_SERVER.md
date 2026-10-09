@@ -255,13 +255,3 @@ npm run docs:generate:ai  # Regenerate doc files
 ✅ **Structured** - Type-safe tool calls with validated schemas
 ✅ **Fast** - Pre-generated data means instant responses
 ✅ **Reusable** - Works with any MCP-compatible AI assistant
-
-## Package Integration
-
-This MCP server can also be published as a standalone NPM package for users to install:
-
-```bash
-npm install -g @omnitend/dashboard-for-laravel-mcp
-```
-
-Then users can add it to their Claude config without cloning the repo.
