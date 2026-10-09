@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
+import { defineComponent, h, ref } from 'vue';
 import DXForm from '../../resources/js/components/extended/DXForm.vue';
 import { useForm } from '../../resources/js/composables/useForm';
 import type { FieldDefinition, FormTab } from '../../resources/js/types';
@@ -283,5 +284,32 @@ describe('DXForm error tab (#194)', () => {
     form.data.showTabs = true;
     await settle();
     expect(shownLabels(screen.container)).toEqual(['Name']);
+  });
+
+  it('selects the error tab over an out-of-range v-model bound by a parent', async () => {
+    // Would this pass with the bug present? No: the parent's prop lags the
+    // emit, so the range check still saw 7 after the error tab chose 2 and
+    // reset the selection to the first tab, hiding the error.
+    const form = makeForm();
+    form.setErrors({ description: ['The description is required.'] });
+    const boundIndex = ref(7);
+    const Parent = defineComponent({
+      setup: () => () =>
+        h(DXForm, {
+          form,
+          fields,
+          tabs: threeTabs,
+          showSubmit: false,
+          activeTab: boundIndex.value,
+          'onUpdate:activeTab': (index: number) => {
+            boundIndex.value = index;
+          },
+        }),
+    });
+    const screen = render(Parent);
+    await settle();
+
+    expect(shownLabels(screen.container)).toEqual(['Description']);
+    expect(boundIndex.value).toBe(2);
   });
 });

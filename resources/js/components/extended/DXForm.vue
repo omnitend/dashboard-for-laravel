@@ -508,6 +508,28 @@ function goToErrorTab(): void {
     if (tabIndex !== -1) activeTab.value = tabIndex;
 }
 
+// Keep `activeTab` pointing at a rendered tab. DTabs is driven by
+// `v-model:index` alone (no per-tab `active`, which reset every mount to the
+// first tab), so an index it cannot show (an initial `activeTab` past the
+// last visible tab, or a negative one) leaves every pane inactive. Fall back
+// to the first visible tab; a valid index is never touched. DTabs is also
+// only rendered while some tab is visible: once every tab was hidden, bvn
+// reported -1 and then fought a restored index when the tabs came back,
+// activating none of them; remounting it avoids that.
+//
+// Declared BEFORE the error watcher on purpose: watchers in one flush run in
+// creation order, and a parent-bound `v-model:active-tab` lags our emit, so
+// a range check running after the error selection would still see the old
+// out-of-range value and reset the error tab to 0. Running first, it falls
+// back to 0 and the error selection then overrides it.
+watch(
+    [() => visibleTabs.value.length, activeTab],
+    ([tabCount, index]) => {
+        if (tabCount > 0 && (index < 0 || index >= tabCount)) activeTab.value = 0;
+    },
+    { immediate: true },
+);
+
 // Select the error tab only when error keys are ADDED, never when they are
 // removed: editing a field clears its error, and re-running the selection
 // then threw the user onto another tab mid-fix (#194). A submit clears the
@@ -524,22 +546,6 @@ watch(
         if (!props.autoErrorTab) return;
         const previous = new Set(previousKeys ?? []);
         if (keys.some((key) => !previous.has(key))) goToErrorTab();
-    },
-    { immediate: true },
-);
-
-// Keep `activeTab` pointing at a rendered tab. DTabs is driven by
-// `v-model:index` alone (no per-tab `active`, which reset every mount to the
-// first tab), so an index it cannot show (an initial `activeTab` past the
-// last visible tab, or a negative one) leaves every pane inactive. Fall back
-// to the first visible tab; a valid index is never touched. DTabs is also
-// only rendered while some tab is visible: once every tab was hidden, bvn
-// reported -1 and then fought a restored index when the tabs came back,
-// activating none of them; remounting it avoids that.
-watch(
-    [() => visibleTabs.value.length, activeTab],
-    ([tabCount, index]) => {
-        if (tabCount > 0 && (index < 0 || index >= tabCount)) activeTab.value = 0;
     },
     { immediate: true },
 );
