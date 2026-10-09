@@ -58,6 +58,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ApiError` as if it were an errors map, so the toast showed the server's
   summary line for 5 s and no field message. Other failures (a 500, a 403)
   still toast (#194).
+- `useForm`: when submits overlap, the newest submit's outcome wins,
+  whichever finishes last. An older submit that fails after a newer one
+  succeeded no longer turns `wasSuccessful` (and DXForm's saved state) off,
+  and an older success no longer clears a newer failure. Every submit still
+  runs its own `onSuccess`/`onError` and resolves or rejects as before.
+- DXTable's create/edit modal uses a fresh form for each open, so a failure
+  on one row never shows on the next, and a late response from an earlier
+  open (save or delete) no longer closes or blocks the modal now open.
 
 ### Fixed
 
@@ -72,6 +80,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An initial `v-model:active-tab` other than 0 is honoured (every tab used to
   carry `active` on the first), and errors already on the form at mount
   select their tab (#194).
+- DXTable emits `createError`/`editError`/`deleteError` once per failure
+  (it emitted twice).
 
 ## [0.43.0] - 2026-10-06
 
