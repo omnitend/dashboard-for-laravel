@@ -15,6 +15,8 @@ import type { FieldDefinition, FieldOption } from "../types";
 export interface UseAsyncOptionsReturn {
     /** Options returned by the most recent successful load, or null if none yet. */
     loadedOptions: Ref<FieldOption[] | null>;
+    /** True while the latest load is in flight (false again if it fails). */
+    loading: Ref<boolean>;
     /** Trigger a load (no-op when the field has no `optionsLoader`). */
     loadOptions: () => Promise<void>;
 }
@@ -24,6 +26,9 @@ export function useAsyncOptions(
     effectiveModel: ComputedRef<any> | Ref<any>,
 ): UseAsyncOptionsReturn {
     const loadedOptions = ref<FieldOption[] | null>(null);
+    // Set before mount when there is a loader, so the first render already
+    // knows options are on their way.
+    const loading = ref(Boolean(getField().optionsLoader));
 
     // Monotonic token so out-of-order async responses can't clobber newer ones.
     let optionsRequestToken = 0;
@@ -32,6 +37,7 @@ export function useAsyncOptions(
         const field = getField();
         if (!field.optionsLoader) return;
         const token = ++optionsRequestToken;
+        loading.value = true;
         try {
             const options = await field.optionsLoader(effectiveModel.value);
             // Ignore a stale response superseded by a newer load.
@@ -46,6 +52,8 @@ export function useAsyncOptions(
                     error,
                 );
             }
+        } finally {
+            if (token === optionsRequestToken) loading.value = false;
         }
     }
 
@@ -57,5 +65,5 @@ export function useAsyncOptions(
         watch(effectiveModel, () => void loadOptions(), { deep: true });
     }
 
-    return { loadedOptions, loadOptions };
+    return { loadedOptions, loading, loadOptions };
 }

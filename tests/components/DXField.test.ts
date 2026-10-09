@@ -1243,6 +1243,86 @@ describe('DXField searchable select (#105)', () => {
 
     expect((screen.container.querySelector('input') as HTMLInputElement).value).toBe('Waitrose');
   });
+
+  /**
+   * #189. The control used to wait for its options before mounting, because
+   * BAutocomplete set the input's text from the model once, at mount. Since
+   * 0.42.1 DAutocomplete relabels when the options change, so the field is
+   * mounted at once and must still end on the LABEL, keeping the id it holds.
+   */
+  const renderLateLoading = () => {
+    let resolveOptions: (options: typeof accounts) => void = () => {};
+    const rendered = renderField(
+      {
+        key: 'account_id',
+        type: 'select',
+        label: 'Payee',
+        searchable: true,
+        optionsLoader: () =>
+          new Promise<typeof accounts>((resolve) => {
+            resolveOptions = resolve;
+          }),
+      },
+      { account_id: 51 },
+    );
+    const input = () => rendered.screen.container.querySelector('input') as HTMLInputElement;
+    return { ...rendered, input, resolveOptions: () => resolveOptions(accounts) };
+  };
+
+  it('shows the label, not the id, when its options load after it mounts', async () => {
+    const { screen, form, input, resolveOptions } = renderLateLoading();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const control = screen.container.querySelector('.d-autocomplete');
+
+    resolveOptions();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(input().value).toBe('Waitrose');
+    expect(input().disabled).toBe(false);
+    expect(form.data.account_id).toBe(51);
+    // The same control, not a remount.
+    expect(control).not.toBeNull();
+    expect(screen.container.querySelector('.d-autocomplete')).toBe(control);
+  });
+
+  it('says it is loading, rather than showing the raw id, until its options load', async () => {
+    const { screen, form, input } = renderLateLoading();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // The searchable control itself, not a stand-in.
+    expect(screen.container.querySelector('.d-autocomplete')).not.toBeNull();
+    expect(input().value).toBe('');
+    expect(input().placeholder).toBe('Loading…');
+    expect(input().disabled).toBe(true);
+    expect(form.data.account_id).toBe(51);
+  });
+
+  it('falls back to its static options when the loader fails', async () => {
+    const consoleError = console.error;
+    console.error = () => {};
+    try {
+      const { screen } = renderField(
+        {
+          key: 'account_id',
+          type: 'select',
+          label: 'Payee',
+          searchable: true,
+          options: accounts,
+          optionsLoader: async () => {
+            throw new Error('offline');
+          },
+        },
+        { account_id: 42 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const input = screen.container.querySelector('input') as HTMLInputElement;
+      expect(input.disabled).toBe(false);
+      expect(input.value).toBe('Sainsbury');
+    } finally {
+      console.error = consoleError;
+    }
+  });
 });
 
 describe('DXField checkbox-group type (#148)', () => {

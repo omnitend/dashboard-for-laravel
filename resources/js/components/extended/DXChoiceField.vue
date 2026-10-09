@@ -13,27 +13,23 @@
 -->
 <template>
     <!-- Searchable select: type to filter a long option list, while the model
-         keeps the option's VALUE (an id), not the typed text. -->
-    <template v-if="field.type === 'select' && field.searchable">
-        <DAutocomplete
-            v-if="optionsReady"
-            :model-value="modelValue"
-            :options="options"
-            :placeholder="field.placeholder"
-            :required="field.required"
-            :state="state"
-            :disabled="disabled"
-            open-on-focus
-            v-bind="controlProps"
-            @update:model-value="emit('update:modelValue', $event)"
-        />
-        <!-- BAutocomplete resolves the input's display text from the model AT
-             MOUNT and doesn't re-derive it when `options` arrive later, so an
-             async list would leave the raw id showing ("51" instead of
-             "Waitrose") — and a long list is exactly the case that loads async.
-             Hold the control until the options are in. -->
-        <DFormInput v-else placeholder="Loading…" disabled />
-    </template>
+         keeps the option's VALUE (an id), not the typed text. Async options
+         can arrive after it mounts: DAutocomplete then relabels the input
+         (0.42.1), so the control mounts at once (#189). Until the first load
+         lands it holds the value back (it would show as the raw id, "51"
+         rather than "Waitrose") and reads "Loading…", disabled. -->
+    <DAutocomplete
+        v-if="field.type === 'select' && field.searchable"
+        :model-value="optionsPending ? null : modelValue"
+        :options="options"
+        :placeholder="optionsPending ? 'Loading…' : field.placeholder"
+        :required="field.required"
+        :state="state"
+        :disabled="disabled || optionsPending"
+        open-on-focus
+        v-bind="controlProps"
+        @update:model-value="emit('update:modelValue', $event)"
+    />
 
     <!-- Select (sync or async options) -->
     <DFormSelect
@@ -76,7 +72,6 @@
 import DFormSelect from "../base/DFormSelect.vue";
 import DFormRadioGroup from "../base/DFormRadioGroup.vue";
 import DFormCheckboxGroup from "../base/DFormCheckboxGroup.vue";
-import DFormInput from "../base/DFormInput.vue";
 import DAutocomplete from "../base/DAutocomplete.vue";
 import type { FieldDefinition, FieldOption } from "../../types";
 
@@ -100,10 +95,10 @@ interface Props {
     controlProps?: Record<string, any>;
 
     /**
-     * Whether async options have resolved (a searchable select must not render
-     * before its options load, or it shows the raw id instead of the label).
+     * The field's first async options load is still in flight. A searchable
+     * select then shows "Loading…" instead of its value's raw id.
      */
-    optionsReady?: boolean;
+    optionsPending?: boolean;
 }
 
 defineProps<Props>();
