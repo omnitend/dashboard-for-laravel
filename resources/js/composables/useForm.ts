@@ -257,19 +257,56 @@ export function useForm<TData extends Record<string, any>>(
     // no NEWER submit is still pending or has already recorded: the newest
     // submit's outcome wins, in either completion order. An older success can
     // therefore never clear a newer failure, and an older failure never lands
-    // over a newer success. An aborted submit leaves the pending set without
-    // recording, so if the newest submit is aborted the next-newest still
-    // settles the form. Callbacks and the returned promise are unaffected:
-    // every submit still calls its own onSuccess/onError and resolves/rejects.
+    // over a newer success. Callbacks and the returned promise are
+    // unaffected: every submit still calls its own onSuccess/onError and
+    // resolves/rejects.
+    //
+    // An ABORTED submit is treated as if it had never started: it records
+    // nothing (not even the abort's own message), and an older outcome that
+    // was held back only because the aborted one was pending is then
+    // recorded. Held-back outcomes wait in `heldOutcomes` (newest wins; a
+    // newer recorded outcome drops them). A submit whose preparation
+    // (`transform`, `onBefore`) throws never takes a generation at all.
     let latestSubmitGeneration = 0;
     let lastRecordedGeneration = 0;
     const pendingGenerations = new Set<number>();
+    const heldOutcomes = new Map<number, () => void>();
     const mayRecord = (generation: number): boolean => {
         if (generation < lastRecordedGeneration) return false;
         for (const pending of pendingGenerations) {
             if (pending > generation) return false;
         }
         return true;
+    };
+    /** Record now if this generation may, else hold it back for later. */
+    const recordOrHold = (generation: number, record: () => void): boolean => {
+        if (mayRecord(generation)) {
+            lastRecordedGeneration = generation;
+            heldOutcomes.clear();
+            record();
+            return true;
+        }
+        if (generation >= lastRecordedGeneration) heldOutcomes.set(generation, record);
+        return false;
+    };
+    /**
+     * After a submit leaves the pending set: record the NEWEST held-back
+     * outcome if nothing newer is pending any more (an abort unblocked it),
+     * and drop every older one. Older held outcomes never surface over a
+     * newer settled one.
+     */
+    const releaseHeldOutcomes = (): void => {
+        if (heldOutcomes.size === 0) return;
+        const newest = Math.max(...heldOutcomes.keys());
+        if (newest < lastRecordedGeneration) {
+            heldOutcomes.clear();
+            return;
+        }
+        if (!mayRecord(newest)) return;
+        const record = heldOutcomes.get(newest)!;
+        lastRecordedGeneration = newest;
+        heldOutcomes.clear();
+        record();
     };
 
     const state = reactive<FormState<TData>>({
@@ -373,14 +410,15 @@ export function useForm<TData extends Record<string, any>>(
         url: string,
         options: FormSubmitOptions<TData, TResponse> = {},
     ): Promise<TResponse> => {
-        inFlightCount += 1;
-        const generation = ++latestSubmitGeneration;
-        pendingGenerations.add(generation);
-        state.processing = true;
-        state.wasSuccessful = false;
-        state.submitFailure = null;
-        if (!options.preserveErrors) clearErrors();
-
+        // Preparation (`transform`, `onBefore`, building the body) runs BEFORE
+        // the submit takes a generation or touches form state. If it throws,
+        // the submit rejects with that error and is as if it never started:
+        // no request, no callbacks, no recorded failure, and the form keeps
+        // its previous outcome. (Before #194's review a throw here also
+        // rejected without calling onError/onFinish or recording a failure,
+        // but it had already cleared the errors and summary, and it left
+        // `processing` stuck at true because the in-flight count was never
+        // decremented.)
         const payloadRaw = (
             options.transform
                 ? // Give `transform` a COPY of the form data (#150), so a transform
@@ -422,6 +460,14 @@ export function useForm<TData extends Record<string, any>>(
             }
         }
 
+        inFlightCount += 1;
+        const generation = ++latestSubmitGeneration;
+        pendingGenerations.add(generation);
+        state.processing = true;
+        state.wasSuccessful = false;
+        state.submitFailure = null;
+        if (!options.preserveErrors) clearErrors();
+
         try {
             const { data } =
                 sendMethod === "get"
@@ -441,9 +487,7 @@ export function useForm<TData extends Record<string, any>>(
                             signal: options?.signal,
                         });
 
-            const records = mayRecord(generation);
-            if (records) {
-                lastRecordedGeneration = generation;
+            const records = recordOrHold(generation, () => {
                 state.recentlySuccessful = true;
                 state.wasSuccessful = true;
                 state.submitFailure = null;
@@ -452,45 +496,43 @@ export function useForm<TData extends Record<string, any>>(
                     state.recentlySuccessful = false;
                     successTimer = null;
                 }, 1500);
-            }
+            });
 
             options.onSuccess?.(data);
-            // Only the recorded (newest) success resets: an older one would
-            // wipe the data and errors the newer submit is answering for.
+            // Only a success recorded when it lands resets: an older one would
+            // wipe the data and errors the newer submit is answering for, and
+            // a held-back success recorded later (after an abort) does not
+            // reset either, since the user may have typed since.
             if (options.resetOnSuccess && records) {
                 reset();
             }
             return data;
         } catch (err) {
-            // Re-checked here (not reused from the try) so a throwing
-            // onSuccess on the newest submit is recorded as its failure.
-            if (isAbortError(err)) {
-                // The caller cancelled it: it leaves the pending set (below)
-                // without recording, so an older submit can still settle the
-                // form. The NEWEST submit's abort keeps its old behaviour of
-                // writing the errors/message it carries.
-                if (mayRecord(generation)) {
-                    const { errors, message } = errorsFromLaravel(err);
+            // Decided again here (not reused from the try) so a throwing
+            // onSuccess is recorded, or held, as its failure: a held-back
+            // success for this generation is replaced.
+            //
+            // An abort records nothing: it is a cancellation, not an outcome.
+            // It leaves the pending set below, which may release an older
+            // held-back outcome.
+            if (!isAbortError(err)) {
+                const { errors, message } = errorsFromLaravel(err);
+                const failure = submitFailureFrom(err);
+                recordOrHold(generation, () => {
+                    state.wasSuccessful = false;
                     setErrors(errors);
                     setMessage(message);
-                    state.wasSuccessful = false;
-                }
-            } else if (mayRecord(generation)) {
-                lastRecordedGeneration = generation;
-                state.wasSuccessful = false;
-                const { errors, message } = errorsFromLaravel(err);
-                setErrors(errors);
-                setMessage(message);
-                const failure = submitFailureFrom(err);
-                if (failure) {
-                    state.submitFailure = failure;
-                    state.failedSubmitCount += 1;
-                }
+                    if (failure) {
+                        state.submitFailure = failure;
+                        state.failedSubmitCount += 1;
+                    }
+                });
             }
             options.onError?.(err as FormError);
             throw err;
         } finally {
             pendingGenerations.delete(generation);
+            releaseHeldOutcomes();
             inFlightCount -= 1;
             // Only clear `processing` once no submission is still in flight.
             if (inFlightCount === 0) state.processing = false;
