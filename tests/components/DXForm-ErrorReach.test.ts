@@ -652,15 +652,15 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
 
   it('waits for a widget that renders its control disabled and enables it later', async () => {
     stubResponses(invalid({ city: ['Pick a city.'] }));
+    // The test enables the widget itself, after checking it is disabled: a
+    // timer started at mount raced the click's round trip under a loaded
+    // full-suite run (the widget was already enabled by the first check).
+    const ready = ref(false);
     const Widget = defineComponent({
       // Declared, so DXField's `disabled` (false) does not fall through
       // onto the input over the widget's own loading state.
       props: { disabled: { type: Boolean, default: false } },
       setup: (props) => {
-        const ready = ref(false);
-        setTimeout(() => {
-          ready.value = true;
-        }, 300);
         return () =>
           h('input', {
             class: 'city-combobox',
@@ -688,7 +688,9 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
     const input = screen.container.querySelector<HTMLInputElement>('.city-combobox')!;
     expect(input).not.toBeNull();
     expect(input.disabled).toBe(true);
-    await wait(700);
+    expect(document.activeElement).not.toBe(input);
+    ready.value = true;
+    await wait(400);
     expect(input.disabled).toBe(false);
     expect(document.activeElement).toBe(input);
   });
