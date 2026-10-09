@@ -1286,7 +1286,10 @@ describe('DXField searchable select (#105)', () => {
     expect(input()).toBe(inputWhileLoading);
   });
 
-  it('cannot be re-enabled or written while its value is held back', async () => {
+  // The second guard (no update reaches the form while the value is held
+  // back) is pinned directly in DXChoiceField.test.ts: through the UI the
+  // disabled control never emits, so a test here could not reach it.
+  it('cannot be re-enabled by inputProps while its value is held back', async () => {
     let resolveOptions: (options: typeof accounts) => void = () => {};
     const { screen, form } = renderField(
       {
@@ -1294,7 +1297,6 @@ describe('DXField searchable select (#105)', () => {
         type: 'select',
         label: 'Payee',
         searchable: true,
-        // Static options to pick from while the loader is still out.
         options: accounts,
         optionsLoader: () =>
           new Promise<typeof accounts>((resolve) => {
@@ -1309,23 +1311,13 @@ describe('DXField searchable select (#105)', () => {
 
     // A consumer's disabled:false does not undo the loading guard.
     expect(input.disabled).toBe(true);
-
-    // Even driven past the disabled input, a pick from the held-back (empty)
-    // selection must not reach the form: it would drop 51.
-    input.disabled = false;
-    await userEvent.click(input, { force: true });
-    await userEvent.fill(input, 'Sains', { force: true });
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const option = [...document.querySelectorAll('[role="option"]')].find((element) =>
-      element.textContent?.includes('Sainsbury'),
-    ) as HTMLElement | undefined;
-    expect(option).toBeTruthy();
-    option!.click();
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(form.data.account_id).toEqual([51]);
+    expect(input.placeholder).toBe('Loading…');
 
     resolveOptions(accounts);
     await new Promise((resolve) => setTimeout(resolve, 100));
+    // Once loaded the consumer's disabled:false applies, and the multiple
+    // value came through the held-back phase intact.
+    expect(input.disabled).toBe(false);
     expect(form.data.account_id).toEqual([51]);
   });
 
