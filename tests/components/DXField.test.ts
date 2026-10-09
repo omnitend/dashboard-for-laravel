@@ -1272,7 +1272,7 @@ describe('DXField searchable select (#105)', () => {
   it('shows the label, not the id, when its options load after it mounts', async () => {
     const { screen, form, input, resolveOptions } = renderLateLoading();
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const control = screen.container.querySelector('.d-autocomplete');
+    const inputWhileLoading = input();
 
     resolveOptions();
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -1280,9 +1280,108 @@ describe('DXField searchable select (#105)', () => {
     expect(input().value).toBe('Waitrose');
     expect(input().disabled).toBe(false);
     expect(form.data.account_id).toBe(51);
-    // The same control, not a remount.
-    expect(control).not.toBeNull();
-    expect(screen.container.querySelector('.d-autocomplete')).toBe(control);
+    // The same input element, not a remount.
+    expect(inputWhileLoading).not.toBeNull();
+    expect(screen.container.querySelector('.d-autocomplete')).not.toBeNull();
+    expect(input()).toBe(inputWhileLoading);
+  });
+
+  it('cannot be re-enabled or written while its value is held back', async () => {
+    let resolveOptions: (options: typeof accounts) => void = () => {};
+    const { screen, form } = renderField(
+      {
+        key: 'account_id',
+        type: 'select',
+        label: 'Payee',
+        searchable: true,
+        // Static options to pick from while the loader is still out.
+        options: accounts,
+        optionsLoader: () =>
+          new Promise<typeof accounts>((resolve) => {
+            resolveOptions = resolve;
+          }),
+        inputProps: { multiple: true, disabled: false },
+      },
+      { account_id: [51] },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+
+    // A consumer's disabled:false does not undo the loading guard.
+    expect(input.disabled).toBe(true);
+
+    // Even driven past the disabled input, a pick from the held-back (empty)
+    // selection must not reach the form: it would drop 51.
+    input.disabled = false;
+    await userEvent.click(input, { force: true });
+    await userEvent.fill(input, 'Sains', { force: true });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const option = [...document.querySelectorAll('[role="option"]')].find((element) =>
+      element.textContent?.includes('Sainsbury'),
+    ) as HTMLElement | undefined;
+    expect(option).toBeTruthy();
+    option!.click();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(form.data.account_id).toEqual([51]);
+
+    resolveOptions(accounts);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(form.data.account_id).toEqual([51]);
+  });
+
+  it('keeps a consumer disabled:true after its options load', async () => {
+    const { screen } = renderField(
+      {
+        key: 'account_id',
+        type: 'select',
+        label: 'Payee',
+        searchable: true,
+        optionsLoader: async () => accounts,
+        inputProps: { disabled: true },
+      },
+      { account_id: 51 },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('Waitrose');
+    expect(input.disabled).toBe(true);
+  });
+
+  it('stays usable on its static options while a retry after a failed load is out', async () => {
+    const consoleError = console.error;
+    console.error = () => {};
+    let calls = 0;
+    try {
+      const { screen, form } = renderField(
+        {
+          key: 'account_id',
+          type: 'select',
+          label: 'Payee',
+          searchable: true,
+          options: accounts,
+          reloadOptionsOnChange: true,
+          optionsLoader: () => {
+            calls += 1;
+            // First load fails; every retry hangs.
+            return calls === 1
+              ? Promise.reject(new Error('offline'))
+              : new Promise<typeof accounts>(() => {});
+          },
+        },
+        { account_id: 42 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      form.data.account_id = 37;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const input = screen.container.querySelector('input') as HTMLInputElement;
+      expect(calls).toBe(2);
+      expect(input.disabled).toBe(false);
+      expect(input.value).toBe('Tesco');
+    } finally {
+      console.error = consoleError;
+    }
   });
 
   it('says it is loading, rather than showing the raw id, until its options load', async () => {

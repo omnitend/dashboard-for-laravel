@@ -20,9 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `optionsLoader` no longer swaps a stand-in input for the real control when
   its options arrive. The control is there from the start, disabled and
   reading "Loading…" until the first load lands (its value is held back, so
-  it never shows the raw id), then shows the option's label. A loader that
-  fails now falls back to the field's static `options`; before, the field
-  stayed on "Loading…" for good.
+  it never shows the raw id), then shows the option's label. `inputProps`
+  cannot re-enable it during that load, and it never writes the form from
+  the held-back value. A loader that fails now falls back to the field's
+  static `options`, and a later reload (`reloadOptionsOnChange`) keeps them
+  usable; before, the field stayed on "Loading…" for good.
 
 ### Release tooling
 

@@ -850,16 +850,15 @@ const datalistId = useId();
 
 // ————————————————— async options
 
-const { loadedOptions, loading: optionsLoading } = useAsyncOptions(
+const { loadedOptions, firstLoadSettled } = useAsyncOptions(
     () => props.field,
     effectiveModel,
 );
 
-// The first load is still in flight: nothing to label the value with yet.
-// A reload keeps showing the options it already has.
-const optionsPending = computed(
-    () => optionsLoading.value && loadedOptions.value === null,
-);
+// The first load has not settled: nothing to label the value with yet. Once
+// it has (even by failing, which leaves the static options), a reload never
+// makes the field pending again: it keeps what it already shows.
+const optionsPending = computed(() => !firstLoadSettled.value);
 
 const resolvedOptions = computed<FieldOption[] | undefined>(
     () => loadedOptions.value ?? props.field.options,

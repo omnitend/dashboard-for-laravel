@@ -17,18 +17,21 @@
          can arrive after it mounts: DAutocomplete then relabels the input
          (0.42.1), so the control mounts at once (#189). Until the first load
          lands it holds the value back (it would show as the raw id, "51"
-         rather than "Waitrose") and reads "Loading…", disabled. -->
+         rather than "Waitrose") and reads "Loading…", disabled. The guard is
+         bound AFTER the consumer's controlProps so they cannot lift it, and
+         nothing the control emits while the value is held back reaches the
+         form: it would be an edit of the empty stand-in, not of the value. -->
     <DAutocomplete
         v-if="field.type === 'select' && field.searchable"
-        :model-value="optionsPending ? null : modelValue"
         :options="options"
-        :placeholder="optionsPending ? 'Loading…' : field.placeholder"
+        :placeholder="field.placeholder"
         :required="field.required"
         :state="state"
-        :disabled="disabled || optionsPending"
+        :disabled="disabled"
         open-on-focus
-        v-bind="controlProps"
-        @update:model-value="emit('update:modelValue', $event)"
+        v-bind="{ ...controlProps, ...searchableLoadingGuard }"
+        :model-value="optionsPending ? heldBackValue : modelValue"
+        @update:model-value="onSearchableUpdate"
     />
 
     <!-- Select (sync or async options) -->
@@ -69,6 +72,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import DFormSelect from "../base/DFormSelect.vue";
 import DFormRadioGroup from "../base/DFormRadioGroup.vue";
 import DFormCheckboxGroup from "../base/DFormCheckboxGroup.vue";
@@ -101,9 +105,26 @@ interface Props {
     optionsPending?: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (event: "update:modelValue", value: any): void;
 }>();
+
+// What the searchable select shows while its first options load: nothing
+// selected, in the shape the model has (an array for `multiple`).
+const heldBackValue = computed(() => (Array.isArray(props.modelValue) ? [] : null));
+
+// Applied over the consumer's controlProps, so `inputProps: { disabled: false }`
+// cannot re-enable the control while its value is held back.
+const searchableLoadingGuard = computed<Record<string, unknown>>(() =>
+    props.optionsPending ? { disabled: true, placeholder: "Loading…" } : {},
+);
+
+const onSearchableUpdate = (value: unknown): void => {
+    // An update while the value is held back edits the empty stand-in, not the
+    // value (a pick in multiple mode would drop every existing selection).
+    if (props.optionsPending) return;
+    emit("update:modelValue", value);
+};
 </script>
