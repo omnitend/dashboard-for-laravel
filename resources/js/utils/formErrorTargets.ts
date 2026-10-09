@@ -83,7 +83,13 @@ const NUMERIC_SEGMENT = /^\d+$/;
  */
 const RAW_KEY_IN_MESSAGE = /\w_\w|[A-Za-z0-9]\.[A-Za-z]|[A-Za-z]\.[0-9]/;
 
-/** `delivery_date` → "Delivery date"; `lines.0.price` → "Lines price (line 1)". */
+/**
+ * `delivery_date` → "Delivery date"; `lines.0.price` → "Lines price (line 1)".
+ * A trailing `id` word names the record, not the thing, so it is dropped
+ * (`supplier_id`, `supplierId` → "Supplier"); an `id` word that is the whole
+ * segment, or not at its end, reads "ID" (`id` → "ID"). Words that merely end
+ * in "id" (`paid`, `valid`) are untouched.
+ */
 export function humaniseErrorKey(key: string): string {
     const words: string[] = [];
     const lineNumbers: number[] = [];
@@ -91,11 +97,15 @@ export function humaniseErrorKey(key: string): string {
         if (NUMERIC_SEGMENT.test(segment)) {
             lineNumbers.push(Number(segment) + 1);
         } else {
-            const spaced = segment
+            const segmentWords = segment
                 .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-                .replace(/[_\-\s]+/g, " ")
-                .trim();
-            if (spaced !== "") words.push(spaced.toLowerCase());
+                .split(/[_\-\s]+/)
+                .filter((word) => word !== "")
+                .map((word) => word.toLowerCase());
+            if (segmentWords.length > 1 && segmentWords[segmentWords.length - 1] === "id") {
+                segmentWords.pop();
+            }
+            words.push(...segmentWords.map((word) => (word === "id" ? "ID" : word)));
         }
     }
     let label = words.join(" ");

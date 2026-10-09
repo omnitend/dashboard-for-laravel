@@ -293,6 +293,21 @@ describe('humaniseErrorKey', () => {
     ['deliveryDate', 'Delivery date'],
     ['lines.0.unit_price', 'Lines unit price (line 1)'],
     ['name', 'Name'],
+    // A trailing id names the record, not the thing: drop it.
+    ['supplier_id', 'Supplier'],
+    ['supplierId', 'Supplier'],
+    ['supplierID', 'Supplier'],
+    ['lines.0.product_id', 'Lines product (line 1)'],
+    ['lines.0.id', 'Lines ID (line 1)'],
+    ['id', 'ID'],
+    ['ID', 'ID'],
+    // Words that merely end in "id" are left alone.
+    ['paid', 'Paid'],
+    ['is_valid', 'Is valid'],
+    ['fluid_ounces', 'Fluid ounces'],
+    ['amount_paid', 'Amount paid'],
+    // Only a TRAILING id goes.
+    ['id_number', 'ID number'],
   ])('%s → %s', (key, label) => {
     expect(humaniseErrorKey(key)).toBe(label);
   });
