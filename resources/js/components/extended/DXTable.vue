@@ -292,6 +292,8 @@
             :save-text="saveText"
             :create-text="createText"
             :delete-text="deleteText"
+            :error-summary-title="errorSummaryTitle"
+            :error-summary-other-title="errorSummaryOtherTitle"
             @save="handleEditSave"
             @cancel="handleEditCancel"
             @delete="handleDelete"
@@ -708,6 +710,19 @@ export interface Props<TItem = any> {
 
     /** Override the modal's Delete button label (default: "Delete {item}"). */
     deleteText?: string;
+
+    /**
+     * Heading of the modal's failed-save summary when the failure has field
+     * errors (default "Couldn't save. Please check:"). A failure with none
+     * is headed by the server's message instead.
+     */
+    errorSummaryTitle?: string;
+
+    /**
+     * Sub-heading over the summary rows no edit field owns (default "Other
+     * problems"), shown only when some rows ARE owned.
+     */
+    errorSummaryOtherTitle?: string;
 
     /** API endpoint pattern for updates (e.g., "/api/products/:id") */
     editUrl?: string;

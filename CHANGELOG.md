@@ -16,6 +16,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `row-clicked`: a page that opens the record elsewhere no longer gets the
   edit modal on top. Rows then look clickable only when something listens
   for `row-clicked` (#200).
+- `DXFormErrorSummary`: one alert listing everything the last failed submit
+  returned, every validation message with a readable label ("Price (line
+  1): Must be positive."), including keys with no rendered field. It stays
+  while the user edits and clears on the next submit or a success. A row
+  naming a visible field selects its tab and focuses it; rows no visible
+  field owns follow as text under "Other problems" (`otherTitle`, shown only
+  when both kinds are present). The heading is "Couldn't save. Please
+  check:" (`title`) when there are field errors, since Laravel's default
+  422 message ("… (and 3 more errors)") only repeats the first row; a
+  failure with none (message-only 422, 500, network) is headed by the
+  server's message. DXForm and DXTable pass the two through as
+  `errorSummaryTitle` and `errorSummaryOtherTitle` (#194).
+- DXForm `errorSummary` prop, **default `'footer'`**: DXForm now shows that
+  summary directly above its submit button (below any tabs) after a failed
+  submit, and its form-level alert steps aside while it does, so a failure
+  shows one alert. This is a visible change for every DXForm; `'top'` puts it
+  above the fields, `'external'` leaves it to a summary the host renders
+  elsewhere (DXForm then shows neither a summary nor its alert, as in
+  DXTable's modal), `false` restores the old alert exactly (#194).
+- DXForm `scrollToError` prop (default `true`): after a failed submit the
+  first field with an error is scrolled into view once its tab is shown,
+  lazy tabs included. Focus does not move (#194).
+- DXForm exposes `focusErrorTarget(target)` and `errorTargets`, for a summary
+  rendered outside the form. It goes to the exact errored path (a repeater
+  row's field, not the repeater), focuses the field's editable control
+  before any button in it (an info button), and waits up to a second for an
+  async editor's control. Auto-scroll skips a target that never renders for
+  the next one; a field taller than the window is scrolled by its input (or,
+  with no input, its first button).
+  DXField roots carry `data-dx-field-key` (the field's data path). Focus
+  only lands on a control that can take it (not disabled, `aria-disabled`,
+  inert or in a disabled fieldset; a `tabindex="-1"` editor surface is
+  fine), and keeps waiting while none can (#194).
+- `field(<key>)` slots receive a `targetAttrs` slot prop. Bind it
+  (`v-bind="targetAttrs"`) on the element holding your control to let a
+  failed submit scroll to it and its summary row focus it. The slot still
+  renders exactly what you write. The form looks for the marker anywhere
+  inside its own element (a teleport into the form counts) at the moment
+  it needs it, so a child that marks itself later is still reached.
+  Unbound, auto-scroll moves on to the next error, and its summary row
+  (still a button) selects its tab and focuses the tab's button (#194).
+- `errorKeys` field option: patterns (`*` matches one dot segment, e.g.
+  `['lines.*.*']`) for error keys a field owns although they are not under
+  its key, such as a `span` field editing `form.data.lines` (#194).
+- `useForm`: `submitFailure` (`{ message, errors }` of the last failed
+  submit, or `null`; untouched by edits and `clearError`) and
+  `failedSubmitCount` (#194).
+- `resolveErrorTargets(errors, options)` and its types, the resolver that
+  decides which field and tab each error key belongs to, as used by DXForm
+  and the summary. A repeater sub-field's label resolves against its row,
+  as DXRepeater renders it (`resolveLabel` receives that model as its second
+  argument), and a label function that throws falls back to the humanised
+  key rather than hiding the errors (#194). `humaniseErrorKey` drops a
+  trailing id (`supplier_id` reads "Supplier", `lines.0.product_id` "Lines
+  product (line 1)") and reads a bare `id` as "ID".
 
 ### Changed
 
@@ -38,6 +93,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   does (`object | string | number | boolean`), not only
   `Record<string, unknown>`, so an array typed with an option interface
   (DXTable's `FilterOption`, or your own) needs no cast. Types only.
+- DXForm tracks the active tab by key. The same tab stays shown when tabs
+  reorder or an earlier tab hides (`v-model:active-tab` is re-emitted with
+  its new index), and pane ids are opaque and stable per tab (#194). A tab
+  index the parent sets while every tab is hidden (or at mount) is held and
+  applied when tabs appear, rather than replaced by the first tab.
+- DXTable's create/edit modal lists every validation message in its footer,
+  beside Save, and no longer toasts on a 422. Its `onError` was reading the
+  `ApiError` as if it were an errors map, so the toast showed the server's
+  summary line for 5 s and no field message. Other failures (a 500, a 403,
+  no connection) show in the same summary rather than a toast, delete
+  included; a failure that arrives after its modal has closed still toasts,
+  since no summary is left to show it (#194).
+- `useForm`: when submits overlap, the newest submit's outcome wins,
+  whichever finishes last. An older submit that fails after a newer one
+  succeeded no longer turns `wasSuccessful` (and DXForm's saved state) off,
+  and an older success no longer clears a newer failure. Every submit still
+  runs its own `onSuccess`/`onError` and resolves or rejects as before.
+- DXTable's create/edit modal uses a fresh form for each open, so a failure
+  on one row never shows on the next, and a late response from an earlier
+  open (save or delete) no longer closes or blocks the modal now open.
 
 ### Fixed
 
@@ -51,11 +126,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   static `options`, and a later reload (`reloadOptionsOnChange`) keeps them
   usable; before, the field stayed on "Loading…" for good.
 - DXForm no longer moves to another tab when you fix a field. It selects the
-  first tab with an error only when errors are added (a failed submit), not
-  when one clears. A `preserveErrors` resubmit that returns exactly the
-  errors already on the form adds none, so it leaves the tab as it is (#194).
+  first tab with an error only after a failed submit (or when errors are
+  added with `setErrors`), not when one clears (#194).
+- A `preserveErrors` resubmit that returns the errors already on the form now
+  selects the error tab again (#194).
 - DXForm picks the error tab from visible fields only: an error on a field
-  hidden by its `when` no longer selects that field's tab (#194).
+  hidden by its `when` no longer selects that field's tab. Nested keys a
+  field claims with `errorKeys` select that field's tab (#194).
+- An initial `v-model:active-tab` other than 0 is honoured (every tab used to
+  carry `active` on the first), and errors already on the form at mount
+  select their tab (#194).
+- DXTable emits `createError`/`editError`/`deleteError` once per failure
+  (it emitted twice).
+- A table-layout DXRepeater calls a sub-field's label function with the
+  first row (over the outer model) for its column header, as its rows do,
+  so a row-based label (`row => row.currency + ' price'`) no longer throws.
+  A header label that throws or returns nothing shows the humanised key.
 
 ### Release tooling
 

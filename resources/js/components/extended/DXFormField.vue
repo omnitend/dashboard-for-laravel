@@ -17,12 +17,18 @@
 -->
 <template>
   <!-- Full replacement slot bypasses DXField entirely (mirrors tab-content):
-       also supersedes field-before/field-after for the same key. -->
+       also supersedes field-before/field-after for the same key. Rendered
+       as-is, with no wrapper (#194): `targetAttrs` is the marker DXForm
+       looks for to scroll to and focus a field after a failed submit, and
+       the consumer opts in by binding it (`v-bind="targetAttrs"`) on the
+       element holding the control. DXForm looks the marker up when it
+       needs it (a summary click, auto-scroll), never ahead of time. -->
   <slot
     v-if="$slots[`field(${field.key})`]"
     :name="`field(${field.key})`"
     :field="field"
     :model="model"
+    :targetAttrs="targetAttrs"
   />
   <template v-else>
     <!-- Content inserted directly above the field. -->
@@ -52,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { useSlots } from "vue";
+import { computed, useSlots } from "vue";
 import DXField from "./DXField.vue";
 import type { UseFormReturn } from "../../composables/useForm";
 import type { FieldDefinition, LabelCols } from "../../types";
@@ -72,6 +78,9 @@ interface Props {
 
 const props = defineProps<Props>();
 const slots = useSlots();
+
+/** What a `field(<key>)` slot binds to opt in to scroll/focus (#194). */
+const targetAttrs = computed(() => ({ "data-dx-field-key": props.field.key }));
 
 /**
  * Map a DXField slot name to this field's keyed parent slot, when present.

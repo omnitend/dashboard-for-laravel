@@ -654,6 +654,62 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   }
 }
 
+// DXFormErrorSummary (#194): a heading (the title, or the server's message
+// when there are no field errors), then one row per validation message. The alert keeps the danger alert's subtle tint; a row
+// that points at a field is a button drawn as underlined text in the alert's
+// own colour (an alert-coloured link, not the brand navy), so the list reads
+// as text and still says "you can click this". Global, not scoped: the rows
+// are rendered inside DAlert's slot.
+.dx-form-error-summary {
+  .dx-form-error-summary__message {
+    margin-bottom: 0;
+    font-weight: $font-weight-semibold;
+  }
+
+  .dx-form-error-summary__list {
+    margin: map.get($spacers, 2) 0 0;
+    padding-inline-start: 1.25rem;
+  }
+
+  // "Other problems": the rows no field owns, after the owned ones. One
+  // step lighter than the heading (semibold), still above the body text,
+  // and tied to the list it introduces rather than the one above it.
+  .dx-form-error-summary__other-title {
+    margin: map.get($spacers, 2) 0 0;
+    font-weight: $font-weight-medium;
+
+    + .dx-form-error-summary__list {
+      margin-top: map.get($spacers, 1);
+    }
+  }
+
+  .dx-form-error-summary__target {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+    cursor: pointer;
+    // A button is an inline-block, and the list bullet sits on the line
+    // box's baseline, which a baseline-aligned inline-block takes from its
+    // LAST line: a row that wraps had its bullet beside its second line.
+    vertical-align: top;
+
+    &:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    &:focus-visible {
+      outline: var(--bs-focus-ring-width) solid currentColor;
+      outline-offset: 2px;
+      border-radius: var(--bs-border-radius-sm);
+    }
+  }
+}
+
 // Switch-list option rows (DXField `switch-list`) are one line each: a label,
 // a switch and an optional trailing control (a notes input in the
 // `switch-list-item` slot). Centre all three in the row, instead of the

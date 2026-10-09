@@ -38,8 +38,12 @@ accepts either a `useForm` return or a `defineForm` return (with the latter,
   { name: 'fields', type: 'FieldDefinition[]', required: 'No', default: '-', description: 'Field definitions. Optional when form is a defineForm return (taken from it).' },
   { name: 'tabs', type: 'FormTab[]', required: 'No', default: '-', description: 'Tab definitions. When omitted, a flat single-column form renders.' },
   { name: 'context', type: 'Record<string, any>', required: 'No', default: '-', description: 'Extra context merged under the live form data when evaluating predicates (label/hint/when/disabled).' },
-  { name: 'activeTab', type: 'number (v-model)', required: 'No', default: '0', description: 'Active tab index. Two-way bindable via v-model:active-tab.' },
-  { name: 'autoErrorTab', type: 'boolean', required: 'No', default: 'true', description: 'Auto-switch to the first tab containing a validation error.' },
+  { name: 'activeTab', type: 'number (v-model)', required: 'No', default: '0', description: 'Active tab, as an index into the VISIBLE tabs. Two-way bindable via v-model:active-tab. The form tracks the tab by key, so the same tab stays shown when tabs reorder or an earlier one hides (the index is re-emitted), and an initial index other than 0 is honoured.' },
+  { name: 'autoErrorTab', type: 'boolean', required: 'No', default: 'true', description: 'After a failed submit (and for errors already on the form at mount), select the first visible tab holding a visible field with an error. Fixing a field never moves the tab.' },
+  { name: 'errorSummary', type: '"footer" | "top" | "external" | false', required: 'No', default: '"footer"', description: 'Where to list what the last failed submit returned: directly above the submit button ("footer"), above the fields ("top"), in a DXFormErrorSummary the host renders elsewhere ("external": DXForm shows neither a summary nor its alert), or nowhere (false, the form-level alert as before). See Validation errors below.' },
+  { name: 'errorSummaryTitle', type: 'string', required: 'No', default: '"Couldn\'t save. Please check:"', description: 'The summary\'s heading when the failure has field errors. A failure with none (a message-only 422, a 500) is headed by the server\'s message instead.' },
+  { name: 'errorSummaryOtherTitle', type: 'string', required: 'No', default: '"Other problems"', description: 'The summary\'s sub-heading over the rows no visible field owns, shown only when some rows are owned.' },
+  { name: 'scrollToError', type: 'boolean', required: 'No', default: 'true', description: 'After a failed submit, scroll the first field with an error into view once its tab is shown. Never moves focus.' },
   { name: 'submitText', type: 'string', required: 'No', default: 'Submit', description: 'Submit button text.' },
   { name: 'submitLoadingText', type: 'string', required: 'No', default: 'Submitting...', description: 'Submit button loading text.' },
   { name: 'submitSavedText', type: 'string', required: 'No', default: 'Saved', description: 'Submit button label in the saved state (see Saved state below).' },
@@ -75,7 +79,7 @@ Per-field slots are keyed by field key, e.g. `#value(price)` or `#hint(sku)`.
   { name: 'hint(<key>)', props: 'field, model', description: 'Override the hint text rendered below the field.' },
   { name: 'repeater-row(<key>)', props: 'row, index, fields, remove, path', description: 'Custom row layout for a repeater field.' },
   { name: 'switch-list-item(<key>)', props: 'option, on', description: 'Extra content beside a switch-list row\'s toggle (e.g. a notes input bound to your own model).' },
-  { name: 'field(<key>)', props: 'field, model', description: 'Fully replace a field\'s rendering (including its label), bypassing DXField entirely. Supersedes field-before/field-after for the same key.' },
+  { name: 'field(<key>)', props: 'field, model, targetAttrs', description: 'Fully replace a field\'s rendering (including its label), bypassing DXField entirely. Supersedes field-before/field-after for the same key. Rendered exactly as you write it, with no wrapper. Bind targetAttrs (v-bind="targetAttrs") on the element holding your control so a failed submit can scroll to it and a summary row can focus it; without it auto-scroll moves on to the next error and the summary row focuses the field\'s tab button instead.' },
   { name: 'field-before(<key>)', props: 'field, model', description: 'Content rendered directly above a field (e.g. a quick-create button above a select).' },
   { name: 'field-after(<key>)', props: 'field, model', description: 'Content rendered directly below a field.' },
   { name: 'tab-content(<key>)', props: 'tab, model', description: 'Replace the entire body of a tab.' },
@@ -131,6 +135,113 @@ While the request is in flight it shows the usual busy state
   never see a success, so they keep the plain button. Set
   `:saved-state="false"` for a form whose submit is not a save, such as a
   search.
+
+## Validation errors
+
+When a submit through the form's own methods (`form.post`, `put`, `patch`…)
+fails, DXForm lists **everything** the server returned in one alert, directly
+above the submit button: a heading, then one row per validation message with
+a readable label ("Price (line 1): Must be positive.").
+
+- The heading is "Couldn't save. Please check:" (`errorSummaryTitle`) when
+  the failure has field errors. Laravel's default 422 message (the first
+  error plus "(and 3 more errors)") would only repeat the first row, so it
+  is not shown then. A failure with no field errors (a message-only 422, a
+  500, a network failure) is headed by the server's message.
+- Rows for fields on the form come first, as buttons. Rows no visible field
+  owns follow as plain text under "Other problems"
+  (`errorSummaryOtherTitle`), a sub-heading shown only when both kinds are
+  present.
+
+- It is built from `form.submitFailure`, so it stays while the user edits
+  (fixing a field does not remove its row or bring back a generic message)
+  and disappears when the next submit starts or one succeeds.
+- Keys with no rendered field, keys on hidden fields and message-only
+  failures (`errors: {}`) are listed too, as plain text, so a 422 is never
+  invisible.
+- A row naming a visible field is a button: it selects the field's tab,
+  scrolls to the field and focuses its input (for a repeater row, that row's
+  field; a field's info button is never focused instead; an async editor is
+  waited for). A `field(<key>)` slot is reached only if it binds the
+  `targetAttrs` slot prop on the element holding its control
+  (`<div v-bind="targetAttrs">…</div>`). The form looks for that marker
+  when it needs it, anywhere inside the form (a `Teleport` into the form
+  counts, one out of it does not), so content that marks itself after
+  loading is found. When the row's field renders no marker (an unmarked
+  slot), clicking the row still selects its tab and moves focus to the
+  tab's button.
+- A field taller than the window (a long explanation above its input) is
+  scrolled by its input, centred, so the input is never left below the fold
+  (by its first button when it has no input, such as a picker).
+- The form also takes the user to the first problem: it selects the first
+  tab holding an error (`autoErrorTab`) and scrolls the field into view
+  (`scrollToError`), including on a `lazy` tab. A `preserveErrors` resubmit
+  that returns the same errors does this again.
+- While the summary shows a failure, the form-level alert does not render, so
+  there is one alert, never two. `:error-summary="false"` turns the summary
+  off and restores the old alert exactly; `error-summary="top"` puts it above
+  the fields instead.
+
+### Errors on nested keys (`errorKeys`)
+
+An error key belongs to the field whose key equals it, or the field whose key
+is a dot prefix of it (`lines.0.price` belongs to a `lines` repeater). A field
+rendered under another name, such as a `span` field showing a custom order-line
+editor, claims keys with `errorKeys`, where `*` matches one dot segment. Its
+tab is then selected, its rows in the summary carry its label, and a row click
+scrolls to it:
+
+```ts
+const fields: FieldDefinition[] = [
+  { key: 'customer', type: 'text', label: 'Customer' },
+  // A span field whose slot edits form.data.lines:
+  { key: 'order_lines', type: 'text', label: 'Order lines', span: true,
+    errorKeys: ['lines.*', 'lines.*.*'] },
+];
+const tabs: FormTab[] = [
+  { key: 'general', label: 'General', fieldKeys: ['customer'] },
+  { key: 'lines', label: 'Lines', fieldKeys: ['order_lines'] },
+];
+// A 422 with { "lines.0.price": ["Must be positive."] } selects "Lines".
+```
+
+### A summary outside the form
+
+When the submit control lives outside DXForm (a modal footer, a sticky
+action bar), set `error-summary="external"` and render
+[DXFormErrorSummary](/components/extended/DXFormErrorSummary) beside the
+button. Pass the form's own resolved rows (`errorTargets`) and let a row click
+drive the form through its exposed `focusErrorTarget`, so the summary and the
+form agree on every row. `"external"` tells DXForm another summary lists the
+failure, so it renders neither its own summary nor its form-level alert
+(`false` would bring that alert back for a message-only failure, or once the
+last field error is fixed: two alerts). DXTable's create/edit modal does
+exactly this.
+
+```vue
+<template>
+  <DXForm ref="formRef" :form="form" :fields="fields" :tabs="tabs"
+    :show-submit="false" error-summary="external" @submit="save" />
+
+  <footer>
+    <DXFormErrorSummary
+      :form="form" :fields="fields" :tabs="tabs"
+      :targets="formRef?.errorTargets ?? null"
+      @select-target="formRef?.focusErrorTarget($event)"
+    />
+    <DButton variant="primary" @click="save">Save</DButton>
+  </footer>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { DButton, DXForm, DXFormErrorSummary } from '@omnitend/dashboard-for-laravel';
+
+const formRef = ref<InstanceType<typeof DXForm> | null>(null);
+// form, fields and tabs as for any DXForm.
+const save = () => form.post('/api/orders').catch(() => {});
+</script>
+```
 
 ## Container-driven layout
 

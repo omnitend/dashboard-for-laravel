@@ -13,7 +13,10 @@
 <template>
     <!-- Full-width span field: delegate entirely to the #span slot, bypassing
          the label and built-in control (and the shell). -->
-    <div v-if="field.span" :class="field.class || 'mb-3'">
+    <!-- `data-dx-field-key` (the field's data path: `name`, or
+         `lines.0.price` inside a repeater) is how DXForm finds a field to
+         scroll to and focus after a failed submit (#194). -->
+    <div v-if="field.span" :class="field.class || 'mb-3'" :data-dx-field-key="valuePath">
         <!--
           @slot Replaces the entire field with custom full-width content when `field.span` is set, bypassing the label and built-in control.
           @binding {FieldDefinition} field The field definition being rendered.
@@ -34,6 +37,7 @@
          control that goes inside is chosen by field.type in the default slot. -->
     <DXFieldShell
         v-else
+        :data-dx-field-key="valuePath"
         :field="field"
         :form="form"
         :error-key="errorKey"

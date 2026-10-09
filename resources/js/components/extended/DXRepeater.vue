@@ -150,6 +150,7 @@ import type { UseFormReturn } from "../../composables/useForm";
 import type { FieldDefinition } from "../../types";
 import { getByPath, setByPath } from "../../utils/objectPath";
 import { resolveFieldDefault } from "../../utils/formSchema";
+import { humaniseErrorKey } from "../../utils/formErrorTargets";
 
 interface Props {
     /** Form instance owning the repeater array */
@@ -177,12 +178,37 @@ const minItems = computed(() => props.field.minItems ?? 0);
 const maxItems = computed(() => props.field.maxItems);
 const softDeleteKey = computed(() => props.field.softDeleteKey);
 
-/** Column header text for a sub-field. No specific row context exists for a
- *  header, so a function-valued label resolves against the outer model. */
+/**
+ * The model a column header's function label is called with. Row fields
+ * resolve their labels against the ROW (as does the error summary), so a
+ * header uses the first visible row, layered over the outer model so a label
+ * that reads outer context (a currency on the parent form) still works. With
+ * no rows it is the outer model alone.
+ */
+const headerModel = computed<Record<string, any>>(() => {
+    const firstRow = visibleRows.value[0]?.row;
+    return {
+        ...(props.model ?? {}),
+        ...(firstRow !== null && typeof firstRow === "object" ? firstRow : {}),
+    };
+});
+
+/** Column header text for a sub-field. A label function that throws (a row
+ *  property it expects is missing) or returns nothing falls back to the
+ *  humanised key, the same fallback the error summary uses, so a header can
+ *  never break the table. */
 function headerLabel(subField: FieldDefinition): string {
     const label = subField.label;
-    if (typeof label === "function") return label(props.model ?? {});
-    return label || subField.key;
+    if (typeof label !== "function") return label || subField.key;
+    let resolved: unknown;
+    try {
+        resolved = label(headerModel.value);
+    } catch {
+        resolved = undefined;
+    }
+    return typeof resolved === "string" && resolved.trim() !== ""
+        ? resolved
+        : humaniseErrorKey(subField.key);
 }
 
 // ————————————————— table/cards responsive fallback (#68 follow-up)

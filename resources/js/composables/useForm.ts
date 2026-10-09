@@ -13,6 +13,19 @@ export interface ValidationErrors {
 
 export type FormError = ApiError;
 
+/**
+ * What the most recent failed submit returned (#194): the server's message and
+ * a COPY of its validation errors, frozen at the moment the submit failed.
+ * The live `form.errors` empties as the user fixes fields; this does not, so a
+ * summary built from it keeps listing every message until the next submit.
+ */
+export interface SubmitFailure {
+    /** A message fit to show a user (never empty, never a raw exception). */
+    message: string;
+    /** The validation errors the submit returned (`{}` when none). */
+    errors: ValidationErrors;
+}
+
 export interface FormSubmitOptions<TPayload = unknown, TResponse = unknown> {
     onSuccess?: (data: TResponse) => void;
     onError?: (error: FormError) => void;
@@ -39,6 +52,19 @@ export interface FormState<TData extends Record<string, any>> {
      */
     wasSuccessful: boolean;
     shouldShowMessage: boolean;
+    /**
+     * What the most recent submit failed with, or `null`. Set when a submit
+     * fails (validation or otherwise; an aborted submit does not count),
+     * cleared when a submit starts and when one succeeds. Untouched by
+     * `clearError`, `clearErrors`, `setErrors` and field edits.
+     */
+    submitFailure: SubmitFailure | null;
+    /**
+     * How many submits have failed, counting every failure (including a
+     * `preserveErrors` resubmit that returned the same errors), so a watcher
+     * can react to "a submit just failed" even when nothing else changed.
+     */
+    failedSubmitCount: number;
 }
 
 export interface UseFormReturn<TData extends Record<string, any>>
@@ -143,6 +169,59 @@ function objectToFormData(payload: Record<string, unknown>): FormData {
     return fd;
 }
 
+const GENERIC_FAILURE_MESSAGE = "An error occurred";
+
+/** Copy an errors map, keeping only non-empty string messages. */
+function copyValidationErrors(errors: unknown): ValidationErrors {
+    const copy: ValidationErrors = {};
+    if (errors === null || typeof errors !== "object") return copy;
+    for (const [key, value] of Object.entries(errors as Record<string, unknown>)) {
+        const messages = (Array.isArray(value) ? value : [value]).filter(
+            (message): message is string =>
+                typeof message === "string" && message !== "",
+        );
+        if (messages.length > 0) copy[key] = messages;
+    }
+    return copy;
+}
+
+export function isAbortError(error: unknown): boolean {
+    return (
+        error !== null &&
+        typeof error === "object" &&
+        (error as { name?: unknown }).name === "AbortError"
+    );
+}
+
+/**
+ * The `submitFailure` for a rejected submit, or `null` for an abort (the
+ * caller cancelled it; nothing failed). Only an `ApiError` from the client
+ * (an HTTP failure: it carries a numeric `status`, and the client has already
+ * replaced 401/403/404/419/500 bodies with user-facing text) supplies the
+ * message. Anything else (a network `TypeError`, an exception thrown from
+ * `onSuccess`) gets the generic message, so a summary never shows
+ * "Failed to fetch" or a stack-trace line.
+ */
+function submitFailureFrom(error: unknown): SubmitFailure | null {
+    if (isAbortError(error)) return null;
+    const isApiError =
+        error !== null &&
+        typeof error === "object" &&
+        typeof (error as ApiError).status === "number";
+    if (isApiError) {
+        const apiError = error as ApiError;
+        const message =
+            typeof apiError.message === "string" && apiError.message.trim() !== ""
+                ? apiError.message
+                : GENERIC_FAILURE_MESSAGE;
+        return { message, errors: copyValidationErrors(apiError.errors) };
+    }
+    return {
+        message: GENERIC_FAILURE_MESSAGE,
+        errors: copyValidationErrors(errorsFromLaravel(error).errors),
+    };
+}
+
 function errorsFromLaravel(error: any): {
     errors: ValidationErrors;
     message: string;
@@ -172,6 +251,64 @@ export function useForm<TData extends Record<string, any>>(
     let inFlightCount = 0;
     let successTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Which submit's outcome the form records (#194 review). Each submit takes
+    // a generation number when it starts. Its outcome (success, failure,
+    // errors, message, `submitFailure`, `resetOnSuccess`) is recorded only if
+    // no NEWER submit is still pending or has already recorded: the newest
+    // submit's outcome wins, in either completion order. An older success can
+    // therefore never clear a newer failure, and an older failure never lands
+    // over a newer success. Callbacks and the returned promise are
+    // unaffected: every submit still calls its own onSuccess/onError and
+    // resolves/rejects.
+    //
+    // An ABORTED submit is treated as if it had never started: it records
+    // nothing (not even the abort's own message), and an older outcome that
+    // was held back only because the aborted one was pending is then
+    // recorded. Held-back outcomes wait in `heldOutcomes` (newest wins; a
+    // newer recorded outcome drops them). A submit whose preparation
+    // (`transform`, `onBefore`) throws never takes a generation at all.
+    let latestSubmitGeneration = 0;
+    let lastRecordedGeneration = 0;
+    const pendingGenerations = new Set<number>();
+    const heldOutcomes = new Map<number, () => void>();
+    const mayRecord = (generation: number): boolean => {
+        if (generation < lastRecordedGeneration) return false;
+        for (const pending of pendingGenerations) {
+            if (pending > generation) return false;
+        }
+        return true;
+    };
+    /** Record now if this generation may, else hold it back for later. */
+    const recordOrHold = (generation: number, record: () => void): boolean => {
+        if (mayRecord(generation)) {
+            lastRecordedGeneration = generation;
+            heldOutcomes.clear();
+            record();
+            return true;
+        }
+        if (generation >= lastRecordedGeneration) heldOutcomes.set(generation, record);
+        return false;
+    };
+    /**
+     * After a submit leaves the pending set: record the NEWEST held-back
+     * outcome if nothing newer is pending any more (an abort unblocked it),
+     * and drop every older one. Older held outcomes never surface over a
+     * newer settled one.
+     */
+    const releaseHeldOutcomes = (): void => {
+        if (heldOutcomes.size === 0) return;
+        const newest = Math.max(...heldOutcomes.keys());
+        if (newest < lastRecordedGeneration) {
+            heldOutcomes.clear();
+            return;
+        }
+        if (!mayRecord(newest)) return;
+        const record = heldOutcomes.get(newest)!;
+        lastRecordedGeneration = newest;
+        heldOutcomes.clear();
+        record();
+    };
+
     const state = reactive<FormState<TData>>({
         data: deepClone(snapshot) as TData,
         errors: {},
@@ -181,6 +318,8 @@ export function useForm<TData extends Record<string, any>>(
         recentlySuccessful: false,
         wasSuccessful: false,
         shouldShowMessage: false,
+        submitFailure: null,
+        failedSubmitCount: 0,
     });
 
     const hasErrors = computed(() =>
@@ -238,7 +377,9 @@ export function useForm<TData extends Record<string, any>>(
         }
         clearErrors();
         state.touched = {};
-        state.processing = false;
+        // Not `false` outright: with another submit still in flight the form
+        // is still processing, and the counter will clear it when that ends.
+        state.processing = inFlightCount > 0;
     };
 
     // v-model for a single field
@@ -269,11 +410,15 @@ export function useForm<TData extends Record<string, any>>(
         url: string,
         options: FormSubmitOptions<TData, TResponse> = {},
     ): Promise<TResponse> => {
-        inFlightCount += 1;
-        state.processing = true;
-        state.wasSuccessful = false;
-        if (!options.preserveErrors) clearErrors();
-
+        // Preparation (`transform`, `onBefore`, building the body) runs BEFORE
+        // the submit takes a generation or touches form state. If it throws,
+        // the submit rejects with that error and is as if it never started:
+        // no request, no callbacks, no recorded failure, and the form keeps
+        // its previous outcome. (Before #194's review a throw here also
+        // rejected without calling onError/onFinish or recording a failure,
+        // but it had already cleared the errors and summary, and it left
+        // `processing` stuck at true because the in-flight count was never
+        // decremented.)
         const payloadRaw = (
             options.transform
                 ? // Give `transform` a COPY of the form data (#150), so a transform
@@ -315,6 +460,14 @@ export function useForm<TData extends Record<string, any>>(
             }
         }
 
+        inFlightCount += 1;
+        const generation = ++latestSubmitGeneration;
+        pendingGenerations.add(generation);
+        state.processing = true;
+        state.wasSuccessful = false;
+        state.submitFailure = null;
+        if (!options.preserveErrors) clearErrors();
+
         try {
             const { data } =
                 sendMethod === "get"
@@ -334,27 +487,52 @@ export function useForm<TData extends Record<string, any>>(
                             signal: options?.signal,
                         });
 
-            state.recentlySuccessful = true;
-            state.wasSuccessful = true;
-            if (successTimer !== null) clearTimeout(successTimer);
-            successTimer = setTimeout(() => {
-                state.recentlySuccessful = false;
-                successTimer = null;
-            }, 1500);
+            const records = recordOrHold(generation, () => {
+                state.recentlySuccessful = true;
+                state.wasSuccessful = true;
+                state.submitFailure = null;
+                if (successTimer !== null) clearTimeout(successTimer);
+                successTimer = setTimeout(() => {
+                    state.recentlySuccessful = false;
+                    successTimer = null;
+                }, 1500);
+            });
 
             options.onSuccess?.(data);
-            if (options.resetOnSuccess) {
+            // Only a success recorded when it lands resets: an older one would
+            // wipe the data and errors the newer submit is answering for, and
+            // a held-back success recorded later (after an abort) does not
+            // reset either, since the user may have typed since.
+            if (options.resetOnSuccess && records) {
                 reset();
             }
             return data;
         } catch (err) {
-            state.wasSuccessful = false;
-            const { errors, message } = errorsFromLaravel(err);
-            setErrors(errors);
-            setMessage(message);
+            // Decided again here (not reused from the try) so a throwing
+            // onSuccess is recorded, or held, as its failure: a held-back
+            // success for this generation is replaced.
+            //
+            // An abort records nothing: it is a cancellation, not an outcome.
+            // It leaves the pending set below, which may release an older
+            // held-back outcome.
+            if (!isAbortError(err)) {
+                const { errors, message } = errorsFromLaravel(err);
+                const failure = submitFailureFrom(err);
+                recordOrHold(generation, () => {
+                    state.wasSuccessful = false;
+                    setErrors(errors);
+                    setMessage(message);
+                    if (failure) {
+                        state.submitFailure = failure;
+                        state.failedSubmitCount += 1;
+                    }
+                });
+            }
             options.onError?.(err as FormError);
             throw err;
         } finally {
+            pendingGenerations.delete(generation);
+            releaseHeldOutcomes();
             inFlightCount -= 1;
             // Only clear `processing` once no submission is still in flight.
             if (inFlightCount === 0) state.processing = false;

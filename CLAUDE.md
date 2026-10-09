@@ -13,15 +13,15 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
 2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (57 base components)
-3. **DX* Extended Components** - Complex dashboard layouts, forms, tables, stat cards, and charts (19 on the main entry, plus 3 charts)
+3. **DX* Extended Components** - Complex dashboard layouts, forms, tables, stat cards, and charts (20 on the main entry, plus 3 charts)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 76 components on the main entry** (57 base + 19 extended), plus the 3
+**Total: 77 components on the main entry** (57 base + 20 extended), plus the 3
 chart components on `/charts`. Counted from the `D*`/`DX*` exports in
-`resources/js/index.ts` (2026-10-06, after DXStackingTable); the base count
+`resources/js/index.ts` (2026-10-09, after DXFormErrorSummary); the base count
 matches the 57 files in `components/base`.
 
 > **Chart components ship from a separate entry** (`#142`): `DXBarChart`,
@@ -447,6 +447,90 @@ non-button content is `flex: 1 1 0` and `text-align: start !important`
 beats a cell's `.text-end`, so controls and values share one left edge. Pinned by
 `tests/components/DXStackingTable.test.ts`, which reads the BUILT CSS:
 rebuild before running it after a theme change.
+
+### DXForm validation errors (#194)
+
+Three owners, nothing else writes their state:
+
+- **`useForm`** owns what the last submit failed with: `submitFailure`
+  (`{ message, errors }`, a copy; cleared when a submit starts and on
+  success, untouched by edits/`clearError`/`setErrors`) and
+  `failedSubmitCount`.
+- **`utils/formErrorTargets.ts`** (`resolveErrorTargets`, pure, no Vue) owns
+  which field/tab/label an error key belongs to (`errorKeys` patterns, then
+  exact key, then longest dot prefix; hidden fields own nothing). DXForm calls
+  it with ITS visibility (`visibleTabKeys`, `isFieldVisible`) for the tab
+  choice, the auto-scroll and the summary rows, so the three cannot disagree.
+  Don't add a second matcher.
+- **DXForm** owns the active tab, by key: one writer (`commitTabKey`), one
+  decision watcher. A failure is `failedSubmitCount` changing OR the errored
+  key set growing (so `setErrors` without a submit still selects its tab); an
+  error clearing never moves the tab; errors at mount select theirs.
+
+The summary (`DXFormErrorSummary`) renders at `errorSummary: 'footer'` by
+default, directly above the submit button, never inside a tab pane; while it
+shows a failure the top `DAlert` (`shouldShowMessage`) does not render.
+**Its heading is NOT the server's message when there are field errors**:
+Laravel's default 422 message is the first error plus "(and N more
+errors)", which repeated the first row, so the heading is `title`
+("Couldn't save. Please check:"; `errorSummaryTitle` on DXForm/DXTable).
+With no field errors (message-only 422, 500, network) the server's
+message is the heading. Owned rows (buttons) come first; unowned rows
+(text) follow in a second `<ul>` under a `<p
+class="dx-form-error-summary__other-title">` ("Other problems",
+`otherTitle`/`errorSummaryOtherTitle`), only when both kinds exist; medium
+weight, one step under the semibold heading. `humaniseErrorKey` (unowned
+rows, label fallbacks, DXRepeater headers) drops a trailing `id` word
+(`supplier_id` → "Supplier") and reads a bare `id` as "ID".
+`scrollToError` scrolls the first owned field on the selected tab
+(`[data-dx-field-key]`, set on DXField's roots to the data path) into view
+after the pane mounts, skipping a target that never renders; no focus. A
+field taller than the window scrolls by its input (centred), or by its
+first focusable when it has no editable control (a picker button). **A
+`field(<key>)` slot gets NO wrapper** (three review rounds broke layout with
+one: a block wrapper changed grid/flex items, `display: contents` broke
+scrolling): it renders exactly what the consumer wrote and opts in to being
+reachable by binding the `targetAttrs` slot prop. Reachability is LOOKED
+UP ON USE, never precomputed: a summary click and the auto-scroll each query
+the form's root element for the marker at that moment (after the failure's
+render has flushed), so a child that marks itself after its own async
+state, a marker rendered by the failure itself, a lazy pane opened by the
+click and a teleport into the form all count; a teleport out of the form
+does not. (A round that had DXFormField report "marked" after each render
+went stale four ways, since a child's own re-render never reaches the
+parent's `onUpdated`.) Every row owned by a field is a button. A click that
+finds no marker within the render frames, or nothing focusable in it,
+moves focus to the selected tab's button and scrolls its pane into view,
+so focus never drops to the body; auto-scroll skips the target for the next
+one.
+Both prefer the element for the EXACT error path (`lines.1.price`, a
+repeater row) and fall back to the owner after the render frames. A summary
+row (or the exposed `focusErrorTarget`) selects the tab and focuses the
+field's EDITABLE control first (never its info button), waiting about a
+second while no candidate passes `canTakeFocus` (disabled, `aria-disabled`,
+inert, disabled fieldset, not focusable; `tabindex="-1"` IS focusable, it
+only leaves the Tab order) and re-querying by key while the field's element
+is replaced or briefly absent, counting a focus only when
+`document.activeElement` is the control. Keys are matched by attribute
+VALUE, not a built selector, so quotes/brackets/uuids need no escaping; a
+removed tab key gets a fresh pane id when reintroduced (the cache is
+pruned), a `when`-hidden one keeps its id. Sub-field labels in the resolver
+resolve against the ROW, as DXRepeater does, and a throwing label falls back
+to the humanised key. A tab index the parent sets while every tab is hidden
+is held (`pendingRequestedIndex`) until tabs appear. DXTable's modal
+renders the summary in its footer with the inner form on
+`error-summary="external"` (NOT `false`, which brings the top alert back for
+message-only failures: two alerts), and `useResourceEditor` toasts a
+failure (save or delete, any status) only when its session's modal has
+closed; while it is open the footer summary is the report (`onError`
+receives the `ApiError`, not an errors map).
+Bootstrap sets `scroll-behavior: smooth` on `:root`, so a scroll test must
+wait for `scrollY` to settle (two equal reads) before reading rects; a scroll
+that STARTS late (after a skipped target's frames) needs a fixed wait first,
+or two equal reads of 0 pass before it begins. Pinned by
+`DXForm-ErrorSummary.test.ts`, `DXForm-ErrorReach.test.ts`,
+`DXForm-ErrorTab.test.ts`, `DXForm-TabState.test.ts`,
+`DXTable-ValidationSummary.test.ts`, `utils/formErrorTargets.test.ts`.
 
 ### DXBasicForm
 
