@@ -167,3 +167,48 @@ Stacked on #198 (`fix/194-error-tab-min`); rebase on main once #198 merges.
 
 Stop rule: if a review round again finds new regressions in tab state, stop
 and revisit this design with James rather than patch.
+
+## Outcome (2026-10-09)
+
+Built and shipped in PR #199 (stacked on #198). Five Codex review rounds,
+then a visual pass. Where the build departed from the design above:
+
+- **`errorSummary` gained `'external'`**: DXForm renders neither its summary
+  nor its top alert, for a summary rendered elsewhere. DXTable's modal uses
+  it; `false` still means today's alert exactly.
+- **`field(<key>)` replacement slots render exactly as before.** Two designs
+  were tried and dropped: a wrapper element (changed grid/flex layout, three
+  rounds of geometry fixes) and precomputed reachability (stale after child
+  updates, a focused button turning into text). Slots now opt in with a
+  `targetAttrs` slot prop, and targets are looked up at the moment of use,
+  within this form's `<form>` only. With no marker, a row click falls back to
+  the tab's button; auto-scroll skips to the next target.
+- **Tab decision trigger**: `failedSubmitCount` changing OR the errored-key
+  set growing (so `setErrors()` without a submit still selects a tab). The
+  tab decision reads live errors; the summary reads `submitFailure`.
+- **`useForm` overlap rules**: the newest submit's outcome wins whichever
+  finishes last; outcomes from older submits are held while a newer one is
+  pending and recorded if it aborts; aborts record nothing; a throwing
+  `transform`/`onBefore` leaves no state; a held success does not run
+  `resetOnSuccess`.
+- **DXTable's editor uses a fresh form per modal open** (not a reset API),
+  so late responses settle into a form nothing renders.
+- **Heading and grouping**: with field errors the heading is a client-side
+  title ("Couldn't save. Please check:", `title` / `errorSummaryTitle`),
+  because modern Laravel's message repeats the first error; with none, the
+  server's message. Rows no field owns go last under "Other problems"
+  (`otherTitle` / `errorSummaryOtherTitle`), shown only when both groups
+  exist. Humanised keys drop a trailing id (`supplier_id` → "Supplier").
+- **Also fixed on the way**: `useResourceEditor`'s `onError` read the
+  `ApiError` as an errors map (a 422 toasted the server's summary line);
+  error events fired twice per failure; DXRepeater headers resolved
+  function labels against the outer model; a wrapped summary row's bullet
+  sat beside its last line.
+
+Known limits, documented: an unmarked `field(<key>)` slot cannot be focused
+into; a `span`/slot field has no public per-path marker, so a row inside a
+custom editor focuses its first input; replacing an `optionsLoader` at
+runtime does not restart its first-load state.
+
+The stop rule fired twice (tab state by index; slot reachability) and both
+times the design changed rather than being patched again.
