@@ -1,13 +1,17 @@
 <!--
   @component DXFormErrorSummary
-  Lists everything the last failed submit of a `useForm` returned: the
-  server's message, then one row per validation message with a readable
-  label ("Price (line 1): Must be positive."). Built from `form.submitFailure`,
-  so it survives field edits and `clearError`, and disappears when the next
-  submit starts or one succeeds. Renders nothing before a failure. A row whose
-  key belongs to a visible field is a button that emits `select-target`, for
-  the host to select the field's tab and focus it; a key no visible field owns
-  is listed as plain text. Place it next to the submit control.
+  Lists everything the last failed submit of a `useForm` returned: a heading,
+  then one row per validation message with a readable label ("Price (line 1):
+  Must be positive."). The heading is `title` ("Couldn't save. Please
+  check:") when the failure has field errors, and the server's message when
+  it has none (a message-only 422, a 500, a network failure), since then the
+  message is all there is. Built from `form.submitFailure`, so it survives
+  field edits and `clearError`, and disappears when the next submit starts or
+  one succeeds. Renders nothing before a failure. A row whose key belongs to a
+  visible field is a button that emits `select-target`, for the host to select
+  the field's tab and focus it; a key no visible field owns is listed as plain
+  text, after the owned rows, under `otherTitle` ("Other problems") when both
+  kinds are present. Place it next to the submit control.
 -->
 <template>
     <!-- A real element owns the class: DAlert's root is a transition, so a
@@ -16,25 +20,38 @@
          failure count remounts it, so every new failure is announced once. -->
     <div v-if="failure" class="dx-form-error-summary">
         <DAlert :key="resolvedForm.failedSubmitCount" variant="danger">
-            <p class="dx-form-error-summary__message">{{ failure.message }}</p>
-            <ul v-if="rows.length > 0" class="dx-form-error-summary__list">
-                <li
-                    v-for="row in rows"
-                    :key="row.id"
-                    class="dx-form-error-summary__item"
+            <p class="dx-form-error-summary__message">{{ heading }}</p>
+            <!-- Rows a field owns (buttons that go to it), then rows no field
+                 owns (text). The sub-heading only says "these are the rest"
+                 when there is a first list for them to be the rest of. A
+                 <p>, not a heading element: it must not enter the page
+                 outline. -->
+            <template v-for="group in groups" :key="group.key">
+                <p
+                    v-if="group.title !== null"
+                    class="dx-form-error-summary__other-title"
                 >
-                    <button
-                        v-if="row.fieldKey !== null"
-                        type="button"
-                        class="dx-form-error-summary__target"
-                        :data-dx-error-key="row.errorKey"
-                        @click="selectRow(row)"
+                    {{ group.title }}
+                </p>
+                <ul class="dx-form-error-summary__list">
+                    <li
+                        v-for="row in group.rows"
+                        :key="row.id"
+                        class="dx-form-error-summary__item"
                     >
-                        {{ row.text }}
-                    </button>
-                    <span v-else :data-dx-error-key="row.errorKey">{{ row.text }}</span>
-                </li>
-            </ul>
+                        <button
+                            v-if="row.fieldKey !== null"
+                            type="button"
+                            class="dx-form-error-summary__target"
+                            :data-dx-error-key="row.errorKey"
+                            @click="selectRow(row)"
+                        >
+                            {{ row.text }}
+                        </button>
+                        <span v-else :data-dx-error-key="row.errorKey">{{ row.text }}</span>
+                    </li>
+                </ul>
+            </template>
         </DAlert>
     </div>
 </template>
@@ -95,9 +112,27 @@ interface Props {
      * `form.submitFailure`, and nothing renders while that is null.
      */
     targets?: ErrorTarget[] | null;
+    /**
+     * The heading when the failure has at least one field error. The
+     * server's own message is not used then: Laravel's default 422 message
+     * is the first error plus "(and N more errors)", which repeats the first
+     * row. A failure with no field errors (a message-only 422, a 500, a
+     * network failure) keeps the server's message as the heading, as it is
+     * the only information.
+     */
+    title?: string;
+    /**
+     * The sub-heading over the rows no visible field owns, listed after the
+     * owned rows. Shown only when there are both kinds; when no row is owned
+     * they are listed under the heading alone.
+     */
+    otherTitle?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    title: "Couldn't save. Please check:",
+    otherTitle: "Other problems",
+});
 
 const emit = defineEmits<{
     /** A row was clicked: select `tabKey` (if any) and focus `fieldKey`. */
@@ -158,6 +193,33 @@ const rows = computed<Row[]>(() =>
         })),
     ),
 );
+
+const heading = computed(() =>
+    rows.value.length > 0 ? props.title : (failure.value?.message ?? ""),
+);
+
+interface RowGroup {
+    key: "owned" | "other";
+    /** The sub-heading above the list, or `null` for none. */
+    title: string | null;
+    rows: Row[];
+}
+
+/** Owned rows, then unowned ones (labelled only when both are present). */
+const groups = computed<RowGroup[]>(() => {
+    const owned = rows.value.filter((row) => row.fieldKey !== null);
+    const other = rows.value.filter((row) => row.fieldKey === null);
+    const result: RowGroup[] = [];
+    if (owned.length > 0) result.push({ key: "owned", title: null, rows: owned });
+    if (other.length > 0) {
+        result.push({
+            key: "other",
+            title: owned.length > 0 ? props.otherTitle : null,
+            rows: other,
+        });
+    }
+    return result;
+});
 
 function selectRow(row: Row): void {
     if (row.fieldKey === null) return;

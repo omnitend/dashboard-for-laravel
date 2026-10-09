@@ -362,6 +362,19 @@ interface Props {
     errorSummary?: "footer" | "top" | "external" | false;
 
     /**
+     * The summary's heading when the failure has field errors (default
+     * "Couldn't save. Please check:"). A failure with none (a message-only
+     * 422, a 500) is headed by the server's message instead.
+     */
+    errorSummaryTitle?: string;
+
+    /**
+     * The summary's sub-heading over the rows no visible field owns (default
+     * "Other problems"), shown only when some rows ARE owned.
+     */
+    errorSummaryOtherTitle?: string;
+
+    /**
      * After a failed submit, scroll the first field with an error into view
      * (once its tab is selected and rendered). Never moves focus. On by
      * default.
@@ -1129,6 +1142,9 @@ const summaryBindings = computed(() => ({
     tabs: props.tabs,
     context: props.context,
     targets: summaryTargets.value,
+    // Undefined when unset, so the summary's own defaults apply.
+    title: props.errorSummaryTitle,
+    otherTitle: props.errorSummaryOtherTitle,
 }));
 
 // ————————————————— saved state (submit button shows "✓ Saved")

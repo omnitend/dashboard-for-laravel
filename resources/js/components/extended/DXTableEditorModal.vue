@@ -170,6 +170,8 @@
                 :tabs="tabs"
                 :context="item ?? undefined"
                 :targets="innerForm?.errorTargets ?? null"
+                :title="errorSummaryTitle"
+                :other-title="errorSummaryOtherTitle"
                 @select-target="innerForm?.focusErrorTarget($event)"
             />
             <div class="d-flex justify-content-between w-100">
@@ -260,6 +262,10 @@ interface Props {
     createText?: string;
     /** Override the Delete button label. */
     deleteText?: string;
+    /** The footer summary's heading for a failure with field errors. */
+    errorSummaryTitle?: string;
+    /** The footer summary's sub-heading over rows no field owns. */
+    errorSummaryOtherTitle?: string;
 }
 
 const props = defineProps<Props>();

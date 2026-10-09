@@ -49,6 +49,20 @@ const threeErrors = {
   name: ['The name field is required.'],
 };
 
+const DEFAULT_TITLE = "Couldn't save. Please check:";
+/** Laravel 10+'s default 422 message: the first error plus a count. */
+const LARAVEL_MESSAGE = 'The name field is required. (and 2 more errors)';
+
+const headingOf = (root: Element) =>
+  root.querySelector('.dx-form-error-summary__message')?.textContent?.trim();
+/** Each list's row texts, in DOM order. */
+const listsOf = (root: Element) =>
+  Array.from(root.querySelectorAll('.dx-form-error-summary ul')).map((list) =>
+    Array.from(list.querySelectorAll('li')).map((item) => item.textContent?.trim()),
+  );
+const otherTitleOf = (root: Element) =>
+  root.querySelector<HTMLElement>('.dx-form-error-summary__other-title');
+
 const summaryOf = (root: Element) => root.querySelector<HTMLElement>('.dx-form-error-summary');
 const rowTexts = (root: Element) =>
   Array.from(root.querySelectorAll('.dx-form-error-summary__item')).map((item) =>
@@ -91,7 +105,7 @@ describe('DXFormErrorSummary', () => {
     expect(alert.getAttribute('role')).toBe('alert');
     expect(summary.querySelectorAll('.alert')).toHaveLength(1);
     expect(summary.querySelector('.dx-form-error-summary__message')?.textContent?.trim()).toBe(
-      'The given data was invalid.',
+      DEFAULT_TITLE,
     );
     expect(rowTexts(container)).toEqual([
       'The name field is required.',
@@ -170,7 +184,7 @@ describe('DXFormErrorSummary', () => {
     expect(form.hasErrors).toBe(false);
     expect(rowTexts(container)).toEqual(before);
     expect(summaryOf(container)?.querySelector('.dx-form-error-summary__message')?.textContent?.trim()).toBe(
-      'The given data was invalid.',
+      DEFAULT_TITLE,
     );
   });
 
@@ -239,6 +253,153 @@ describe('DXFormErrorSummary', () => {
     await defined.form.post('/api/orders').catch(() => {});
     await nextTick();
     expect(rowTexts(container)).toEqual(['Full name: Required.']);
+  });
+
+  describe('heading', () => {
+    it('is the client-side title when the failure has field errors, not the server message', async () => {
+      stubResponses(invalid(threeErrors, LARAVEL_MESSAGE));
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, { props: { form, fields } });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+
+      // Positive control: the server's message did arrive.
+      expect(form.submitFailure?.message).toBe(LARAVEL_MESSAGE);
+      expect(headingOf(container)).toBe(DEFAULT_TITLE);
+      expect(summaryOf(container)!.textContent).not.toContain('(and 2 more errors)');
+    });
+
+    it('takes a custom title', async () => {
+      stubResponses(invalid(threeErrors, LARAVEL_MESSAGE));
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, {
+        props: { form, fields, title: 'The order was not saved:' },
+      });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+      expect(headingOf(container)).toBe('The order was not saved:');
+    });
+
+    it('stays the server message for a message-only 422', async () => {
+      stubResponses(invalid({}, 'This order is already closed.'));
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, {
+        props: { form, fields, title: 'Custom title' },
+      });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+      expect(headingOf(container)).toBe('This order is already closed.');
+      expect(summaryOf(container)!.textContent).not.toContain('Custom title');
+    });
+
+    it('stays the failure message for a 500', async () => {
+      stubResponses(
+        () =>
+          new Response(JSON.stringify({ message: 'Internal Server Error' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      );
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, { props: { form, fields } });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+      const message = form.submitFailure?.message;
+      expect(typeof message === 'string' && message !== '').toBe(true);
+      expect(headingOf(container)).toBe(message);
+      expect(summaryOf(container)!.textContent).not.toContain(DEFAULT_TITLE);
+    });
+  });
+
+  describe('grouping', () => {
+    it('lists owned rows first, then unowned rows under "Other problems"', async () => {
+      stubResponses(invalid(threeErrors));
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, { props: { form, fields } });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+
+      expect(listsOf(container)).toEqual([
+        ['The name field is required.', 'Price (line 1): Must be positive.'],
+        ['The delivery date must be a weekday.'],
+      ]);
+      const otherTitle = otherTitleOf(container)!;
+      expect(otherTitle).not.toBeNull();
+      expect(otherTitle.tagName).toBe('P');
+      expect(otherTitle.textContent?.trim()).toBe('Other problems');
+      // The sub-heading sits between the two lists.
+      const [first, second] = Array.from(container.querySelectorAll('.dx-form-error-summary ul'));
+      expect(first.compareDocumentPosition(otherTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(otherTitle.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      // Owned rows are buttons, the unowned one is text.
+      expect(first.querySelectorAll('button').length).toBe(2);
+      expect(second.querySelectorAll('button').length).toBe(0);
+    });
+
+    it('takes a custom sub-heading', async () => {
+      stubResponses(invalid(threeErrors));
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, {
+        props: { form, fields, otherTitle: 'Also:' },
+      });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+      expect(otherTitleOf(container)?.textContent?.trim()).toBe('Also:');
+    });
+
+    it('shows no sub-heading when every row is owned', async () => {
+      stubResponses(invalid({ name: ['Required.'], 'lines.0.price': ['Must be positive.'] }));
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, { props: { form, fields } });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+      expect(listsOf(container)).toEqual([['Name: Required.', 'Price (line 1): Must be positive.']]);
+      expect(otherTitleOf(container)).toBeNull();
+      expect(summaryOf(container)!.textContent).not.toContain('Other problems');
+    });
+
+    it('shows no sub-heading when no row is owned', async () => {
+      stubResponses(
+        invalid({
+          delivery_date: ['The delivery date must be a weekday.'],
+          customer_ref: ['The customer ref has already been taken.'],
+        }),
+      );
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, { props: { form, fields } });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+      expect(headingOf(container)).toBe(DEFAULT_TITLE);
+      expect(listsOf(container)).toEqual([
+        ['The delivery date must be a weekday.', 'The customer ref has already been taken.'],
+      ]);
+      expect(otherTitleOf(container)).toBeNull();
+      expect(summaryOf(container)!.textContent).not.toContain('Other problems');
+    });
+
+    it('draws the sub-heading lighter than the heading, spaced from the lists (built theme)', async () => {
+      stubResponses(invalid(threeErrors));
+      const form = makeForm();
+      const { container } = render(DXFormErrorSummary, { props: { form, fields } });
+      await form.post('/api/orders').catch(() => {});
+      await nextTick();
+
+      const heading = container.querySelector<HTMLElement>('.dx-form-error-summary__message')!;
+      const otherTitle = otherTitleOf(container)!;
+      const headingWeight = Number(getComputedStyle(heading).fontWeight);
+      const otherWeight = Number(getComputedStyle(otherTitle).fontWeight);
+      const bodyWeight = Number(getComputedStyle(document.body).fontWeight);
+      expect(otherWeight).toBeLessThan(headingWeight);
+      expect(otherWeight).toBeGreaterThan(bodyWeight);
+      const [first, second] = Array.from(container.querySelectorAll('.dx-form-error-summary ul'));
+      // No paragraph margin pushing the second list away, but a visible gap
+      // above the sub-heading.
+      expect(getComputedStyle(otherTitle).marginBottom).toBe('0px');
+      const gapAbove = otherTitle.getBoundingClientRect().top - first.getBoundingClientRect().bottom;
+      expect(gapAbove).toBeGreaterThan(4);
+      const gapBelow = second.getBoundingClientRect().top - otherTitle.getBoundingClientRect().bottom;
+      expect(gapBelow).toBeLessThan(gapAbove + 1);
+    });
   });
 
   it('draws rows as underlined text in the alert colour (built theme)', async () => {

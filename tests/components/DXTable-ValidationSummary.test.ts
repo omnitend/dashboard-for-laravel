@@ -147,6 +147,54 @@ describe('DXTable modal validation summary (#194)', () => {
     expect(field!.contains(document.activeElement)).toBe(true);
   });
 
+  describe('summary copy (heading and grouping)', () => {
+    const LARAVEL_MESSAGE = 'The name field is required. (and 1 more error)';
+    const MIXED = {
+      name: ['The name field is required.'],
+      supplier_id: ['The selected supplier is invalid.'],
+    };
+    const headingText = () =>
+      footer()?.querySelector('.dx-form-error-summary__message')?.textContent?.trim();
+    const otherTitleText = () =>
+      footer()?.querySelector('.dx-form-error-summary__other-title')?.textContent?.trim();
+
+    it('defaults: the title, not the server message, and unowned rows under "Other problems"', async () => {
+      stubFailure(422, { message: LARAVEL_MESSAGE, errors: MIXED });
+      const screen = renderTable();
+      await openEdit(screen);
+      modalButton('Save')!.click();
+      await wait(300);
+
+      expect(footer()!.textContent).toContain('The selected supplier is invalid.');
+      expect(headingText()).toBe("Couldn't save. Please check:");
+      expect(footer()!.textContent).not.toContain('(and 1 more error)');
+      expect(otherTitleText()).toBe('Other problems');
+    });
+
+    it('errorSummaryTitle and errorSummaryOtherTitle reach the modal footer summary', async () => {
+      stubFailure(422, { message: LARAVEL_MESSAGE, errors: MIXED });
+      const screen = renderTable({
+        errorSummaryTitle: 'The category was not saved:',
+        errorSummaryOtherTitle: 'Also:',
+      });
+      await openEdit(screen);
+      modalButton('Save')!.click();
+      await wait(300);
+
+      expect(headingText()).toBe('The category was not saved:');
+      expect(otherTitleText()).toBe('Also:');
+    });
+
+    it('a message-only 422 keeps the server message whatever the title', async () => {
+      stubFailure(422, { message: 'Stock levels changed; reload.', errors: {} });
+      const screen = renderTable({ errorSummaryTitle: 'The category was not saved:' });
+      await openEdit(screen);
+      modalButton('Save')!.click();
+      await wait(300);
+      expect(headingText()).toBe('Stock levels changed; reload.');
+    });
+  });
+
   describe('exactly one visible alert in the modal (review finding 4)', () => {
     const modalAlerts = () =>
       Array.from(document.querySelectorAll<HTMLElement>('.modal .alert')).filter(

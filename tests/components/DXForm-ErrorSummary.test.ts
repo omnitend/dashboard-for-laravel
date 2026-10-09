@@ -124,7 +124,9 @@ describe('DXForm error summary (#194)', () => {
       await failSubmit(form);
 
       const alert = expectOneAlertBesideSubmit(screen.container);
-      expect(alert.textContent).toContain(GENERIC);
+      // Field errors: the heading is the client-side title, not the server's.
+      expect(alert.textContent).toContain("Couldn't save. Please check:");
+      expect(alert.textContent).not.toContain(GENERIC);
       expect(alert.textContent).toContain('The delivery date must be a weekday.');
       expect(alert.textContent).toContain('The customer ref has already been taken.');
     });
@@ -243,6 +245,84 @@ describe('DXForm error summary (#194)', () => {
       const alerts = visibleAlerts(screen.container);
       expect(alerts.length).toBe(1);
       expect(alerts[0].textContent?.trim()).toBe('This order is locked.');
+    });
+  });
+
+  describe('summary copy props', () => {
+    const LARAVEL_MESSAGE = 'The SKU is required. (and 1 more error)';
+    const mixed = {
+      sku: ['The SKU is required.'],
+      delivery_date: ['The delivery date must be a weekday.'],
+    };
+    const headingOf = (root: Element) =>
+      root.querySelector('.dx-form-error-summary__message')?.textContent?.trim();
+    const otherTitleOf = (root: Element) =>
+      root.querySelector('.dx-form-error-summary__other-title')?.textContent?.trim();
+
+    it('defaults: the title replaces the server message, unowned rows go under "Other problems"', async () => {
+      stubResponses(invalid(mixed, LARAVEL_MESSAGE));
+      const form = makeFlatForm();
+      const screen = render(DXForm, { props: { form, fields: flatFields } });
+      await settle();
+      await failSubmit(form);
+
+      const alert = expectOneAlertBesideSubmit(screen.container);
+      expect(headingOf(alert)).toBe("Couldn't save. Please check:");
+      expect(alert.textContent).not.toContain('(and 1 more error)');
+      expect(otherTitleOf(alert)).toBe('Other problems');
+    });
+
+    it('errorSummaryTitle and errorSummaryOtherTitle reach the footer summary', async () => {
+      stubResponses(invalid(mixed, LARAVEL_MESSAGE));
+      const form = makeFlatForm();
+      const screen = render(DXForm, {
+        props: {
+          form,
+          fields: flatFields,
+          errorSummaryTitle: 'The product was not saved:',
+          errorSummaryOtherTitle: 'Also:',
+        },
+      });
+      await settle();
+      await failSubmit(form);
+
+      const alert = expectOneAlertBesideSubmit(screen.container);
+      expect(headingOf(alert)).toBe('The product was not saved:');
+      expect(otherTitleOf(alert)).toBe('Also:');
+    });
+
+    it('and the top summary', async () => {
+      stubResponses(invalid(mixed, LARAVEL_MESSAGE));
+      const form = makeFlatForm();
+      const screen = render(DXForm, {
+        props: {
+          form,
+          fields: flatFields,
+          errorSummary: 'top',
+          errorSummaryTitle: 'The product was not saved:',
+          errorSummaryOtherTitle: 'Also:',
+        },
+      });
+      await settle();
+      await failSubmit(form);
+
+      const alerts = visibleAlerts(screen.container);
+      expect(alerts.length).toBe(1);
+      expect(headingOf(alerts[0])).toBe('The product was not saved:');
+      expect(otherTitleOf(alerts[0])).toBe('Also:');
+    });
+
+    it('a message-only failure keeps the server message whatever the title', async () => {
+      stubResponses(invalid({}, 'This order is locked.'));
+      const form = makeFlatForm();
+      const screen = render(DXForm, {
+        props: { form, fields: flatFields, errorSummaryTitle: 'The product was not saved:' },
+      });
+      await settle();
+      await failSubmit(form);
+
+      const alert = expectOneAlertBesideSubmit(screen.container);
+      expect(headingOf(alert)).toBe('This order is locked.');
     });
   });
 
