@@ -177,8 +177,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   container, and a long `append` ("10L Bag in Box") now wraps onto two lines
   instead of crushing the amount input to about 32px.
 
-||||||| c8fd098
-
 ## [0.42.2] - 2026-10-05
 
 ### Bug Fixes
