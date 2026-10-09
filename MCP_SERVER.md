@@ -106,15 +106,17 @@ After publishing, other projects can use the MCP server by installing the packag
 
 **The MCP SDK is an optional peer dependency.** Installing the library does
 not install `@modelcontextprotocol/sdk` (and its server stack), so component
-consumers don't carry it. The `npx` commands below fetch it alongside the
-package with `-p`. If you run `dashboard-docs-mcp` from a project that has the
-library installed, add the SDK there first:
+consumers don't carry it. In a project that has the library installed, add
+the SDK as a dev dependency:
 
 ```bash
 npm install --save-dev @modelcontextprotocol/sdk
 ```
 
-Without it, `dashboard-docs-mcp` exits with an install instruction.
+Without it, `dashboard-docs-mcp` exits with that instruction. (Adding
+`-p @modelcontextprotocol/sdk` to an `npx` command does not help inside such a
+project: npx sees the library already installed, runs the project's own copy,
+and that copy cannot see the SDK npx fetched into its cache.)
 
 **In the other project's `.mcp.json`:**
 ```json
@@ -122,22 +124,19 @@ Without it, `dashboard-docs-mcp` exits with an install instruction.
   "mcpServers": {
     "dashboard-for-laravel-docs": {
       "command": "npx",
-      "args": [
-        "-y",
-        "-p",
-        "@modelcontextprotocol/sdk",
-        "-p",
-        "@omnitend/dashboard-for-laravel@latest",
-        "dashboard-docs-mcp"
-      ]
+      "args": ["--no", "dashboard-docs-mcp"]
     }
   }
 }
 ```
 
-**Note:** Specify `@latest` or a specific version (e.g., `@0.3.3`) to avoid npm cache issues.
+`--no` stops npx from looking for a package called `dashboard-docs-mcp` on the
+registry if the project's install is missing; it runs the project's own copy, so
+it always matches the library version the project uses.
 
 **Or for Claude Desktop:**
+
+Outside a project, npx fetches both packages, so pass the SDK with `-p`:
 
 **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 

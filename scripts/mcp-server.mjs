@@ -15,27 +15,27 @@ import { fileURLToPath } from 'url';
 // component library should not install express/hono/ajv just to get Vue
 // components. Load it dynamically so a missing SDK produces an instruction
 // rather than an ERR_MODULE_NOT_FOUND stack trace.
-let Server, StdioServerTransport, CallToolRequestSchema, ListToolsRequestSchema;
+//
+// Absence is decided by RESOLVING the SDK's own entry point (which loads
+// nothing), not by matching an import error: an error raised while the SDK
+// loads (a missing transitive dependency, a syntax error) also mentions the
+// SDK's path, and must surface as itself rather than as "install the SDK".
 try {
-  ({ Server } = await import('@modelcontextprotocol/sdk/server/index.js'));
-  ({ StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js'));
-  ({ CallToolRequestSchema, ListToolsRequestSchema } = await import(
-    '@modelcontextprotocol/sdk/types.js'
-  ));
+  import.meta.resolve('@modelcontextprotocol/sdk/server/index.js');
 } catch (error) {
-  const sdkIsMissing =
-    error?.code === 'ERR_MODULE_NOT_FOUND' &&
-    String(error.message).includes('@modelcontextprotocol/sdk');
-  if (!sdkIsMissing) throw error;
+  if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error;
   console.error(
     'dashboard-docs-mcp needs @modelcontextprotocol/sdk, which is an optional peer dependency.\n' +
       'Install @modelcontextprotocol/sdk to use dashboard-docs-mcp:\n\n' +
-      '  npm install --save-dev @modelcontextprotocol/sdk\n\n' +
-      'or run it through npx with both packages:\n\n' +
-      '  npx -y -p @modelcontextprotocol/sdk -p @omnitend/dashboard-for-laravel dashboard-docs-mcp',
+      '  npm install --save-dev @modelcontextprotocol/sdk',
   );
   process.exit(1);
 }
+const { Server } = await import('@modelcontextprotocol/sdk/server/index.js');
+const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
+const { CallToolRequestSchema, ListToolsRequestSchema } = await import(
+  '@modelcontextprotocol/sdk/types.js'
+);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
