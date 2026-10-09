@@ -317,7 +317,10 @@ describe('useForm wasSuccessful with overlapping submissions', () => {
     vi.restoreAllMocks();
   });
 
-  it('is false when a failure lands after an overlapping success', async () => {
+  // The NEWEST submit's outcome wins (#194 review): an older submit failing
+  // after a newer one succeeded does not undo the newer success. (Until then
+  // the last request to SETTLE won, so this read false.)
+  it('stays true when an OLDER failure lands after a newer success', async () => {
     let rejectFirst: (reason: unknown) => void = () => {};
     vi.spyOn(api, 'post')
       .mockImplementationOnce(
@@ -330,6 +333,24 @@ describe('useForm wasSuccessful with overlapping submissions', () => {
     expect(form.wasSuccessful).toBe(true);
     rejectFirst({ message: 'Nope', errors: {}, status: 500 });
     await first;
+    expect(form.wasSuccessful).toBe(true);
+    expect(form.submitFailure).toBeNull();
+  });
+
+  it('is false when the NEWER submit fails after an older success', async () => {
+    let rejectSecond: (reason: unknown) => void = () => {};
+    vi.spyOn(api, 'post')
+      .mockResolvedValueOnce({ data: {}, response: {} as Response })
+      .mockImplementationOnce(
+        () => new Promise((_resolve, reject) => { rejectSecond = reject; }),
+      );
+    const form = useForm({ name: 'Ada' });
+    const first = form.post('/api/users');
+    const second = form.post('/api/users').catch(() => {});
+    await first;
+    rejectSecond({ message: 'Nope', errors: {}, status: 500 });
+    await second;
     expect(form.wasSuccessful).toBe(false);
+    expect(form.submitFailure?.message).toBe('Nope');
   });
 });

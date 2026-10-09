@@ -251,6 +251,27 @@ export function useForm<TData extends Record<string, any>>(
     let inFlightCount = 0;
     let successTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Which submit's outcome the form records (#194 review). Each submit takes
+    // a generation number when it starts. Its outcome (success, failure,
+    // errors, message, `submitFailure`, `resetOnSuccess`) is recorded only if
+    // no NEWER submit is still pending or has already recorded: the newest
+    // submit's outcome wins, in either completion order. An older success can
+    // therefore never clear a newer failure, and an older failure never lands
+    // over a newer success. An aborted submit leaves the pending set without
+    // recording, so if the newest submit is aborted the next-newest still
+    // settles the form. Callbacks and the returned promise are unaffected:
+    // every submit still calls its own onSuccess/onError and resolves/rejects.
+    let latestSubmitGeneration = 0;
+    let lastRecordedGeneration = 0;
+    const pendingGenerations = new Set<number>();
+    const mayRecord = (generation: number): boolean => {
+        if (generation < lastRecordedGeneration) return false;
+        for (const pending of pendingGenerations) {
+            if (pending > generation) return false;
+        }
+        return true;
+    };
+
     const state = reactive<FormState<TData>>({
         data: deepClone(snapshot) as TData,
         errors: {},
@@ -319,7 +340,9 @@ export function useForm<TData extends Record<string, any>>(
         }
         clearErrors();
         state.touched = {};
-        state.processing = false;
+        // Not `false` outright: with another submit still in flight the form
+        // is still processing, and the counter will clear it when that ends.
+        state.processing = inFlightCount > 0;
     };
 
     // v-model for a single field
@@ -351,6 +374,8 @@ export function useForm<TData extends Record<string, any>>(
         options: FormSubmitOptions<TData, TResponse> = {},
     ): Promise<TResponse> => {
         inFlightCount += 1;
+        const generation = ++latestSubmitGeneration;
+        pendingGenerations.add(generation);
         state.processing = true;
         state.wasSuccessful = false;
         state.submitFailure = null;
@@ -416,33 +441,56 @@ export function useForm<TData extends Record<string, any>>(
                             signal: options?.signal,
                         });
 
-            state.recentlySuccessful = true;
-            state.wasSuccessful = true;
-            state.submitFailure = null;
-            if (successTimer !== null) clearTimeout(successTimer);
-            successTimer = setTimeout(() => {
-                state.recentlySuccessful = false;
-                successTimer = null;
-            }, 1500);
+            const records = mayRecord(generation);
+            if (records) {
+                lastRecordedGeneration = generation;
+                state.recentlySuccessful = true;
+                state.wasSuccessful = true;
+                state.submitFailure = null;
+                if (successTimer !== null) clearTimeout(successTimer);
+                successTimer = setTimeout(() => {
+                    state.recentlySuccessful = false;
+                    successTimer = null;
+                }, 1500);
+            }
 
             options.onSuccess?.(data);
-            if (options.resetOnSuccess) {
+            // Only the recorded (newest) success resets: an older one would
+            // wipe the data and errors the newer submit is answering for.
+            if (options.resetOnSuccess && records) {
                 reset();
             }
             return data;
         } catch (err) {
-            state.wasSuccessful = false;
-            const { errors, message } = errorsFromLaravel(err);
-            setErrors(errors);
-            setMessage(message);
-            const failure = submitFailureFrom(err);
-            if (failure) {
-                state.submitFailure = failure;
-                state.failedSubmitCount += 1;
+            // Re-checked here (not reused from the try) so a throwing
+            // onSuccess on the newest submit is recorded as its failure.
+            if (isAbortError(err)) {
+                // The caller cancelled it: it leaves the pending set (below)
+                // without recording, so an older submit can still settle the
+                // form. The NEWEST submit's abort keeps its old behaviour of
+                // writing the errors/message it carries.
+                if (mayRecord(generation)) {
+                    const { errors, message } = errorsFromLaravel(err);
+                    setErrors(errors);
+                    setMessage(message);
+                    state.wasSuccessful = false;
+                }
+            } else if (mayRecord(generation)) {
+                lastRecordedGeneration = generation;
+                state.wasSuccessful = false;
+                const { errors, message } = errorsFromLaravel(err);
+                setErrors(errors);
+                setMessage(message);
+                const failure = submitFailureFrom(err);
+                if (failure) {
+                    state.submitFailure = failure;
+                    state.failedSubmitCount += 1;
+                }
             }
             options.onError?.(err as FormError);
             throw err;
         } finally {
+            pendingGenerations.delete(generation);
             inFlightCount -= 1;
             // Only clear `processing` once no submission is still in flight.
             if (inFlightCount === 0) state.processing = false;
