@@ -31,8 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before any button in it (an info button), and waits up to a second for an
   async editor's control. Auto-scroll skips a target that never renders for
   the next one. DXField roots carry `data-dx-field-key` (the field's data
-  path), and so does a new unstyled wrapper around `field(<key>)` slot
-  content (`<div class="dx-form-field-slot">`) (#194).
+  path), and so does a new wrapper around `field(<key>)` slot content
+  (`<div class="dx-form-field-slot">`, `display: contents`, so each slot
+  root stays the grid or flex item it was). Focus only lands on a control
+  that can take it (not disabled, `aria-disabled`, inert or in a disabled
+  fieldset), and keeps waiting while none can (#194).
 - `errorKeys` field option: patterns (`*` matches one dot segment, e.g.
   `['lines.*.*']`) for error keys a field owns although they are not under
   its key, such as a `span` field editing `form.data.lines` (#194).

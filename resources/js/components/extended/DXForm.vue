@@ -868,26 +868,26 @@ function goToErrorTab(): void {
  * Controls a user types into or picks from: what a focus request lands on.
  * Looked for before anything else focusable, so a field whose label carries
  * an info button ("More information", earlier in document order) focuses
- * its input, not the button.
+ * its input, not the button. Matching is only the first step: every
+ * candidate must also pass `canTakeFocus`.
  */
 const EDITABLE_CONTROL = [
-    'input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not(:disabled)',
-    "select:not(:disabled)",
-    "textarea:not(:disabled)",
+    'input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"])',
+    "select",
+    "textarea",
     '[contenteditable="true"]',
     '[contenteditable=""]',
-    '[role="combobox"]:not([aria-disabled="true"])',
-    '[role="textbox"]:not([aria-disabled="true"])',
-    '[role="spinbutton"]:not([aria-disabled="true"])',
-    '[role="listbox"]:not([aria-disabled="true"])',
+    '[role="combobox"]',
+    '[role="textbox"]',
+    '[role="spinbutton"]',
+    '[role="listbox"]',
 ].join(", ");
 
 /** The fallback for a widget with no editable control (a button picker). */
-const ANY_FOCUSABLE = [
-    "button:not(:disabled)",
-    "a[href]",
-    '[tabindex]:not([tabindex="-1"])',
-].join(", ");
+const ANY_FOCUSABLE = ["button", "a[href]", "[tabindex]"].join(", ");
+
+/** Elements the browser focuses without a `tabindex`. */
+const NATIVELY_FOCUSABLE = "input, select, textarea, button, a[href]";
 
 /**
  * Frames to wait for a field's element: a lazy tab mounts its pane a render
@@ -899,34 +899,81 @@ const ANY_FOCUSABLE = [
 const FIELD_RENDER_ATTEMPTS = 10;
 
 /**
- * Further frames a FOCUS request waits for the field's control (about a
- * second): an async editor's wrapper renders before its control does.
+ * Further frames a FOCUS request waits for a control that can take focus
+ * (about a second): an async editor renders its wrapper before its control,
+ * and a widget may render its control disabled until its data loads.
  */
 const CONTROL_RENDER_ATTEMPTS = 60;
 
 const nextFrame = () =>
     new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
 
-function isShown(element: HTMLElement): boolean {
-    return element.offsetParent !== null;
-}
-
-/** The first shown element matching `selector`: `element` itself, or inside it. */
-function firstShown(element: HTMLElement, selector: string): HTMLElement | null {
-    if (element.matches(selector) && isShown(element)) return element;
-    for (const candidate of Array.from(element.querySelectorAll<HTMLElement>(selector))) {
-        if (isShown(candidate)) return candidate;
+/**
+ * The element whose box stands for `element`: itself, or, for a
+ * `display: contents` element (the `field(<key>)` slot wrapper, which has no
+ * box and cannot be scrolled to), its first descendant that has one.
+ */
+function boxOf(element: HTMLElement): HTMLElement | null {
+    if (getComputedStyle(element).display !== "contents") {
+        return element.offsetParent !== null ? element : null;
+    }
+    for (const child of Array.from(element.children)) {
+        if (!(child instanceof HTMLElement)) continue;
+        const box = boxOf(child);
+        if (box !== null) return box;
     }
     return null;
 }
 
-/** A rendered, laid-out element marked with this data path, or null. */
+/**
+ * Whether `candidate` can take focus now: laid out, not disabled (itself or
+ * through a disabled fieldset), not `aria-disabled`, not inside an `inert`
+ * subtree, and focusable at all (a native control, contenteditable, or a
+ * `tabindex`; a `div role="combobox"` with none is not).
+ */
+function canTakeFocus(candidate: HTMLElement): boolean {
+    if (candidate.offsetParent === null) return false;
+    if (candidate.matches(":disabled")) return false;
+    if (candidate.closest("fieldset:disabled") !== null) return false;
+    if (candidate.getAttribute("aria-disabled") === "true") return false;
+    if (candidate.closest("[inert]") !== null) return false;
+    if (candidate.getAttribute("tabindex") === "-1" && !candidate.matches(NATIVELY_FOCUSABLE)) {
+        // Programmatically focusable, but a widget opting out of the tab
+        // order is not where a user would type.
+        return false;
+    }
+    return (
+        candidate.matches(NATIVELY_FOCUSABLE) ||
+        candidate.isContentEditable ||
+        candidate.hasAttribute("tabindex")
+    );
+}
+
+/** The first element matching `selector` (itself or inside) that can take focus. */
+function firstFocusable(element: HTMLElement, selector: string): HTMLElement | null {
+    if (element.matches(selector) && canTakeFocus(element)) return element;
+    for (const candidate of Array.from(element.querySelectorAll<HTMLElement>(selector))) {
+        if (canTakeFocus(candidate)) return candidate;
+    }
+    return null;
+}
+
+/**
+ * The first shown element marked with this data path, or null. Compared as
+ * an attribute value rather than built into a selector, so a key holding
+ * quotes, brackets, spaces or dots (`image_media.<uuid>`) needs no escaping.
+ * Nested markers for one key (a DXField inside a `field(<key>)` wrapper)
+ * resolve to the outer one, whose subtree holds the inner one's control.
+ */
 function shownFieldElement(path: string): HTMLElement | null {
-    const element =
-        resolveFormElement()?.querySelector<HTMLElement>(
-            `[data-dx-field-key="${CSS.escape(path)}"]`,
-        ) ?? null;
-    return element !== null && isShown(element) ? element : null;
+    const root = resolveFormElement();
+    if (root === null) return null;
+    for (const element of Array.from(root.querySelectorAll<HTMLElement>("[data-dx-field-key]"))) {
+        if (element.getAttribute("data-dx-field-key") === path && boxOf(element) !== null) {
+            return element;
+        }
+    }
+    return null;
 }
 
 /**
@@ -948,6 +995,11 @@ async function renderedErrorElement(
         if (attempt < FIELD_RENDER_ATTEMPTS - 1) await nextFrame();
     }
     return errorKey === fieldKey ? null : shownFieldElement(fieldKey);
+}
+
+/** Scroll the box standing for a field element into view, if it has one. */
+function scrollFieldIntoView(element: HTMLElement): void {
+    boxOf(element)?.scrollIntoView({ block: "nearest" });
 }
 
 /** Bumped per scroll/focus request, so only the latest one acts. */
@@ -974,7 +1026,7 @@ function scrollToFirstError(): void {
             const element = await renderedErrorElement(target.errorKey, target.fieldKey!);
             if (token !== revealToken) return;
             if (element !== null) {
-                element.scrollIntoView({ block: "nearest" });
+                scrollFieldIntoView(element);
                 return;
             }
         }
@@ -983,32 +1035,47 @@ function scrollToFirstError(): void {
 
 /**
  * Take the user to an error a summary lists: select its tab, wait for the
- * pane to render, scroll the field into view and focus its control (an
- * editable control first, waiting for one an async editor has yet to
- * render; anything else focusable only as a fallback). Exposed so a summary
- * rendered OUTSIDE the form (DXTable's modal footer) can drive it.
+ * pane to render, scroll the field into view and focus its control: an
+ * editable control that can take focus, waiting (about a second) while none
+ * can, e.g. an async editor still loading or a widget rendered disabled
+ * until its data arrives; anything else focusable only as a fallback. A
+ * focus counts only once `document.activeElement` is the control. Exposed
+ * so a summary rendered OUTSIDE the form (DXTable's modal footer) can drive
+ * it.
  */
 async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
     if (target.tabKey !== null && visibleTabKeys.value.includes(target.tabKey)) {
         commitTabKey(target.tabKey);
     }
     const token = ++revealToken;
-    const element = await renderedErrorElement(
+    let element = await renderedErrorElement(
         target.errorKey ?? target.fieldKey,
         target.fieldKey,
     );
     if (token !== revealToken || element === null) return;
-    element.scrollIntoView({ block: "nearest" });
-    let control = firstShown(element, EDITABLE_CONTROL);
-    for (let attempt = 0; control === null && attempt < CONTROL_RENDER_ATTEMPTS; attempt += 1) {
+    const path = element.getAttribute("data-dx-field-key") ?? target.fieldKey;
+    scrollFieldIntoView(element);
+
+    const tryFocus = (control: HTMLElement | null): boolean => {
+        if (control === null) return false;
+        control.focus({ preventScroll: true });
+        if (document.activeElement !== control) return false;
+        control.scrollIntoView({ block: "nearest" });
+        return true;
+    };
+
+    for (let attempt = 0; attempt <= CONTROL_RENDER_ATTEMPTS; attempt += 1) {
+        if (tryFocus(firstFocusable(element, EDITABLE_CONTROL))) return;
+        if (attempt === CONTROL_RENDER_ATTEMPTS) break;
         await nextFrame();
         if (token !== revealToken) return;
-        control = firstShown(element, EDITABLE_CONTROL);
+        // A re-render may have replaced the field's element.
+        if (!element.isConnected) {
+            element = shownFieldElement(path);
+            if (element === null) return;
+        }
     }
-    control = control ?? firstShown(element, ANY_FOCUSABLE);
-    if (control === null) return;
-    control.focus({ preventScroll: true });
-    control.scrollIntoView({ block: "nearest" });
+    tryFocus(firstFocusable(element, ANY_FOCUSABLE));
 }
 
 // ————————————————— failed-submit summary
