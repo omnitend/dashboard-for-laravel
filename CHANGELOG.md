@@ -32,7 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of curling the CDN-cached registry document, and its final check
   retries for about a minute with backoff before reporting the version
   missing, saying that a fresh publish can take a moment to appear. 0.42.0,
-  0.42.1 and 0.42.2 each reported a successful publish as missing.
+  0.42.1 and 0.42.2 each reported a successful publish as missing. Each
+  check gives up after 15 s and the whole verify after 90 s, so a stalled
+  registry no longer holds the release for npm's 5-minute fetch timeout.
 
 ### Docs
 
