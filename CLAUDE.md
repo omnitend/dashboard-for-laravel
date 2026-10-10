@@ -1318,10 +1318,27 @@ published). Since #184 the script reads
 `npm view @omnitend/dashboard-for-laravel@<version> version --prefer-online`
 (`scripts/release-npm-check.sh`, used by both the resume check and the final
 verify) and the verify retries for about a minute, so a ✗ there now means a
-minute of misses. Checking by hand, use the same command (or `curl` with
-`-H 'Cache-Control: no-cache'` and a `?t=$(date +%s)` query) and give it a
-minute. If a re-run's publish step fails with "cannot publish over the
+minute of misses. A minute is still not always enough: 0.44.0 reported ✗ and
+was live 10 s later (#203). Checking by hand, use the same command (or `curl`
+with `-H 'Cache-Control: no-cache'` and a `?t=$(date +%s)` query) and give it
+a minute. If a re-run's publish step fails with "cannot publish over the
 previously published versions", that is itself the proof it landed.
+
+**The script refuses any branch but `main`, and git allows one worktree per
+branch.** If an agent worktree has `main` checked out, the primary checkout
+cannot switch to it ("'main' is already used by worktree at …"): release from
+that worktree after `git pull --ff-only`, or remove it if it is clean. 0.44.0
+was released from one.
+
+**Folding several PRs into an already-cut release section** (0.44.0 was cut
+for one PR, then four more were merged into it): resolve each CHANGELOG
+conflict by moving the PR's `[Unreleased]` entries into the cut section, and
+take everything below that section from `main`, not from the PR branch. A
+branch older than a sibling PR does not have that PR's history edits, and
+copying its lower history deleted #197's 0.39.1 section from the #198 merge
+until the diff against `main` showed it. Check each resolution with
+`git diff origin/main -- CHANGELOG.md` (only the PR's entries should appear),
+and drop entries a later PR reworded so they are not listed twice.
 
 **`npm run test:headless` does not rebuild `dist` first** (its `pretest:headless`
 hook does not run with this npm config), and the browser tests read `dist`. A
