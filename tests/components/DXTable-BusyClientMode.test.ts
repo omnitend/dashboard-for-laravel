@@ -29,6 +29,11 @@ describe.each(modes)('DXTable busy with $name rows', ({ extraProps }) => {
 
     await expect.element(screen.getByText('Loading customers...')).toBeVisible();
     await expect.element(screen.getByText('No customers here')).not.toBeInTheDocument();
+    // The library's one loader (DXLoading: soft grey, delayed), not a navy
+    // spinner of the table's own.
+    const loader = screen.container.querySelector('.dx-loading[role="status"]');
+    expect(loader?.textContent).toContain('Loading customers...');
+    expect(screen.container.querySelector('.spinner-border.text-primary')).toBeNull();
   });
 
   it('shows the empty text once no longer busy', async () => {
