@@ -1317,9 +1317,14 @@ cached `npm view` — that is what `release.sh`'s own verify step hit for
 published). Since #184 the script reads
 `npm view @omnitend/dashboard-for-laravel@<version> version --prefer-online`
 (`scripts/release-npm-check.sh`, used by both the resume check and the final
-verify) and the verify retries for about a minute, so a ✗ there now means a
-minute of misses. A minute is still not always enough: 0.44.0 reported ✗ and
-was live 10 s later (#203). Checking by hand, use the same command (or `curl`
+verify). A minute of retries was not always enough (0.44.0 reported ✗ and
+was live 10 s later), so since #203 the verify asks for three minutes and
+also reads the registry document (no-cache header, cache-busting query,
+`curl -q`) for the version in BOTH `versions` and `time` (an unpublished
+version keeps its `time` entry), counting either source; a ✗ now means three minutes of
+misses from both. The stub harness for all of this is
+`bash scripts/test-release-npm-check.sh` (about three and a half minutes, real time;
+not in vitest, which cannot run bash). Checking by hand, use the same command (or `curl`
 with `-H 'Cache-Control: no-cache'` and a `?t=$(date +%s)` query) and give it
 a minute. If a re-run's publish step fails with "cannot publish over the
 previously published versions", that is itself the proof it landed.
