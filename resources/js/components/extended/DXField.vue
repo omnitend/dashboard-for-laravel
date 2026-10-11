@@ -405,7 +405,14 @@ import DXNumericField from "./DXNumericField.vue";
 import DXChoiceField from "./DXChoiceField.vue";
 import { useAsyncOptions } from "../../composables/useAsyncOptions";
 import type { UseFormReturn } from "../../composables/useForm";
-import type { FieldDefinition, FieldOption, FieldType, LabelCols } from "../../types";
+import type {
+    FieldDefinition,
+    FieldOption,
+    FieldType,
+    LabelCols,
+    MaybeFn,
+} from "../../types";
+import { humaniseErrorKey } from "../../utils/formErrorTargets";
 import { getByPath, setByPath } from "../../utils/objectPath";
 
 // Async to break the DXField <-> DXRepeater circular import.
@@ -619,6 +626,21 @@ function resolveMaybe<TValue>(
     return value;
 }
 
+/** Resolve display TEXT (label, hint, info, switch text) the way
+ *  resolveMaybe does, but a function that throws (a repeater row missing a
+ *  property it reads) gives `undefined` instead of breaking the render (#204).
+ *  Behaviour options (disabled, readonly, plaintext) stay unguarded: no
+ *  fallback for those is safe to guess. */
+function resolveText(
+    value: MaybeFn<string> | undefined,
+): string | undefined {
+    try {
+        return resolveMaybe(value);
+    } catch {
+        return undefined;
+    }
+}
+
 const fieldValue = computed({
     get: () =>
         usePathSemantics.value
@@ -691,13 +713,19 @@ function setValue(value: any): void {
 
 const fieldState = computed(() => props.form.getState(errorKey.value));
 
-const resolvedLabel = computed(
-    () => resolveMaybe(props.field.label) ?? props.field.key,
-);
+// A label function that throws falls back to the humanised key, as the
+// repeater's headers and the error summary do; a missing label still shows
+// the raw key, as it always has.
+const resolvedLabel = computed(() => {
+    if (typeof props.field.label !== "function") {
+        return props.field.label ?? props.field.key;
+    }
+    return resolveText(props.field.label) ?? humaniseErrorKey(props.field.key);
+});
 
-const resolvedHint = computed(() => resolveMaybe(props.field.hint));
+const resolvedHint = computed(() => resolveText(props.field.hint));
 
-const resolvedInfo = computed(() => resolveMaybe(props.field.info));
+const resolvedInfo = computed(() => resolveText(props.field.info));
 
 // ————————————————— switch-list (#160)
 
@@ -763,8 +791,8 @@ const switchModel = computed({
  */
 const switchText = computed(() => {
     const contextual = switchIsOn.value
-        ? resolveMaybe(props.field.textWhenTrue)
-        : resolveMaybe(props.field.textWhenFalse);
+        ? resolveText(props.field.textWhenTrue)
+        : resolveText(props.field.textWhenFalse);
     return contextual ?? resolvedLabel.value;
 });
 
