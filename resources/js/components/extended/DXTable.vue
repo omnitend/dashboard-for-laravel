@@ -35,10 +35,7 @@
                         {{ error || apiError }}
                     </div>
 
-                    <div v-if="effectiveBusy && !isProviderMode" class="text-center py-5">
-                        <DSpinner variant="primary" />
-                        <p class="mt-2">{{ loadingText }}</p>
-                    </div>
+                    <DXLoading v-if="effectiveBusy && !isProviderMode" :text="loadingText" />
 
                     <!-- One table for all three data modes. The modes differ only
                          in a few bound props, supplied by `tableModeBindings`, so
@@ -326,7 +323,7 @@ import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
 import DCol from "../base/DCol.vue";
 import DXTableShell from "./DXTableShell.vue";
-import DSpinner from "../base/DSpinner.vue";
+import DXLoading from "./DXLoading.vue";
 import DTable from "../base/DTable.vue";
 import DFormInput from "../base/DFormInput.vue";
 import DFormSelect from "../base/DFormSelect.vue";

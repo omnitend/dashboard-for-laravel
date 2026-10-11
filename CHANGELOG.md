@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `DXLoading` is softer, after Omni Tend's legacy loader: a small grey
+  spinner beside the text on one line, the text in the display face
+  (h2 size) in grey with a slow light sweep across it, fading in. The
+  spinner turns more slowly than Bootstrap's (1.1 s a turn, was 0.75 s). It waits
+  **600 ms** before showing (was 300 ms), so most loads never show it. The
+  text keeps AA contrast (#6c757d); the sweep and the fade are off under
+  `prefers-reduced-motion`. Colours are tokens (`--dx-loading-color`,
+  `--dx-loading-sweep-color`, `--dx-loading-spinner-color`,
+  `--dx-loading-spinner-speed`), remapped under
+  `data-bs-theme="dark"`. A consumer passing `delay` explicitly keeps its
+  own value.
+- DXTable's busy state (client-side and Inertia rows) renders `DXLoading`
+  with `loadingText`, instead of its own full-size navy spinner, so it gets
+  the same look and the 600 ms delay.
+
 ## [0.44.0] - 2026-10-09
 
 ### Added
