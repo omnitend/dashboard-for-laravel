@@ -608,4 +608,79 @@ describe('DXRepeater', () => {
       expect(headers).toContain('Quantity');
     });
   });
+
+  // #204: the row's own fields resolve label/hint/info functions against the
+  // row too, so a row missing what a function reads must still render.
+  describe('row field option functions that throw', () => {
+    const throwingField: FieldDefinition = {
+      ...lineField,
+      fields: [
+        {
+          key: 'unit_price',
+          type: 'number',
+          label: (row: any) => `${row.currency.toUpperCase()} price`,
+          hint: (row: any) => `Charged in ${row.currency.toUpperCase()}`,
+          info: (row: any) => `Rate for ${row.currency.toUpperCase()}`,
+        },
+        { key: 'qty', type: 'number', label: 'Quantity' },
+      ],
+    };
+
+    it('renders every row, falling back to the humanised key for a throwing label', async () => {
+      const form = useForm({ lines: [{ qty: 1 }, { currency: 'eur', qty: 2 }] });
+      const screen = render(DXRepeater, {
+        props: { form, field: throwingField, keyPath: 'lines' },
+      });
+      await flush();
+
+      const rows = Array.from(screen.container.querySelectorAll('.dx-repeater-row'));
+      expect(rows.length).toBe(2);
+      const labelsIn = (row: Element) =>
+        Array.from(row.querySelectorAll('label')).map((label) => label.textContent?.trim());
+
+      // The row without a currency: fallback label, no hint, both inputs present.
+      expect(labelsIn(rows[0])).toContain('Unit price');
+      expect(labelsIn(rows[0])).toContain('Quantity');
+      expect(rows[0].textContent).not.toContain('Charged in');
+      expect(rows[0].querySelectorAll('input').length).toBe(2);
+
+      // The row that has one resolves its functions as before (the label's
+      // text includes its info button's, so row 0's exact match above also
+      // proves the throwing info rendered nothing).
+      expect(labelsIn(rows[1])).toContain('EUR priceRate for EUR');
+      expect(rows[1].textContent).toContain('Charged in EUR');
+
+      // Still reactive: once the row gains the property, its label resolves.
+      (form.data.lines[0] as any).currency = 'gbp';
+      await flush();
+      expect(labelsIn(rows[0])).toContain('GBP priceRate for GBP');
+    });
+
+    it('falls back to the label when switch text throws, in both states', async () => {
+      const form = useForm({ lines: [{ active: true }, { active: false }] });
+      const field: FieldDefinition = {
+        ...lineField,
+        fields: [
+          {
+            key: 'active',
+            type: 'switch',
+            label: 'Active',
+            textWhenTrue: (row: any) => `On in ${row.currency.toUpperCase()}`,
+            textWhenFalse: (row: any) => `Off in ${row.currency.toUpperCase()}`,
+          },
+        ],
+      };
+      const screen = render(DXRepeater, {
+        props: { form, field, keyPath: 'lines' },
+      });
+      await flush();
+
+      const rows = Array.from(screen.container.querySelectorAll('.dx-repeater-row'));
+      expect(rows.length).toBe(2);
+      for (const row of rows) {
+        expect(row.querySelector('input[type="checkbox"]')).toBeTruthy();
+        expect(row.textContent).toContain('Active');
+      }
+    });
+  });
 });

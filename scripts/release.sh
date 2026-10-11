@@ -45,7 +45,8 @@ fi
 
 PACKAGE_NAME=$(node -p "require('./package.json').name")
 
-# npm_has_version (uncached) and wait_for_npm_version (retries for ~60 s).
+# version_is_published (uncached npm, then the registry document) and
+# wait_for_npm_version (retries for about three minutes).
 source "$(dirname "${BASH_SOURCE[0]}")/release-npm-check.sh"
 
 # ---------------------------------------------------------------------------
@@ -133,7 +134,7 @@ fi
 echo -e "\n${YELLOW}About to release ${PACKAGE_NAME}@${VERSION}${NC}"
 echo ""
 ALREADY_PUBLISHED=false
-if npm_has_version; then
+if version_is_published; then
     ALREADY_PUBLISHED=true
     print_warning "${VERSION} is ALREADY on npm — this is a resume."
     echo "  A published version is immutable, so tests are skipped: they can no"
@@ -308,8 +309,8 @@ check() {
 }
 
 # A just-published version can take a moment to appear, so this retries for
-# about a minute before reporting a false failure (#184).
-print_step "Checking npm for ${PACKAGE_NAME}@${VERSION} (a fresh publish can take up to a minute to appear)..."
+# about three minutes before reporting a false failure (#184, #203).
+print_step "Checking npm for ${PACKAGE_NAME}@${VERSION} (a fresh publish can take minutes to appear)..."
 NPM_OK=false
 if wait_for_npm_version; then NPM_OK=true; fi
 
@@ -322,8 +323,8 @@ if $FAILED; then
     echo ""
     print_error "Release ${VERSION} is INCOMPLETE — see the ✗ above."
     if ! $NPM_OK; then
-        echo "npm did not show ${VERSION} within a minute. A fresh publish can take"
-        echo "a moment to appear, so check again before concluding it failed:"
+        echo "Neither npm nor the registry showed ${VERSION} within three minutes. A"
+        echo "fresh publish can take longer, so check again before concluding it failed:"
         echo "  npm view ${PACKAGE_NAME}@${VERSION} version --prefer-online"
     fi
     echo "Re-run the same command to finish it; completed steps will be skipped:"
