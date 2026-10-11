@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-10-11
+
 ### Changed
 
 - `DXLoading` is softer, after Omni Tend's legacy loader: a small grey
@@ -46,8 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The release script's npm check asks for three minutes instead of one, at
   fixed times so slow checks cannot push the last ask early, and also counts
   the version as published when the registry document, fetched uncached,
-  lists it in both `versions` and `time`. 0.44.0 was reported missing and was live
-  10 s later (#203). `scripts/test-release-npm-check.sh` exercises it against
+  lists it in both `versions` and `time`. 0.44.0 was reported missing and
+  was live 10 s later (#203). `scripts/test-release-npm-check.sh` exercises it against
   stubbed `npm` and `curl`.
 
 ## [0.44.0] - 2026-10-09
