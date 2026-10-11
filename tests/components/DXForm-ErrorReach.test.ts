@@ -819,14 +819,20 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
     // And the summary lists `custom` first (so it IS the first target).
     await failSubmit(form);
     // The unreachable first target is given its render frames before the
-    // fall-through, so the scroll starts late: let it start, then settle.
-    await wait(500);
+    // fall-through, so the scroll starts late, and later still on a slow CI
+    // runner (a fixed 500 ms wait failed there with qty still below the
+    // fold). Poll until qty is in view, then let the scroll settle and check
+    // it stayed there. The positive control above keeps this from passing
+    // without a scroll.
+    const qtyInView = () => {
+      const rect = qty.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= window.innerHeight;
+    };
+    await expect.poll(qtyInView, { timeout: 3000, interval: 50 }).toBe(true);
     await scrollSettled();
     const rows = screen.container.querySelectorAll('.dx-form-error-summary__target');
     expect(rows[0]?.textContent).toContain('Custom is wrong.');
-    const rect = qty.getBoundingClientRect();
-    expect(rect.top).toBeGreaterThanOrEqual(0);
-    expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+    expect(qtyInView()).toBe(true);
   });
 
   it('scrolls to an errored field on a FRESH, never-opened lazy tab', async () => {
