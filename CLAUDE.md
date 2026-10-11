@@ -448,6 +448,32 @@ beats a cell's `.text-end`, so controls and values share one left edge. Pinned b
 `tests/components/DXStackingTable.test.ts`, which reads the BUILT CSS:
 rebuild before running it after a theme change.
 
+### DXLoading (soft loader, 0.45.0)
+
+The one loader: DXTable's client/Inertia busy state renders it too (#211
+tracks keeping rows during a refresh). Styles are global in theme.scss under
+`.dx-loading` with `--dx-loading-*` tokens. Three things that are not
+obvious:
+
+- **The `role="status"` box renders at once**, sized by its hidden contents
+  (`visibility: hidden` on the children, never `display: none` or a `v-if`),
+  and the delay only adds `.dx-loading--shown`. A live region inserted
+  together with its text can go unannounced, and the held space stops a
+  jump. Even `delay: 0` reveals a task after mount for the same reason.
+- **The spin speed is set on `.spinner-border` itself**: Bootstrap declares
+  `--bs-spinner-animation-speed` there, so a value on `.dx-loading` is
+  overridden. The same specificity beats Bootstrap's reduced-motion
+  slowdown, so theme.scss restates it (double) under
+  `prefers-reduced-motion`.
+- **Light tokens go on `:root, [data-bs-theme="light"]`**, as the chart
+  tokens do, or a light section inside a dark page inherits the dark set.
+
+Testing: reduced motion is emulated for real with
+`cdp().send('Emulation.setEmulatedMedia', { features: [{ name:
+'prefers-reduced-motion', value: 'reduce' }] })` (from `vitest/browser`;
+reset in `afterEach`), then computed styles are read. Pinned by
+`tests/components/DXLoading.test.ts`.
+
 ### DXForm validation errors (#194)
 
 Three owners, nothing else writes their state:
