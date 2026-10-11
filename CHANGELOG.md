@@ -12,14 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DXLoading` is softer, after Omni Tend's legacy loader: a small grey
   spinner beside the text on one line, the text in the display face
   (h2 size) in grey with a slow light sweep across it, fading in. The
-  spinner turns more slowly than Bootstrap's (1.1 s a turn, was 0.75 s). It waits
-  **600 ms** before showing (was 300 ms), so most loads never show it. The
-  text keeps AA contrast (#6c757d); the sweep and the fade are off under
-  `prefers-reduced-motion`. Colours are tokens (`--dx-loading-color`,
-  `--dx-loading-sweep-color`, `--dx-loading-spinner-color`,
-  `--dx-loading-spinner-speed`), remapped under
-  `data-bs-theme="dark"`. A consumer passing `delay` explicitly keeps its
-  own value.
+  spinner turns more slowly (1.1 s a turn; Bootstrap's is 0.75 s). It
+  waits **600 ms** before showing (was 300 ms), so most loads never show
+  it. The text keeps AA contrast (#6c757d). Under `prefers-reduced-motion`
+  the sweep and fade are off and the spinner turns at half speed. Colours
+  and speed are tokens (`--dx-loading-color`, `--dx-loading-sweep-color`,
+  `--dx-loading-spinner-color`, `--dx-loading-spinner-speed`), remapped
+  under `data-bs-theme="dark"` and restored inside a `data-bs-theme="light"`
+  section. A consumer passing `delay` explicitly keeps its own value.
+- `DXLoading`'s `role="status"` box now renders at once, holding the
+  loader's space with its contents hidden, and the delay only reveals them.
+  Screen readers announce content added to a live region already in the
+  page (one inserted together with its text could go unannounced), and
+  nothing moves when the loader appears. Before, nothing rendered until
+  the delay ran out. `delay: 0` reveals it a task after mount.
 - DXTable's busy state (client-side and Inertia rows) renders `DXLoading`
   with `loadingText`, instead of its own full-size navy spinner, so it gets
   the same look and the 600 ms delay.

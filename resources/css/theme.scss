@@ -2002,10 +2002,23 @@ thead tr:has(.dx-table-filter-cell) > td {
 // gray-300 was 1.5:1). The sweep passes through a lighter grey, so a moment
 // of the text sits below AA while it moves. Global, not scoped: DXTable and
 // consumers render it, and its spinner is a bvn component.
-:root {
+//
+// The `role="status"` box renders at once with its contents hidden, and
+// `.dx-loading--shown` reveals them after the delay. Two reasons: a live
+// region that is already in the page announces content added to it (one
+// inserted together with its text can go unannounced), and the space the
+// loader will take is held from the start, so nothing jumps when it appears.
+@mixin dx-loading-light-vars {
   --dx-loading-color: #{$gray-600};
   --dx-loading-sweep-color: #{$gray-500};
   --dx-loading-spinner-color: #{$gray-500};
+}
+
+// `[data-bs-theme="light"]` too, so a light section inside a dark page gets
+// the light set back (as the chart tokens do).
+:root,
+[data-bs-theme="light"] {
+  @include dx-loading-light-vars;
   // Slower than Bootstrap's 0.75 s a turn: a calmer spin to match the soft
   // look (1.1 s chosen against 1.5 s and 2 s side by side).
   --dx-loading-spinner-speed: 1.1s;
@@ -2023,7 +2036,12 @@ thead tr:has(.dx-table-filter-cell) > td {
   align-items: center;
   gap: 1rem;
   color: var(--dx-loading-color);
-  animation: dx-loading-fade-in 0.4s ease-out both;
+
+  // Hidden, not removed: `visibility` keeps the box's size and keeps the
+  // contents out of the accessibility tree until they are revealed.
+  > * {
+    visibility: hidden;
+  }
 
   // Set on the spinner itself: Bootstrap declares its speed on
   // `.spinner-border`, so a value inherited from `.dx-loading` would lose.
@@ -2031,6 +2049,14 @@ thead tr:has(.dx-table-filter-cell) > td {
     flex: none;
     color: var(--dx-loading-spinner-color);
     --bs-spinner-animation-speed: var(--dx-loading-spinner-speed);
+  }
+}
+
+.dx-loading--shown {
+  animation: dx-loading-fade-in 0.4s ease-out both;
+
+  > * {
+    visibility: visible;
   }
 }
 
@@ -2067,11 +2093,12 @@ thead tr:has(.dx-table-filter-cell) > td {
   }
 }
 
-// No sweep and no fade for people who asked for less motion: the text is
-// plain grey and appears at once. The spinner is Bootstrap's own (it slows
-// it under reduced motion).
+// For people who asked for less motion: no sweep and no fade (the text is
+// plain grey and appears at once), and the spinner slows to double its turn,
+// as Bootstrap's own reduced-motion rule does for its spinners. That rule
+// cannot reach this one, because the speed above out-ranks it.
 @media (prefers-reduced-motion: reduce) {
-  .dx-loading,
+  .dx-loading--shown,
   .dx-loading__text {
     animation: none;
   }
@@ -2079,5 +2106,9 @@ thead tr:has(.dx-table-filter-cell) > td {
   .dx-loading__text {
     background-image: none;
     -webkit-text-fill-color: currentColor;
+  }
+
+  .dx-loading .spinner-border {
+    --bs-spinner-animation-speed: calc(2 * var(--dx-loading-spinner-speed));
   }
 }

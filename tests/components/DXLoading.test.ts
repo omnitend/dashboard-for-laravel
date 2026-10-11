@@ -1,33 +1,46 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-vue";
-import { nextTick } from "vue";
+import { cdp } from "vitest/browser";
+import { defineComponent, h } from "vue";
 import DXLoading from "../../resources/js/components/extended/DXLoading.vue";
-import builtCss from "../../dist/style.css?raw";
 
 /** Parsed sRGB channels of a computed colour, for comparison. */
 const channels = (colour: string) => colour.match(/[\d.]+/g)!.slice(0, 3).map(Number);
 
+const statusOf = (container: Element) =>
+  container.querySelector<HTMLElement>('.dx-loading[role="status"]');
+
+/** Whether the loader's contents are revealed (visible, so in the a11y tree). */
+const contentsShown = (status: HTMLElement) =>
+  getComputedStyle(status.querySelector(".dx-loading__text")!).visibility === "visible";
+
+const waitUntilShown = (status: HTMLElement) =>
+  expect.poll(() => contentsShown(status), { timeout: 2000 }).toBe(true);
+
 describe("DXLoading", () => {
-  it("shows an accessible spinner and custom label after the delay", async () => {
+  it("is a status box from the start, revealing its spinner and label after the delay", async () => {
     const screen = render(DXLoading, {
       props: { text: "Loading web shops…", delay: 30 },
     });
 
-    expect(screen.container.querySelector('[role="status"]')).toBeNull();
-    await expect.poll(() => screen.container.querySelector('[role="status"]')).not.toBeNull();
+    // The live region is in the page at once, its contents hidden: content
+    // added to a region already there is announced (#209 review).
+    const status = statusOf(screen.container)!;
+    expect(status).not.toBeNull();
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(contentsShown(status)).toBe(false);
 
-    const status = screen.container.querySelector('[role="status"]');
-    expect(status?.textContent).toContain("Loading web shops…");
-    expect(status?.querySelector('.spinner-border[aria-hidden="true"]')).toBeTruthy();
+    await waitUntilShown(status);
+    expect(status.textContent).toContain("Loading web shops…");
+    expect(status.querySelector('.spinner-border[aria-hidden="true"]')).toBeTruthy();
   });
 
-  it("can show immediately", async () => {
+  it("with no delay, still reveals its contents a task after the box", async () => {
     const screen = render(DXLoading, { props: { delay: 0 } });
-    await nextTick();
-
-    expect(screen.container.querySelector('[role="status"]')?.textContent).toContain(
-      "Loading…",
-    );
+    const status = statusOf(screen.container)!;
+    expect(contentsShown(status)).toBe(false);
+    await waitUntilShown(status);
+    expect(status.textContent).toContain("Loading…");
   });
 
   it("does not show a spinner for a load completed before the delay", async () => {
@@ -53,17 +66,26 @@ describe("DXLoading", () => {
   describe("the soft look", () => {
     it("waits 600 ms by default", async () => {
       const screen = render(DXLoading);
+      const status = statusOf(screen.container)!;
       await new Promise((resolve) => setTimeout(resolve, 400));
-      expect(screen.container.querySelector('[role="status"]')).toBeNull();
-      await expect
-        .poll(() => screen.container.querySelector('[role="status"]'), { timeout: 1000 })
-        .not.toBeNull();
+      expect(contentsShown(status)).toBe(false);
+      await waitUntilShown(status);
+    });
+
+    it("holds its space while hidden, so nothing moves when it appears", async () => {
+      const screen = render(DXLoading, { props: { delay: 100 } });
+      const status = statusOf(screen.container)!;
+      const hiddenHeight = status.getBoundingClientRect().height;
+      // Positive control: the held space is the loader's, not just padding.
+      expect(hiddenHeight).toBeGreaterThan(96 + 20);
+      await waitUntilShown(status);
+      expect(status.getBoundingClientRect().height).toBe(hiddenHeight);
     });
 
     it("puts a small grey spinner beside grey display-face text", async () => {
       const screen = render(DXLoading, { props: { delay: 0, text: "Loading product…" } });
-      await nextTick();
-      const status = screen.container.querySelector<HTMLElement>(".dx-loading")!;
+      const status = statusOf(screen.container)!;
+      await waitUntilShown(status);
       const spinner = status.querySelector<HTMLElement>(".spinner-border")!;
       const text = status.querySelector<HTMLElement>(".dx-loading__text")!;
 
@@ -91,15 +113,46 @@ describe("DXLoading", () => {
       expect(getComputedStyle(status).animationName).toBe("dx-loading-fade-in");
     });
 
-    it("drops the sweep and the fade under reduced motion", () => {
-      // The runner cannot emulate the media query, so this reads the built
-      // rule: both animations off and the text back to plain colour.
-      const block = builtCss.match(
-        /@media ?\(prefers-reduced-motion: ?reduce\)\s*\{([^@]*?\.dx-loading[^@]*?)\}\s*\}/,
+    it("takes the light colours back inside a light section of a dark page", async () => {
+      const Scoped = defineComponent(() => () =>
+        h("div", { "data-bs-theme": "dark" }, [
+          h("div", [h(DXLoading, { delay: 0 })]),
+          h("div", { "data-bs-theme": "light" }, [h(DXLoading, { delay: 0 })]),
+        ]),
       );
-      expect(block).not.toBeNull();
-      expect(block![1]).toMatch(/\.dx-loading,\s*\.dx-loading__text\s*\{\s*animation:\s*none/);
-      expect(block![1]).toMatch(/-webkit-text-fill-color:\s*currentColor/);
+      const screen = render(Scoped);
+      const [inDark, inLight] = Array.from(
+        screen.container.querySelectorAll<HTMLElement>(".dx-loading"),
+      );
+      // Positive control: the dark scope does remap (#adb5bd text).
+      expect(channels(getComputedStyle(inDark).color)).toEqual([173, 181, 189]);
+      expect(channels(getComputedStyle(inLight).color)).toEqual([108, 117, 125]);
+    });
+
+    describe("under reduced motion", () => {
+      afterEach(async () => {
+        await cdp().send("Emulation.setEmulatedMedia", { features: [] });
+      });
+
+      it("drops the sweep and the fade, and slows the spinner to double", async () => {
+        await cdp().send("Emulation.setEmulatedMedia", {
+          features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+        });
+        // Positive control: the emulation took.
+        expect(matchMedia("(prefers-reduced-motion: reduce)").matches).toBe(true);
+
+        const screen = render(DXLoading, { props: { delay: 0 } });
+        const status = statusOf(screen.container)!;
+        await waitUntilShown(status);
+        const text = status.querySelector<HTMLElement>(".dx-loading__text")!;
+        const spinner = status.querySelector<HTMLElement>(".spinner-border")!;
+
+        expect(getComputedStyle(status).animationName).toBe("none");
+        expect(getComputedStyle(text).animationName).toBe("none");
+        // Plain grey text, not a transparent fill over a gradient.
+        expect(channels(getComputedStyle(text).webkitTextFillColor)).toEqual([108, 117, 125]);
+        expect(getComputedStyle(spinner).animationDuration).toBe("2.2s");
+      });
     });
   });
 });
