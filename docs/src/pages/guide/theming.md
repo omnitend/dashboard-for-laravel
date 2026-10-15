@@ -80,8 +80,8 @@ downloads only when text renders in it):
   [Tabular figures](#tabular-figures)).
 
 Bundled weights: Maven Pro 400, 500, 600 and 700; Poppins 500 and 600; the
-Plex Sans figures 400, 500 and 700. Other weights are synthesised by the
-browser.
+Plex Sans figures 400, 500, 600 and 700. Other weights are synthesised by
+the browser.
 
 Headings are compact and restrained, all at weight 500: `h1` 1.25rem, `h2`
 1.15rem, `h3` and `h4` 1.05rem, `h5` and `h6` 1rem (body size). Table body
@@ -101,8 +101,10 @@ from **IBM Plex Sans**, whose figures are all one width. The face (named
 `DX Figures`) covers `0`–`9` only, through `unicode-range`: the `£`, commas,
 decimal points and any letters stay in Maven Pro, and in `h1`–`h4` in
 Poppins. It is scaled (`size-adjust: 94.8%`) so a Plex digit stands as tall
-as a Maven Pro one. The files (about 21 KB per weight, 400, 500 and 700) are
-fetched only on a page where a tabular digit renders.
+as a Maven Pro one. The files (about 21 KB per weight, 400, 500, 600 and
+700, 84 KB in all) are fetched only on a page where a tabular digit renders,
+and only the weights it uses. Inside `code`, `kbd`, `samp` and `pre` the
+letters stay in the monospace face.
 
 The face is the `--dx-font-family-figures` token (`"DX Figures"` by
 default). The theme appends the surrounding face as the fallback, so the

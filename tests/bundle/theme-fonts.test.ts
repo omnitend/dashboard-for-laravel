@@ -67,7 +67,33 @@ describe('bundled theme fonts actually load', () => {
     }
   });
 
-  it('loads the DX Figures face (IBM Plex Sans digits) at 400, 500 and 700 for tabular digits', async () => {
+  // Must run before anything in this file renders a 700 digit (the faces'
+  // load state is per page). Without a 600 face, font matching answers a 600
+  // request with the 700 face (CSS Fonts 4 §5.2), so `fw-semibold` digits
+  // came out bold and the 700 face was the one that loaded.
+  it('sets a semibold tabular run in the 600 DX Figures face, not the 700 one', async () => {
+    const before700 = [...document.fonts].filter(
+      (face) => familyOf(face) === 'DX Figures' && face.weight === '700',
+    );
+    expect(before700.length, 'no DX Figures 700 face').toBeGreaterThan(0);
+    expect(before700.map((face) => face.status), '700 already loaded').not.toContain('loaded');
+
+    const screen = render({
+      render: () => h('p', { class: 'dx-tabular fw-semibold' }, '£1,234.56'),
+    });
+    const semibold = await loadedFaces('DX Figures', '600');
+    expect(semibold.length, 'no @font-face for DX Figures 600').toBeGreaterThan(0);
+    expect(semibold.map((face) => face.status)).toContain('loaded');
+    await document.fonts.ready;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const bold = [...document.fonts].filter(
+      (face) => familyOf(face) === 'DX Figures' && face.weight === '700',
+    );
+    expect(bold.map((face) => face.status), 'the 600 run used the 700 face').not.toContain('loaded');
+    screen.unmount();
+  });
+
+  it('loads the DX Figures face (IBM Plex Sans digits) at 400, 500, 600 and 700 for tabular digits', async () => {
     // The face is digits-only (unicode-range), so it loads only once digits
     // render in it; the letter-only paragraph alone would leave it unloaded.
     render({
@@ -75,11 +101,12 @@ describe('bundled theme fonts actually load', () => {
         h('div', [
           h('p', { class: 'dx-tabular' }, '£1,234.56'),
           h('p', { class: 'dx-tabular fw-medium' }, '£1,234.56'),
+          h('p', { class: 'dx-tabular fw-semibold' }, '£1,234.56'),
           h('p', { class: 'dx-tabular fw-bold' }, '£1,234.56'),
         ]),
     });
 
-    for (const weight of ['400', '500', '700']) {
+    for (const weight of ['400', '500', '600', '700']) {
       const faces = await loadedFaces('DX Figures', weight);
       expect(faces.length, `no @font-face for DX Figures ${weight}`).toBeGreaterThan(0);
       expect(
@@ -115,6 +142,7 @@ describe('the theme fonts ship as files next to the stylesheet', () => {
     'Poppins-SemiBold',
     'IBMPlexSans-Regular-Latin1',
     'IBMPlexSans-Medium-Latin1',
+    'IBMPlexSans-SemiBold-Latin1',
     'IBMPlexSans-Bold-Latin1',
   ];
 
@@ -150,6 +178,7 @@ describe('the IBM Plex Sans files are the unmodified upstream files', () => {
   const upstream: Record<string, string> = {
     'IBMPlexSans-Regular-Latin1': 'b5ad7bd39f996144915f0ad9849a90183b27d8c28ad97ed98af5b1bebc51f6b1',
     'IBMPlexSans-Medium-Latin1': 'b5610af04d0d4b5a14a621d96d974b993e945a065db1a8861918f69ef9321934',
+    'IBMPlexSans-SemiBold-Latin1': 'fff0ab3a88b0b4aa0b693e4f0201359a15183b08e3fa5696d1918d8f0ade8ad5',
     'IBMPlexSans-Bold-Latin1': '914f1400f363e636b6f9cc7965aa807ff01e93586e1437617525cba0a62aa78d',
   };
 

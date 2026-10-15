@@ -109,6 +109,112 @@ describe('DXStatCard value fits its card (#213)', () => {
     }
   });
 
+  it('fits a 7-figure currency value in a content-sized card (flex item, inline-block)', async () => {
+    // Measured on the 0.45 build: the value box fell back to 6rem (96px),
+    // and "£1,234,567.89" at the 18px floor is 6.64em (119.6px), so it ran
+    // 23.6px past the box into the padding.
+    const screen = mount(() =>
+      h('div', [
+        h('div', { style: 'display: flex; gap: 16px; width: 900px; align-items: flex-start' }, [
+          h(DXStatCard, { title: 'Net', value: 1234567.89, format: 'currency' }),
+        ]),
+        h('div', { style: 'display: inline-block' }, [
+          h(DXStatCard, { title: 'Net', value: 1234567.89, format: 'currency' }),
+        ]),
+      ]),
+    );
+    await document.fonts.ready;
+    await settle();
+    const found = values(screen.container);
+    expect(found.length).toBe(2);
+    for (const value of found) {
+      expect(value.textContent?.trim()).toBe('£1,234,567.89');
+      expect(lineCount(value)).toBe(1);
+      expect(overflowsCard(value)).toBe(false);
+    }
+  });
+
+  it('fits a 7-figure currency value two cards to a 390px phone row', async () => {
+    // 121px value boxes. Measured on the 0.45 build: 19.36px (16cqi), so
+    // the 6.64em value was 128.6px and sat 7.6px in the padding.
+    const screen = mount(() =>
+      h('div', { style: 'width: 358px' }, [
+        h('div', { class: 'row g-3' }, [
+          h('div', { class: 'col-6' }, [
+            h(DXStatCard, { title: 'Revenue', value: 1234567.89, format: 'currency' }),
+          ]),
+          h('div', { class: 'col-6' }, [
+            h(DXStatCard, { title: 'Takings', value: 7654321.09, format: 'currency' }),
+          ]),
+        ]),
+      ]),
+    );
+    await document.fonts.ready;
+    await settle();
+    for (const value of values(screen.container)) {
+      expect(lineCount(value)).toBe(1);
+      expect(overflowsCard(value)).toBe(false);
+      expect(parseFloat(getComputedStyle(value).fontSize)).toBeGreaterThanOrEqual(18);
+    }
+  });
+
+  it('keeps 1.75rem from a 175px value box up, and shrinks just below it', async () => {
+    // The card's border and body padding take 50px, so a 225px card has a
+    // 175px value box (asserted, so the boundary is really the one tested).
+    const screen = mount(() =>
+      h('div', [
+        h('div', { style: 'width: 225px' }, [h(DXStatCard, { title: 'At', value: 42 })]),
+        h('div', { style: 'width: 400px' }, [h(DXStatCard, { title: 'Wide', value: 42 })]),
+        h('div', { style: 'width: 220px' }, [h(DXStatCard, { title: 'Below', value: 42 })]),
+      ]),
+    );
+    await settle();
+    const [at, wide, below] = values(screen.container);
+    expect(at!.parentElement!.getBoundingClientRect().width).toBeCloseTo(175, 0);
+    expect(getComputedStyle(at!).fontSize).toBe('28px');
+    expect(getComputedStyle(wide!).fontSize).toBe('28px');
+    expect(parseFloat(getComputedStyle(below!).fontSize)).toBeLessThan(28);
+  });
+
+  it('never splits a numeric value mid-figure, even when it overflows', async () => {
+    // An 8-figure amount does not fit a 390px phone row's card (documented
+    // limit): it must overflow on one line rather than break between digits,
+    // whether passed as a number or as a preformatted string.
+    const screen = mount(() =>
+      h('div', { style: 'width: 358px' }, [
+        h('div', { class: 'row g-3' }, [
+          h('div', { class: 'col-6' }, [
+            h(DXStatCard, { title: 'Revenue', value: 12345678.9, format: 'currency' }),
+          ]),
+          h('div', { class: 'col-6' }, [
+            h(DXStatCard, { title: 'Preformatted', value: '£12,345,678.90' }),
+          ]),
+        ]),
+      ]),
+    );
+    await document.fonts.ready;
+    await settle();
+    for (const value of values(screen.container)) expect(lineCount(value)).toBe(1);
+  });
+
+  it('breaks an unbreakable text value (a URL) rather than running out of the card', async () => {
+    // The numeric no-split rule must not reach strings: before it was
+    // scoped, a URL ran 219px out of a 170px card.
+    const screen = mount(() =>
+      h('div', { style: 'width: 170px' }, [
+        h(DXStatCard, {
+          title: 'Top page',
+          value: 'https://example.com/reports/quarterly/summary',
+        }),
+      ]),
+    );
+    await document.fonts.ready;
+    await settle();
+    const [value] = values(screen.container);
+    expect(lineCount(value!)).toBeGreaterThan(1);
+    expect(overflowsCard(value!)).toBe(false);
+  });
+
   it('uses tabular figures for the value (#215)', async () => {
     const screen = mount(() =>
       h(DXStatCard, { title: 'Revenue', value: 7997.55, format: 'currency' }),

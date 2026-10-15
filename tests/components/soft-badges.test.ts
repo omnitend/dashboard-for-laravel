@@ -312,6 +312,22 @@ describe('form validation errors are crimson, not the danger magenta', () => {
     expect(getComputedStyle(feedback).color).toBe(CRIMSON);
   });
 
+  it('paints an invalid tooltip crimson with white text', async () => {
+    // Bootstrap's `$form-validation-states` gives it `var(--bs-danger)`,
+    // the magenta badge hue, until the theme overrides "tooltip-bg-color".
+    const style = await paintedMarkup(
+      () =>
+        h('div', { class: 'position-relative bg-white' }, [
+          h('input', { class: 'form-control is-invalid', value: 'x' }),
+          h('div', { class: 'invalid-tooltip' }, 'Required'),
+        ]),
+      '.invalid-tooltip',
+    );
+    expect(getComputedStyle(style.element).display).toBe('block');
+    expect(style.background).toBe(CRIMSON);
+    expect(getComputedStyle(style.element).color).toBe('rgb(255, 255, 255)');
+  });
+
   it('leaves the danger badge magenta', async () => {
     const style = await paintedStyle(DBadge, 'danger', '.badge');
     expect(style.background).toBe(rgb('#f9dff2'));

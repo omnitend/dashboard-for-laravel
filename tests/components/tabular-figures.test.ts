@@ -43,7 +43,7 @@ const measurePair = (parent: Element, style: string, className = '') => ({
  * digits; the check afterwards proves the load happened.
  */
 const loadFigures = async () => {
-  for (const weight of [400, 500, 700]) {
+  for (const weight of [400, 500, 600, 700]) {
     await document.fonts.load(`${weight} 28px 'DX Figures'`, '0123456789');
     await document.fonts.load(`${weight} 28px 'Maven Pro'`, 'abc');
   }
@@ -53,7 +53,7 @@ const loadFigures = async () => {
     .filter((face) => face.family.replace(/["']/g, '') === 'DX Figures')
     .filter((face) => face.status === 'loaded')
     .map((face) => face.weight);
-  expect(loaded.sort(), 'DX Figures faces loaded').toEqual(['400', '500', '700']);
+  expect(loaded.sort(), 'DX Figures faces loaded').toEqual(['400', '500', '600', '700']);
 };
 
 const items = [
@@ -193,7 +193,7 @@ describe('tabular figures (#215)', () => {
       const maven = measurePair(box, 'font-family: "Maven Pro"; font-weight: 700; font-size: 28px');
       expect(maven.zeros - maven.ones).toBeGreaterThan(5);
 
-      for (const weight of [400, 500, 700]) {
+      for (const weight of [400, 500, 600, 700]) {
         const pair = measurePair(box, `font-weight: ${weight}; font-size: 28px`, 'dx-tabular');
         expect(Math.abs(pair.ones - pair.zeros), `.dx-tabular at ${weight}`).toBeLessThan(0.05);
       }
@@ -223,6 +223,46 @@ describe('tabular figures (#215)', () => {
       box.remove();
       stat.unmount();
       currency.unmount();
+    }
+  });
+
+  it('keeps monospace letters in or on code, kbd, samp and pre', async () => {
+    // `.dx-tabular` sets its fallback to the body face, which would turn a
+    // code sample's letters into Maven Pro; there the fallback is monospace.
+    const box = document.createElement('div');
+    box.innerHTML = ['code', 'kbd', 'samp', 'pre']
+      .map(
+        (tag) => `
+      <${tag} id="${tag}-plain">Total</${tag}>
+      <${tag} id="${tag}-on" class="dx-tabular">Total</${tag}>
+      <${tag} id="${tag}-nested"><span class="dx-tabular">Total</span></${tag}>`,
+      )
+      .join('');
+    document.body.appendChild(box);
+    try {
+      await loadFigures();
+      const width = (id: string) => {
+        const element = box.querySelector(`#${id}`)!;
+        return textWidth(element.firstElementChild ?? element);
+      };
+      for (const tag of ['code', 'kbd', 'samp', 'pre']) {
+        const plain = box.querySelector(`#${tag}-plain`)!;
+        // Positive control: the same text in Maven Pro is a different width.
+        const maven = spanWidth(
+          box,
+          'Total',
+          `font-size: ${getComputedStyle(plain).fontSize}; font-family: "Maven Pro"`,
+        );
+        expect(Math.abs(width(`${tag}-plain`) - maven), `${tag} is not Maven Pro`).toBeGreaterThan(2);
+        expect(Math.abs(width(`${tag}-on`) - width(`${tag}-plain`)), `${tag}.dx-tabular`).toBeLessThan(0.05);
+        expect(Math.abs(width(`${tag}-nested`) - width(`${tag}-plain`)), `${tag} > .dx-tabular`).toBeLessThan(
+          0.05,
+        );
+        // The digits still come from the figures face.
+        expect(getComputedStyle(box.querySelector(`#${tag}-on`)!).fontFamily).toContain('DX Figures');
+      }
+    } finally {
+      box.remove();
     }
   });
 

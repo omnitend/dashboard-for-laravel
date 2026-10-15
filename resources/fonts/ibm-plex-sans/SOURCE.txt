@@ -14,4 +14,5 @@ version and checksums here and in tests/bundle/theme-fonts.test.ts.
 sha256:
 b5ad7bd39f996144915f0ad9849a90183b27d8c28ad97ed98af5b1bebc51f6b1  IBMPlexSans-Regular-Latin1.woff2
 b5610af04d0d4b5a14a621d96d974b993e945a065db1a8861918f69ef9321934  IBMPlexSans-Medium-Latin1.woff2
+fff0ab3a88b0b4aa0b693e4f0201359a15183b08e3fa5696d1918d8f0ade8ad5  IBMPlexSans-SemiBold-Latin1.woff2
 914f1400f363e636b6f9cc7965aa807ff01e93586e1437617525cba0a62aa78d  IBMPlexSans-Bold-Latin1.woff2

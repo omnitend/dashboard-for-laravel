@@ -43,17 +43,41 @@ period, and an optional trend/sparkline slot. Themed with Bootstrap variables.
 
 ## Value size
 
-The value is 1.75rem in a card wide enough for it. In a narrow card (two
-cards to a row on a phone) it shrinks with the card's width, down to
-1.125rem, so an amount like `£7,997.55` stays on one line instead of
-breaking mid-number. There is no prop for this: the value's box is a CSS
-size container (`container-type: inline-size`) and the font size is a
-`clamp()` of its width.
+The value is 1.75rem in a card whose value area is at least 175px wide. In
+a narrower card (two cards to a row on a phone) it shrinks with the card's
+width, down to 1.125rem at 128px and below, so an amount like `£7,997.55`
+stays on one line instead of breaking mid-number. There is no prop for
+this: the value's box is a CSS size container (`container-type:
+inline-size`) and the font size is a `clamp()` of its width.
 
-One side effect: a card sized to its content (a flex item that does not
-grow, an inline-block) no longer widens to fit its value at full size. It
-takes at least 6rem for the value, which then shrinks to fit. Give the card
-a width (a grid column, `flex: 1`) to show the value at full size.
+A numeric value (a number, or a string with no letters such as
+`"£1,234.56"`) never breaks between digits: if it is too long for the
+card, it runs into the card's padding on one line. Any other string (a
+URL, a status) wraps inside the card.
+
+How much fits, measured with the bundled fonts (the value area is the
+card's width less 50px of padding and border; two cards to a phone row
+with 16px gutters give a value area of half the viewport less 74px):
+
+- 6 figures with pence (`£123,456.78`) fit any value area from 103px,
+  which is two cards to a row on a phone 354px or wider. On a 320px phone
+  they reach 17px into the padding.
+- 7 figures (`£1,234,567.89`) fit value areas from 120px to 148px (two
+  cards to a row on phones from 388px to 444px wide) and from 186px.
+  Between 148px and 186px they reach up to 11px into the padding, and
+  below 120px about 6px on a 375px phone and 14px on a 360px one.
+- 8 figures (`£12,345,678.90`) need a value area of about 202px (a card
+  about 252px wide), so they do not fit two cards to a phone row.
+
+For larger amounts, give the card more width (one card to a row on a
+phone) or a shorter value (`£12.3m`, through the `value` slot or a string
+`value`).
+
+A card sized to its content (a flex item that does not grow, an
+inline-block, a `col-auto`) does not widen to fit its value at full size:
+its value area is 8rem (128px), where the value is at 1.125rem, room for a
+7-figure amount. Give the card a width (a grid column, `flex: 1`) to show
+the value at 1.75rem.
 
 The value uses tabular figures, so digits keep the same width as a number
 updates in place. The digits come from the theme's figures face (IBM Plex

@@ -454,8 +454,13 @@ $utilities-border-subtle: map.merge(
 
 // An invalid control's focus ring is the crimson form-error colour, like its
 // border. Bootstrap builds it from `--bs-danger-rgb`, which is the magenta
-// badge hue here. Its geometry and opacity stay Bootstrap's. The map only
-// exists once Bootstrap's variables are read, hence here.
+// badge hue here. Its geometry and opacity stay Bootstrap's. The
+// `.invalid-tooltip` background likewise (Bootstrap's is `var(--bs-danger)`):
+// white on #c8102e is 5.9:1. A solid Sass colour, not
+// `--bs-form-invalid-color`, which is a light pink in dark mode where the
+// white text would fail. (The `.form-range` thumb's red is bootstrap-vue-next's
+// own and is left alone.) The map only exists once Bootstrap's variables are
+// read, hence here.
 $form-validation-states: map.merge(
   $form-validation-states,
   (
@@ -464,6 +469,7 @@ $form-validation-states: map.merge(
       (
         "focus-box-shadow": 0 0 $input-btn-focus-blur $input-focus-width
           rgba($dx-form-error, $input-btn-focus-color-opacity),
+        "tooltip-bg-color": $dx-form-error,
       )
     ),
   )
@@ -541,8 +547,9 @@ $dx-bundled-fonts: (
 // tabular run falls through to the next family in the stack. `size-adjust`
 // matches Plex's figure height (0.710em) to Maven Pro's (0.673em), so a digit
 // sits beside Maven Pro text at the same size. 400 for body text and inputs,
-// 500 for table headers and `.fw-medium`, 700 for DXStatCard's value and
-// `.fw-bold`. The files are IBM's own Latin1 split woff2s, byte-identical to
+// 500 for table headers and `.fw-medium`, 600 for `.fw-semibold` (without it
+// font matching takes the 700 face for a 600 request), 700 for DXStatCard's
+// value and `.fw-bold`. The files are IBM's own Latin1 split woff2s, byte-identical to
 // the upstream package (resources/fonts/ibm-plex-sans/SOURCE.txt): "Plex" is a
 // Reserved Font Name, so they must never be subset or re-encoded. Extracted to
 // `dist/assets/` like the faces above, and fetched only where a tabular digit
@@ -550,6 +557,7 @@ $dx-bundled-fonts: (
 $dx-figures-fonts: (
   (400, "ibm-plex-sans/IBMPlexSans-Regular-Latin1"),
   (500, "ibm-plex-sans/IBMPlexSans-Medium-Latin1"),
+  (600, "ibm-plex-sans/IBMPlexSans-SemiBold-Latin1"),
   (700, "ibm-plex-sans/IBMPlexSans-Bold-Latin1"),
 );
 
@@ -1614,18 +1622,28 @@ aside.dashboard-sidebar--light {
 // the heading's letters would turn into Maven Pro. The second rule does that.
 // Elsewhere the fallback is the body face: CSS cannot say "the inherited
 // face" inside a font list, so a `.dx-tabular` inside some other display-face
-// element (the sidebar) gets body-face letters.
+// element (the sidebar) gets body-face letters. The same trap in or on
+// `code`, `kbd`, `samp` and `pre`: their fallback is the monospace face, so a
+// code sample keeps monospace letters (the third rule, which comes last so
+// code inside a heading stays monospace). Both context rules use `:where()`
+// so each has exactly `.dx-tabular`'s specificity and wins by source order.
 // Pinned by tabular-figures.test.ts and theme-fonts.test.ts.
 $dx-headings-1-4: "h1, h2, h3, h4, .h1, .h2, .h3, .h4";
+$dx-monospace-elements: "code, kbd, samp, pre";
 
 .dx-tabular {
   font-family: var(--dx-font-family-figures), var(--bs-body-font-family);
   font-variant-numeric: tabular-nums;
 }
 
-:is(#{$dx-headings-1-4}).dx-tabular,
-:is(#{$dx-headings-1-4}) .dx-tabular {
+:where(#{$dx-headings-1-4}).dx-tabular,
+:where(#{$dx-headings-1-4}) .dx-tabular {
   font-family: var(--dx-font-family-figures), var(--dx-font-family-display);
+}
+
+:where(#{$dx-monospace-elements}).dx-tabular,
+:where(#{$dx-monospace-elements}) .dx-tabular {
+  font-family: var(--dx-font-family-figures), var(--bs-font-monospace);
 }
 
 // ----------------------------------------------------------------------------

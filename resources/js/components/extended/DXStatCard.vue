@@ -23,7 +23,10 @@
          inline-size containment never removes the title's or footer's
          contribution to the width of a content-sized card. -->
     <div class="dx-stat-card__value-box">
-      <div class="dx-stat-card__value">
+      <div
+        class="dx-stat-card__value"
+        :class="{ 'dx-stat-card__value--numeric': isNumericValue }"
+      >
         <!--
           @slot Override the rendered value.
           @binding {string} formatted The value formatted per `format`.
@@ -121,6 +124,13 @@ const formattedValue = computed<string>(() => {
   return formatNumber(raw, props.format);
 });
 
+// A number, or a string with no letters ("£1,234.56", "42%"): it must never
+// break between digits. Any other string (a URL, a status word) keeps the
+// card's last-resort break so it cannot run out of the card.
+const isNumericValue = computed<boolean>(
+  () => typeof props.value === "number" || !/\p{L}/u.test(props.value),
+);
+
 const hasDelta = computed(
   () => typeof props.delta === "number" && Number.isFinite(props.delta),
 );
@@ -186,33 +196,45 @@ const formattedDelta = computed<string>(() => {
 /*
  * Inline-size containment means the box's content no longer gives it a
  * width, so a card sized to its content (a non-growing flex item, an
- * inline-block) would take only its title's width and crush the value.
- * The intrinsic fallback gives the value at least room for a typical
- * amount at the minimum size.
+ * inline-block, a `col-auto`) would take only its title's width and crush
+ * the value. The intrinsic fallback, 8rem (128px), is where the font below
+ * reaches its 1.125rem floor, and holds a 7-figure amount there:
+ * "£1,234,567.89" is 6.64em, 119.6px at 18px.
  */
 .dx-stat-card__value-box {
   container-type: inline-size;
-  contain-intrinsic-inline-size: 6rem;
+  contain-intrinsic-inline-size: 8rem;
 }
 
 /*
- * 1.75rem in any card whose value box is at least 175px wide (16cqi of
- * 175px is 28px), so wide cards are unchanged; a narrower box shrinks the
- * number, down to 1.125rem. `overflow-wrap: normal` undoes the card's
- * `word-wrap: break-word`, which split a number mid-figure when it
- * overflowed; a string value still wraps at its spaces. Tabular figures
- * (#215) keep each digit on the same advance: the digits come from the
- * theme's figures face (`--dx-font-family-figures`, as `.dx-tabular`), the
- * rest of the value from the body face.
+ * 1.75rem in any card whose value box is at least 175px wide, so wide cards
+ * are unchanged; a narrower box shrinks the number on a line from 1.75rem at
+ * 175px to the 1.125rem floor at 8rem (128px) and below. (A plain `16cqi`
+ * also reaches 1.75rem at 175px but grows with the box faster than a
+ * 6.64em value can fit: at 16cqi a value wider than 6.25em overflows every
+ * box under 175px.) The line's slope is 10px over 47px, written 0.2128 so
+ * it reaches 28px at 175px, never just under. Tabular figures (#215) keep
+ * each digit on the same advance: the digits come from the theme's figures
+ * face (`--dx-font-family-figures`, as `.dx-tabular`), the rest of the value
+ * from the body face.
  */
 .dx-stat-card__value {
-  font-size: clamp(1.125rem, 16cqi, 1.75rem);
-  overflow-wrap: normal;
+  font-size: clamp(1.125rem, 1.125rem + (100cqi - 8rem) * 0.2128, 1.75rem);
   font-family: var(--dx-font-family-figures), var(--bs-body-font-family);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   line-height: 1.1;
   color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+
+/*
+ * A numeric value (a number, or a string with no letters) never breaks:
+ * `normal` undoes the card's `word-wrap: break-word`, which split a number
+ * mid-figure when it overflowed. Any other string keeps that last-resort
+ * break, so a long URL wraps inside the card instead of running out of it.
+ */
+.dx-stat-card__value--numeric {
+  overflow-wrap: normal;
 }
 
 .dx-stat-card__foot {
