@@ -849,9 +849,91 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   }
 }
 
-// The drag overlay's white is hardcoded in bvn; follow the page background.
+// A disabled fieldset (a disabled DFormGroup without `label-for`) disables the
+// button and the native input but not bvn's `disabled` prop, so give the
+// control the same look as `disabled` (bvn's `[aria-disabled=true]` rule).
+fieldset:disabled .b-form-file-control {
+  background-color: var(--bs-secondary-bg);
+  opacity: 0.65;
+  cursor: not-allowed;
+
+  .b-form-file-text,
+  .b-form-file-button {
+    pointer-events: none;
+  }
+}
+
+// The state class sits on `.b-form-file-control` (or the plain input), deep
+// inside `.b-form-file-root`, where Bootstrap's `.is-invalid ~ .invalid-feedback`
+// cannot see it; a sibling DFormInvalidFeedback/DFormValidFeedback stayed hidden.
+// `:has()` covers the custom control and `plain` without touching attrs.
+.b-form-file-root:has(> .b-form-file-wrapper > .b-form-file-control.is-invalid, > input.is-invalid) {
+  ~ .invalid-feedback,
+  ~ .invalid-tooltip {
+    display: block;
+  }
+}
+
+.b-form-file-root:has(> .b-form-file-wrapper > .b-form-file-control.is-valid, > input.is-valid) {
+  ~ .valid-feedback,
+  ~ .valid-tooltip {
+    display: block;
+  }
+}
+
+// In a DInputGroup Bootstrap squares the corners of the radius-less root, not
+// the control inside it, so the control kept a rounded edge against the addon.
+.input-group > .b-form-file-root {
+  position: relative;
+
+  &:focus-within {
+    z-index: 5;
+  }
+
+  &:not(:first-child) {
+    .b-form-file-control,
+    .b-form-file-button {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+}
+
+.input-group:not(.has-validation) > .b-form-file-root:not(:last-child),
+.input-group.has-validation > .b-form-file-root:nth-last-child(n + 3) {
+  .b-form-file-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+// Drag state. bvn colours the overlay text, its dashed border and the control's
+// border with `--bs-primary` (the brand navy), which is about 1.07:1 on the
+// dark-mode overlay, so the accent is a token that becomes the emphasis colour
+// in dark mode. The overlay's white is hardcoded in bvn; follow the page
+// background.
+// (Unquoted attribute values: charts-theme-reactivity.test.ts reads the FIRST
+// `[data-bs-theme="…"] {` block in this file as the chart palette's.)
+:root,
+[data-bs-theme=light] {
+  --dx-form-file-drag-color: var(--bs-primary);
+}
+
+[data-bs-theme=dark] {
+  --dx-form-file-drag-color: var(--bs-emphasis-color);
+}
+
+.b-form-file-dragging .b-form-file-control {
+  border-color: var(--dx-form-file-drag-color);
+}
+
 .b-form-file-drag-overlay {
   background-color: rgba(var(--bs-body-bg-rgb), 0.95);
+  border-color: var(--dx-form-file-drag-color);
+}
+
+.b-form-file-drag-text {
+  color: var(--dx-form-file-drag-color);
 }
 
 // DXNumberStepper: `[ − ][ 12 ][ + ]`. The buttons are DButton icon-only

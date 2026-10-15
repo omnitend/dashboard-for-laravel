@@ -31,13 +31,14 @@
       <h5>Drop Zone</h5>
       <p class="small text-muted">Drag files onto the control, or click it to browse.</p>
       <DFormFile
+        ref="droppedFile"
         v-model="dropped"
         multiple
         browse-text="Choose files"
         placeholder="Drop files here or choose"
         drop-placeholder="Release to add the files"
       />
-      <DButton class="mt-2" size="sm" variant="link" @click="dropped = null">Clear</DButton>
+      <DButton class="mt-2" size="sm" variant="link" @click="droppedFile?.reset()">Clear</DButton>
     </div>
 
     <div class="example-section">
@@ -72,6 +73,8 @@ const invoice = ref<File | null>(null);
 const photos = ref<File[] | null>(null);
 const dropped = ref<File[] | null>(null);
 const contract = ref<File | null>(null);
+// reset() clears the selection, the native input and the model.
+const droppedFile = ref<InstanceType<typeof DFormFile> | null>(null);
 </script>
 
 <style scoped>

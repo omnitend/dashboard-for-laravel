@@ -5,6 +5,8 @@ import { h, ref } from 'vue';
 import DFormFile from '../../resources/js/components/base/DFormFile.vue';
 import DFormInput from '../../resources/js/components/base/DFormInput.vue';
 import DFormGroup from '../../resources/js/components/base/DFormGroup.vue';
+import DFormInvalidFeedback from '../../resources/js/components/base/DFormInvalidFeedback.vue';
+import DInputGroup from '../../resources/js/components/base/DInputGroup.vue';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const settle = () => new Promise((resolve) => setTimeout(resolve, 250));
@@ -109,6 +111,8 @@ describe('DFormFile', () => {
     await userEvent.upload(hiddenInput(screen.container), pdf());
     await flush();
     expect(model.value?.name).toBe('invoice.pdf');
+    // `element` is the Browse button, read through the wrapper's ref.
+    expect((fileRef.value?.element as HTMLElement | null)?.tagName).toBe('BUTTON');
 
     fileRef.value?.reset();
     await flush();
@@ -243,5 +247,154 @@ describe('DFormFile matches DFormInput in the theme', () => {
     await settle();
     expect(getComputedStyle(control).boxShadow).toBe(expected.shadow);
     expect(getComputedStyle(control).borderTopColor).toBe(expected.border);
+  });
+});
+
+// Validation feedback, v-model null, dark mode, disabled fieldsets and
+// input groups.
+describe('DFormFile beside feedback, in groups and themes', () => {
+  // `.is-invalid` sits deep inside `.b-form-file-root`, so Bootstrap's
+  // `.is-invalid ~ .invalid-feedback` never reached a sibling feedback.
+  it.each([
+    ['custom', false],
+    ['plain', true],
+  ])('shows a sibling DFormInvalidFeedback when state=false (%s)', async (_mode, plain) => {
+    const state = ref<boolean | null>(null);
+    const screen = render({
+      render: () =>
+        h('div', [
+          h(DFormFile, { state: state.value, plain }),
+          h(DFormInvalidFeedback, { class: 'file-feedback' }, () => 'Choose a file.'),
+        ]),
+    });
+    await flush();
+    const feedback = screen.container.querySelector('.file-feedback') as HTMLElement;
+    // Positive control: hidden while the state is neutral.
+    expect(getComputedStyle(feedback).display).toBe('none');
+    state.value = false;
+    await flush();
+    expect(getComputedStyle(feedback).display).toBe('block');
+  });
+
+  it('clears the native input when v-model is set to null', async () => {
+    const model = ref<File | null>(null);
+    const screen = render({
+      render: () =>
+        h(DFormFile, {
+          name: 'attachment',
+          modelValue: model.value,
+          'onUpdate:modelValue': (value: File | null) => (model.value = value),
+        }),
+    });
+    await flush();
+    await userEvent.upload(hiddenInput(screen.container), pdf());
+    await flush();
+    expect(model.value?.name).toBe('invoice.pdf');
+    expect(hiddenInput(screen.container).files?.length).toBe(1);
+
+    model.value = null;
+    await flush();
+    expect(hiddenInput(screen.container).files?.length).toBe(0);
+    expect(screen.container.querySelector('.b-form-file-text')?.textContent).toContain(
+      'No file chosen'
+    );
+  });
+
+  // The drag overlay text and border were the brand navy on a near-black
+  // overlay in dark mode (about 1.07:1).
+  const luminance = (rgb: number[]) => {
+    const [red, green, blue] = rgb.map((channel) => {
+      const value = channel / 255;
+      return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  };
+  const channels = (colour: string) => (colour.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const contrast = (first: string, second: string) => {
+    const [high, low] = [luminance(channels(first)), luminance(channels(second))].sort(
+      (a, b) => b - a
+    );
+    return (high + 0.05) / (low + 0.05);
+  };
+
+  it.each(['light', 'dark'])('keeps the drag overlay readable in %s mode', async (theme) => {
+    const screen = render({
+      render: () => h('div', { 'data-bs-theme': theme }, [h(DFormFile, { multiple: true })]),
+    });
+    await flush();
+    const zone = screen.container.querySelector('.b-form-file-wrapper') as HTMLElement;
+    const transfer = new DataTransfer();
+    transfer.items.add(pdf());
+    zone.dispatchEvent(new DragEvent('dragenter', { bubbles: true, dataTransfer: transfer }));
+    zone.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: transfer }));
+    await settle();
+
+    const overlay = screen.container.querySelector('.b-form-file-drag-overlay') as HTMLElement;
+    expect(overlay).toBeTruthy();
+    const text = overlay.querySelector('.b-form-file-drag-text') as HTMLElement;
+    const background = getComputedStyle(overlay).backgroundColor;
+    expect(contrast(getComputedStyle(text).color, background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(getComputedStyle(overlay).borderTopColor, background)).toBeGreaterThanOrEqual(
+      3
+    );
+    const control = screen.container.querySelector('.b-form-file-control') as HTMLElement;
+    expect(contrast(getComputedStyle(control).borderTopColor, background)).toBeGreaterThanOrEqual(
+      3
+    );
+    if (theme === 'light') {
+      // Light mode keeps the brand navy it had before.
+      expect(getComputedStyle(text).color).toBe('rgb(21, 30, 45)');
+    }
+  });
+
+  it('looks disabled inside a disabled fieldset, like a DFormInput', async () => {
+    await page.viewport(900, 600);
+    const screen = render({
+      render: () =>
+        h('fieldset', { disabled: true }, [
+          h(DFormInput, { class: 'fs-input' }),
+          h(DFormFile, { class: 'fs-file' }),
+        ]),
+    });
+    await flush();
+    const input = screen.container.querySelector('input.fs-input') as HTMLElement;
+    const control = screen.container.querySelector('.fs-file .b-form-file-control') as HTMLElement;
+    expect(getComputedStyle(control).backgroundColor).toBe(getComputedStyle(input).backgroundColor);
+    expect(getComputedStyle(control).cursor).not.toBe('pointer');
+  });
+
+  it('squares the corners that meet an input-group addon', async () => {
+    await page.viewport(900, 600);
+    const screen = render({
+      render: () =>
+        h('div', [
+          h(DInputGroup, { class: 'ig-prepend', prepend: 'Upload' }, () => h(DFormFile)),
+          h(DInputGroup, { class: 'ig-append', append: '.pdf' }, () => h(DFormFile)),
+        ]),
+    });
+    await flush();
+    const radii = (selector: string) => {
+      const control = screen.container.querySelector(`${selector} .b-form-file-control`)!;
+      const button = screen.container.querySelector(`${selector} .b-form-file-button`)!;
+      const style = getComputedStyle(control);
+      return {
+        topLeft: style.borderTopLeftRadius,
+        bottomLeft: style.borderBottomLeftRadius,
+        topRight: style.borderTopRightRadius,
+        bottomRight: style.borderBottomRightRadius,
+        buttonLeft: getComputedStyle(button).borderTopLeftRadius,
+      };
+    };
+    const prepended = radii('.ig-prepend');
+    expect(prepended.topLeft).toBe('0px');
+    expect(prepended.bottomLeft).toBe('0px');
+    expect(prepended.buttonLeft).toBe('0px');
+    expect(prepended.topRight).not.toBe('0px');
+
+    const appended = radii('.ig-append');
+    expect(appended.topRight).toBe('0px');
+    expect(appended.bottomRight).toBe('0px');
+    expect(appended.topLeft).not.toBe('0px');
+    expect(appended.buttonLeft).not.toBe('0px');
   });
 });

@@ -198,6 +198,28 @@ needed (types match); document in the changelog.
 
 ---
 
+### 7. `DFormFile` `v-model` set to `null` also clears the native input
+
+| | |
+| --- | --- |
+| **Our API** | setting the model to `null` clears the selection, the file-name text **and** the hidden native input (the wrapper calls bvn's `reset()`) |
+| **bvn API** | `BFormFile`'s model watcher clears its file list and the `plain` input, but in the custom control the hidden `input[type=file]` keeps the file |
+| **Shielded in** | `resources/js/components/base/DFormFile.vue` (a watch on BFormFile's own `modelValue` prop) |
+| **Applies to** | `DFormFile` |
+| **Introduced** | the DFormFile review fixes (after 0.45.0) |
+
+**Why:** with bvn alone, a form that clears its file field by setting the
+model to `null` shows "No file chosen" but still posts the old file in a plain
+submit or `new FormData(form)`. Same prop and type as bvn; only the runtime
+behaviour differs, and only towards what the UI already shows. `reset()` sets
+the model to `null` itself, so the parent can receive one more
+`update:modelValue` with `null`: a no-op, since its model is already `null`.
+
+**Convergence (future major):** if bvn's watcher starts resetting the hidden
+input, drop the watch. No consumer source change needed.
+
+---
+
 ## Components that are NOT wrapped (raw bvn passthrough)
 
 These are exported directly as the underlying bvn component (not a `D*`
@@ -319,3 +341,20 @@ them hides the tabs** and no pane gets `active`/`show`. Same shape as
 **Our shield:** `DTab` is a raw re-export of `BTab` (see above). Related upstream
 limitation found alongside it: an explicit `active` on a **non-first** tab is not
 honoured — raw `BTabs`+`BTab` also lands on index 0.
+
+### 5. `BFormFile` ignores its `BFormGroup` and keeps a file the model cleared
+
+Two gaps found reviewing `DFormFile` (bvn 0.45.6):
+
+- `BFormFile` never injects the form-group key, so a `BFormGroup`'s `state`
+  and `disabled` do not reach it (`BFormInput` and friends read both). The key
+  (`formGroupKey`) is not exported from any public bvn entry, so a wrapper
+  cannot read it without depending on a private string. **Our workaround:**
+  documented; consumers set `state` (and `disabled`) on `DFormFile` too.
+- Its `modelValue` watcher clears the file list and the `plain` input but not
+  the hidden input of the custom control, so a `null` model still submits the
+  old file. **Our shield:** active divergence #7.
+
+Related, styling only: the state class sits on `.b-form-file-control`, deep
+inside the root, so Bootstrap's `.is-invalid ~ .invalid-feedback` cannot show
+a sibling feedback. **Our workaround:** a `:has()` rule in `theme.scss`.
