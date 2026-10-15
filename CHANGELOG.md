@@ -9,11 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upgrade notes
 
-- **`InstanceType<typeof DXDashboard>` (and `…DXDashboardSidebar`) no
-  longer compiles**: both are now generic components (see the typed
-  `sidebar-link` item below). Type a template ref with
-  `useTemplateRef('name')`, or with `ComponentExposed<typeof DXDashboard>`
-  from `vue-component-type-helpers`.
+- **Template refs to `DXDashboard` and `DXDashboardSidebar` carry only
+  their exposed members.** Both are now generic components (see the typed
+  `sidebar-link` item below), so a ref's type is just what they expose:
+  `toggleSidebar`, `sidebarHidden` and `el` on DXDashboard, `el` on
+  DXDashboardSidebar. `$el` and `$props` are gone from the type, so
+  `ref.value?.$el` no longer compiles: use `ref.value?.el` (the root
+  element, `HTMLElement | null`). `InstanceType<typeof DXDashboard>` does
+  not compile either. Type a ref with `useTemplateRef('name')`, which needs
+  nothing extra; `ComponentExposed<typeof DXDashboard>` also works but
+  needs `vue-component-type-helpers` installed.
 - **`navbar-user-menu`'s `user` is `DashboardUser | null` and is now
   type-checked.** The slot also renders for a guest, so `{{ user.name }}`
   fails vue-tsc; use `user?.name` or a `v-if`. `navbar-user-icon` and
@@ -25,8 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DFormFile`, a wrapper around bootstrap-vue-next's `BFormFile`: a file
   picker with a Browse button, file names and a drop zone. `v-model` is a
   `File`, a `File[]` (`multiple`/`directory`) or `null`; setting it to
-  `null` also clears the native input, so a plain form submit no longer
-  sends the old file. Every slot is forwarded with its props, and
+  `null` or `[]` also clears the native input, so a plain form submit no
+  longer sends the old file. While disabled (its own `disabled`, or a
+  disabled `DFormGroup`/fieldset) it ignores dropped files, which bvn
+  accepted; an explicit `noDrop` still wins. Every slot is forwarded with
+  its props, and
   `focus`/`blur`/`reset` are exposed. The theme gives it the text input's
   border, height at each size, focus ring and crimson invalid state; a
   sibling `DFormInvalidFeedback`/`DFormValidFeedback` shows with `state`;
@@ -35,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--dx-form-file-drag-color`). Set `state` on the control itself: a
   `DFormGroup`'s `state` does not reach it. `label-for` is required to
   label the Browse button (#221).
+- `DFormValidFeedback`, a wrapper around bvn's `BFormValidFeedback`, the
+  counterpart of `DFormInvalidFeedback`, with a docs page.
+- `DXDashboard` and `DXDashboardSidebar` expose `el`, their root element
+  (`HTMLElement | null`: the `.dashboard-layout` div and the `<aside>`),
+  for template refs now that `$el` is not on a generic component's ref
+  type.
 - Typed slots for `DXDashboard`, `DXDashboardNavbar` and
   `DXDashboardSidebar`. DXDashboard's `navbar-*`/`sidebar-*` slot types
   are derived from the child components' slots, with `toggleSidebar` and
@@ -71,14 +85,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `DXStatCard`'s value shrinks to fit a narrow card instead of wrapping:
-  1.75rem in any card whose value area is 175px or wider (unchanged),
-  shrinking on a straight line to 1.125rem at 128px. A 7-figure amount
-  (`£1,234,567.89`) fits two cards to a 390px phone row and a card sized
-  to its content, which now keeps 8rem for the value (before, it grew to
-  the value's full width). Measured limits are on the DXStatCard page. A
-  numeric value no longer breaks mid-figure; a text value such as a URL
-  still wraps inside the card (#213).
+- `DXStatCard`'s value fits its content: a numeric value is 1.75rem
+  unless it is too wide for the card, and then shrinks just enough to fit
+  on one line, down to 1.125rem. Short values (`42`, `1,000`) stay at
+  1.75rem in any card, four to a row included; a 7-figure amount
+  (`£1,234,567.89`) fits two cards to a 390px phone row, and 8 figures fit
+  from a 130px value area. The card refits when it is resized, when the
+  value or `value` slot content changes, and when a web font loads. A card
+  sized to its content now keeps 8rem for the value (before, it grew to
+  the value's full width). Before the script runs (server-rendered markup)
+  the size follows the card's width, so a short value in a narrow card can
+  grow when the page hydrates. Measured limits are on the DXStatCard page.
+  A numeric value (a number, or any string with no letters) no longer
+  breaks mid-figure, though it still wraps at a space; a text value such
+  as a URL keeps 1.75rem and wraps inside the card (#213).
 
 ### Fixed
 

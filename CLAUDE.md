@@ -12,17 +12,17 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
-2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (58 base components)
+2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (59 base components)
 3. **DX* Extended Components** - Complex dashboard layouts, forms, tables, stat cards, and charts (20 on the main entry, plus 3 charts)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 78 components on the main entry** (58 base + 20 extended), plus the 3
+**Total: 79 components on the main entry** (59 base + 20 extended), plus the 3
 chart components on `/charts`. Counted from the `D*`/`DX*` exports in
-`resources/js/index.ts` (2026-10-15, after DFormFile); the base count
-matches the 58 files in `components/base`.
+`resources/js/index.ts` (2026-10-15, after DFormFile and DFormValidFeedback);
+the base count matches the 59 files in `components/base`.
 
 > **Chart components ship from a separate entry** (`#142`): `DXBarChart`,
 > `DXLineChart`, `DXDoughnutChart` are exported from
@@ -387,10 +387,15 @@ TNavigation`; the `link`/`sidebar-link` item is `NavigationItemOf<TNavigation>`,
 so an app's extra item keys are typed and typos error. Generic over the
 NAVIGATION, not the item: TS infers `any` only for a parameter that is the
 prop's whole type, so generic over the item an `any` navigation rejected the
-app's keys. Consequences: `InstanceType<typeof DXDashboard…>` does not compile
-(use `ComponentPublicInstance`, `useTemplateRef` or `ComponentExposed`); a local
-`interface Props` breaks the d.ts build (TS4082), so props are declared inline;
-docgen shows the prop type as `TNavigation` (#222).
+app's keys. Consequences: `InstanceType<typeof DXDashboard…>` does not compile,
+and a template ref to either component carries ONLY the exposed members (no
+`$el`/`$props`), so both expose `el` (root element; DXDashboard also
+`toggleSidebar`/`sidebarHidden`). Consumers type refs with `useTemplateRef` (or
+`ComponentExposed`, which needs `vue-component-type-helpers`). DXDashboard reads
+its sidebar through `useTemplateRef` + `el`, so dropping the sidebar's expose
+fails vue-tsc; `tests/types/DXDashboardRefs.fixture.vue` pins the consumer
+side. A local `interface Props` breaks the d.ts build (TS4082), so props are
+declared inline; docgen shows the prop type as `TNavigation` (#222).
 
 ### DFormFile
 
@@ -398,9 +403,15 @@ Wraps bvn's BFormFile, which renders the state class on `.b-form-file-control`
 deep inside its root and sends every attr except `class`/`style`/`title` to a
 hidden aria-hidden `input[type=file]`. So a sibling feedback is shown by a
 `:has()` rule on `.b-form-file-root` in theme.scss, and `@focus`/`@blur` never
-fire. The wrapper's one behaviour of its own is DIVERGENCES #7: a model that
-becomes `null` calls bvn's `reset()`, because bvn leaves the hidden input
-holding the file. BFormFile never injects the form group's state or disabled,
+fire. Two behaviours of its own: DIVERGENCES #7, a model that becomes `null`
+or `[]` empties the native input directly (bvn leaves it holding the files;
+not via `reset()`, which echoed an extra `update:modelValue(null)`); and #8,
+a disabled DFormFile ignores drops (bvn's drop handler checks only `noDrop`):
+`dropShield()` adds `noDrop` while `disabled` is set, and capture-phase drag
+listeners on BFormFile's root stop the events while the native input is
+`:disabled` (the fieldset case; useDropZone listens on the inner
+`.b-form-file-wrapper`, so root capture runs first). `dragleave` must be
+blocked too, or useDropZone's counter drifts and the overlay sticks. BFormFile never injects the form group's state or disabled,
 and bvn does not export `formGroupKey` publicly, so group state is documented,
 not inherited. Drag colours use `--dx-form-file-drag-color`. Pinned by
 `tests/components/DFormFile.test.ts`. A drag test must wait a tick after mount
@@ -475,21 +486,34 @@ rebuild before running it after a theme change.
 
 ### DXStatCard value sizing (#213)
 
-The value sits in its own `.dx-stat-card__value-box` with `container-type:
-inline-size` and is `clamp(1.125rem, 1.125rem + (100cqi - 8rem) * 0.2128,
-1.75rem)`: 1.75rem from a 175px box up, a straight line down to the 1.125rem
-floor at 128px. NOT `16cqi`: that also reaches 28px at 175px, but then a value
-wider than 1/0.16 = 6.25em overflows every box under 175px (`£1,234,567.89` is
-6.64em), however much fallback room it gets. The container wraps the VALUE
-only, never the card root (containment there would shrink a content-sized card
-to its padding), and carries `contain-intrinsic-inline-size: 8rem` (where the
-floor starts: room for 7 figures), so a content-sized card is 178px wide.
-`overflow-wrap: normal` (undoing `.card`'s `break-word`, which split a number
-mid-figure) is on `.dx-stat-card__value--numeric` only (a number, or a string
-with no letters); other strings keep the break so a URL cannot run out of the
-card. Measured limits (6/7/8 figures by box width; 7 figures reach into the
-padding on phones under ~388px) are in DXStatCard.mdx. Pinned by
-`DXStatCard-Fit.test.ts` (reads the built component).
+FIT TO CONTENT: a numeric value (a number, or a string with no letters) is
+1.75rem unless its max-content width overflows `.dx-stat-card__value-box`,
+then `current * box / natural`, clamped to the 1.125rem floor (below it the
+value overflows into the padding on one line). The fit lives in
+`utils/statCardFit.ts` (internal; a second `<script>` block in the SFC hit
+TS4082) and writes `--dx-stat-card-fit-size` on the value element with
+`style.setProperty` (no Vue style binding, so a re-render never clears it).
+Up to two correction passes handle slot content that does not scale with the
+font. All cards share one queue flushed as write-all (`width: max-content`)
+/ read-all / write-all. Triggers: mount (microtask, so a client mount is
+fitted before first paint), box resize (ResizeObserver, refit in the NEXT
+FRAME: a fit inside the delivery changes the box's height and raises
+"ResizeObserver loop completed"; width-unchanged entries are ignored),
+value/slot changes (MutationObserver, ignoring the fit's own `style`
+writes), web font loads (one shared `loadingdone` listener). Text values
+are never fitted (1.75rem; they wrap). The CSS baseline before the fit
+(SSR, no JS) is the width-driven clamp `1.125rem + (100cqi - 8rem) *
+0.2128` inside `@supports (width: 1cqi)`: with the `var()` the declaration
+is valid at parse time, so without container units a cqi fallback would be
+invalid at computed time and drop to the body size; `@supports` leaves those
+browsers on the flat `var(--dx-stat-card-fit-size, 1.75rem)`. The box wraps
+the VALUE only, never the card root, and keeps
+`contain-intrinsic-inline-size: 8rem`, so a content-sized card is 178px
+wide. `overflow-wrap: normal` is on `--numeric` only. Measured limits are in
+DXStatCard.mdx. Pinned by `DXStatCard-Fit.test.ts` (reads the built
+component; fails on any window or console error), whose assertions are
+metric-independent: no overflow above the floor, box filled within 1px when
+shrunk.
 
 **Tabular figures (#215):** `.dx-tabular`, DXTable's `tabular` field option,
 the stat value and `.dx-currency-input > .form-control` all set
