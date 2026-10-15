@@ -459,10 +459,18 @@ room for its value. `overflow-wrap: normal` undoes `.card`'s `break-word`,
 which split a number mid-figure. Pinned by `DXStatCard-Fit.test.ts` (reads
 the built component).
 
-**Tabular figures (#215):** `.dx-tabular` and DXTable's `tabular` field option
-set `tabular-nums`, but the bundled Maven Pro and Poppins have NO `tnum`
-feature, so they do nothing in the default theme (measured, pinned by
-`tabular-figures.test.ts`, which goes red if the face ever gains it).
+**Tabular figures (#215):** `.dx-tabular`, DXTable's `tabular` field option,
+the stat value and `.dx-currency-input > .form-control` all set
+`font-family: var(--dx-font-family-figures), <surrounding face>` plus
+`tabular-nums`. Maven Pro and Poppins have NO `tnum` feature, so
+`tabular-nums` alone did nothing (52.64px vs 74.59px for "1111"/"0000" at
+28px/700); the digits now come from the bundled DX Figures face (IBM Plex
+Sans digits, see "Typefaces"). The stat value's rule is scoped in
+DXStatCard.vue, the others are global in theme.scss. Pinned by
+`tabular-figures.test.ts` ("1111" == "0000" within 0.05px in `.dx-tabular`
+at 400/500/700, the stat value and the currency input, against the BUILT
+CSS, with a Maven Pro positive control; `£`/letters unchanged; headings;
+the `initial` opt-out).
 
 ### DXLoading (soft loader, 0.45.0)
 
@@ -796,6 +804,8 @@ browser's bold) in `--dx-table-header-color`. Pinned by
 
 ### Typefaces (bundled, since the fruity-palette pass)
 
+- **Three families**: Maven Pro (body), Poppins (display) and the IBM Plex
+  Sans DIGITS for tabular figures (below).
 - **Body: Maven Pro** (`$font-family-sans-serif`). **Display: Poppins**, a
   theme token `$dx-font-family-display` → `--dx-font-family-display`, applied
   by the theme to **h1–h4 / `.h1`–`.h4` only** (via `$headings-font-family`;
@@ -830,6 +840,33 @@ browser's bold) in `--dx-table-header-color`. Pinned by
 - **Never subset or modify the Maven Pro files.** They are the upstream woff2s,
   byte-identical, because Maven Pro's OFL has a Reserved Font Name: a modified
   copy could not keep the name.
+- **Figures: IBM Plex Sans digits as `"DX Figures"`** (#215,
+  `$dx-figures-fonts` in theme.scss, separate from `$dx-bundled-fonts`):
+  400/500/700, `unicode-range: U+0030-0039`, `size-adjust: 94.8%`. Chosen
+  side by side against other candidates: Maven Pro has no `tnum`, Plex
+  Sans's default figures are tabular. Digits only, so `£ , .` and letters
+  fall through to the next family; 94.8% because Plex's '0' is 0.710em tall
+  against Maven Pro's 0.673em (with it, decimal points align to <0.02px; no
+  `ascent-override` needed). The token `$dx-font-family-figures` (!default)
+  → `--dx-font-family-figures` holds ONLY the figures face (`"DX Figures"`);
+  each rule appends the fallback itself, `var(--bs-body-font-family)`, or
+  `var(--dx-font-family-display)` in and on h1–h4 (`:is(h1…h4, .h1….h4)
+  .dx-tabular` and `.dx-tabular` on one; without it `.dx-tabular` outranks
+  `h1` and turned heading letters into Maven Pro). That is why the token
+  is not "DX Figures, <body stack>": one token then serves both contexts and
+  a swap (Inter, Plex Mono) reaches headings too. `initial` is the opt-out:
+  the `var()` goes invalid, so the element inherits its parent's family.
+  Limit: CSS cannot say "the inherited face" inside a font list, so in
+  other display-face text (the light sidebar) the fallback is the body face.
+- **Never subset or re-encode the Plex files either**: "Plex" is a Reserved
+  Font Name. They are IBM's own Latin1 split woff2s from the npm package
+  `@ibm/plex-sans` 1.1.0 (`fonts/split/woff2/`), version and sha256 in
+  `resources/fonts/ibm-plex-sans/SOURCE.txt`, licence as `OFL.txt` (the
+  package's `LICENSE.txt`, unmodified). Get new ones with `npm pack`, NOT
+  `npm install` (the package has a `postinstall` telemetry script).
+  `theme-fonts.test.ts` hashes both the source copies and the shipped
+  `dist/assets` files against the recorded sha256 (crypto.subtle). About
+  21 KB a weight, fetched only where a tabular digit renders.
 - **Test the faces LOAD, not the names**: `tests/bundle/theme-fonts.test.ts`
   renders text in each face and asserts the `document.fonts` entry reached
   `status === "loaded"`. A `font-family` check passes with the font missing

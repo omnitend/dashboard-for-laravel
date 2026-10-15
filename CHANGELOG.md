@@ -25,12 +25,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `PrefixedDashboardSlots`, `DashboardUser`). vue-tsc still does not flag
   an unknown slot name such as `#search` (Vue types `$slots` with a string
   index), so the docs now show the mistake (#219).
-- `.dx-tabular` utility and a DXTable field option `tabular: true`, which
-  adds it to the column's cells and header (keeping the field's own
-  `tdClass`/`thClass`). DXStatCard's value and DXCurrencyInput's amount use
-  tabular figures too. **The bundled Maven Pro has no tabular figures**, so
-  in the default theme this changes nothing yet; it takes effect with a
-  body face that has them (#215, which stays open for a figures face).
+- Tabular figures, so money lines up digit for digit: a `.dx-tabular`
+  utility and a DXTable field option `tabular: true`, which adds it to the
+  column's cells and header (keeping the field's own `tdClass`/`thClass`).
+  DXStatCard's value and DXCurrencyInput's amount use tabular figures too.
+  Maven Pro has no tabular figures, so the theme bundles **IBM Plex Sans
+  digits** as a `DX Figures` face: `0`–`9` only (`unicode-range`; `£`,
+  punctuation and letters stay in the body face, or the display face in
+  `h1`–`h4`), weights 400, 500 and 700, scaled to Maven Pro's figure height.
+  The three files (about 64 KB) are IBM's unmodified upstream woff2s under
+  the SIL OFL, fetched only where a tabular digit renders. The face is the
+  `--dx-font-family-figures` token (`$dx-font-family-figures` in Sass):
+  point it at Inter or IBM Plex Mono, or set it to `initial` to keep the
+  surrounding face (#215).
 
 ### Changed
 

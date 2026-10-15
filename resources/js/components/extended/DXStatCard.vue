@@ -201,11 +201,14 @@ const formattedDelta = computed<string>(() => {
  * number, down to 1.125rem. `overflow-wrap: normal` undoes the card's
  * `word-wrap: break-word`, which split a number mid-figure when it
  * overflowed; a string value still wraps at its spaces. Tabular figures
- * (#215) keep each digit on the same advance.
+ * (#215) keep each digit on the same advance: the digits come from the
+ * theme's figures face (`--dx-font-family-figures`, as `.dx-tabular`), the
+ * rest of the value from the body face.
  */
 .dx-stat-card__value {
   font-size: clamp(1.125rem, 16cqi, 1.75rem);
   overflow-wrap: normal;
+  font-family: var(--dx-font-family-figures), var(--bs-body-font-family);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   line-height: 1.1;

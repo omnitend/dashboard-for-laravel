@@ -53,8 +53,9 @@ $color-contrast-light: #fff; // Light text color (for dark backgrounds)
 // Two bundled typefaces (SIL OFL 1.1; woff2 + licence in resources/fonts/):
 // MAVEN PRO for body text, and POPPINS as the DISPLAY face, published as
 // `--dx-font-family-display`. The theme applies the display face to h1–h4 and
-// nothing else; consumers use the token for things like product names. Both
-// are declared with `@font-face` below, so they render on every machine, not
+// nothing else; consumers use the token for things like product names. A
+// third, IBM PLEX SANS, supplies DIGITS ONLY for tabular figures (#215; see
+// "Tabular figures" below). All are declared with `@font-face` below, so they render on every machine, not
 // only where the font happens to be installed (the theme used to name Poppins
 // and ship no face for it, so most visitors got the generic sans-serif).
 $font-family-sans-serif: "Maven Pro", system-ui, -apple-system, "Segoe UI", Roboto,
@@ -62,6 +63,12 @@ $font-family-sans-serif: "Maven Pro", system-ui, -apple-system, "Segoe UI", Robo
 $dx-font-family-display: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto,
   "Helvetica Neue", Arial, sans-serif;
 $headings-font-family: var(--dx-font-family-display);
+// The face(s) tabular figures are set in, published as
+// `--dx-font-family-figures`. Only the figures face goes here: the theme
+// appends the surrounding face as the fallback (the body face, or the display
+// face in h1–h4), which is where `£`, `,`, `.` and letters come from. See
+// "Tabular figures" below.
+$dx-font-family-figures: "DX Figures" !default;
 $font-size-base: 1rem; // 16px — the default tier. Legacy omnitend rendered body
 // and table text at 16px; the earlier 0.875rem (14px) shrank every ported page's
 // text ~12% while rem-fixed chrome stayed put, so controls read oversized and
@@ -506,8 +513,40 @@ $dx-bundled-fonts: (
   }
 }
 
+// DX Figures: IBM Plex Sans's DIGITS, for tabular figures (#215). Maven Pro
+// and Poppins have no `tnum` feature, so `tabular-nums` did nothing in them;
+// Plex Sans's figures are tabular by default. `unicode-range` limits each face
+// to U+0030–0039, so only the digits come from Plex and everything else in a
+// tabular run falls through to the next family in the stack. `size-adjust`
+// matches Plex's figure height (0.710em) to Maven Pro's (0.673em), so a digit
+// sits beside Maven Pro text at the same size. 400 for body text and inputs,
+// 500 for table headers and `.fw-medium`, 700 for DXStatCard's value and
+// `.fw-bold`. The files are IBM's own Latin1 split woff2s, byte-identical to
+// the upstream package (resources/fonts/ibm-plex-sans/SOURCE.txt): "Plex" is a
+// Reserved Font Name, so they must never be subset or re-encoded. Extracted to
+// `dist/assets/` like the faces above, and fetched only where a tabular digit
+// renders.
+$dx-figures-fonts: (
+  (400, "ibm-plex-sans/IBMPlexSans-Regular-Latin1"),
+  (500, "ibm-plex-sans/IBMPlexSans-Medium-Latin1"),
+  (700, "ibm-plex-sans/IBMPlexSans-Bold-Latin1"),
+);
+
+@each $weight, $file in $dx-figures-fonts {
+  @font-face {
+    font-family: "DX Figures";
+    font-style: normal;
+    font-weight: $weight;
+    font-display: swap;
+    src: url("../fonts/#{$file}.woff2") format("woff2");
+    unicode-range: U+0030-0039;
+    size-adjust: 94.8%;
+  }
+}
+
 :root {
   --dx-font-family-display: #{$dx-font-family-display};
+  --dx-font-family-figures: #{$dx-font-family-figures};
 }
 
 // Bootstrap gives `$headings-font-family` to h1–h6; the display face is for
@@ -1457,12 +1496,33 @@ aside.dashboard-sidebar--light {
 // updates in place) line up and do not jitter. Global, so consumer markup and
 // slot content can use it; DXTable's `tabular: true` field option adds it to
 // a column's cells, and DXStatCard's value and DXCurrencyInput's amount use
-// tabular figures by default. NOTE: the bundled Maven Pro and Poppins have
-// no `tnum` feature, so in the default theme this changes nothing (measured:
-// "1111" stays narrower than "0000"; pinned by tabular-figures.test.ts). It
-// takes effect in a consumer face that has one (Inter, the macOS system face).
+// tabular figures by default.
+//
+// Maven Pro and Poppins have no `tnum` feature, so the digits come from the
+// `--dx-font-family-figures` token (DX Figures, IBM Plex Sans digits, above),
+// with the surrounding face as the fallback for everything else. `tabular-nums`
+// stays, so a consumer who points the token at a face with a `tnum` feature
+// (Inter, IBM Plex Mono) still gets tabular figures from it. Setting the token
+// to `initial` turns the face off: the declaration becomes invalid and the
+// element inherits its parent's family.
+//
+// Heading trap: h1–h4 are in the display face, and `.dx-tabular` outranks
+// `h1`, so in or on a heading the fallback must be the display face too, or
+// the heading's letters would turn into Maven Pro. The second rule does that.
+// Elsewhere the fallback is the body face: CSS cannot say "the inherited
+// face" inside a font list, so a `.dx-tabular` inside some other display-face
+// element (the sidebar) gets body-face letters.
+// Pinned by tabular-figures.test.ts and theme-fonts.test.ts.
+$dx-headings-1-4: "h1, h2, h3, h4, .h1, .h2, .h3, .h4";
+
 .dx-tabular {
+  font-family: var(--dx-font-family-figures), var(--bs-body-font-family);
   font-variant-numeric: tabular-nums;
+}
+
+:is(#{$dx-headings-1-4}).dx-tabular,
+:is(#{$dx-headings-1-4}) .dx-tabular {
+  font-family: var(--dx-font-family-figures), var(--dx-font-family-display);
 }
 
 // ----------------------------------------------------------------------------
@@ -1474,10 +1534,12 @@ aside.dashboard-sidebar--light {
 // price, the group still does not wrap (a wrapped affix would land on its own line
 // with broken corners: the theme already makes every `.input-group` nowrap),
 // and the affix text wraps onto two lines instead. The amount uses tabular
-// figures (#215), like every money value the library renders.
+// figures (#215), like every money value the library renders (the figures
+// face plus `tabular-nums`, as `.dx-tabular` above).
 .dx-currency-input {
   > .form-control {
     min-width: 5.5rem;
+    font-family: var(--dx-font-family-figures), var(--bs-body-font-family);
     font-variant-numeric: tabular-nums;
   }
 

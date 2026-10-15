@@ -67,6 +67,32 @@ describe('bundled theme fonts actually load', () => {
     }
   });
 
+  it('loads the DX Figures face (IBM Plex Sans digits) at 400, 500 and 700 for tabular digits', async () => {
+    // The face is digits-only (unicode-range), so it loads only once digits
+    // render in it; the letter-only paragraph alone would leave it unloaded.
+    render({
+      render: () =>
+        h('div', [
+          h('p', { class: 'dx-tabular' }, '£1,234.56'),
+          h('p', { class: 'dx-tabular fw-medium' }, '£1,234.56'),
+          h('p', { class: 'dx-tabular fw-bold' }, '£1,234.56'),
+        ]),
+    });
+
+    for (const weight of ['400', '500', '700']) {
+      const faces = await loadedFaces('DX Figures', weight);
+      expect(faces.length, `no @font-face for DX Figures ${weight}`).toBeGreaterThan(0);
+      expect(
+        faces.map((face) => face.status),
+        `DX Figures ${weight} did not load`,
+      ).toContain('loaded');
+      expect(faces[0]!.unicodeRange.toUpperCase()).toBe('U+30-39');
+    }
+    expect(
+      getComputedStyle(document.documentElement).getPropertyValue('--dx-font-family-figures'),
+    ).toContain('DX Figures');
+  });
+
   it('uses Maven Pro for body text and the Poppins display token for h1', () => {
     const screen = render({ render: () => h('div', [h('p', 'body'), h('h1', 'heading')]) });
     const body = getComputedStyle(screen.container.querySelector('p')!).fontFamily;
@@ -87,6 +113,9 @@ describe('the theme fonts ship as files next to the stylesheet', () => {
     'MavenPro-Bold',
     'Poppins-Medium',
     'Poppins-SemiBold',
+    'IBMPlexSans-Regular-Latin1',
+    'IBMPlexSans-Medium-Latin1',
+    'IBMPlexSans-Bold-Latin1',
   ];
 
   for (const name of files) {
@@ -106,6 +135,39 @@ describe('the theme fonts ship as files next to the stylesheet', () => {
       const bytes = new Uint8Array(await response.arrayBuffer());
       // "wOF2" magic: a real woff2, not an HTML fallback page.
       expect(String.fromCharCode(...bytes.slice(0, 4))).toBe('wOF2');
+    });
+  }
+});
+
+/**
+ * "Plex" is a Reserved Font Name under the OFL, so the bundled IBM Plex Sans
+ * files must stay byte-identical to IBM's (@ibm/plex-sans 1.1.0,
+ * fonts/split/woff2/; resources/fonts/ibm-plex-sans/SOURCE.txt). Both the
+ * source copy and the file the build ships are hashed against the upstream
+ * checksums, so a re-encode anywhere fails here.
+ */
+describe('the IBM Plex Sans files are the unmodified upstream files', () => {
+  const upstream: Record<string, string> = {
+    'IBMPlexSans-Regular-Latin1': 'b5ad7bd39f996144915f0ad9849a90183b27d8c28ad97ed98af5b1bebc51f6b1',
+    'IBMPlexSans-Medium-Latin1': 'b5610af04d0d4b5a14a621d96d974b993e945a065db1a8861918f69ef9321934',
+    'IBMPlexSans-Bold-Latin1': '914f1400f363e636b6f9cc7965aa807ff01e93586e1437617525cba0a62aa78d',
+  };
+
+  const sha256 = async (url: URL) => {
+    const response = await fetch(url);
+    expect(response.ok, `${url} not fetchable`).toBe(true);
+    const digest = await crypto.subtle.digest('SHA-256', await response.arrayBuffer());
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  };
+
+  for (const [name, expected] of Object.entries(upstream)) {
+    it(`${name}: source and shipped copies match the upstream sha256`, async () => {
+      expect(await sha256(new URL(`../../resources/fonts/ibm-plex-sans/${name}.woff2`, import.meta.url))).toBe(
+        expected,
+      );
+      const shipped = new RegExp(`url\\(\\./assets/(${name}-[a-f0-9]+\\.woff2)\\)`).exec(stylesheet);
+      expect(shipped, `${name} not referenced from dist/style.css`).not.toBeNull();
+      expect(await sha256(new URL(`../../dist/assets/${shipped![1]}`, import.meta.url))).toBe(expected);
     });
   }
 });

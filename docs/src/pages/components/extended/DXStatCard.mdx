@@ -55,10 +55,10 @@ grow, an inline-block) no longer widens to fit its value at full size. It
 takes at least 6rem for the value, which then shrinks to fit. Give the card
 a width (a grid column, `flex: 1`) to show the value at full size.
 
-The value uses tabular figures (`font-variant-numeric: tabular-nums`), so
-digits keep the same width as a number updates in place. The bundled Maven
-Pro has no tabular figures, so this takes effect only when your theme uses
-a face that has them.
+The value uses tabular figures, so digits keep the same width as a number
+updates in place. The digits come from the theme's figures face (IBM Plex
+Sans digits, `--dx-font-family-figures`), the rest of the value from the
+body face (see [Theming](/guide/theming#tabular-figures)).
 
 ## Slots
 
