@@ -36,7 +36,7 @@
     "dev": "vite build --watch",
     "build:lib": "vite build && vite build --config vite.config.charts.ts && node scripts/extract-icon-font.mjs",
     "build": "npm run build:lib && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
-    "typecheck": "vue-tsc --noEmit",
+    "typecheck": "vue-tsc --noEmit && vue-tsc --noEmit -p tests/types/tsconfig.json",
     "pretest": "npm run build:lib",
     "test": "vitest",
     "pretest:ui": "npm run build:lib",

@@ -220,4 +220,10 @@ export type {
     NavbarSearchAlign,
     NavbarActionsOnMobile,
     SidebarVariant,
+    DashboardUser,
+    DashboardNavbarSlots,
+    DashboardSidebarSlots,
+    DashboardSlotExtras,
+    DashboardSlots,
+    PrefixedDashboardSlots,
 } from "./types/navigation";

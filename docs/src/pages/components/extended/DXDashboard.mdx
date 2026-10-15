@@ -49,12 +49,34 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
   { name: 'navbar-search', props: '{ toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom search component for navbar' },
   { name: 'navbar-actions', props: '{ pageTitle: string, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from md up; below, wraps to its own full-width row or is hidden entirely per actionsOnMobile' },
   { name: 'navbar-user-icon', props: '{ initial: string, user: User, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom user icon/avatar in navbar dropdown (defaults to DXUserAvatar)' },
-  { name: 'navbar-user-menu', props: '{ user: User, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom user dropdown menu content' },
+  { name: 'navbar-user-menu', props: '{ user: User | null, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Replaces the whole user menu (the default avatar dropdown)' },
+  { name: 'navbar-user-menu-items', props: '{ user: User, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Items for the default user dropdown menu' },
 ]} />
 
 Every forwarded `sidebar-*` and `navbar-*` slot also receives `toggleSidebar`
 and `sidebarHidden` on top of the underlying slot's own bindings — see
 [Controlling the sidebar](#controlling-the-sidebar).
+
+The slots are typed (`DashboardSlots`, exported from the package), so your
+editor completes the slot names and their props, and `vue-tsc` checks how you
+use the props. Only the prefixed names are forwarded. A slot named after the
+child's own slot goes nowhere: nothing renders, and `vue-tsc` does not report
+it either (Vue allows any slot name on any component), so the editor's
+completion list is the place to check.
+
+```vue
+<DXDashboard :navigation="navigation" current-url="/orders">
+  <!-- Wrong: DXDashboard has no `search` slot, so this renders nothing -->
+  <template #search>
+    <OrderSearch />
+  </template>
+
+  <!-- Right: `navbar-search` is forwarded to the navbar's `search` slot -->
+  <template #navbar-search>
+    <OrderSearch />
+  </template>
+</DXDashboard>
+```
 
 ## Features
 

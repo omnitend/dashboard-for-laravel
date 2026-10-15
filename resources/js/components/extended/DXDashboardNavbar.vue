@@ -122,7 +122,15 @@ import DContainer from "../base/DContainer.vue";
 import DButton from "../base/DButton.vue";
 import DDropdown from "../base/DDropdown.vue";
 import DXUserAvatar from "./DXUserAvatar.vue";
-import type { NavbarActionsOnMobile, NavbarSearchAlign } from "../../types/navigation";
+import type {
+  DashboardNavbarSlots,
+  NavbarActionsOnMobile,
+  NavbarSearchAlign,
+} from "../../types/navigation";
+
+// Typed slots: consumers get autocomplete and slot-prop types, and DXDashboard
+// derives its `navbar-*` slot types from this interface.
+defineSlots<DashboardNavbarSlots>();
 
 const props = withDefaults(
   defineProps<{

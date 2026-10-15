@@ -114,16 +114,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, useSlots, useId, watch, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
+import { ref, computed, useId, watch, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
 import DXDashboardSidebar from './DXDashboardSidebar.vue';
 import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
 import DRow from '../base/DRow.vue';
 import DCol from '../base/DCol.vue';
 import { acquirePageScrollLock, releasePageScrollLock } from '../../utils/pageScrollLock';
-import type { Navigation, NavbarActionsOnMobile, NavbarSearchAlign, SidebarVariant } from '../../types/navigation';
+import type { DashboardSlots, Navigation, NavbarActionsOnMobile, NavbarSearchAlign, SidebarVariant } from '../../types/navigation';
 
-const slots = useSlots();
+// Typed slots, derived from the children's slot types (see `DashboardSlots`).
+// Types only: the forwarding below stays dynamic, so it never lists names.
+const slots = defineSlots<DashboardSlots>();
 
 // Slot-binding precedence: the forwarded slots bind the child's own slot props
 // FIRST and `toggleSidebar`/`sidebarHidden` after, so ours win a name clash.
@@ -228,13 +230,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const collapsed = ref(false);
 
-// Compute sidebar slots (strip 'sidebar-' prefix)
+// Compute sidebar slots (strip 'sidebar-' prefix). The values are typed as
+// declared slot names so the template's `<slot :name>` type-checks; at runtime
+// any `sidebar-*`/`navbar-*` slot the consumer passes is forwarded.
 const sidebarSlots = computed(() => {
-  const result: Record<string, string> = {};
+  const result: Record<string, keyof DashboardSlots> = {};
   Object.keys(slots).forEach(name => {
     if (name.startsWith('sidebar-')) {
       const strippedName = name.substring(8); // Remove 'sidebar-' prefix
-      result[strippedName] = name;
+      result[strippedName] = name as keyof DashboardSlots;
     }
   });
   return result;
@@ -242,11 +246,11 @@ const sidebarSlots = computed(() => {
 
 // Compute navbar slots (strip 'navbar-' prefix)
 const navbarSlots = computed(() => {
-  const result: Record<string, string> = {};
+  const result: Record<string, keyof DashboardSlots> = {};
   Object.keys(slots).forEach(name => {
     if (name.startsWith('navbar-')) {
       const strippedName = name.substring(7); // Remove 'navbar-' prefix
-      result[strippedName] = name;
+      result[strippedName] = name as keyof DashboardSlots;
     }
   });
   return result;

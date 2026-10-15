@@ -167,7 +167,11 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, watch, nextTick, useId } from 'vue';
-import type { Navigation, NavigationGroup, SidebarVariant } from '../../types/navigation';
+import type { DashboardSidebarSlots, Navigation, NavigationGroup, SidebarVariant } from '../../types/navigation';
+
+// Typed slots: consumers get autocomplete and slot-prop types, and DXDashboard
+// derives its `sidebar-*` slot types from this interface.
+defineSlots<DashboardSidebarSlots>();
 
 const props = withDefaults(defineProps<{
   /** Grouped navigation to render: an array of groups, each with a label and items. */
