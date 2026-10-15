@@ -980,7 +980,12 @@ solid fill by reflex.
   underline is what marks a navy link, so don't remove it.
 - **Form errors are crimson `#c8102e`** (`$dx-form-error`, wired into
   `$form-invalid-*` / `$form-feedback-*-invalid-*` before the import), NOT the
-  danger magenta, which stays on badges and buttons.
+  danger magenta, which stays on badges and buttons. That includes the
+  invalid FOCUS RING: Bootstrap's `$form-validation-states` builds it from
+  `--bs-danger-rgb`, so theme.scss overrides the map's invalid
+  `focus-box-shadow` after the variables import. The plain focus ring is
+  `rgba($primary, 0.1)` 3px, shared by selects. Pinned by
+  `focus-rings.test.ts`.
 - **Bootstrap's subtle family is derived from the soft tints** (set before the
   import): `$X-bg-subtle` and the `$table-variants` rows = soft-bg mixed with
   white to **70% white** (`dx-subtle-bg()`; legacy omnitend's rows measure

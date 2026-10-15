@@ -48,6 +48,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (before, it grew to the value's full 1.75rem width). A long number no
   longer breaks mid-figure (#213).
 
+### Fixed
+
+- An invalid control's focus ring is the crimson form-error colour, like
+  its border. It was the danger magenta, because Bootstrap builds it from
+  `--bs-danger-rgb`. Applies to every `.form-control`, `.form-select` and
+  `DFormFile`.
+- The text input focus ring is a faint brand navy. It was a leftover
+  indigo, `rgba(79, 70, 229, 0.1)`. Selects now take the same ring rather
+  than Bootstrap's wider 25% one.
+
 ## [0.45.0] - 2026-10-11
 
 ### Changed

@@ -135,7 +135,11 @@ $input-padding-y-lg: $btn-padding-y-lg;
 $input-border-radius: $border-radius;
 $input-border-color: #d1d5db; // Gray-300
 $input-focus-border-color: $primary;
-$input-focus-box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+// The focus halo is the brand navy, faint, outside the navy focus border. (It
+// was a leftover indigo from before the navy brand.) Selects take the same
+// ring; Bootstrap gives them their own 0.25rem one at 25%.
+$input-focus-box-shadow: 0 0 0 3px rgba($primary, 0.1);
+$form-select-focus-box-shadow: $input-focus-box-shadow;
 
 // Check/radio inputs default their border to `$border-color` (Gray-200), not
 // `$input-border-color` — so a bare checkbox looks faint beside the (darker,
@@ -446,6 +450,23 @@ $utilities-bg-subtle: map.merge($utilities-bg-subtle, ("pending-subtle": var(--b
 $utilities-border-subtle: map.merge(
   $utilities-border-subtle,
   ("pending-subtle": var(--bs-pending-border-subtle))
+);
+
+// An invalid control's focus ring is the crimson form-error colour, like its
+// border. Bootstrap builds it from `--bs-danger-rgb`, which is the magenta
+// badge hue here. Its geometry and opacity stay Bootstrap's. The map only
+// exists once Bootstrap's variables are read, hence here.
+$form-validation-states: map.merge(
+  $form-validation-states,
+  (
+    "invalid": map.merge(
+      map.get($form-validation-states, "invalid"),
+      (
+        "focus-box-shadow": 0 0 $input-btn-focus-blur $input-focus-width
+          rgba($dx-form-error, $input-btn-focus-color-opacity),
+      )
+    ),
+  )
 );
 
 @import "bootstrap/scss/bootstrap";
