@@ -33,8 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `null` or `[]` also clears the native input, so a plain form submit no
   longer sends the old file. While disabled (its own `disabled`, or a
   disabled `DFormGroup`/fieldset) it ignores dropped files, which bvn
-  accepted; an explicit `noDrop` still wins. Every slot is forwarded with
-  its props, and
+  accepted, whatever `noDrop` says. Every slot is forwarded with its
+  props, and
   `focus`/`blur`/`reset` are exposed. The theme gives it the text input's
   border, height at each size, focus ring and crimson invalid state; a
   sibling `DFormInvalidFeedback`/`DFormValidFeedback` shows with `state`;
@@ -86,12 +86,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `DXStatCard`'s value fits its content: a numeric value is 1.75rem
-  unless it is too wide for the card, and then shrinks just enough to fit
-  on one line, down to 1.125rem. Short values (`42`, `1,000`) stay at
+  unless it is too wide for the card, and then takes the largest size
+  (to 0.25px) at which it fits on one line, down to 1.125rem. Each size
+  is measured, not assumed proportional, so it holds where text width
+  grows in steps (Linux Chromium). Short values (`42`, `1,000`) stay at
   1.75rem in any card, four to a row included; a 7-figure amount
   (`£1,234,567.89`) fits two cards to a 390px phone row, and 8 figures fit
   from a 130px value area. The card refits when it is resized, when the
-  value or `value` slot content changes, and when a web font loads. A card
+  value or `value` slot content changes, when a web font loads, and when
+  it comes back from a deactivated `<KeepAlive>`. A card
   sized to its content now keeps 8rem for the value (before, it grew to
   the value's full width). Before the script runs (server-rendered markup)
   the size follows the card's width, so a short value in a narrow card can

@@ -407,9 +407,8 @@ fire. Two behaviours of its own: DIVERGENCES #7, a model that becomes `null`
 or `[]` empties the native input directly (bvn leaves it holding the files;
 not via `reset()`, which echoed an extra `update:modelValue(null)`); and #8,
 a disabled DFormFile ignores drops (bvn's drop handler checks only `noDrop`):
-`dropShield()` adds `noDrop` while `disabled` is set, and capture-phase drag
-listeners on BFormFile's root stop the events while the native input is
-`:disabled` (the fieldset case; useDropZone listens on the inner
+capture-phase drag listeners on BFormFile's root stop the events while the
+native input is `:disabled` (the prop and the fieldset case alike; useDropZone listens on the inner
 `.b-form-file-wrapper`, so root capture runs first). `dragleave` must be
 blocked too, or useDropZone's counter drifts and the overlay sticks. BFormFile never injects the form group's state or disabled,
 and bvn does not export `formGroupKey` publicly, so group state is documented,
@@ -487,21 +486,29 @@ rebuild before running it after a theme change.
 ### DXStatCard value sizing (#213)
 
 FIT TO CONTENT: a numeric value (a number, or a string with no letters) is
-1.75rem unless its max-content width overflows `.dx-stat-card__value-box`,
-then `current * box / natural`, clamped to the 1.125rem floor (below it the
-value overflows into the padding on one line). The fit lives in
+1.75rem unless it overflows `.dx-stat-card__value-box`, then the largest size
+on a 0.25px grid at which it fits, down to the 1.125rem floor (below that it
+overflows into the padding on one line). The fit lives in
 `utils/statCardFit.ts` (internal; a second `<script>` block in the SFC hit
-TS4082) and writes `--dx-stat-card-fit-size` on the value element with
-`style.setProperty` (no Vue style binding, so a re-render never clears it).
-Up to two correction passes handle slot content that does not scale with the
-font. All cards share one queue flushed as write-all (`width: max-content`)
-/ read-all / write-all. Triggers: mount (microtask, so a client mount is
-fitted before first paint), box resize (ResizeObserver, refit in the NEXT
-FRAME: a fit inside the delivery changes the box's height and raises
-"ResizeObserver loop completed"; width-unchanged entries are ignored),
-value/slot changes (MutationObserver, ignoring the fit's own `style`
-writes), web font loads (one shared `loadingdone` listener). Text values
-are never fitted (1.75rem; they wrap). The CSS baseline before the fit
+TS4082). It MEASURES AND CHECKS: each candidate is written as
+`--dx-stat-card-fit-size` (`style.setProperty`, never a Vue style binding, so
+a re-render never clears it) and the value's real width at `width:
+max-content` is compared with the box. Order: 1.75rem, the proportional
+estimate, then bisection, keeping the largest size that fitted and the
+smallest that overflowed, so the result fits by construction. NEVER assume
+width is proportional to size: Linux Chromium (CI) rounds glyph advances per
+size (width rises in steps of up to 12px), and slot content can have fixed-px
+parts. All cards share one queue, flushed in rounds of write-all / read-all
+(at most 8 rounds; a short value takes one). Triggers: mount (microtask, so a
+client mount is fitted before first paint); box resize (ResizeObserver, refit
+in the NEXT FRAME: a fit inside the delivery changes the box's height and
+raises "ResizeObserver loop completed"; width-unchanged entries, and all
+entries for text values, are ignored); value/slot changes (MutationObserver,
+ignoring the fit's own `style` writes); `onActivated` (KeepAlive); web font
+loads (one shared `loadingdone` listener attached at the first registration,
+so it hears a load already under way; no `fonts.ready` fallback). A flush that
+finds a target detached sets its `fittedBoxWidth` to -1, so the resize entry
+on its return refits. Text values are never fitted (1.75rem; they wrap). The CSS baseline before the fit
 (SSR, no JS) is the width-driven clamp `1.125rem + (100cqi - 8rem) *
 0.2128` inside `@supports (width: 1cqi)`: with the `var()` the declaration
 is valid at parse time, so without container units a cqi fallback would be
@@ -512,8 +519,9 @@ the VALUE only, never the card root, and keeps
 wide. `overflow-wrap: normal` is on `--numeric` only. Measured limits are in
 DXStatCard.mdx. Pinned by `DXStatCard-Fit.test.ts` (reads the built
 component; fails on any window or console error), whose assertions are
-metric-independent: no overflow above the floor, box filled within 1px when
-shrunk.
+metric-independent: one line, no overflow above the floor, and below 1.75rem
+one step (0.25px) larger would overflow. Run it in Linux Chromium too
+(`npm run test:linux -- tests/components/DXStatCard-Fit.test.ts`).
 
 **Tabular figures (#215):** `.dx-tabular`, DXTable's `tabular` field option,
 the stat value and `.dx-currency-input > .form-control` all set
@@ -1554,6 +1562,17 @@ Three things that cost real time and aren't derivable from the code:
   that changes per-page silently breaks a *later* test's `:per-page="20"`. Clear
   `dxtable-perpage-<url>` (default key: `dxtable-perpage-table`) in a
   `beforeEach`. This is a real product wart too — see #124.
+
+**macOS hides Linux text layout.** CI's Linux Chromium rounds glyph
+advances per font size (text width grows in steps, not in proportion to the
+size); macOS positions glyphs fractionally, and
+`--disable-font-subpixel-positioning` does not change that on macOS. Any test
+or code that measures text can pass locally and fail on CI (DXStatCard's fit
+did, 8 tests). `npm run test:linux -- <files>` (`scripts/test-linux.sh`; needs
+Docker, ~2 GB image the first time) runs vitest against Linux Chromium in
+Playwright's Docker image of the installed playwright-core version, through
+`DX_PLAYWRIGHT_WS_ENDPOINT` in vitest.config.ts. Build first. The image is
+arm64 on this Mac and CI is x86, so it narrows the gap rather than closing it.
 
 And the rule that matters most: **watch a new test fail against the unfixed code
 before trusting it.** Two tests in the 0.24 run passed for the wrong reason and
