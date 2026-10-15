@@ -86,6 +86,7 @@ export const navigationConfig: Navigation = [
       { label: 'DFormTags', url: '/components/base/DFormTags' },
       { label: 'DFormText', url: '/components/base/DFormText' },
       { label: 'DFormTextarea', url: '/components/base/DFormTextarea' },
+      { label: 'DFormValidFeedback', url: '/components/base/DFormValidFeedback' },
       { label: 'DImage', url: '/components/base/DImage' },
       { label: 'DInputGroup', url: '/components/base/DInputGroup' },
       { label: 'DLink', url: '/components/base/DLink' },

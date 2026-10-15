@@ -66,6 +66,7 @@ export { default as DFormFile } from "./components/base/DFormFile.vue";
 export { default as DFormGroup } from "./components/base/DFormGroup.vue";
 export { default as DFormInput } from "./components/base/DFormInput.vue";
 export { default as DFormInvalidFeedback } from "./components/base/DFormInvalidFeedback.vue";
+export { default as DFormValidFeedback } from "./components/base/DFormValidFeedback.vue";
 export { default as DFormOtp } from "./components/base/DFormOtp.vue";
 export { default as DFormRadio } from "./components/base/DFormRadio.vue";
 export { default as DFormRadioGroup } from "./components/base/DFormRadioGroup.vue";

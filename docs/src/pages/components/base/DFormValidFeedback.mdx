@@ -1,0 +1,27 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormValidFeedback
+description: Type-safe wrapper around Bootstrap Vue Next's BFormValidFeedback component
+category: Base Component
+tags: wrapper, forms, validation
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormValidFeedbackExample from '../../../examples/DFormValidFeedbackExample.vue';
+import DFormValidFeedbackExampleRaw from '../../../examples/DFormValidFeedbackExample.vue?raw';
+
+# DFormValidFeedback
+
+Type-safe wrapper around Bootstrap Vue Next BFormValidFeedback component. Displays a confirmation message when a form input is in a valid state (`state` is `true`), the counterpart of `DFormInvalidFeedback`.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DFormValidFeedbackExampleRaw}
+  example="DFormValidFeedbackExample"
+/>
+
+
+<BootstrapVueNextReference client:load componentName="DFormValidFeedback" />

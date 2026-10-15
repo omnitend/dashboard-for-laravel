@@ -16,7 +16,7 @@ import DFormFileExampleRaw from '../../../examples/DFormFileExample.vue?raw';
 
 # DFormFile
 
-DFormFile - A type-safe wrapper around Bootstrap Vue Next's BFormFile component. A file picker with a Browse button, the chosen file name, and a drag-and-drop zone, styled like the theme's text inputs (same height, border, focus ring and crimson invalid state). `v-model` is a `File` for a single file, a `File[]` with `multiple` (or `directory`), and `null` when nothing is chosen.
+DFormFile - A type-safe wrapper around Bootstrap Vue Next's BFormFile component. A file picker with a Browse button, the chosen file name, and a drag-and-drop zone, styled like the theme's text inputs (same height, border, focus ring and crimson invalid state). `v-model` is a `File` for a single file, a `File[]` with `multiple` (or `directory`), and `null` when nothing is chosen (or `[]` for a cleared `multiple` model).
 
 Use it instead of hand-building a `btn` label around a hidden `<input type="file">`. The Browse button is a real `<button>`, so it is in the Tab order and opens the picker on Enter or Space.
 
@@ -36,7 +36,7 @@ Use it instead of hand-building a `btn` label around a hidden `<input type="file
 All props pass through to BFormFile.
 
 <PropsTable client:load props={[
-  { name: 'modelValue', type: 'File | readonly File[] | null', required: 'No', default: 'null', description: 'The chosen file(s). Use v-model. An array when multiple or directory is set. Setting it to null clears the selection and the native input.' },
+  { name: 'modelValue', type: 'File | readonly File[] | null', required: 'No', default: 'null', description: 'The chosen file(s). Use v-model. An array when multiple or directory is set. Setting it to null (or [] with multiple/directory) clears the selection and the native input.' },
   { name: 'accept', type: 'string | readonly string[]', required: 'No', default: "''", description: 'Accepted types, e.g. "image/*,.pdf". Also filters dropped files.' },
   { name: 'multiple', type: 'boolean', required: 'No', default: 'false', description: 'Allow more than one file.' },
   { name: 'directory', type: 'boolean', required: 'No', default: 'false', description: 'Pick a whole directory (webkitdirectory). Implies multiple.' },
@@ -50,11 +50,11 @@ All props pass through to BFormFile.
   { name: 'showFileNames', type: 'boolean', required: 'No', default: 'false', description: 'Also show the chosen file name(s) below the control (rendered by the file-name slot when given).' },
   { name: 'fileNameFormatter', type: '(files: readonly File[]) => string', required: 'No', default: '-', description: 'Formats the file-name text. Default: the name, or "N files selected".' },
   { name: 'noButton', type: 'boolean', required: 'No', default: 'false', description: 'Hide the Browse button. The control stays clickable, but has no focusable element.' },
-  { name: 'noDrop', type: 'boolean', required: 'No', default: 'false', description: 'Turn off drag and drop.' },
+  { name: 'noDrop', type: 'boolean', required: 'No', default: 'false', description: 'Turn off drag and drop. Turned on for you while disabled is set, unless you pass noDrop yourself.' },
   { name: 'plain', type: 'boolean', required: 'No', default: 'false', description: 'Render the native file input (with .form-control) instead of the custom control.' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", required: 'No', default: '-', description: 'Control size, matching DFormInput.' },
   { name: 'state', type: 'boolean | null', required: 'No', default: 'null', description: "false shows the invalid state, true the valid state. Not inherited from DFormGroup's state; see Validation." },
-  { name: 'disabled', type: 'boolean', required: 'No', default: 'false', description: 'Disable the control.' },
+  { name: 'disabled', type: 'boolean', required: 'No', default: 'false', description: 'Disable the control. A disabled control (or one inside a disabled DFormGroup or fieldset) also ignores dropped files.' },
   { name: 'required', type: 'boolean', required: 'No', default: 'false', description: 'Mark the native input required. Use it with plain only; see Validation.' },
   { name: 'autofocus', type: 'boolean', required: 'No', default: 'false', description: 'Focus the Browse button on mount.' },
   { name: 'label', type: 'string', required: 'No', default: "''", description: "BFormFile's own label above the control. Prefer DFormGroup's label in forms." },
@@ -90,18 +90,18 @@ Pass `state` to DFormFile itself. `false` gives the control the crimson invalid 
 <DFormInvalidFeedback>Please choose the signed contract.</DFormInvalidFeedback>
 ```
 
-**A `DFormGroup`'s `state` does not reach DFormFile**, unlike `DFormInput`. Bootstrap Vue Next's BFormFile does not read the group's state (or its `disabled`), and the group passes it down through an injection key that bootstrap-vue-next does not export, so the wrapper cannot read it either without depending on a private name. Set `state` on both, as in the Invalid State example: the group's `state` shows its `invalid-feedback`, the control's own `state` colours the control. A disabled group without `label-for` is a disabled `<fieldset>`, which does disable the control and the theme greys it; with `label-for`, pass `disabled` to DFormFile too.
+**A `DFormGroup`'s `state` does not reach DFormFile**, unlike `DFormInput`. Bootstrap Vue Next's BFormFile does not read the group's state (or its `disabled`), and the group passes it down through an injection key that bootstrap-vue-next does not export, so the wrapper cannot read it either without depending on a private name. The control's own `state` is the one that matters: it colours the control and shows the feedback beside it, including a `DFormGroup`'s own `invalid-feedback` (the group renders it after the control). Set the group's `state` as well, as in the Invalid State example, only for what the group itself carries: the `is-invalid` class and `aria-invalid` on its `<fieldset>`. `disabled` does reach the control: a `DFormGroup` always renders a `<fieldset>` (`label-for` only swaps its `<legend>` for a `<label>`), so a disabled group disables the Browse button and the native input, the theme greys the control, and dropped files are ignored.
 
-**Avoid `required` on the custom control.** It lands on the hidden native input, so the browser's own validation blocks a plain form submit with no visible message and tries to focus an input that cannot take focus. Validate on the server (or in your submit handler) and show the result with `state` and a feedback message. `required` works as expected with `plain`.
+**Avoid `required` on the custom control.** It lands on the hidden native input: the browser's own validation blocks a plain form submit and focuses the invisible input, so the browser's message is lost. Validate on the server (or in your submit handler) and show the result with `state` and a feedback message. `required` works as expected with `plain`.
 
 ## Where attributes land
 
-In the custom control, `class` and `style` go on the root element, `title` on the drop zone, and **everything else on the hidden native input** (`tabindex="-1"`, `aria-hidden`): `name`, `data-*` and listeners such as `@focus` and `@blur`. So `@focus`/`@blur` never fire (the hidden input never takes focus), and `aria-describedby` on DFormFile does not describe the Browse button. Run blur-style validation on `@change` or `@update:modelValue` instead. With `plain`, every attribute goes on the native input, which is the focusable control.
+In the custom control, `class` and `style` go on the root element, `title` on the drop zone, and **everything else on the hidden native input** (`tabindex="-1"`, `aria-hidden`): `name`, `data-*` and listeners such as `@focus` and `@blur`. So `@focus`/`@blur` do not fire in normal use (the hidden input is out of the Tab order and only the browser's own `required` validation focuses it), and `aria-describedby` on DFormFile does not describe the Browse button. Run blur-style validation on `@change` or `@update:modelValue` instead. With `plain`, every attribute goes on the native input, which is the focusable control.
 
 ## Methods
 
 Through a template ref: `reset()` clears the selection, the native input and the model; `focus()` and `blur()` act on the Browse button; `element` is the Browse button (the native input with `plain`).
 
-Setting `v-model` to `null` clears it the same way: the wrapper calls `reset()` when the model changes to `null`, because Bootstrap Vue Next's BFormFile on its own clears the file name but leaves the file in the hidden native input, where a plain form submit (or `new FormData(form)`) would still send it.
+Setting `v-model` to `null` (or `[]` with `multiple`/`directory`) clears it the same way: the wrapper empties the native input when the model changes to a cleared value, because Bootstrap Vue Next's BFormFile on its own clears the file name but leaves the files in the hidden native input (and, for `[]`, in the `plain` input), where a plain form submit (or `new FormData(form)`) would still send them. It does not emit another `update:modelValue`.
 
 <BootstrapVueNextReference client:load componentName="DFormFile" />

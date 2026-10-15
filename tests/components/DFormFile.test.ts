@@ -276,6 +276,24 @@ describe('DFormFile beside feedback, in groups and themes', () => {
     expect(getComputedStyle(feedback).display).toBe('block');
   });
 
+  // The docs say the control's own state is enough for the group's own
+  // invalid-feedback; the group's state only adds the fieldset's class/aria.
+  it("shows a DFormGroup's invalid-feedback from the control's state alone", async () => {
+    const state = ref<boolean | null>(null);
+    const screen = render({
+      render: () =>
+        h(DFormGroup, { label: 'Contract', labelFor: 'gf', invalidFeedback: 'Choose it.' }, () =>
+          h(DFormFile, { id: 'gf', state: state.value })
+        ),
+    });
+    await flush();
+    const feedback = screen.container.querySelector('.invalid-feedback') as HTMLElement;
+    expect(getComputedStyle(feedback).display).toBe('none');
+    state.value = false;
+    await flush();
+    expect(getComputedStyle(feedback).display).toBe('block');
+  });
+
   it('clears the native input when v-model is set to null', async () => {
     const model = ref<File | null>(null);
     const screen = render({
@@ -396,5 +414,196 @@ describe('DFormFile beside feedback, in groups and themes', () => {
     expect(appended.bottomRight).toBe('0px');
     expect(appended.topLeft).not.toBe('0px');
     expect(appended.buttonLeft).not.toBe('0px');
+  });
+});
+
+// bvn's useDropZone checks only `noDrop`, so a disabled control (the prop,
+// or a disabled fieldset around it) still took a dropped file.
+describe('DFormFile drops while disabled', () => {
+  const dragOver = (target: Element, transfer: DataTransfer) => {
+    target.dispatchEvent(
+      new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: transfer })
+    );
+    target.dispatchEvent(
+      new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer })
+    );
+  };
+  const drop = (target: Element, transfer: DataTransfer) => {
+    const event = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer });
+    target.dispatchEvent(event);
+    return event;
+  };
+  const transferOf = (...files: File[]) => {
+    const transfer = new DataTransfer();
+    files.forEach((file) => transfer.items.add(file));
+    return transfer;
+  };
+
+  const renderWith = async (wrap: (file: ReturnType<typeof h>) => ReturnType<typeof h>, fileProps = {}) => {
+    const model = ref<File | null>(null);
+    const updates: unknown[] = [];
+    const screen = render({
+      render: () =>
+        wrap(
+          h(DFormFile, {
+            ...fileProps,
+            modelValue: model.value,
+            'onUpdate:modelValue': (value: File | null) => {
+              updates.push(value);
+              model.value = value;
+            },
+          })
+        ),
+    });
+    await flush();
+    return { screen, model, updates };
+  };
+
+  const expectDropIgnored = async (
+    screen: ReturnType<typeof render>,
+    model: { value: File | null },
+    updates: unknown[]
+  ) => {
+    const control = screen.container.querySelector('.b-form-file-control')!;
+    const transfer = transferOf(pdf());
+    dragOver(control, transfer);
+    await flush();
+    expect(screen.container.querySelector('.b-form-file-drag-overlay')).toBeNull();
+    const event = drop(control, transfer);
+    await flush();
+    // The browser must not open the dropped file in the tab either.
+    expect(event.defaultPrevented).toBe(true);
+    expect(updates).toEqual([]);
+    expect(model.value).toBeNull();
+    expect(hiddenInput(screen.container).files?.length).toBe(0);
+  };
+
+  it('accepts a drop when enabled (positive control)', async () => {
+    const { screen, model, updates } = await renderWith((file) => h('div', [file]));
+    const control = screen.container.querySelector('.b-form-file-control')!;
+    const transfer = transferOf(pdf());
+    dragOver(control, transfer);
+    await flush();
+    expect(screen.container.querySelector('.b-form-file-drag-overlay')).toBeTruthy();
+    drop(control, transfer);
+    await flush();
+    expect(updates.length).toBe(1);
+    expect(model.value?.name).toBe('invoice.pdf');
+    expect(hiddenInput(screen.container).files?.length).toBe(1);
+  });
+
+  it.each([
+    ['disabled (true)', true],
+    ['disabled=""', ''],
+  ])('ignores a drop with %s', async (_label, disabled) => {
+    const { screen, model, updates } = await renderWith((file) => h('div', [file]), { disabled });
+    await expectDropIgnored(screen, model, updates);
+  });
+
+  it('ignores a drop inside a disabled <fieldset>', async () => {
+    const { screen, model, updates } = await renderWith((file) =>
+      h('fieldset', { disabled: true }, [file])
+    );
+    await expectDropIgnored(screen, model, updates);
+  });
+
+  it.each([
+    ['without label-for', {}],
+    ['with label-for', { labelFor: 'drop-file' }],
+  ])('ignores a drop inside a disabled DFormGroup (%s)', async (_label, groupProps) => {
+    const { screen, model, updates } = await renderWith(
+      (file) => h(DFormGroup, { label: 'Attachment', disabled: true, ...groupProps }, () => file),
+      { id: 'drop-file' }
+    );
+    await expectDropIgnored(screen, model, updates);
+  });
+
+  it('shows the drop overlay normally once re-enabled', async () => {
+    const disabled = ref(true);
+    const screen = render({
+      render: () => h(DFormFile, { disabled: disabled.value }),
+    });
+    await flush();
+    const control = screen.container.querySelector('.b-form-file-control')!;
+    const transfer = transferOf(pdf());
+    dragOver(control, transfer);
+    control.dispatchEvent(new DragEvent('dragleave', { bubbles: true, dataTransfer: transfer }));
+    await flush();
+
+    disabled.value = false;
+    await flush();
+    dragOver(control, transfer);
+    await flush();
+    expect(screen.container.querySelector('.b-form-file-drag-overlay')).toBeTruthy();
+    control.dispatchEvent(new DragEvent('dragleave', { bubbles: true, dataTransfer: transfer }));
+    await flush();
+    // A dragleave counted while disabled would leave the overlay stuck here.
+    expect(screen.container.querySelector('.b-form-file-drag-overlay')).toBeNull();
+  });
+});
+
+describe('DFormFile clearing the model', () => {
+  it.each([
+    ['custom', false],
+    ['plain', true],
+  ])('clears the native input when a multiple model is set to [] (%s)', async (_mode, plain) => {
+    const model = ref<File[] | null>(null);
+    const screen = render({
+      render: () =>
+        h('form', [
+          h(DFormFile, {
+            name: 'attachments',
+            multiple: true,
+            plain,
+            modelValue: model.value,
+            'onUpdate:modelValue': (value: File[] | null) => (model.value = value),
+          }),
+        ]),
+    });
+    await flush();
+    await userEvent.upload(hiddenInput(screen.container), [pdf(), jpg()]);
+    await flush();
+    const form = screen.container.querySelector('form') as HTMLFormElement;
+    expect(new FormData(form).getAll('attachments').length).toBe(2);
+
+    model.value = [];
+    await flush();
+    expect(hiddenInput(screen.container).files?.length).toBe(0);
+    expect(
+      new FormData(form).getAll('attachments').filter((entry) => (entry as File).size > 0).length
+    ).toBe(0);
+  });
+
+  it('does not echo update:modelValue when the parent sets null, and re-takes the same file', async () => {
+    const model = ref<File | null>(null);
+    const updates: unknown[] = [];
+    const screen = render({
+      render: () =>
+        h(DFormFile, {
+          modelValue: model.value,
+          'onUpdate:modelValue': (value: File | null) => {
+            updates.push(value);
+            model.value = value;
+          },
+        }),
+    });
+    await flush();
+    const file = pdf();
+    await userEvent.upload(hiddenInput(screen.container), file);
+    await flush();
+    expect(updates.length).toBe(1);
+
+    model.value = null;
+    await flush();
+    expect(updates.length).toBe(1);
+    expect(hiddenInput(screen.container).files?.length).toBe(0);
+    expect(hiddenInput(screen.container).value).toBe('');
+
+    // Choosing the same file again repopulates the model.
+    await userEvent.upload(hiddenInput(screen.container), file);
+    await flush();
+    expect(updates.length).toBe(2);
+    expect(model.value?.name).toBe('invoice.pdf');
+    expect(hiddenInput(screen.container).files?.length).toBe(1);
   });
 });

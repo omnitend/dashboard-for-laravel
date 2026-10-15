@@ -198,25 +198,52 @@ needed (types match); document in the changelog.
 
 ---
 
-### 7. `DFormFile` `v-model` set to `null` also clears the native input
+### 7. `DFormFile` `v-model` set to `null` (or `[]`) also clears the native input
 
 | | |
 | --- | --- |
-| **Our API** | setting the model to `null` clears the selection, the file-name text **and** the hidden native input (the wrapper calls bvn's `reset()`) |
-| **bvn API** | `BFormFile`'s model watcher clears its file list and the `plain` input, but in the custom control the hidden `input[type=file]` keeps the file |
+| **Our API** | setting the model to `null`, or to `[]` with `multiple`/`directory`, clears the selection, the file-name text **and** the native input (the wrapper sets the input's `value` to `''`) |
+| **bvn API** | `BFormFile`'s model watcher clears its file list and, on `null` only, the `plain` input; in the custom control the hidden `input[type=file]` keeps the files, and `[]` leaves the `plain` input holding them too |
 | **Shielded in** | `resources/js/components/base/DFormFile.vue` (a watch on BFormFile's own `modelValue` prop) |
 | **Applies to** | `DFormFile` |
-| **Introduced** | the DFormFile review fixes (after 0.45.0) |
+| **Introduced** | issue #221 |
 
 **Why:** with bvn alone, a form that clears its file field by setting the
-model to `null` shows "No file chosen" but still posts the old file in a plain
-submit or `new FormData(form)`. Same prop and type as bvn; only the runtime
-behaviour differs, and only towards what the UI already shows. `reset()` sets
-the model to `null` itself, so the parent can receive one more
-`update:modelValue` with `null`: a no-op, since its model is already `null`.
+model to `null` (or `[]`) shows "No file chosen" but still posts the old
+files in a plain submit or `new FormData(form)`. Same prop and type as bvn;
+only the runtime behaviour differs, and only towards what the UI already
+shows. The wrapper empties the input itself rather than calling bvn's
+`reset()`, which would also set the model to `null` and echo an extra
+`update:modelValue` back to the parent. Clearing `value` is what bvn's
+`reset()` does to the input (through vueuse's `useFileDialog`), so choosing
+the same file again still fires `change`.
 
-**Convergence (future major):** if bvn's watcher starts resetting the hidden
-input, drop the watch. No consumer source change needed.
+**Convergence (future major):** if bvn's watcher starts clearing the native
+input on `null` and `[]`, drop the watch. No consumer source change needed.
+
+---
+
+### 8. `DFormFile` ignores dropped files while disabled
+
+| | |
+| --- | --- |
+| **Our API** | a disabled `DFormFile` (the `disabled` prop, or inside a disabled `DFormGroup`/`<fieldset>`) shows no drop overlay and ignores a dropped file; the browser does not open the file either |
+| **bvn API** | `BFormFile`'s drop handler checks only `noDrop`, so a disabled control shows the overlay, sets the model to the dropped `File` and puts it in the hidden input |
+| **Shielded in** | `resources/js/components/base/DFormFile.vue`: `dropShield()` adds `noDrop: true` to the bound attrs while `disabled` is set (unless the consumer passed `noDrop`), and capture-phase `dragenter`/`dragover`/`dragleave`/`drop` listeners on BFormFile's root stop the events while the native input is `:disabled` (the fieldset case, which attrs cannot see) |
+| **Applies to** | `DFormFile` |
+| **Introduced** | issue #221 |
+
+**Why:** a disabled field must not change. The listeners sit on BFormFile's
+root, an ancestor of the drop zone where vueuse's `useDropZone` listens, so
+the capture phase reaches them first (a bubble-phase listener on the root
+would run after the drop zone's: pinned by the fieldset drop tests).
+`dragleave` is stopped too, or `useDropZone`'s enter/leave counter drifts and
+the overlay sticks once the control is enabled again. Only behaviour
+changes; no prop or type does.
+
+**Convergence (future major):** if bvn's drop handler starts checking
+`disabled` (and the fieldset), drop both layers. No consumer source change
+needed.
 
 ---
 
@@ -342,18 +369,25 @@ them hides the tabs** and no pane gets `active`/`show`. Same shape as
 limitation found alongside it: an explicit `active` on a **non-first** tab is not
 honoured — raw `BTabs`+`BTab` also lands on index 0.
 
-### 5. `BFormFile` ignores its `BFormGroup` and keeps a file the model cleared
+### 5. `BFormFile` ignores its `BFormGroup`, keeps a file the model cleared, and takes drops while disabled
 
-Two gaps found reviewing `DFormFile` (bvn 0.45.6):
+Three gaps found reviewing `DFormFile` (bvn 0.45.6):
 
 - `BFormFile` never injects the form-group key, so a `BFormGroup`'s `state`
   and `disabled` do not reach it (`BFormInput` and friends read both). The key
   (`formGroupKey`) is not exported from any public bvn entry, so a wrapper
   cannot read it without depending on a private string. **Our workaround:**
-  documented; consumers set `state` (and `disabled`) on `DFormFile` too.
+  documented; consumers set `state` on `DFormFile` too. (`disabled` still
+  reaches it natively: a `BFormGroup` always renders a `<fieldset>`, which
+  disables the button and the native input.)
 - Its `modelValue` watcher clears the file list and the `plain` input but not
   the hidden input of the custom control, so a `null` model still submits the
-  old file. **Our shield:** active divergence #7.
+  old file (and on `[]` it clears neither input). **Our shield:** active
+  divergence #7.
+- Its drop handler (vueuse `useDropZone`'s `onDrop`) checks only `noDrop`,
+  never `disabled`, so a disabled control (the prop or a disabled fieldset)
+  shows the drop overlay and accepts a dropped file into the model and the
+  hidden input. **Our shield:** active divergence #8.
 
 Related, styling only: the state class sits on `.b-form-file-control`, deep
 inside the root, so Bootstrap's `.is-invalid ~ .invalid-feedback` cannot show
