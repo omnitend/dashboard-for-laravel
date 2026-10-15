@@ -229,7 +229,7 @@ input on `null` and `[]`, drop the watch. No consumer source change needed.
 | --- | --- |
 | **Our API** | a disabled `DFormFile` (the `disabled` prop, or inside a disabled `DFormGroup`/`<fieldset>`) shows no drop overlay and ignores a dropped file; the browser does not open the file either |
 | **bvn API** | `BFormFile`'s drop handler checks only `noDrop`, so a disabled control shows the overlay, sets the model to the dropped `File` and puts it in the hidden input |
-| **Shielded in** | `resources/js/components/base/DFormFile.vue`: `dropShield()` adds `noDrop: true` to the bound attrs while `disabled` is set (unless the consumer passed `noDrop`), and capture-phase `dragenter`/`dragover`/`dragleave`/`drop` listeners on BFormFile's root stop the events while the native input is `:disabled` (the fieldset case, which attrs cannot see) |
+| **Shielded in** | `resources/js/components/base/DFormFile.vue`: capture-phase `dragenter`/`dragover`/`dragleave`/`drop` listeners on BFormFile's root stop the events while the native input is `:disabled`, which covers both the `disabled` prop and a disabled fieldset (which attrs cannot see) |
 | **Applies to** | `DFormFile` |
 | **Introduced** | issue #221 |
 
@@ -242,7 +242,7 @@ the overlay sticks once the control is enabled again. Only behaviour
 changes; no prop or type does.
 
 **Convergence (future major):** if bvn's drop handler starts checking
-`disabled` (and the fieldset), drop both layers. No consumer source change
+`disabled` (and the fieldset), drop the listeners. No consumer source change
 needed.
 
 ---

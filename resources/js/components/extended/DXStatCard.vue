@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onActivated, onBeforeUnmount, onMounted, ref } from "vue";
 import DCard from "../base/DCard.vue";
 import DBadge from "../base/DBadge.vue";
 import { queueFit, registerTarget, unregisterTarget, type FitTarget } from "../../utils/statCardFit";
@@ -159,6 +159,8 @@ onMounted(() => {
 
   if (typeof ResizeObserver !== "undefined") {
     resizeObserver = new ResizeObserver((entries) => {
+      // Text is never fitted; a change to or from text is a mutation.
+      if (!target.isNumeric()) return;
       const width = entries[entries.length - 1]!.contentRect.width;
       // A fit changes the box's height; only a new width needs a new fit.
       if (Math.abs(width - target.fittedBoxWidth) < 0.01) return;
@@ -184,6 +186,12 @@ onMounted(() => {
       attributes: true,
     });
   }
+});
+
+// Back from a deactivated <KeepAlive>: the value or the layout may have
+// changed while it was detached, when no fit could measure it.
+onActivated(() => {
+  if (fitTarget) queueFit(fitTarget, "microtask");
 });
 
 onBeforeUnmount(() => {

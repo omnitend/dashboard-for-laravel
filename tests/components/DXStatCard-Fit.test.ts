@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render } from 'vitest-browser-vue';
-import { createSSRApp, h, nextTick, ref, type App } from 'vue';
+import { KeepAlive, createSSRApp, defineComponent, h, nextTick, ref, type App } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 // A face no other test loads, so its load (and the refit it must trigger)
-// happens inside the font test.
+// starts inside the font test, after the card has mounted.
 import lateFaceUrl from '../../resources/fonts/poppins/Poppins-SemiBold.woff2?url';
 // The BUILT component and stylesheet (setup.ts loads dist/style.css): the
 // value's size comes from a scoped rule plus the component's fit script,
@@ -94,10 +94,30 @@ const boxWidth = (value: Element): number => value.parentElement!.getBoundingCli
 
 const fontSize = (element: Element): number => parseFloat(getComputedStyle(element).fontSize);
 
+/** The fit's precision: it tries sizes on a 0.25px grid. */
+const SIZE_STEP_PX = 0.25;
+
 /**
- * The fit's contract, independent of glyph metrics (CI rasterises on
- * Linux): a value above the floor never overflows its box, and one that
- * was shrunk below 1.75rem fills it, within a pixel.
+ * Whether the value would overflow its box at `size` (px), laid out at its
+ * natural width as the fit measures it; the fit's own writes are restored.
+ * Its MutationObserver ignores style writes on the value, and its resize
+ * observer ignores the height change, so this triggers no refit.
+ */
+const overflowsAt = (value: HTMLElement, size: number): boolean => {
+  const previousSize = value.style.getPropertyValue('--dx-stat-card-fit-size');
+  value.style.width = 'max-content';
+  value.style.setProperty('--dx-stat-card-fit-size', `${size}px`);
+  const overflows = value.getBoundingClientRect().width > boxWidth(value) + 0.02;
+  value.style.removeProperty('width');
+  value.style.setProperty('--dx-stat-card-fit-size', previousSize);
+  return overflows;
+};
+
+/**
+ * The fit's contract, independent of glyph metrics (CI lays text out on
+ * Linux, where the width is not proportional to the font size): one line;
+ * above the floor, no overflow; below 1.75rem, maximal, i.e. one step
+ * larger would overflow.
  */
 const expectFitted = (value: Element) => {
   const size = fontSize(value);
@@ -105,9 +125,7 @@ const expectFitted = (value: Element) => {
   expect(size).toBeLessThanOrEqual(MAX_PX);
   expect(lineCount(value)).toBe(1);
   if (size > FLOOR_PX + 0.01) expect(overflowPx(value)).toBeLessThanOrEqual(0.5);
-  if (size < MAX_PX && size > FLOOR_PX + 0.01) {
-    expect(contentRect(value).width).toBeGreaterThan(boxWidth(value) - 1);
-  }
+  if (size < MAX_PX) expect(overflowsAt(value as HTMLElement, size + SIZE_STEP_PX)).toBe(true);
 };
 
 const values = (container: Element) =>
@@ -377,28 +395,118 @@ describe('DXStatCard value fits its content (#213)', () => {
     expectFitted(value!);
   });
 
-  it('refits once a web font finishes loading', async () => {
-    // Figures in a face that is not loaded yet: the first fit measures the
-    // fallback face, and only the font-load refit can make the final size
-    // match the face that ends up on screen.
-    const face = new FontFace('DX Fit Test Late', `url(${lateFaceUrl})`);
+  it('refits once a web font finishes loading after the card has mounted', async () => {
+    // Settle in the bundled figures face first, then switch the figures to a
+    // face that is not loaded yet. Neither the box nor the value's markup
+    // changes, so only the font-load (loadingdone) refit can resize it for
+    // the face that ends up on screen.
+    const figuresFace = ref<string | null>(null);
+    const screen = mount(() =>
+      h(
+        'div',
+        {
+          style: {
+            width: '180px',
+            ...(figuresFace.value ? { '--dx-font-family-figures': figuresFace.value } : {}),
+          },
+        },
+        [h(DXStatCard, { title: 'Net', value: 1234567.89, format: 'currency' })],
+      ),
+    );
+    await settle();
+    const [value] = values(screen.container);
+    expectFitted(value!);
+    const sizeBefore = fontSize(value!);
+
+    const face = new FontFace('DX Fit Test Late', `url(${lateFaceUrl})`, { weight: '700' });
     document.fonts.add(face);
     try {
       expect(face.status).toBe('unloaded');
-      const screen = mount(() =>
-        h('div', { style: 'width: 180px; --dx-font-family-figures: "DX Fit Test Late"' }, [
-          h(DXStatCard, { title: 'Net', value: 1234567.89, format: 'currency' }),
-        ]),
-      );
+      figuresFace.value = '"DX Fit Test Late"';
+      await nextTick();
       await face.loaded;
       await settle();
       expect(face.status).toBe('loaded');
-      const [value] = values(screen.container);
-      expect(fontSize(value!)).toBeLessThan(MAX_PX);
+      expect(fontSize(value!)).not.toBe(sizeBefore);
       expectFitted(value!);
     } finally {
       document.fonts.delete(face);
     }
+  });
+
+  it('refits a card whose value changed inside a deactivated <KeepAlive>', async () => {
+    // Detached, the change cannot be measured; back in the page its box has
+    // the width it left with.
+    const amount = ref<number>(42);
+    const format = ref<'number' | 'currency'>('number');
+    const showCard = ref(true);
+    const Card = defineComponent({
+      name: 'FitTestCard',
+      render: () => h(DXStatCard, { title: 'Net', value: amount.value, format: format.value }),
+    });
+    const Placeholder = defineComponent({ name: 'FitTestPlaceholder', render: () => h('div') });
+    const screen = mount(() =>
+      h('div', { style: 'width: 164px' }, [
+        h(KeepAlive, null, [showCard.value ? h(Card) : h(Placeholder)]),
+      ]),
+    );
+    await settle();
+    const [value] = values(screen.container);
+    expect(boxWidth(value!)).toBeCloseTo(114, 0);
+    expect(fontSize(value!)).toBe(MAX_PX);
+
+    showCard.value = false;
+    await nextTick();
+    await settle();
+    expect(value!.isConnected).toBe(false);
+    amount.value = 1234567.89;
+    format.value = 'currency';
+    await nextTick();
+    await settle();
+
+    showCard.value = true;
+    await nextTick();
+    // Refitted on activation, before the first frame paints it (a resize
+    // entry alone would refit a frame later, after a stale paint).
+    const sizeAtFirstFrame = await new Promise<number>((resolve) =>
+      requestAnimationFrame(() => resolve(fontSize(value!))),
+    );
+    expect(sizeAtFirstFrame).toBeLessThan(MAX_PX);
+    await settle();
+    expect(values(screen.container)[0]).toBe(value);
+    expect(value!.textContent?.trim()).toBe('£1,234,567.89');
+    expect(fontSize(value!)).toBeLessThan(MAX_PX);
+    expectFitted(value!);
+  });
+
+  it('refits a card whose value changed while it was out of the document', async () => {
+    // Without <KeepAlive> (no activated hook): consumer code that detaches
+    // and re-attaches the markup. Its box comes back at the width it left
+    // with, so the fit must have forgotten that width.
+    const amount = ref<number>(42);
+    const format = ref<'number' | 'currency'>('number');
+    const screen = mount(() =>
+      h('div', { class: 'fit-test-host', style: 'width: 164px' }, [
+        h(DXStatCard, { title: 'Net', value: amount.value, format: format.value }),
+      ]),
+    );
+    await settle();
+    const host = screen.container.querySelector('.fit-test-host')!;
+    const [value] = values(host);
+    expect(fontSize(value!)).toBe(MAX_PX);
+
+    const parent = host.parentElement!;
+    host.remove();
+    await settle();
+    amount.value = 1234567.89;
+    format.value = 'currency';
+    await nextTick();
+    await settle();
+    parent.appendChild(host);
+    await settle();
+    expect(value!.textContent?.trim()).toBe('£1,234,567.89');
+    expect(fontSize(value!)).toBeLessThan(MAX_PX);
+    expectFitted(value!);
   });
 
   it('measures the bundled faces, not their fallbacks', async () => {

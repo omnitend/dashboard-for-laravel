@@ -6,6 +6,14 @@ import Icons from 'unplugin-icons/vite';
 import IconsResolver from 'unplugin-icons/resolver';
 import { playwright } from '@vitest/browser-playwright';
 
+// DX_PLAYWRIGHT_WS_ENDPOINT runs the suite in a remote browser, e.g. CI's
+// Linux Chromium in Playwright's Docker image (`npm run test:linux`, see
+// scripts/test-linux.sh). Linux lays text out differently from macOS (glyph
+// advances are not proportional to the font size), which hid CI-only
+// failures in measurement-driven code such as DXStatCard's fit. The
+// browser reaches this machine's Vite server through Playwright's tunnel.
+const remoteBrowserEndpoint = process.env.DX_PLAYWRIGHT_WS_ENDPOINT;
+
 export default defineConfig({
   plugins: [
     vue(),
@@ -29,7 +37,11 @@ export default defineConfig({
       instances: [
         {
           browser: 'chromium',
-          provider: playwright(),
+          provider: playwright(
+            remoteBrowserEndpoint
+              ? { connectOptions: { wsEndpoint: remoteBrowserEndpoint, exposeNetwork: '<loopback>' } }
+              : {},
+          ),
         },
       ],
       headless: false, // Set to true for CI, false for local development to see tests

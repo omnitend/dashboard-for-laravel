@@ -59,9 +59,13 @@ shrinking. What the `value` slot renders is measured as it is (an amount
 with a badge after it shrinks as one), but whether the value is fitted
 follows the `value` prop.
 
-How much fits, measured with the bundled fonts (the value area is the
-card's width less 50px of padding and border; two cards to a phone row
-with 16px gutters give a value area of half the viewport less 74px):
+How much fits, measured with the bundled fonts in Chrome on macOS (the
+value area is the card's width less 50px of padding and border; two cards
+to a phone row with 16px gutters give a value area of half the viewport
+less 74px). Other platforms lay text out a few pixels wider or narrower,
+and on Linux the width grows in steps rather than smoothly with the size;
+the card measures the real width either way, so a value it shrinks always
+fits:
 
 - 6 figures with pence (`£123,456.78`) fit any value area from 103px,
   which is two cards to a row on a phone 354px or wider. On a 320px phone

@@ -50,7 +50,7 @@ All props pass through to BFormFile.
   { name: 'showFileNames', type: 'boolean', required: 'No', default: 'false', description: 'Also show the chosen file name(s) below the control (rendered by the file-name slot when given).' },
   { name: 'fileNameFormatter', type: '(files: readonly File[]) => string', required: 'No', default: '-', description: 'Formats the file-name text. Default: the name, or "N files selected".' },
   { name: 'noButton', type: 'boolean', required: 'No', default: 'false', description: 'Hide the Browse button. The control stays clickable, but has no focusable element.' },
-  { name: 'noDrop', type: 'boolean', required: 'No', default: 'false', description: 'Turn off drag and drop. Turned on for you while disabled is set, unless you pass noDrop yourself.' },
+  { name: 'noDrop', type: 'boolean', required: 'No', default: 'false', description: 'Turn off drag and drop. Drops are off while the control is disabled, whatever noDrop says.' },
   { name: 'plain', type: 'boolean', required: 'No', default: 'false', description: 'Render the native file input (with .form-control) instead of the custom control.' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", required: 'No', default: '-', description: 'Control size, matching DFormInput.' },
   { name: 'state', type: 'boolean | null', required: 'No', default: 'null', description: "false shows the invalid state, true the valid state. Not inherited from DFormGroup's state; see Validation." },

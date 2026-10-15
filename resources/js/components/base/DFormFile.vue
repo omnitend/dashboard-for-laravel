@@ -27,21 +27,12 @@ const nativeInput = (): HTMLInputElement | null =>
   rootElement()?.querySelector<HTMLInputElement>('input[type="file"]') ?? null;
 
 // bvn's drop handler checks only `noDrop`, so a disabled control still took
-// a dropped file. `disabled` arrives as `true`, `""` (the bare attribute) or
-// `"disabled"`; only false/null/undefined leave it enabled. A consumer's own
-// `noDrop` wins. Divergence from bvn: DIVERGENCES.md.
-const dropShield = (attrs: Record<string, unknown>): Record<string, unknown> => {
-  const disabled = attrs.disabled;
-  const isDisabled = disabled === "" || (disabled !== undefined && disabled !== null && disabled !== false);
-  const hasOwnNoDrop = "noDrop" in attrs || "no-drop" in attrs;
-  return isDisabled && !hasOwnNoDrop ? { noDrop: true } : {};
-};
-
-// A disabled fieldset disables the native input without the prop, so the
-// attrs cannot see it. Capture the drag events on BFormFile's root (useDropZone
-// listens on the drop zone inside it) and stop them while the input is
-// :disabled. dragleave too, or useDropZone's enter/leave counter drifts and
-// the overlay sticks once the control is enabled again.
+// a dropped file. The native input is :disabled both for the `disabled` prop
+// and inside a disabled fieldset (which the attrs cannot see), so capture
+// the drag events on BFormFile's root (useDropZone listens on the drop zone
+// inside it) and stop them while the input is :disabled. dragleave too, or
+// useDropZone's enter/leave counter drifts and the overlay sticks once the
+// control is enabled again. Divergence from bvn: DIVERGENCES.md.
 const blockedDragEvents = ["dragenter", "dragover", "dragleave", "drop"] as const;
 let listeningRoot: HTMLElement | null = null;
 
@@ -103,7 +94,7 @@ defineExpose({
 </script>
 
 <template>
-  <BFormFile ref="bFormFileRef" v-bind="{ ...$attrs, ...dropShield($attrs) }">
+  <BFormFile ref="bFormFileRef" v-bind="$attrs">
     <!-- Dynamically pass through all named slots with their props -->
     <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps" />

@@ -43,6 +43,7 @@
     "test:ui": "vitest --ui",
     "pretest:headless": "npm run build:lib",
     "test:headless": "vitest --run --browser.headless",
+    "test:linux": "bash scripts/test-linux.sh",
     "docs:dev": "astro dev",
     "docs:build": "npm run docs:generate:ai && astro build && node scripts/check-docs-base-links.mjs",
     "docs:preview": "astro preview",
