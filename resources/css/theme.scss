@@ -920,14 +920,12 @@ fieldset:disabled .b-form-file-control {
 // dark-mode overlay, so the accent is a token that becomes the emphasis colour
 // in dark mode. The overlay's white is hardcoded in bvn; follow the page
 // background.
-// (Unquoted attribute values: charts-theme-reactivity.test.ts reads the FIRST
-// `[data-bs-theme="…"] {` block in this file as the chart palette's.)
 :root,
-[data-bs-theme=light] {
+[data-bs-theme="light"] {
   --dx-form-file-drag-color: var(--bs-primary);
 }
 
-[data-bs-theme=dark] {
+[data-bs-theme="dark"] {
   --dx-form-file-drag-color: var(--bs-emphasis-color);
 }
 
