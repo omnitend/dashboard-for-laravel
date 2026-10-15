@@ -43,18 +43,87 @@ Complete dashboard layout component that combines sidebar navigation, top navbar
 <SlotsTable client:load slots={[
   { name: 'default', props: '-', description: 'Main page content rendered in the content area' },
   { name: 'sidebar-brand', props: '{ collapsed: boolean, title: string, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom brand/logo content for sidebar header' },
-  { name: 'sidebar-link', props: '{ item: NavigationItem, isActive: boolean, collapsed: boolean, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom link rendering in sidebar navigation' },
+  { name: 'sidebar-link', props: '{ item: your navigation item type (NavigationItem by default), isActive: boolean, collapsed: boolean, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom link rendering in sidebar navigation' },
   { name: 'sidebar-footer', props: '{ collapsed: boolean, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Utility links pinned to the bottom of the sidebar (help, changelog, sign-out, …)' },
   { name: 'navbar-menu-icon', props: '{ toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom hamburger menu icon for navbar' },
   { name: 'navbar-search', props: '{ toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom search component for navbar' },
   { name: 'navbar-actions', props: '{ pageTitle: string, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Page-level primary actions (e.g. a Create button). Right-aligned next to the user menu from md up; below, wraps to its own full-width row or is hidden entirely per actionsOnMobile' },
   { name: 'navbar-user-icon', props: '{ initial: string, user: User, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom user icon/avatar in navbar dropdown (defaults to DXUserAvatar)' },
-  { name: 'navbar-user-menu', props: '{ user: User, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Custom user dropdown menu content' },
+  { name: 'navbar-user-menu', props: '{ user: User | null, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Replaces the whole user menu (the default avatar dropdown)' },
+  { name: 'navbar-user-menu-items', props: '{ user: User, toggleSidebar: () => void, sidebarHidden: boolean }', description: 'Items for the default user dropdown menu' },
 ]} />
 
 Every forwarded `sidebar-*` and `navbar-*` slot also receives `toggleSidebar`
 and `sidebarHidden` on top of the underlying slot's own bindings — see
 [Controlling the sidebar](#controlling-the-sidebar).
+
+The slots are typed (`DashboardSlots`, exported from the package), so your
+editor completes the slot names and their props, and `vue-tsc` checks how you
+use the props. Only the prefixed names are forwarded. A slot named after the
+child's own slot goes nowhere: nothing renders, and `vue-tsc` does not report
+it either (Vue allows any slot name on any component), so the editor's
+completion list is the place to check.
+
+```vue
+<DXDashboard :navigation="navigation" current-url="/orders">
+  <!-- Wrong: DXDashboard has no `search` slot, so this renders nothing -->
+  <template #search>
+    <OrderSearch />
+  </template>
+
+  <!-- Right: `navbar-search` is forwarded to the navbar's `search` slot -->
+  <template #navbar-search>
+    <OrderSearch />
+  </template>
+</DXDashboard>
+```
+
+### Your own navigation item type
+
+`sidebar-link`'s `item` has the type of the items you pass in `navigation`, so
+keys your backend adds to each item (a permission, a route name) are typed in
+the slot, and a misspelt key is still an error. Type the navigation with
+`Navigation<YourItem>`, or let TypeScript infer it from a literal:
+
+```vue
+<script setup lang="ts">
+import { DXDashboard } from '@omnitend/dashboard-for-laravel';
+import type { Navigation, NavigationItem } from '@omnitend/dashboard-for-laravel';
+
+interface AppNavigationItem extends NavigationItem {
+  permission: string;
+}
+
+const navigation: Navigation<AppNavigationItem> = [
+  { label: 'Admin', items: [{ label: 'Users', url: '/users', permission: 'users.view' }] },
+];
+
+// Your app's permission check (from page props, a store, ...).
+const userPermissions: string[] = ['users.view'];
+const can = (permission: string): boolean => userPermissions.includes(permission);
+</script>
+
+<template>
+  <DXDashboard :navigation="navigation" current-url="/users">
+    <template #sidebar-link="{ item }">
+      <!-- item is an AppNavigationItem: item.permission is a string -->
+      <a v-if="can(item.permission)" :href="item.url">{{ item.label }}</a>
+    </template>
+  </DXDashboard>
+</template>
+```
+
+A plain `Navigation` (or `[]`) gives a `NavigationItem`. Navigation typed `any`
+(page props you have not typed) gives an `any` item, so nothing is checked.
+`DXDashboardSidebar`'s `link` slot works the same way.
+
+### The user may be `null`
+
+`navbar-user-menu` replaces the whole user menu, so it also renders for a guest:
+its `user` is `DashboardUser | null`, and `vue-tsc` asks you to handle the
+`null` case (`user?.name`, or a `v-if`). `navbar-user-icon` and
+`navbar-user-menu-items` only render for a signed-in user, so their `user` is
+never `null`.
 
 ## Features
 
@@ -207,26 +276,44 @@ navbar actions:
 ```
 
 The same API is available on a template `ref`, for page content or a keyboard
-shortcut that sits outside those slots:
+shortcut that sits outside those slots. `useTemplateRef('name')` types it from
+the component with nothing extra to install:
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue';
+import { useTemplateRef } from 'vue';
 import { DButton, DXDashboard } from '@omnitend/dashboard-for-laravel';
+import type { Navigation } from '@omnitend/dashboard-for-laravel';
 
-const dashboard = ref(null);
+const navigation: Navigation = [
+  { items: [{ label: 'Dashboard', url: '/dashboard' }] },
+];
+
+// Typed from the component: toggleSidebar(), sidebarHidden and el.
+const dashboard = useTemplateRef('dashboardRef');
 
 const toggle = () => dashboard.value?.toggleSidebar();
+
+// The root DOM element (`HTMLElement | null`) is the exposed `el`.
+const layoutElement = () => dashboard.value?.el ?? null;
 </script>
 
 <template>
-  <DXDashboard ref="dashboard" :navigation="navigation" current-url="/dashboard">
+  <DXDashboard ref="dashboardRef" :navigation="navigation" current-url="/dashboard">
     <DButton @click="toggle">
       {{ dashboard?.sidebarHidden ? 'Show menu' : 'Hide menu' }}
     </DButton>
   </DXDashboard>
 </template>
 ```
+
+DXDashboard is a generic component (over its `navigation` type), so a ref to
+it carries only what it exposes: `toggleSidebar`, `sidebarHidden` and `el`.
+There is no `$el` or `$props`; read the root element through `el`, which is
+`null` before mount. `InstanceType<typeof DXDashboard>` does not compile. If
+you need the ref's type by name (a prop, a `ref<...>()`), the optional
+alternative is `ComponentExposed<typeof DXDashboard>` from the
+`vue-component-type-helpers` package, which you have to install yourself.
 
 ## On phones
 

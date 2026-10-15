@@ -53,8 +53,9 @@ $color-contrast-light: #fff; // Light text color (for dark backgrounds)
 // Two bundled typefaces (SIL OFL 1.1; woff2 + licence in resources/fonts/):
 // MAVEN PRO for body text, and POPPINS as the DISPLAY face, published as
 // `--dx-font-family-display`. The theme applies the display face to h1–h4 and
-// nothing else; consumers use the token for things like product names. Both
-// are declared with `@font-face` below, so they render on every machine, not
+// nothing else; consumers use the token for things like product names. A
+// third, IBM PLEX SANS, supplies DIGITS ONLY for tabular figures (#215; see
+// "Tabular figures" below). All are declared with `@font-face` below, so they render on every machine, not
 // only where the font happens to be installed (the theme used to name Poppins
 // and ship no face for it, so most visitors got the generic sans-serif).
 $font-family-sans-serif: "Maven Pro", system-ui, -apple-system, "Segoe UI", Roboto,
@@ -62,6 +63,12 @@ $font-family-sans-serif: "Maven Pro", system-ui, -apple-system, "Segoe UI", Robo
 $dx-font-family-display: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto,
   "Helvetica Neue", Arial, sans-serif;
 $headings-font-family: var(--dx-font-family-display);
+// The face(s) tabular figures are set in, published as
+// `--dx-font-family-figures`. Only the figures face goes here: the theme
+// appends the surrounding face as the fallback (the body face, or the display
+// face in h1–h4), which is where `£`, `,`, `.` and letters come from. See
+// "Tabular figures" below.
+$dx-font-family-figures: "DX Figures" !default;
 $font-size-base: 1rem; // 16px — the default tier. Legacy omnitend rendered body
 // and table text at 16px; the earlier 0.875rem (14px) shrank every ported page's
 // text ~12% while rem-fixed chrome stayed put, so controls read oversized and
@@ -128,7 +135,11 @@ $input-padding-y-lg: $btn-padding-y-lg;
 $input-border-radius: $border-radius;
 $input-border-color: #d1d5db; // Gray-300
 $input-focus-border-color: $primary;
-$input-focus-box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+// The focus halo is the brand navy, faint, outside the navy focus border. (It
+// was a leftover indigo from before the navy brand.) Selects take the same
+// ring; Bootstrap gives them their own 0.25rem one at 25%.
+$input-focus-box-shadow: 0 0 0 3px rgba($primary, 0.1);
+$form-select-focus-box-shadow: $input-focus-box-shadow;
 
 // Check/radio inputs default their border to `$border-color` (Gray-200), not
 // `$input-border-color` — so a bare checkbox looks faint beside the (darker,
@@ -441,6 +452,29 @@ $utilities-border-subtle: map.merge(
   ("pending-subtle": var(--bs-pending-border-subtle))
 );
 
+// An invalid control's focus ring is the crimson form-error colour, like its
+// border. Bootstrap builds it from `--bs-danger-rgb`, which is the magenta
+// badge hue here. Its geometry and opacity stay Bootstrap's. The
+// `.invalid-tooltip` background likewise (Bootstrap's is `var(--bs-danger)`):
+// white on #c8102e is 5.9:1. A solid Sass colour, not
+// `--bs-form-invalid-color`, which is a light pink in dark mode where the
+// white text would fail. (The `.form-range` thumb's red is bootstrap-vue-next's
+// own and is left alone.) The map only exists once Bootstrap's variables are
+// read, hence here.
+$form-validation-states: map.merge(
+  $form-validation-states,
+  (
+    "invalid": map.merge(
+      map.get($form-validation-states, "invalid"),
+      (
+        "focus-box-shadow": 0 0 $input-btn-focus-blur $input-focus-width
+          rgba($dx-form-error, $input-btn-focus-color-opacity),
+        "tooltip-bg-color": $dx-form-error,
+      )
+    ),
+  )
+);
+
 @import "bootstrap/scss/bootstrap";
 
 // ----------------------------------------------------------------------------
@@ -506,8 +540,42 @@ $dx-bundled-fonts: (
   }
 }
 
+// DX Figures: IBM Plex Sans's DIGITS, for tabular figures (#215). Maven Pro
+// and Poppins have no `tnum` feature, so `tabular-nums` did nothing in them;
+// Plex Sans's figures are tabular by default. `unicode-range` limits each face
+// to U+0030–0039, so only the digits come from Plex and everything else in a
+// tabular run falls through to the next family in the stack. `size-adjust`
+// matches Plex's figure height (0.710em) to Maven Pro's (0.673em), so a digit
+// sits beside Maven Pro text at the same size. 400 for body text and inputs,
+// 500 for table headers and `.fw-medium`, 600 for `.fw-semibold` (without it
+// font matching takes the 700 face for a 600 request), 700 for DXStatCard's
+// value and `.fw-bold`. The files are IBM's own Latin1 split woff2s, byte-identical to
+// the upstream package (resources/fonts/ibm-plex-sans/SOURCE.txt): "Plex" is a
+// Reserved Font Name, so they must never be subset or re-encoded. Extracted to
+// `dist/assets/` like the faces above, and fetched only where a tabular digit
+// renders.
+$dx-figures-fonts: (
+  (400, "ibm-plex-sans/IBMPlexSans-Regular-Latin1"),
+  (500, "ibm-plex-sans/IBMPlexSans-Medium-Latin1"),
+  (600, "ibm-plex-sans/IBMPlexSans-SemiBold-Latin1"),
+  (700, "ibm-plex-sans/IBMPlexSans-Bold-Latin1"),
+);
+
+@each $weight, $file in $dx-figures-fonts {
+  @font-face {
+    font-family: "DX Figures";
+    font-style: normal;
+    font-weight: $weight;
+    font-display: swap;
+    src: url("../fonts/#{$file}.woff2") format("woff2");
+    unicode-range: U+0030-0039;
+    size-adjust: 94.8%;
+  }
+}
+
 :root {
   --dx-font-family-display: #{$dx-font-family-display};
+  --dx-font-family-figures: #{$dx-font-family-figures};
 }
 
 // Bootstrap gives `$headings-font-family` to h1–h6; the display face is for
@@ -731,6 +799,147 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 // override becomes redundant but harmless here).
 .input-group {
   flex-wrap: nowrap;
+}
+
+// DFormFile: bvn's BFormFile draws its own control (`.b-form-file-control`, a
+// div around a Browse button and the file-name text), not a `.form-control`,
+// so none of the theme's input variables reach it. Give it the input's border
+// colour, padding (so its height) and focus ring, and the theme's crimson invalid
+// state (bvn hardcodes Bootstrap's red icon, and the navy focus border took
+// over an invalid control). The state rings come from Bootstrap's own
+// `$form-validation-states`, so they stay identical to `.form-control`'s. Global:
+// the control is inside a bvn root (see CLAUDE.md, scope-id trap).
+.b-form-file-control {
+  border-color: var(--d-input-border-color);
+
+  .b-form-file-text,
+  .b-form-file-button {
+    padding: $input-padding-y $input-padding-x;
+  }
+
+  &.form-control-sm .b-form-file-text,
+  &.form-control-sm .b-form-file-button {
+    padding: $input-padding-y-sm $input-padding-x-sm;
+  }
+
+  &.form-control-lg .b-form-file-text,
+  &.form-control-lg .b-form-file-button {
+    padding: $input-padding-y-lg $input-padding-x-lg;
+  }
+
+  .b-form-file-button {
+    border-right-color: var(--d-input-border-color);
+  }
+
+  &:focus-within:not([aria-disabled="true"]) {
+    border-color: $input-focus-border-color;
+    box-shadow: $input-focus-box-shadow;
+  }
+
+  &.is-invalid {
+    border-color: var(--bs-form-invalid-border-color);
+    background-image: escape-svg($form-feedback-icon-invalid);
+
+    &:focus-within:not([aria-disabled="true"]) {
+      border-color: var(--bs-form-invalid-border-color);
+      box-shadow: map-get(map-get($form-validation-states, "invalid"), "focus-box-shadow");
+    }
+  }
+
+  &.is-valid {
+    border-color: var(--bs-form-valid-border-color);
+    background-image: escape-svg($form-feedback-icon-valid);
+
+    &:focus-within:not([aria-disabled="true"]) {
+      border-color: var(--bs-form-valid-border-color);
+      box-shadow: map-get(map-get($form-validation-states, "valid"), "focus-box-shadow");
+    }
+  }
+}
+
+// A disabled fieldset (any disabled DFormGroup: it always renders one) disables
+// the button and the native input but not bvn's `disabled` prop, so give the
+// control the same look as `disabled` (bvn's `[aria-disabled=true]` rule).
+fieldset:disabled .b-form-file-control {
+  background-color: var(--bs-secondary-bg);
+  opacity: 0.65;
+  cursor: not-allowed;
+
+  .b-form-file-text,
+  .b-form-file-button {
+    pointer-events: none;
+  }
+}
+
+// The state class sits on `.b-form-file-control` (or the plain input), deep
+// inside `.b-form-file-root`, where Bootstrap's `.is-invalid ~ .invalid-feedback`
+// cannot see it; a sibling DFormInvalidFeedback/DFormValidFeedback stayed hidden.
+// `:has()` covers the custom control and `plain` without touching attrs.
+.b-form-file-root:has(> .b-form-file-wrapper > .b-form-file-control.is-invalid, > input.is-invalid) {
+  ~ .invalid-feedback,
+  ~ .invalid-tooltip {
+    display: block;
+  }
+}
+
+.b-form-file-root:has(> .b-form-file-wrapper > .b-form-file-control.is-valid, > input.is-valid) {
+  ~ .valid-feedback,
+  ~ .valid-tooltip {
+    display: block;
+  }
+}
+
+// In a DInputGroup Bootstrap squares the corners of the radius-less root, not
+// the control inside it, so the control kept a rounded edge against the addon.
+.input-group > .b-form-file-root {
+  position: relative;
+
+  &:focus-within {
+    z-index: 5;
+  }
+
+  &:not(:first-child) {
+    .b-form-file-control,
+    .b-form-file-button {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+}
+
+.input-group:not(.has-validation) > .b-form-file-root:not(:last-child),
+.input-group.has-validation > .b-form-file-root:nth-last-child(n + 3) {
+  .b-form-file-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+// Drag state. bvn colours the overlay text, its dashed border and the control's
+// border with `--bs-primary` (the brand navy), which is about 1.07:1 on the
+// dark-mode overlay, so the accent is a token that becomes the emphasis colour
+// in dark mode. The overlay's white is hardcoded in bvn; follow the page
+// background.
+:root,
+[data-bs-theme="light"] {
+  --dx-form-file-drag-color: var(--bs-primary);
+}
+
+[data-bs-theme="dark"] {
+  --dx-form-file-drag-color: var(--bs-emphasis-color);
+}
+
+.b-form-file-dragging .b-form-file-control {
+  border-color: var(--dx-form-file-drag-color);
+}
+
+.b-form-file-drag-overlay {
+  background-color: rgba(var(--bs-body-bg-rgb), 0.95);
+  border-color: var(--dx-form-file-drag-color);
+}
+
+.b-form-file-drag-text {
+  color: var(--dx-form-file-drag-color);
 }
 
 // DXNumberStepper: `[ − ][ 12 ][ + ]`. The buttons are DButton icon-only
@@ -1389,6 +1598,53 @@ aside.dashboard-sidebar--light {
 // its own layout.
 
 // ----------------------------------------------------------------------------
+// Tabular figures (#215)
+// ----------------------------------------------------------------------------
+//
+// Every digit on the same advance, so amounts in a column (or a total that
+// updates in place) line up and do not jitter. Global, so consumer markup and
+// slot content can use it; DXTable's `tabular: true` field option adds it to
+// a column's cells, and DXStatCard's value and DXCurrencyInput's amount use
+// tabular figures by default.
+//
+// Maven Pro and Poppins have no `tnum` feature, so the digits come from the
+// `--dx-font-family-figures` token (DX Figures, IBM Plex Sans digits, above),
+// with the surrounding face as the fallback for everything else. `tabular-nums`
+// stays, so a consumer who points the token at a face with a `tnum` feature
+// (Inter, IBM Plex Mono) still gets tabular figures from it. Setting the token
+// to `initial` turns the face off: the declaration becomes invalid and the
+// element inherits its parent's family.
+//
+// Heading trap: h1–h4 are in the display face, and `.dx-tabular` outranks
+// `h1`, so in or on a heading the fallback must be the display face too, or
+// the heading's letters would turn into Maven Pro. The second rule does that.
+// Elsewhere the fallback is the body face: CSS cannot say "the inherited
+// face" inside a font list, so a `.dx-tabular` inside some other display-face
+// element (the sidebar) gets body-face letters. The same trap in or on
+// `code`, `kbd`, `samp` and `pre`: their fallback is the monospace face, so a
+// code sample keeps monospace letters (the third rule, which comes last so
+// code inside a heading stays monospace). Both context rules use `:where()`
+// so each has exactly `.dx-tabular`'s specificity and wins by source order.
+// Pinned by tabular-figures.test.ts and theme-fonts.test.ts.
+$dx-headings-1-4: "h1, h2, h3, h4, .h1, .h2, .h3, .h4";
+$dx-monospace-elements: "code, kbd, samp, pre";
+
+.dx-tabular {
+  font-family: var(--dx-font-family-figures), var(--bs-body-font-family);
+  font-variant-numeric: tabular-nums;
+}
+
+:where(#{$dx-headings-1-4}).dx-tabular,
+:where(#{$dx-headings-1-4}) .dx-tabular {
+  font-family: var(--dx-font-family-figures), var(--dx-font-family-display);
+}
+
+:where(#{$dx-monospace-elements}).dx-tabular,
+:where(#{$dx-monospace-elements}) .dx-tabular {
+  font-family: var(--dx-font-family-figures), var(--bs-font-monospace);
+}
+
+// ----------------------------------------------------------------------------
 // DXCurrencyInput — keep the amount usable in a narrow container
 // ----------------------------------------------------------------------------
 //
@@ -1396,10 +1652,14 @@ aside.dashboard-sidebar--light {
 // ("10L Bag in Box") crushed the amount to ~32px. The amount keeps room for a
 // price, the group still does not wrap (a wrapped affix would land on its own line
 // with broken corners: the theme already makes every `.input-group` nowrap),
-// and the affix text wraps onto two lines instead.
+// and the affix text wraps onto two lines instead. The amount uses tabular
+// figures (#215), like every money value the library renders (the figures
+// face plus `tabular-nums`, as `.dx-tabular` above).
 .dx-currency-input {
   > .form-control {
     min-width: 5.5rem;
+    font-family: var(--dx-font-family-figures), var(--bs-body-font-family);
+    font-variant-numeric: tabular-nums;
   }
 
   > .input-group-text {

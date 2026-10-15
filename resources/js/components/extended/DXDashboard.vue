@@ -113,17 +113,29 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, useSlots, useId, watch, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
+<script setup lang="ts" generic="TNavigation extends Navigation = Navigation">
+import { ref, computed, useId, useTemplateRef, watch, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
 import DXDashboardSidebar from './DXDashboardSidebar.vue';
 import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
 import DRow from '../base/DRow.vue';
 import DCol from '../base/DCol.vue';
 import { acquirePageScrollLock, releasePageScrollLock } from '../../utils/pageScrollLock';
-import type { Navigation, NavbarActionsOnMobile, NavbarSearchAlign, SidebarVariant } from '../../types/navigation';
+import type {
+  DashboardSlots,
+  Navigation,
+  NavigationItemOf,
+  NavbarActionsOnMobile,
+  NavbarSearchAlign,
+  SidebarVariant,
+} from '../../types/navigation';
 
-const slots = useSlots();
+// Typed slots, derived from the children's slot types (see `DashboardSlots`).
+// `TNavigation` is inferred from the `navigation` prop, so
+// `#sidebar-link="{ item }"` has the app's own item keys (see
+// `NavigationItemOf`). Types only: the forwarding below stays dynamic, so it
+// never lists names.
+const slots = defineSlots<DashboardSlots<NavigationItemOf<TNavigation>>>();
 
 // Slot-binding precedence: the forwarded slots bind the child's own slot props
 // FIRST and `toggleSidebar`/`sidebarHidden` after, so ours win a name clash.
@@ -131,9 +143,12 @@ const slots = useSlots();
 // forwarded slot, and a child that later grew a same-named prop must not be
 // able to silently take the guarantee away. No child uses those names today.
 
-interface Props {
+// Declared inline, not as a local `interface Props`: a generic component's
+// emitted declaration names its props type, and a local interface there fails
+// the declaration build (TS4082).
+const props = withDefaults(defineProps<{
   /** Navigation structure for sidebar */
-  navigation: Navigation;
+  navigation: TNavigation;
 
   /** Current URL path for active state */
   currentUrl: string;
@@ -209,9 +224,7 @@ interface Props {
    * If not provided, uses global HTML class approach (for SSR compatibility)
    */
   dashboardId?: string;
-}
-
-const props = withDefaults(defineProps<Props>(), {
+}>(), {
   title: 'Dashboard',
   pageTitle: '',
   user: null,
@@ -228,13 +241,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const collapsed = ref(false);
 
-// Compute sidebar slots (strip 'sidebar-' prefix)
+// Compute sidebar slots (strip 'sidebar-' prefix). The values are typed as
+// declared slot names so the template's `<slot :name>` type-checks; at runtime
+// any `sidebar-*`/`navbar-*` slot the consumer passes is forwarded.
 const sidebarSlots = computed(() => {
-  const result: Record<string, string> = {};
+  const result: Record<string, keyof DashboardSlots> = {};
   Object.keys(slots).forEach(name => {
     if (name.startsWith('sidebar-')) {
       const strippedName = name.substring(8); // Remove 'sidebar-' prefix
-      result[strippedName] = name;
+      result[strippedName] = name as keyof DashboardSlots;
     }
   });
   return result;
@@ -242,11 +257,11 @@ const sidebarSlots = computed(() => {
 
 // Compute navbar slots (strip 'navbar-' prefix)
 const navbarSlots = computed(() => {
-  const result: Record<string, string> = {};
+  const result: Record<string, keyof DashboardSlots> = {};
   Object.keys(slots).forEach(name => {
     if (name.startsWith('navbar-')) {
       const strippedName = name.substring(7); // Remove 'navbar-' prefix
-      result[strippedName] = name;
+      result[strippedName] = name as keyof DashboardSlots;
     }
   });
   return result;
@@ -352,7 +367,9 @@ const phoneMenuOpen = computed(
 
 const sidebarId = `${useId()}-sidebar`;
 const layoutRef = ref<HTMLElement | null>(null);
-const sidebarComponent = ref<InstanceType<typeof DXDashboardSidebar> | null>(null);
+// A ref to the generic sidebar carries only what it exposes; its root element
+// is the exposed `el`.
+const sidebarInstance = useTemplateRef('sidebarComponent');
 
 const setHidden = (isHidden: boolean): void => {
   hidden.value = isHidden;
@@ -388,8 +405,7 @@ const onSidebarNavigate = (): void => {
   closePhoneMenu();
 };
 
-const sidebarElement = (): HTMLElement | null =>
-  (sidebarComponent.value?.$el as HTMLElement | undefined) ?? null;
+const sidebarElement = (): HTMLElement | null => sidebarInstance.value?.el ?? null;
 
 const onKeydown = (event: KeyboardEvent): void => {
   if (event.key !== 'Escape') return;
@@ -489,6 +505,13 @@ defineExpose({
 
   /** Whether the sidebar is currently hidden. */
   sidebarHidden: computed(() => hidden.value),
+
+  /**
+   * The dashboard's root element (the `.dashboard-layout` `<div>`; `null`
+   * before mount). A template ref to this generic component carries only its
+   * exposed members, so read the DOM node here rather than through `$el`.
+   */
+  el: layoutRef,
 });
 </script>
 

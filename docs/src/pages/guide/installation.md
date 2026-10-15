@@ -102,6 +102,33 @@ import { DButton } from '@omnitend/dashboard-for-laravel'
 
 If you see a styled blue button, you're all set.
 
+## Browser support
+
+The theme targets browsers from late 2023 on (Baseline 2023): **Safari 17,
+Chrome and Edge 105, Firefox 121**, and later. Older browsers still render
+every component, with these differences:
+
+- **Safari 16** (and Firefox before 107) ignores
+  `contain-intrinsic-inline-size`, so a DXStatCard sized to its content (a
+  flex item that does not grow, an inline-block, a `col-auto`) gives its
+  value no room and the value runs out of the card. A card given a width
+  (a grid column, `flex: 1`) is unaffected. Safari 16 also ignores
+  `size-adjust` on `@font-face`, so tabular digits (IBM Plex Sans) stand
+  about 5.5% taller than the letters beside them.
+- **Before Safari 16, Chrome 105 and Firefox 110** there are no container
+  queries: DXStatCard's value starts at 1.75rem rather than at the
+  width-based size it uses before its script runs, and the script then
+  shrinks a long value to fit as in any other browser. DXDashboardNavbar
+  always shows the search's `kbd` hint.
+- **Firefox before 121** has no `:has()`, so the refinements that use it
+  fall back to the plainer layout: for example, display-only rows in a
+  horizontal DXForm keep the top alignment instead of lining up with the
+  label's baseline, and a DXStackingTable `.dx-stack-continue` row is not
+  fully joined to the card above it.
+
+The package ships no browserslist; transpile your own app for the browsers
+you support.
+
 ## Next Steps
 
 - [Getting Started Guide](/guide/getting-started) - Learn core concepts

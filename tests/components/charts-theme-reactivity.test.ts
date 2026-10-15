@@ -217,9 +217,19 @@ describe('theme.scss publishes the palette in a light scope too (#161)', () => {
     expect(match).not.toBeNull();
     return match![1];
   };
+  // theme.scss has other blocks under the same selectors (component tokens),
+  // so pick the block that carries the chart variables rather than the first.
+  const chartBlockBody = (selector: string, marker: string) => {
+    const escaped = selector.replace(/[[\]"=]/g, (character) => `\\${character}`);
+    const bodies = [...themeScssSource.matchAll(new RegExp(`\\n${escaped}\\s*\\{([\\s\\S]*?)\\n\\}`, 'g'))]
+      .map((match) => match[1])
+      .filter((body) => body.includes(marker));
+    expect(bodies).toHaveLength(1);
+    return bodies[0];
+  };
 
   it('declares --dx-chart-* under [data-bs-theme="light"] from the LIGHT list', () => {
-    expect(blockBody(/\[data-bs-theme="light"\]\s*\{([\s\S]*?)\n\}/)).toContain(
+    expect(chartBlockBody('[data-bs-theme="light"]', 'dx-chart-light-vars')).toContain(
       '@include dx-chart-light-vars',
     );
     expect(blockBody(/\n:root\s*\{\s*(@include dx-chart-light-vars[\s\S]*?)\n\}/)).toContain(
@@ -238,7 +248,7 @@ describe('theme.scss publishes the palette in a light scope too (#161)', () => {
   });
 
   it('the dark block remaps the line shades and the edge too', () => {
-    const dark = blockBody(/\[data-bs-theme="dark"\]\s*\{([\s\S]*?)\n\}/);
+    const dark = chartBlockBody('[data-bs-theme="dark"]', '--dx-chart-');
     expect(dark).toContain('--dx-chart-line-#{$i}: #{list.nth($dx-chart-palette-dark, $i)}');
     expect(dark).toContain('--dx-chart-edge: #{$dx-chart-edge-dark}');
   });

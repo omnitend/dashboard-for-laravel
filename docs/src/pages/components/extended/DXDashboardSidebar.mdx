@@ -96,7 +96,7 @@ const handleNavClick = (item) => {
 
 <SlotsTable client:load slots={[
   { name: 'brand', description: 'Custom brand/logo content in the sidebar header. Receives collapsed (boolean) and title (string) as slot props' },
-  { name: 'link', description: 'Custom navigation link rendering. Receives item (NavigationItem), isActive (boolean), collapsed (boolean), and isExpanded (boolean — whether the containing group is open) as slot props' },
+  { name: 'link', description: 'Custom navigation link rendering. Receives item (your navigation item type, NavigationItem by default; see Your own item type below), isActive (boolean), collapsed (boolean), and isExpanded (boolean — whether the containing group is open) as slot props' },
   { name: 'footer', description: 'Utility/secondary links pinned to the bottom of the sidebar, below the nav groups. Receives collapsed (boolean) as a slot prop' },
 ]} />
 
@@ -130,6 +130,75 @@ interface NavigationGroup {
 
 type Navigation = NavigationGroup[];
 ```
+
+### Your own item type
+
+`NavigationGroup` and `Navigation` take the item type as a parameter
+(`Navigation<YourItem>`, defaulting to `NavigationItem`), and the sidebar infers
+it from the `navigation` prop, so the `link` slot's `item` has the keys your
+items carry:
+
+```vue
+<script setup lang="ts">
+import { DXDashboardSidebar } from '@omnitend/dashboard-for-laravel';
+import type { Navigation, NavigationItem } from '@omnitend/dashboard-for-laravel';
+
+interface AppNavigationItem extends NavigationItem {
+  routeName: string;
+}
+
+const navigation: Navigation<AppNavigationItem> = [
+  { items: [{ label: 'Orders', url: '/orders', routeName: 'orders.index' }] },
+];
+</script>
+
+<template>
+  <DXDashboardSidebar :navigation="navigation" current-url="/orders">
+    <template #link="{ item, isActive }">
+      <!-- item.routeName is a string; a misspelt key is an error -->
+      <a :href="item.url" :data-route="item.routeName" :class="{ active: isActive }">
+        {{ item.label }}
+      </a>
+    </template>
+  </DXDashboardSidebar>
+</template>
+```
+
+A plain `Navigation` gives a `NavigationItem`; navigation typed `any` gives an
+`any` item. DXDashboard's `sidebar-link` slot is typed the same way.
+
+### Template refs
+
+Type a template ref with `useTemplateRef('name')`, which needs nothing extra.
+Because the sidebar is generic (over its `navigation` type), the ref carries
+only what the sidebar exposes: `el`, its root `<aside>` element (`null` before
+mount). There is no `$el` or `$props`, and `InstanceType<typeof
+DXDashboardSidebar>` does not compile.
+
+```vue
+<script setup lang="ts">
+import { useTemplateRef } from 'vue';
+import { DXDashboardSidebar } from '@omnitend/dashboard-for-laravel';
+import type { Navigation } from '@omnitend/dashboard-for-laravel';
+
+const navigation: Navigation = [
+  { items: [{ label: 'Orders', url: '/orders' }] },
+];
+
+const sidebar = useTemplateRef('sidebarRef');
+
+// HTMLElement | null (undefined while the ref is unset).
+const sidebarWidth = () => sidebar.value?.el?.getBoundingClientRect().width ?? 0;
+</script>
+
+<template>
+  <DXDashboardSidebar ref="sidebarRef" :navigation="navigation" current-url="/orders" />
+</template>
+```
+
+If you need the ref's type by name, the optional alternative is
+`ComponentExposed<typeof DXDashboardSidebar>` from the
+`vue-component-type-helpers` package, which you have to install yourself.
 
 ## Features
 

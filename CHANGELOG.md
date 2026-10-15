@@ -7,8 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrade notes
+
+- **Template refs to `DXDashboard` and `DXDashboardSidebar` carry only
+  their exposed members.** Both are now generic components (see the typed
+  `sidebar-link` item below), so a ref's type is just what they expose:
+  `toggleSidebar`, `sidebarHidden` and `el` on DXDashboard, `el` on
+  DXDashboardSidebar. `$el` and `$props` are gone from the type, so
+  `ref.value?.$el` no longer compiles: use `ref.value?.el` (the root
+  element, `HTMLElement | null`). `InstanceType<typeof DXDashboard>` does
+  not compile either. Type a ref with `useTemplateRef('name')`, which needs
+  nothing extra; `ComponentExposed<typeof DXDashboard>` also works but
+  needs `vue-component-type-helpers` installed.
+- **`navbar-user-menu`'s `user` is `DashboardUser | null` and is now
+  type-checked.** The slot also renders for a guest, so `{{ user.name }}`
+  fails vue-tsc; use `user?.name` or a `v-if`. `navbar-user-icon` and
+  `navbar-user-menu-items` render only for a signed-in user, so their
+  `user` is never null.
+
+### Added
+
+- `DFormFile`, a wrapper around bootstrap-vue-next's `BFormFile`: a file
+  picker with a Browse button, file names and a drop zone. `v-model` is a
+  `File`, a `File[]` (`multiple`/`directory`) or `null`; setting it to
+  `null` or `[]` also clears the native input, so a plain form submit no
+  longer sends the old file. While disabled (its own `disabled`, or a
+  disabled `DFormGroup`/fieldset) it ignores dropped files, which bvn
+  accepted, whatever `noDrop` says. Every slot is forwarded with its
+  props, and
+  `focus`/`blur`/`reset` are exposed. The theme gives it the text input's
+  border, height at each size, focus ring and crimson invalid state; a
+  sibling `DFormInvalidFeedback`/`DFormValidFeedback` shows with `state`;
+  it looks disabled in a disabled fieldset, meets a `DInputGroup` addon
+  squarely, and its drag overlay is readable in dark mode (token
+  `--dx-form-file-drag-color`). Set `state` on the control itself: a
+  `DFormGroup`'s `state` does not reach it. `label-for` is required to
+  label the Browse button (#221).
+- `DFormValidFeedback`, a wrapper around bvn's `BFormValidFeedback`, the
+  counterpart of `DFormInvalidFeedback`, with a docs page.
+- `DXDashboard` and `DXDashboardSidebar` expose `el`, their root element
+  (`HTMLElement | null`: the `.dashboard-layout` div and the `<aside>`),
+  for template refs now that `$el` is not on a generic component's ref
+  type.
+- Typed slots for `DXDashboard`, `DXDashboardNavbar` and
+  `DXDashboardSidebar`. DXDashboard's `navbar-*`/`sidebar-*` slot types
+  are derived from the child components' slots, with `toggleSidebar` and
+  `sidebarHidden` added, so editors autocomplete the names and vue-tsc
+  checks the slot props. The types are exported (`DashboardSlots`,
+  `DashboardNavbarSlots`, `DashboardSidebarSlots`, `DashboardSlotExtras`,
+  `PrefixedDashboardSlots`, `DashboardUser`). vue-tsc still does not flag
+  an unknown slot name such as `#search` (Vue types `$slots` with a string
+  index), so the docs now show the mistake (#219).
+- The `sidebar-link` (DXDashboard) and `link` (DXDashboardSidebar) slot's
+  `item` is your navigation's own item type, inferred from the
+  `navigation` prop: keys your backend adds (a permission, a route name)
+  are typed, and a misspelt key is an error. `Navigation` and
+  `NavigationGroup` take the item type as an optional parameter
+  (`Navigation<AppItem>`, default `NavigationItem`), and
+  `NavigationItemOf<TNavigation>` is exported. Navigation typed `any`
+  gives an `any` item, as before the slots were typed.
+- Tabular figures, so money lines up digit for digit: a `.dx-tabular`
+  utility and a DXTable field option `tabular: true`, which adds it to the
+  column's cells and header (keeping the field's own `tdClass`/`thClass`).
+  DXStatCard's value and DXCurrencyInput's amount use tabular figures too.
+  Maven Pro has no tabular figures, so the theme bundles **IBM Plex Sans
+  digits** as a `DX Figures` face: `0`–`9` only (`unicode-range`; `£`,
+  punctuation and letters stay in the body face, the display face in
+  `h1`–`h4`, or the monospace face in `code`/`kbd`/`samp`/`pre`), weights
+  400, 500, 600 and 700, scaled to Maven Pro's figure height. The four
+  files (about 84 KB) are IBM's unmodified upstream woff2s under the SIL
+  OFL, each fetched only where a tabular digit of its weight renders. The
+  face is the `--dx-font-family-figures` token (`$dx-font-family-figures`
+  in Sass): point it at Inter or IBM Plex Mono, or set it to `initial` to
+  keep the surrounding face (#215).
+- A browser support note in the installation guide (Safari 17, Chrome and
+  Edge 105, Firefox 121) and what degrades below it.
+
+### Changed
+
+- `DXStatCard`'s value fits its content: a numeric value is 1.75rem
+  unless it is too wide for the card, and then takes the largest size
+  (to 0.25px) at which it fits on one line, down to 1.125rem. Each size
+  is measured, not assumed proportional, so it holds where text width
+  grows in steps (Linux Chromium). Short values (`42`, `1,000`) stay at
+  1.75rem in any card, four to a row included; a 7-figure amount
+  (`£1,234,567.89`) fits two cards to a 390px phone row, and 8 figures fit
+  from a 130px value area. The card refits when it is resized, when the
+  value or `value` slot content changes, when a web font loads, and when
+  it comes back from a deactivated `<KeepAlive>`. A card
+  sized to its content now keeps 8rem for the value (before, it grew to
+  the value's full width). Before the script runs (server-rendered markup)
+  the size follows the card's width, so a short value in a narrow card can
+  grow when the page hydrates. Measured limits are on the DXStatCard page.
+  A numeric value (a number, or any string with no letters) no longer
+  breaks mid-figure, though it still wraps at a space; a text value such
+  as a URL keeps 1.75rem and wraps inside the card (#213).
+
 ### Fixed
 
+- An invalid control's focus ring is the crimson form-error colour, like
+  its border. It was the danger magenta, because Bootstrap builds it from
+  `--bs-danger-rgb`. Applies to every `.form-control`, `.form-select`,
+  `.form-check-input` and `DFormFile`. `.invalid-tooltip` is crimson too.
+- The text input focus ring is a faint brand navy. It was a leftover
+  indigo, `rgba(79, 70, 229, 0.1)`. Selects now take the same ring rather
+  than Bootstrap's wider 25% one.
 - A client-side `filter: "select"` column whose static `filterOptions`
   carry number or boolean values (ids, flags) now filters. Picking one
   threw `value.trim is not a function` and left every row showing, and a
@@ -17,7 +120,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `string | number | boolean | null`.
 - The row count ("0 items.") no longer shows under the loader while an
   items or client-side table is busy.
-
 ## [0.45.0] - 2026-10-11
 
 ### Changed

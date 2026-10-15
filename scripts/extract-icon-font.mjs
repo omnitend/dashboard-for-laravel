@@ -15,11 +15,12 @@
  * fetches the font if an element actually uses a `.bi-*` glyph. An app that
  * never touches `DButton`'s `icon` prop pays zero for it.
  *
- * The same applies to the theme's bundled text fonts (Maven Pro, Poppins in
- * resources/fonts/), so EVERY inlined woff2 is extracted. A data URI carries no
- * name, so each is named after the source file with identical bytes
- * (`MavenPro-Regular-<hash>.woff2`, `bootstrap-icons-<hash>.woff2`); one with no
- * known source is still extracted, as `font-<hash>.woff2`.
+ * The same applies to the theme's bundled text fonts (Maven Pro, Poppins and
+ * the IBM Plex Sans figures in resources/fonts/), so EVERY inlined woff2 is
+ * extracted. A data URI carries no name, so each is named after the source
+ * file with identical bytes (`MavenPro-Regular-<hash>.woff2`,
+ * `bootstrap-icons-<hash>.woff2`); one with no known source is still
+ * extracted, as `font-<hash>.woff2`.
  */
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';

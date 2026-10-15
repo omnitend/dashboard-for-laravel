@@ -60,9 +60,9 @@ that:
 
 ## Typography
 
-The theme ships two typefaces, both under the SIL Open Font License and
-bundled as woff2 files next to `theme.css` (each downloads only when text
-renders in it):
+The theme ships two typefaces, plus a third for figures, all under the SIL
+Open Font License and bundled as woff2 files next to `theme.css` (each
+downloads only when text renders in it):
 
 - **Maven Pro** is the body face (`$font-family-sans-serif`).
 - **Poppins** is the display face, published as `--dx-font-family-display`.
@@ -76,13 +76,63 @@ renders in it):
 }
 ```
 
-Bundled weights: Maven Pro 400, 500, 600 and 700; Poppins 500 and 600. Other
-weights are synthesised by the browser.
+- **IBM Plex Sans** supplies the digits of tabular figures only (see
+  [Tabular figures](#tabular-figures)).
+
+Bundled weights: Maven Pro 400, 500, 600 and 700; Poppins 500 and 600; the
+Plex Sans figures 400, 500, 600 and 700. Other weights are synthesised by
+the browser.
 
 Headings are compact and restrained, all at weight 500: `h1` 1.25rem, `h2`
 1.15rem, `h3` and `h4` 1.05rem, `h5` and `h6` 1rem (body size). Table body
 text is the body colour (`#212529`) and table headers are weight 500 in the
 muted `--dx-table-header-color`.
+
+### Tabular figures
+
+The global `.dx-tabular` class gives every digit the same width, so amounts
+line up digit for digit in a column and a total that updates in place does
+not jitter. Use it in your own markup and slot content. DXStatCard's value
+and DXCurrencyInput's amount use tabular figures by default, and a DXTable
+field takes `tabular: true` to add the class to its column.
+
+Maven Pro and Poppins have no tabular figures, so the theme takes the digits
+from **IBM Plex Sans**, whose figures are all one width. The face (named
+`DX Figures`) covers `0`–`9` only, through `unicode-range`: the `£`, commas,
+decimal points and any letters stay in Maven Pro, and in `h1`–`h4` in
+Poppins. It is scaled (`size-adjust: 94.8%`) so a Plex digit stands as tall
+as a Maven Pro one. The files (about 21 KB per weight, 400, 500, 600 and
+700, 84 KB in all) are fetched only on a page where a tabular digit renders,
+and only the weights it uses. Inside `code`, `kbd`, `samp` and `pre` the
+letters stay in the monospace face.
+
+The face is the `--dx-font-family-figures` token (`"DX Figures"` by
+default). The theme appends the surrounding face as the fallback, so the
+token names only the face the digits come from. `.dx-tabular` also keeps
+`font-variant-numeric: tabular-nums`, so a face with a `tnum` feature gives
+tabular figures when you point the token at it:
+
+```css
+:root {
+  /* Inter's tabular figures (load Inter yourself) */
+  --dx-font-family-figures: "Inter";
+
+  /* Or a monospaced face, every character one width:
+     --dx-font-family-figures: "IBM Plex Mono"; */
+
+  /* Or no figures face, so the element keeps its surrounding face:
+     --dx-font-family-figures: initial; */
+}
+```
+
+A face named in the token supplies every character it has, not only digits.
+With `initial`, the element inherits its parent's face and `tabular-nums`
+still applies, which changes nothing in Maven Pro. In Sass, set
+`$dx-font-family-figures` before importing the theme.
+
+Outside `h1`–`h4` the fallback is the body face: a `.dx-tabular` inside other
+text that you set in the display face gets Maven Pro letters around its
+digits. Set `font-family` on it yourself there.
 
 ## The token model
 

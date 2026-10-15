@@ -1,0 +1,18 @@
+IBM Plex Sans, digits only, for the theme's "DX Figures" face (#215).
+
+These are IBM's official Latin1 split woff2 files, copied unmodified from the
+npm package @ibm/plex-sans 1.1.0 (fonts/split/woff2/), the upstream of
+https://github.com/IBM/plex. The theme limits them to U+0030-0039 with
+unicode-range; the files themselves are whole.
+
+"Plex" is a Reserved Font Name under the SIL Open Font License (OFL.txt,
+the package's LICENSE.txt, unmodified). A modified copy could not keep the
+name, so these files must never be subset, re-encoded or otherwise changed.
+To update them, replace them with newer upstream files and record the new
+version and checksums here and in tests/bundle/theme-fonts.test.ts.
+
+sha256:
+b5ad7bd39f996144915f0ad9849a90183b27d8c28ad97ed98af5b1bebc51f6b1  IBMPlexSans-Regular-Latin1.woff2
+b5610af04d0d4b5a14a621d96d974b993e945a065db1a8861918f69ef9321934  IBMPlexSans-Medium-Latin1.woff2
+fff0ab3a88b0b4aa0b693e4f0201359a15183b08e3fa5696d1918d8f0ade8ad5  IBMPlexSans-SemiBold-Latin1.woff2
+914f1400f363e636b6f9cc7965aa807ff01e93586e1437617525cba0a62aa78d  IBMPlexSans-Bold-Latin1.woff2
