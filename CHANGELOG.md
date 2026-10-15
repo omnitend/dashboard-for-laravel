@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A client-side `filter: "select"` column whose static `filterOptions`
+  carry number or boolean values (ids, flags) now filters. Picking one
+  threw `value.trim is not a function` and left every row showing, and a
+  stored string filter never re-selected its option. Option values are
+  compared as strings; `FilterOption.value` now admits
+  `string | number | boolean | null`.
+- The row count ("0 items.") no longer shows under the loader while an
+  items or client-side table is busy.
+
 ## [0.45.0] - 2026-10-11
 
 ### Changed

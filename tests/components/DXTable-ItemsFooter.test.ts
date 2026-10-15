@@ -77,7 +77,9 @@ describe('DXTable footer for a plain items table', () => {
 
         await expect.element(screen.getByText('Loading rows...')).toBeVisible();
         await expect.element(screen.getByText('Nothing here')).not.toBeInTheDocument();
-        expect(footerOf(screen.container)?.textContent).toContain('0 items.');
+        // No count under the loader: "0 items." before the rows arrive states
+        // there are none. (The empty-table test above is the positive control.)
+        expect(footerOf(screen.container)).toBeNull();
     });
 
     it('still drives the footer and pager from a passed pagination', async () => {

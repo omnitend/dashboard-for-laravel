@@ -245,8 +245,10 @@
                          PaginationData; `handleActivePageChange` routes the page
                          event to the right per-mode handler. Previously three
                          byte-identical copies, one per mode. -->
+                    <!-- Not while the loader shows: the count would read "0 items"
+                         before the rows have arrived. -->
                     <DXTablePagination
-                        v-if="activePagination"
+                        v-if="activePagination && !(effectiveBusy && !isProviderMode)"
                         :pagination="activePagination"
                         :per-page="effectivePerPage"
                         :per-page-options="perPageOptions"
@@ -340,7 +342,8 @@ import DXTableEditorModal from "./DXTableEditorModal.vue";
 export type FilterType = 'text' | 'select' | 'select-native' | 'number' | 'date' | false;
 
 export interface FilterOption {
-    value: string;
+    /** Numbers and booleans are accepted and compared as their string form. */
+    value: string | number | boolean | null;
     text: string;
 }
 
@@ -1579,9 +1582,21 @@ const getFieldFilterOptions = (field: TableField): FilterOption[] => {
         options.push({ value: filterNullValueFor(field), text: field.filterNullText });
     }
 
-    // If field has static filterOptions, use those
+    // If field has static filterOptions, use those. Their values are
+    // stringified: options built from records carry numbers (ids) and booleans
+    // (flags), but the filter map, the URL and the row match all speak strings,
+    // and DAutocomplete matches its model to an option by strict equality — so a
+    // raw `1` never re-selected the stored `'1'`, and picking it put a number in
+    // the map that the active-filter check could not `.trim()`.
     if (field.filterOptions && field.filterOptions.length > 0) {
-        return [...options, ...field.filterOptions];
+        return [
+            ...options,
+            ...field.filterOptions.map((option) =>
+                option.value === null || option.value === undefined
+                    ? option
+                    : { ...option, value: String(option.value) },
+            ),
+        ];
     }
 
     // Otherwise, check for server-provided values (keyed by the filter key)
