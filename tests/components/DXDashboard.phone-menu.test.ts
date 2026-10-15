@@ -86,7 +86,9 @@ describe('server rendering', () => {
     expect(isDisplayed(sidebarOf(host))).toBe(false);
 
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const dashboard = ref<InstanceType<typeof DXDashboard> | null>(null);
+    // DXDashboard is a generic component, so `InstanceType<typeof DXDashboard>`
+    // does not compile; type the ref by the exposed state it reads.
+    const dashboard = ref<{ sidebarHidden: boolean } | null>(null);
     app = createSSRApp(() => h(DXDashboard, { ...dashboardProps(), ref: dashboard }));
     app.mount(host);
     await nextTick();

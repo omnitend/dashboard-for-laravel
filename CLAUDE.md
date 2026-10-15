@@ -381,6 +381,31 @@ through onto the root BModal after its own bindings.
 - Separator line: `rgba(255, 255, 255, 0.1)` for subtlety
 - Smooth transitions on collapse/expand
 
+**Generic (`TNavigation`).** DXDashboardSidebar and DXDashboard are
+`generic="TNavigation extends Navigation = Navigation"` with `navigation:
+TNavigation`; the `link`/`sidebar-link` item is `NavigationItemOf<TNavigation>`,
+so an app's extra item keys are typed and typos error. Generic over the
+NAVIGATION, not the item: TS infers `any` only for a parameter that is the
+prop's whole type, so generic over the item an `any` navigation rejected the
+app's keys. Consequences: `InstanceType<typeof DXDashboard…>` does not compile
+(use `ComponentPublicInstance`, `useTemplateRef` or `ComponentExposed`); a local
+`interface Props` breaks the d.ts build (TS4082), so props are declared inline;
+docgen shows the prop type as `TNavigation` (#222).
+
+### DFormFile
+
+Wraps bvn's BFormFile, which renders the state class on `.b-form-file-control`
+deep inside its root and sends every attr except `class`/`style`/`title` to a
+hidden aria-hidden `input[type=file]`. So a sibling feedback is shown by a
+`:has()` rule on `.b-form-file-root` in theme.scss, and `@focus`/`@blur` never
+fire. The wrapper's one behaviour of its own is DIVERGENCES #7: a model that
+becomes `null` calls bvn's `reset()`, because bvn leaves the hidden input
+holding the file. BFormFile never injects the form group's state or disabled,
+and bvn does not export `formGroupKey` publicly, so group state is documented,
+not inherited. Drag colours use `--dx-form-file-drag-color`. Pinned by
+`tests/components/DFormFile.test.ts`. A drag test must wait a tick after mount
+before dispatching `dragenter`, or useDropZone's listeners are not attached.
+
 ### DXDashboardNavbar
 
 **Purpose**: Top navigation bar with user dropdown
@@ -451,13 +476,20 @@ rebuild before running it after a theme change.
 ### DXStatCard value sizing (#213)
 
 The value sits in its own `.dx-stat-card__value-box` with `container-type:
-inline-size` and is `clamp(1.125rem, 16cqi, 1.75rem)`: a box 175px or wider
-stays 1.75rem. The container wraps the VALUE only, never the card root
-(containment there would shrink a content-sized card to its padding), and
-carries `contain-intrinsic-inline-size: 6rem` so a content-sized card keeps
-room for its value. `overflow-wrap: normal` undoes `.card`'s `break-word`,
-which split a number mid-figure. Pinned by `DXStatCard-Fit.test.ts` (reads
-the built component).
+inline-size` and is `clamp(1.125rem, 1.125rem + (100cqi - 8rem) * 0.2128,
+1.75rem)`: 1.75rem from a 175px box up, a straight line down to the 1.125rem
+floor at 128px. NOT `16cqi`: that also reaches 28px at 175px, but then a value
+wider than 1/0.16 = 6.25em overflows every box under 175px (`£1,234,567.89` is
+6.64em), however much fallback room it gets. The container wraps the VALUE
+only, never the card root (containment there would shrink a content-sized card
+to its padding), and carries `contain-intrinsic-inline-size: 8rem` (where the
+floor starts: room for 7 figures), so a content-sized card is 178px wide.
+`overflow-wrap: normal` (undoing `.card`'s `break-word`, which split a number
+mid-figure) is on `.dx-stat-card__value--numeric` only (a number, or a string
+with no letters); other strings keep the break so a URL cannot run out of the
+card. Measured limits (6/7/8 figures by box width; 7 figures reach into the
+padding on phones under ~388px) are in DXStatCard.mdx. Pinned by
+`DXStatCard-Fit.test.ts` (reads the built component).
 
 **Tabular figures (#215):** `.dx-tabular`, DXTable's `tabular` field option,
 the stat value and `.dx-currency-input > .form-control` all set
@@ -468,9 +500,14 @@ the stat value and `.dx-currency-input > .form-control` all set
 Sans digits, see "Typefaces"). The stat value's rule is scoped in
 DXStatCard.vue, the others are global in theme.scss. Pinned by
 `tabular-figures.test.ts` ("1111" == "0000" within 0.05px in `.dx-tabular`
-at 400/500/700, the stat value and the currency input, against the BUILT
+at 400/500/600/700, the stat value and the currency input, against the BUILT
 CSS, with a Maven Pro positive control; `£`/letters unchanged; headings;
-the `initial` opt-out).
+the `initial` opt-out). Plex's figures have the same advance at every
+weight, so the 600 face is proven by LOAD STATE (`theme-fonts.test.ts`: a lone
+`fw-semibold` run loads 600 and not 700), not by width. In or on
+`code`/`kbd`/`samp`/`pre` the fallback is `--bs-font-monospace`. The heading
+and mono context rules use `:where()`, so they match `.dx-tabular`'s
+specificity and win by source order (mono last: code in a heading stays mono).
 
 ### DXLoading (soft loader, 0.45.0)
 
@@ -842,7 +879,7 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   copy could not keep the name.
 - **Figures: IBM Plex Sans digits as `"DX Figures"`** (#215,
   `$dx-figures-fonts` in theme.scss, separate from `$dx-bundled-fonts`):
-  400/500/700, `unicode-range: U+0030-0039`, `size-adjust: 94.8%`. Chosen
+  400/500/600/700, `unicode-range: U+0030-0039`, `size-adjust: 94.8%`. Chosen
   side by side against other candidates: Maven Pro has no `tnum`, Plex
   Sans's default figures are tabular. Digits only, so `£ , .` and letters
   fall through to the next family; 94.8% because Plex's '0' is 0.710em tall
@@ -850,9 +887,9 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   `ascent-override` needed). The token `$dx-font-family-figures` (!default)
   → `--dx-font-family-figures` holds ONLY the figures face (`"DX Figures"`);
   each rule appends the fallback itself, `var(--bs-body-font-family)`, or
-  `var(--dx-font-family-display)` in and on h1–h4 (`:is(h1…h4, .h1….h4)
-  .dx-tabular` and `.dx-tabular` on one; without it `.dx-tabular` outranks
-  `h1` and turned heading letters into Maven Pro). That is why the token
+  `var(--dx-font-family-display)` in and on h1–h4 (`:where(h1…h4, .h1….h4)
+  .dx-tabular` and `.dx-tabular` on one; without it heading letters turned
+  into Maven Pro), or `var(--bs-font-monospace)` in and on code/kbd/samp/pre. That is why the token
   is not "DX Figures, <body stack>": one token then serves both contexts and
   a swap (Inter, Plex Mono) reaches headings too. `initial` is the opt-out:
   the `var()` goes invalid, so the element inherits its parent's family.
@@ -866,7 +903,8 @@ browser's bold) in `--dx-table-header-color`. Pinned by
   `npm install` (the package has a `postinstall` telemetry script).
   `theme-fonts.test.ts` hashes both the source copies and the shipped
   `dist/assets` files against the recorded sha256 (crypto.subtle). About
-  21 KB a weight, fetched only where a tabular digit renders.
+  21–22 KB a weight (84 KB for the four), each fetched only where a tabular
+  digit of its weight renders.
 - **Test the faces LOAD, not the names**: `tests/bundle/theme-fonts.test.ts`
   renders text in each face and asserts the `document.fonts` entry reached
   `status === "loaded"`. A `font-family` check passes with the font missing
@@ -984,8 +1022,10 @@ solid fill by reflex.
   invalid FOCUS RING: Bootstrap's `$form-validation-states` builds it from
   `--bs-danger-rgb`, so theme.scss overrides the map's invalid
   `focus-box-shadow` after the variables import. The plain focus ring is
-  `rgba($primary, 0.1)` 3px, shared by selects. Pinned by
-  `focus-rings.test.ts`.
+  `rgba($primary, 0.1)` 3px, shared by selects. `.invalid-tooltip` is crimson
+  too, via `tooltip-bg-color` in the same merge (a solid Sass colour, because
+  `--bs-form-invalid-color` is pink in dark mode). Pinned by
+  `focus-rings.test.ts` and `soft-badges.test.ts`.
 - **Bootstrap's subtle family is derived from the soft tints** (set before the
   import): `$X-bg-subtle` and the `$table-variants` rows = soft-bg mixed with
   white to **70% white** (`dx-subtle-bg()`; legacy omnitend's rows measure
@@ -1279,18 +1319,21 @@ When forwarding slots with prefixes (e.g., `sidebar-brand` → `brand`), use com
 
 ```vue
 <script setup lang="ts">
-import { computed, useSlots } from 'vue';
+import { computed } from 'vue';
 import ChildComponent from './ChildComponent.vue';
+import type { ParentSlots } from '../../types/parent';
 
-const slots = useSlots();
+// Declared slot types (see DashboardSlots / PrefixedDashboardSlots). Types
+// only: the forwarding stays dynamic and never lists names.
+const slots = defineSlots<ParentSlots>();
 
-// Strip 'sidebar-' prefix from slot names
+// Strip 'sidebar-' prefix from slot names. Values typed as declared slot
+// names so the template's `<slot :name>` type-checks.
 const sidebarSlots = computed(() => {
-  const result: Record<string, string> = {};
+  const result: Record<string, keyof ParentSlots> = {};
   Object.keys(slots).forEach(name => {
     if (name.startsWith('sidebar-')) {
-      const strippedName = name.substring(8); // Remove 'sidebar-'
-      result[strippedName] = name;
+      result[name.substring(8)] = name as keyof ParentSlots;
     }
   });
   return result;
@@ -1315,6 +1358,11 @@ const sidebarSlots = computed(() => {
 - Fully dynamic - no hardcoded slot names
 - Scales automatically as new slots are added
 - Type-safe with proper slot prop forwarding
+
+**Typing the forwarded slots**: derive them from the child's slot interface
+with `PrefixedDashboardSlots<ChildSlots, 'sidebar-'>` (types/navigation.ts).
+Without `defineSlots` the forwarded slots are `any`, because vue-tsc cannot see
+through a dynamic `<slot :name>`.
 
 **Example**: DXDashboard uses this pattern to forward `sidebar-brand` → `brand` and `navbar-menu-icon` → `menu-icon`.
 
@@ -1503,11 +1551,19 @@ a generic type param) sails straight through the suite and only fails the CI
 guards such as the DXDashboard slot fixtures (`@vue-expect-error` misuses plus
 an exact slot-name `Equal`). Vue types `$slots` with a string index, so vue-tsc
 NEVER flags an unknown slot name, even with `strictTemplates`; pin slot names
-with a fixture instead. Two traps: a `.ts` fixture with the same base name as a
-`.vue` beside it is silently skipped by vue-tsc, and vue-docgen-api reads
+with a fixture instead. Three traps: a `.ts` fixture with the same base name as
+a `.vue` beside it is silently skipped by vue-tsc; vue-docgen-api reads
 `defineSlots` interface members with BARE keys in place of the template's
 `@slot`/`@binding` comments (dropping binding types), so slot interfaces quote
-their keys.
+their keys; and a generic SFC's type is a function, so `InstanceType<typeof
+C>['$slots']` does not compile (read slots the way `DeclaredSlotNames` in
+`DXDashboardSlotNames.fixture.ts` does: match `(props, ctx?: { slots; attrs;
+emit })`, with `attrs`/`emit` named). Only DXDashboard's `defineSlots` is
+load-bearing for slot NAMES: vue-tsc infers the navbar's and sidebar's slots
+from their templates. `defineSlots` catches a `<slot>` the interface lacks but
+not an interface member with no `<slot>`; `tests/types/DXDashboardSlotDrift.test.ts`
+(vitest, reads the SFCs `?raw`) catches that. `DXDashboardNavigationItem.fixture.vue`
+pins the generic item inference.
 
 Related, from the same chronically-red-CI fix: **the `pretest*` hooks must run
 the font-extract step, not a bare `vite build`.** Vite always inlines the icon
