@@ -54,6 +54,38 @@ describe.each(modes)('DXTable busy with $name rows', ({ extraProps }) => {
     await expect.element(screen.getByText('Loading customers...')).not.toBeInTheDocument();
   });
 
+  it('does not count the rows while busy', async () => {
+    // The count read "0 customers." under the loader, which states there are
+    // none before the rows have arrived.
+    const screen = render(DXTable, {
+      props: {
+        items: [],
+        fields: customerFields,
+        busy: true,
+        itemName: 'customer',
+        ...extraProps,
+      },
+    });
+
+    await expect.element(screen.getByText('Loading...')).toBeVisible();
+    expect(screen.container.textContent).not.toMatch(/0 customers/);
+  });
+
+  it('counts the rows once no longer busy', async () => {
+    // Positive control for the absence check above.
+    const screen = render(DXTable, {
+      props: {
+        items: [],
+        fields: customerFields,
+        busy: false,
+        itemName: 'customer',
+        ...extraProps,
+      },
+    });
+
+    await expect.element(screen.getByText(/0 customers/)).toBeVisible();
+  });
+
   it('still honours the deprecated loading prop', async () => {
     const screen = render(DXTable, {
       props: {
