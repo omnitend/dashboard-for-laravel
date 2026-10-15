@@ -733,6 +733,67 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
   flex-wrap: nowrap;
 }
 
+// DFormFile: bvn's BFormFile draws its own control (`.b-form-file-control`, a
+// div around a Browse button and the file-name text), not a `.form-control`,
+// so none of the theme's input variables reach it. Give it the input's border
+// colour, padding (so its height) and focus ring, and the theme's crimson invalid
+// state (bvn hardcodes Bootstrap's red icon, and the navy focus border took
+// over an invalid control). The state rings come from Bootstrap's own
+// `$form-validation-states`, so they stay identical to `.form-control`'s. Global:
+// the control is inside a bvn root (see CLAUDE.md, scope-id trap).
+.b-form-file-control {
+  border-color: var(--d-input-border-color);
+
+  .b-form-file-text,
+  .b-form-file-button {
+    padding: $input-padding-y $input-padding-x;
+  }
+
+  &.form-control-sm .b-form-file-text,
+  &.form-control-sm .b-form-file-button {
+    padding: $input-padding-y-sm $input-padding-x-sm;
+  }
+
+  &.form-control-lg .b-form-file-text,
+  &.form-control-lg .b-form-file-button {
+    padding: $input-padding-y-lg $input-padding-x-lg;
+  }
+
+  .b-form-file-button {
+    border-right-color: var(--d-input-border-color);
+  }
+
+  &:focus-within:not([aria-disabled="true"]) {
+    border-color: $input-focus-border-color;
+    box-shadow: $input-focus-box-shadow;
+  }
+
+  &.is-invalid {
+    border-color: var(--bs-form-invalid-border-color);
+    background-image: escape-svg($form-feedback-icon-invalid);
+
+    &:focus-within:not([aria-disabled="true"]) {
+      border-color: var(--bs-form-invalid-border-color);
+      box-shadow: map-get(map-get($form-validation-states, "invalid"), "focus-box-shadow");
+    }
+  }
+
+  &.is-valid {
+    border-color: var(--bs-form-valid-border-color);
+    background-image: escape-svg($form-feedback-icon-valid);
+
+    &:focus-within:not([aria-disabled="true"]) {
+      border-color: var(--bs-form-valid-border-color);
+      box-shadow: map-get(map-get($form-validation-states, "valid"), "focus-box-shadow");
+    }
+  }
+}
+
+// The drag overlay's white is hardcoded in bvn; follow the page background.
+.b-form-file-drag-overlay {
+  background-color: rgba(var(--bs-body-bg-rgb), 0.95);
+}
+
 // DXNumberStepper: `[ − ][ 12 ][ + ]`. The buttons are DButton icon-only
 // squares, sized by the input group. The number is centred between them, and
 // the browser's spin arrows are hidden (they duplicate the buttons and push the

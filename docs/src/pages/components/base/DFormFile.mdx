@@ -1,0 +1,86 @@
+---
+layout: ../../../layouts/DashboardLayout.astro
+title: DFormFile
+description: Type-safe wrapper around Bootstrap Vue Next's BFormFile component
+category: Base Component
+tags: wrapper, forms, file, upload
+---
+
+import ComponentExample from '../../../components/ComponentExample.vue';
+import PropsTable from '../../../components/PropsTable.vue';
+import EventsTable from '../../../components/EventsTable.vue';
+import SlotsTable from '../../../components/SlotsTable.vue';
+import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
+import DFormFileExample from '../../../examples/DFormFileExample.vue';
+import DFormFileExampleRaw from '../../../examples/DFormFileExample.vue?raw';
+
+# DFormFile
+
+DFormFile - A type-safe wrapper around Bootstrap Vue Next's BFormFile component. A file picker with a Browse button, the chosen file name, and a drag-and-drop zone, styled like the theme's text inputs (same height, border, focus ring and crimson invalid state). `v-model` is a `File` for a single file, a `File[]` with `multiple` (or `directory`), and `null` when nothing is chosen.
+
+Use it instead of hand-building a `btn` label around a hidden `<input type="file">`. The Browse button is a real `<button>`, so it is in the Tab order and opens the picker on Enter or Space; give the component an `id` and pass the same value to `DFormGroup`'s `label-for` to label it.
+
+## Live Examples
+
+<ComponentExample
+  client:load
+  code={DFormFileExampleRaw}
+>
+  <DFormFileExample client:load />
+</ComponentExample>
+
+## Props
+
+All props pass through to BFormFile.
+
+<PropsTable client:load props={[
+  { name: 'modelValue', type: 'File | readonly File[] | null', required: 'No', default: 'null', description: 'The chosen file(s). Use v-model. An array when multiple or directory is set.' },
+  { name: 'accept', type: 'string | readonly string[]', required: 'No', default: "''", description: 'Accepted types, e.g. "image/*,.pdf". Also filters dropped files.' },
+  { name: 'multiple', type: 'boolean', required: 'No', default: 'false', description: 'Allow more than one file.' },
+  { name: 'directory', type: 'boolean', required: 'No', default: 'false', description: 'Pick a whole directory (webkitdirectory). Implies multiple.' },
+  { name: 'capture', type: "'user' | 'environment'", required: 'No', default: '-', description: 'Ask a phone to use its camera.' },
+  { name: 'id', type: 'string', required: 'No', default: 'generated', description: "Set on the Browse button; pass the same value to DFormGroup's label-for." },
+  { name: 'name', type: 'string', required: 'No', default: '-', description: 'Name of the hidden native input, for a plain form submit.' },
+  { name: 'form', type: 'string', required: 'No', default: '-', description: 'The id of the form the native input belongs to.' },
+  { name: 'placeholder', type: 'string', required: 'No', default: "'No file chosen'", description: 'Text shown while nothing is chosen.' },
+  { name: 'browseText', type: 'string', required: 'No', default: "'Browse'", description: 'The Browse button label.' },
+  { name: 'dropPlaceholder', type: 'string', required: 'No', default: "'Drop files here...'", description: 'Text on the overlay while files are dragged over the control.' },
+  { name: 'showFileNames', type: 'boolean', required: 'No', default: 'false', description: 'Also show the chosen file name(s) below the control (rendered by the file-name slot when given).' },
+  { name: 'fileNameFormatter', type: '(files: readonly File[]) => string', required: 'No', default: '-', description: 'Formats the file-name text. Default: the name, or "N files selected".' },
+  { name: 'noButton', type: 'boolean', required: 'No', default: 'false', description: 'Hide the Browse button. The control stays clickable, but has no focusable element.' },
+  { name: 'noDrop', type: 'boolean', required: 'No', default: 'false', description: 'Turn off drag and drop.' },
+  { name: 'plain', type: 'boolean', required: 'No', default: 'false', description: 'Render the native file input (with .form-control) instead of the custom control.' },
+  { name: 'size', type: "'sm' | 'md' | 'lg'", required: 'No', default: '-', description: 'Control size, matching DFormInput.' },
+  { name: 'state', type: 'boolean | null', required: 'No', default: 'null', description: 'false shows the invalid state, true the valid state.' },
+  { name: 'disabled', type: 'boolean', required: 'No', default: 'false', description: 'Disable the control.' },
+  { name: 'required', type: 'boolean', required: 'No', default: 'false', description: 'Mark the native input required.' },
+  { name: 'autofocus', type: 'boolean', required: 'No', default: 'false', description: 'Focus the Browse button on mount.' },
+  { name: 'label', type: 'string', required: 'No', default: "''", description: "BFormFile's own label above the control. Prefer DFormGroup's label in forms." },
+  { name: 'ariaLabel', type: 'string', required: 'No', default: '-', description: 'Accessible name for the Browse button when there is no visible label.' },
+  { name: 'ariaLabelledby', type: 'string', required: 'No', default: '-', description: 'Id(s) of the element(s) naming the Browse button.' },
+  { name: 'labelClass', type: 'ClassValue', required: 'No', default: '-', description: "Class(es) for BFormFile's own label." },
+]} />
+
+## Events
+
+<EventsTable client:load events={[
+  { name: 'update:modelValue', parameters: 'value: File | File[] | null', description: 'The selection changed (picked, dropped or reset).' },
+  { name: 'change', parameters: 'event: Event', description: 'After a selection. In the custom control it is a CustomEvent whose files property (and detail.files) holds the File[]; with plain it is the native change event.' },
+]} />
+
+## Slots
+
+All slots are forwarded with their slot props.
+
+<SlotsTable client:load slots={[
+  { name: 'file-name', props: 'files: readonly File[], names: string[]', description: 'Replaces the file-name text inside the control, and the list below it when showFileNames is set.' },
+  { name: 'placeholder', props: '-', description: 'Content shown while nothing is chosen.' },
+  { name: 'drop-placeholder', props: '-', description: 'Content of the drag overlay.' },
+  { name: 'label', props: '-', description: "Content of BFormFile's own label (with the label prop)." },
+]} />
+
+## Methods
+
+Through a template ref: `reset()` clears the selection and sets the model to `null` (setting `v-model` to `null` does the same), `focus()` and `blur()` act on the Browse button.
+
+<BootstrapVueNextReference client:load componentName="DFormFile" />

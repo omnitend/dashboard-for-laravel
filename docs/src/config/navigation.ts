@@ -75,6 +75,7 @@ export const navigationConfig: Navigation = [
       { label: 'DDropdownItem', url: '/components/base/DDropdownItem' },
       { label: 'DForm', url: '/components/base/DForm' },
       { label: 'DFormCheckbox', url: '/components/base/DFormCheckbox' },
+      { label: 'DFormFile', url: '/components/base/DFormFile' },
       { label: 'DFormGroup', url: '/components/base/DFormGroup' },
       { label: 'DFormInput', url: '/components/base/DFormInput' },
       { label: 'DFormInvalidFeedback', url: '/components/base/DFormInvalidFeedback' },
