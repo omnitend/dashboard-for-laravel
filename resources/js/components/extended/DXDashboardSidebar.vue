@@ -165,17 +165,26 @@
   </aside>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="TNavigation extends Navigation = Navigation">
 import { computed, ref, onMounted, watch, nextTick, useId } from 'vue';
-import type { DashboardSidebarSlots, Navigation, NavigationGroup, SidebarVariant } from '../../types/navigation';
+import type {
+  DashboardSidebarSlots,
+  Navigation,
+  NavigationGroup,
+  NavigationItemOf,
+  SidebarVariant,
+} from '../../types/navigation';
 
 // Typed slots: consumers get autocomplete and slot-prop types, and DXDashboard
-// derives its `sidebar-*` slot types from this interface.
-defineSlots<DashboardSidebarSlots>();
+// derives its `sidebar-*` slot types from this interface. `TNavigation` is
+// inferred from the `navigation` prop, so an app whose items carry extra keys
+// gets them on the `link` slot's `item` (see `NavigationItemOf`). Types only:
+// nothing at runtime depends on it.
+defineSlots<DashboardSidebarSlots<NavigationItemOf<TNavigation>>>();
 
 const props = withDefaults(defineProps<{
   /** Grouped navigation to render: an array of groups, each with a label and items. */
-  navigation: Navigation;
+  navigation: TNavigation;
   /** The current route URL, used to highlight the matching nav item and open its group. */
   currentUrl: string;
   /** Collapse the rail to an icons-only strip, hiding labels and the brand title. */

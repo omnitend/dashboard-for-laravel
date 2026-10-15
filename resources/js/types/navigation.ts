@@ -8,7 +8,13 @@ export interface NavigationItem {
   visible?: boolean;
 }
 
-export interface NavigationGroup {
+/**
+ * A group of sidebar links. `TItem` is the app's own item type, for menus whose
+ * items carry extra keys (a permission, a route name): DXDashboard and
+ * DXDashboardSidebar infer it from the `navigation` prop, so the `link` slot's
+ * `item` has those keys too. Defaults to `NavigationItem`.
+ */
+export interface NavigationGroup<TItem extends NavigationItem = NavigationItem> {
   label?: string;
   /**
    * Stable identifier for the group's collapsible open/closed state. Defaults
@@ -17,7 +23,7 @@ export interface NavigationGroup {
    * state attached to the right group.
    */
   key?: string;
-  items: NavigationItem[];
+  items: TItem[];
   /**
    * Per-group override for the sidebar's `collapsibleGroups` behaviour.
    * Set to `false` to keep a group permanently expanded (no toggle header)
@@ -29,7 +35,26 @@ export interface NavigationGroup {
   visible?: boolean;
 }
 
-export type Navigation = NavigationGroup[];
+/** The sidebar's navigation: its groups, in order. See `NavigationGroup` for `TItem`. */
+export type Navigation<TItem extends NavigationItem = NavigationItem> = NavigationGroup<TItem>[];
+
+/**
+ * The item type of a navigation, as the `link` slot's `item` receives it:
+ * `NavigationItemOf<Navigation<AppItem>>` is `AppItem`. An `any` navigation
+ * (untyped page props) gives `any`, and an empty `[]` gives `NavigationItem`.
+ *
+ * DXDashboard and DXDashboardSidebar are generic over the whole navigation
+ * (`TNavigation`) and derive the item from it, rather than generic over the
+ * item: TypeScript infers `any` for a type parameter that IS the prop's type,
+ * but not for one nested inside it (`{ items: TItem[] }[]`), where an `any`
+ * navigation would have fallen back to `NavigationItem` and rejected the app's
+ * extra keys.
+ */
+export type NavigationItemOf<TNavigation extends Navigation> = [
+  TNavigation[number]["items"][number],
+] extends [never]
+  ? NavigationItem
+  : TNavigation[number]["items"][number];
 
 /**
  * Horizontal alignment of the navbar search slot content within its region:
@@ -121,8 +146,11 @@ export interface DashboardNavbarSlots {
   }): any;
 }
 
-/** Slots of DXDashboardSidebar, with their slot props. All are optional. */
-export interface DashboardSidebarSlots {
+/**
+ * Slots of DXDashboardSidebar, with their slot props. All are optional.
+ * `TItem` is the navigation's item type (see `NavigationGroup`).
+ */
+export interface DashboardSidebarSlots<TItem extends NavigationItem = NavigationItem> {
   /**
    * Brand/logo area in the sidebar header. Defaults to the title's initial
    * plus the full title (hidden when collapsed).
@@ -138,8 +166,11 @@ export interface DashboardSidebarSlots {
    * optional icon, label, and badge.
    */
   "link"?(props: {
-    /** The navigation item (label, url, icon, badge, badgeColor). */
-    item: NavigationItem;
+    /**
+     * The navigation item (label, url, icon, badge, badgeColor), typed as the
+     * app's own item type when its items carry extra keys.
+     */
+    item: TItem;
     /** Whether this item matches the current route. */
     isActive: boolean;
     /** Whether the sidebar rail is collapsed to icons only. */
@@ -188,9 +219,10 @@ export type PrefixedDashboardSlots<Slots, Prefix extends string> = {
  * Slots of DXDashboard: the page content (`default`), every
  * DXDashboardSidebar slot as `sidebar-<name>` and every DXDashboardNavbar
  * slot as `navbar-<name>`. An unprefixed name (`#search`) is not forwarded.
+ * `TItem` is the navigation's item type (see `NavigationGroup`).
  */
-export type DashboardSlots = {
+export type DashboardSlots<TItem extends NavigationItem = NavigationItem> = {
   /** The main page content. */
   default?(props: NoSlotProps): any;
-} & PrefixedDashboardSlots<DashboardSidebarSlots, "sidebar-"> &
+} & PrefixedDashboardSlots<DashboardSidebarSlots<TItem>, "sidebar-"> &
   PrefixedDashboardSlots<DashboardNavbarSlots, "navbar-">;

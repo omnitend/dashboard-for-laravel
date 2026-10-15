@@ -217,6 +217,7 @@ export type {
     NavigationItem,
     NavigationGroup,
     Navigation,
+    NavigationItemOf,
     NavbarSearchAlign,
     NavbarActionsOnMobile,
     SidebarVariant,

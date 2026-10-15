@@ -113,19 +113,30 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="TNavigation extends Navigation = Navigation">
 import { ref, computed, useId, watch, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
 import DXDashboardSidebar from './DXDashboardSidebar.vue';
 import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
 import DRow from '../base/DRow.vue';
 import DCol from '../base/DCol.vue';
 import { acquirePageScrollLock, releasePageScrollLock } from '../../utils/pageScrollLock';
-import type { DashboardSlots, Navigation, NavbarActionsOnMobile, NavbarSearchAlign, SidebarVariant } from '../../types/navigation';
+import type {
+  DashboardSlots,
+  Navigation,
+  NavigationItemOf,
+  NavbarActionsOnMobile,
+  NavbarSearchAlign,
+  SidebarVariant,
+} from '../../types/navigation';
 
 // Typed slots, derived from the children's slot types (see `DashboardSlots`).
-// Types only: the forwarding below stays dynamic, so it never lists names.
-const slots = defineSlots<DashboardSlots>();
+// `TNavigation` is inferred from the `navigation` prop, so
+// `#sidebar-link="{ item }"` has the app's own item keys (see
+// `NavigationItemOf`). Types only: the forwarding below stays dynamic, so it
+// never lists names.
+const slots = defineSlots<DashboardSlots<NavigationItemOf<TNavigation>>>();
 
 // Slot-binding precedence: the forwarded slots bind the child's own slot props
 // FIRST and `toggleSidebar`/`sidebarHidden` after, so ours win a name clash.
@@ -133,9 +144,12 @@ const slots = defineSlots<DashboardSlots>();
 // forwarded slot, and a child that later grew a same-named prop must not be
 // able to silently take the guarantee away. No child uses those names today.
 
-interface Props {
+// Declared inline, not as a local `interface Props`: a generic component's
+// emitted declaration names its props type, and a local interface there fails
+// the declaration build (TS4082).
+const props = withDefaults(defineProps<{
   /** Navigation structure for sidebar */
-  navigation: Navigation;
+  navigation: TNavigation;
 
   /** Current URL path for active state */
   currentUrl: string;
@@ -211,9 +225,7 @@ interface Props {
    * If not provided, uses global HTML class approach (for SSR compatibility)
    */
   dashboardId?: string;
-}
-
-const props = withDefaults(defineProps<Props>(), {
+}>(), {
   title: 'Dashboard',
   pageTitle: '',
   user: null,
@@ -356,7 +368,9 @@ const phoneMenuOpen = computed(
 
 const sidebarId = `${useId()}-sidebar`;
 const layoutRef = ref<HTMLElement | null>(null);
-const sidebarComponent = ref<InstanceType<typeof DXDashboardSidebar> | null>(null);
+// Only `$el` is read. `InstanceType<typeof DXDashboardSidebar>` does not
+// compile now the sidebar is generic (a function type, not a constructor).
+const sidebarComponent = ref<ComponentPublicInstance | null>(null);
 
 const setHidden = (isHidden: boolean): void => {
   hidden.value = isHidden;

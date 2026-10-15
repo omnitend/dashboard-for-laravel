@@ -2,8 +2,12 @@
   Type-level test, compiled by `npm run typecheck` (tests/types/tsconfig.json),
   never rendered. Pins the slot types of DXDashboard, DXDashboardNavbar and
   DXDashboardSidebar as a consumer sees them. Each `@vue-expect-error` is a
-  misuse that must stay an error: without the components' `defineSlots`, slot
-  props are `any`, the directive is unused, and vue-tsc fails.
+  misuse that must stay an error; an unused directive fails vue-tsc.
+  Only DXDashboard's `defineSlots` is load-bearing here: its forwarded slots
+  go through a dynamic `<slot :name>`, so without it their props are `any`.
+  vue-tsc infers the navbar's and sidebar's slot props from their templates,
+  so their checks below pass without `defineSlots` too; they pin what a
+  consumer sees, whichever way it is typed.
 -->
 <template>
   <DXDashboard :navigation="[]" current-url="/">
