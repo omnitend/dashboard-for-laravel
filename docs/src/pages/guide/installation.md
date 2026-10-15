@@ -116,9 +116,10 @@ every component, with these differences:
   `size-adjust` on `@font-face`, so tabular digits (IBM Plex Sans) stand
   about 5.5% taller than the letters beside them.
 - **Before Safari 16, Chrome 105 and Firefox 110** there are no container
-  queries: DXStatCard's value is set at the body size instead of scaling
-  with the card, and DXDashboardNavbar always shows the search's `kbd`
-  hint.
+  queries: DXStatCard's value starts at 1.75rem rather than at the
+  width-based size it uses before its script runs, and the script then
+  shrinks a long value to fit as in any other browser. DXDashboardNavbar
+  always shows the search's `kbd` hint.
 - **Firefox before 121** has no `:has()`, so the refinements that use it
   fall back to the plainer layout: for example, display-only rows in a
   horizontal DXForm keep the top alignment instead of lining up with the
