@@ -12,17 +12,17 @@ This is **@omnitend/dashboard-for-laravel**, a reusable full-stack component lib
 
 This library provides:
 1. **Vue 3 Components** - Reusable dashboard UI components
-2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (57 base components)
+2. **D* Wrapper Components** - Type-safe wrappers around Bootstrap Vue Next (58 base components)
 3. **DX* Extended Components** - Complex dashboard layouts, forms, tables, stat cards, and charts (20 on the main entry, plus 3 charts)
 4. **Form System** - Type-safe form handling with validation
 5. **Composables** - Reusable Vue composition functions
 6. **Theme** - Bootstrap 5 custom SCSS theme
 7. **PHP Utilities** - Laravel helpers for API responses and form requests
 
-**Total: 77 components on the main entry** (57 base + 20 extended), plus the 3
+**Total: 78 components on the main entry** (58 base + 20 extended), plus the 3
 chart components on `/charts`. Counted from the `D*`/`DX*` exports in
-`resources/js/index.ts` (2026-10-09, after DXFormErrorSummary); the base count
-matches the 57 files in `components/base`.
+`resources/js/index.ts` (2026-10-15, after DFormFile); the base count
+matches the 58 files in `components/base`.
 
 > **Chart components ship from a separate entry** (`#142`): `DXBarChart`,
 > `DXLineChart`, `DXDoughnutChart` are exported from
@@ -447,6 +447,22 @@ non-button content is `flex: 1 1 0` and `text-align: start !important`
 beats a cell's `.text-end`, so controls and values share one left edge. Pinned by
 `tests/components/DXStackingTable.test.ts`, which reads the BUILT CSS:
 rebuild before running it after a theme change.
+
+### DXStatCard value sizing (#213)
+
+The value sits in its own `.dx-stat-card__value-box` with `container-type:
+inline-size` and is `clamp(1.125rem, 16cqi, 1.75rem)`: a box 175px or wider
+stays 1.75rem. The container wraps the VALUE only, never the card root
+(containment there would shrink a content-sized card to its padding), and
+carries `contain-intrinsic-inline-size: 6rem` so a content-sized card keeps
+room for its value. `overflow-wrap: normal` undoes `.card`'s `break-word`,
+which split a number mid-figure. Pinned by `DXStatCard-Fit.test.ts` (reads
+the built component).
+
+**Tabular figures (#215):** `.dx-tabular` and DXTable's `tabular` field option
+set `tabular-nums`, but the bundled Maven Pro and Poppins have NO `tnum`
+feature, so they do nothing in the default theme (measured, pinned by
+`tabular-figures.test.ts`, which goes red if the face ever gains it).
 
 ### DXLoading (soft loader, 0.45.0)
 
@@ -1440,6 +1456,16 @@ a generic type param) sails straight through the suite and only fails the CI
 **typecheck** step. Always run `npm run typecheck` yourself after touching `.ts`
 / `<script setup>` — the test suite won't catch it (bit us bumping `useForm` in
 #150, 2026-07-19).
+
+`typecheck` also compiles **`tests/types/`** (its own tsconfig, #219): type-level
+guards such as the DXDashboard slot fixtures (`@vue-expect-error` misuses plus
+an exact slot-name `Equal`). Vue types `$slots` with a string index, so vue-tsc
+NEVER flags an unknown slot name, even with `strictTemplates`; pin slot names
+with a fixture instead. Two traps: a `.ts` fixture with the same base name as a
+`.vue` beside it is silently skipped by vue-tsc, and vue-docgen-api reads
+`defineSlots` interface members with BARE keys in place of the template's
+`@slot`/`@binding` comments (dropping binding types), so slot interfaces quote
+their keys.
 
 Related, from the same chronically-red-CI fix: **the `pretest*` hooks must run
 the font-extract step, not a bare `vite build`.** Vite always inlines the icon

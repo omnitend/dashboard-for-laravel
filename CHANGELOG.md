@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `DFormFile`, a wrapper around bootstrap-vue-next's `BFormFile`: a file
+  picker with a Browse button, file names and a drop zone. `v-model` is a
+  `File`, a `File[]` (`multiple`/`directory`) or `null`; every slot is
+  forwarded with its props, and `focus`/`blur`/`reset` are exposed (only
+  `reset()` clears the hidden native input). The theme gives it the text
+  input's border, height at each size, focus ring and crimson invalid
+  state (#221).
+- Typed slots for `DXDashboard`, `DXDashboardNavbar` and
+  `DXDashboardSidebar`. DXDashboard's `navbar-*`/`sidebar-*` slot types
+  are derived from the child components' slots, with `toggleSidebar` and
+  `sidebarHidden` added, so editors autocomplete the names and vue-tsc
+  checks the slot props. The types are exported (`DashboardSlots`,
+  `DashboardNavbarSlots`, `DashboardSidebarSlots`, `DashboardSlotExtras`,
+  `PrefixedDashboardSlots`, `DashboardUser`). vue-tsc still does not flag
+  an unknown slot name such as `#search` (Vue types `$slots` with a string
+  index), so the docs now show the mistake (#219).
+- `.dx-tabular` utility and a DXTable field option `tabular: true`, which
+  adds it to the column's cells and header (keeping the field's own
+  `tdClass`/`thClass`). DXStatCard's value and DXCurrencyInput's amount use
+  tabular figures too. **The bundled Maven Pro has no tabular figures**, so
+  in the default theme this changes nothing yet; it takes effect with a
+  body face that has them (#215, which stays open for a figures face).
+
+### Changed
+
+- `DXStatCard`'s value shrinks to fit a narrow card instead of wrapping:
+  `clamp(1.125rem, 16cqi, 1.75rem)` on its own size container, so any card
+  whose value box is 175px or wider is unchanged and two cards fit a phone
+  row. A card sized to its content now keeps at least 6rem for the value
+  (before, it grew to the value's full 1.75rem width). A long number no
+  longer breaks mid-figure (#213).
+
 ## [0.45.0] - 2026-10-11
 
 ### Changed
