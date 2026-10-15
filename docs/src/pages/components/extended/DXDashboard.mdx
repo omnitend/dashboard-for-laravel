@@ -97,6 +97,10 @@ interface AppNavigationItem extends NavigationItem {
 const navigation: Navigation<AppNavigationItem> = [
   { label: 'Admin', items: [{ label: 'Users', url: '/users', permission: 'users.view' }] },
 ];
+
+// Your app's permission check (from page props, a store, ...).
+const userPermissions: string[] = ['users.view'];
+const can = (permission: string): boolean => userPermissions.includes(permission);
 </script>
 
 <template>
@@ -272,17 +276,26 @@ navbar actions:
 ```
 
 The same API is available on a template `ref`, for page content or a keyboard
-shortcut that sits outside those slots:
+shortcut that sits outside those slots. `useTemplateRef('name')` types it from
+the component with nothing extra to install:
 
 ```vue
 <script setup lang="ts">
 import { useTemplateRef } from 'vue';
 import { DButton, DXDashboard } from '@omnitend/dashboard-for-laravel';
+import type { Navigation } from '@omnitend/dashboard-for-laravel';
 
-// Typed from the component: toggleSidebar() and sidebarHidden.
+const navigation: Navigation = [
+  { items: [{ label: 'Dashboard', url: '/dashboard' }] },
+];
+
+// Typed from the component: toggleSidebar(), sidebarHidden and el.
 const dashboard = useTemplateRef('dashboardRef');
 
 const toggle = () => dashboard.value?.toggleSidebar();
+
+// The root DOM element (`HTMLElement | null`) is the exposed `el`.
+const layoutElement = () => dashboard.value?.el ?? null;
 </script>
 
 <template>
@@ -294,10 +307,13 @@ const toggle = () => dashboard.value?.toggleSidebar();
 </template>
 ```
 
-DXDashboard is a generic component (over its `navigation` type), so
-`InstanceType<typeof DXDashboard>` does not compile. Use `useTemplateRef` as
-above, or `ComponentExposed<typeof DXDashboard>` from
-`vue-component-type-helpers`, to type a ref.
+DXDashboard is a generic component (over its `navigation` type), so a ref to
+it carries only what it exposes: `toggleSidebar`, `sidebarHidden` and `el`.
+There is no `$el` or `$props`; read the root element through `el`, which is
+`null` before mount. `InstanceType<typeof DXDashboard>` does not compile. If
+you need the ref's type by name (a prop, a `ref<...>()`), the optional
+alternative is `ComponentExposed<typeof DXDashboard>` from the
+`vue-component-type-helpers` package, which you have to install yourself.
 
 ## On phones
 

@@ -482,6 +482,15 @@ watch(() => props.currentUrl, () => {
 watch(activeGroupIndex, () => {
   openActiveGroup();
 });
+
+defineExpose({
+  /**
+   * The sidebar's root `<aside>` element (`null` before mount). A template ref
+   * to this generic component carries only its exposed members, so read the
+   * DOM node here rather than through `$el`.
+   */
+  el: sidebarRef,
+});
 </script>
 
 <style scoped>

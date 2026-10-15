@@ -165,9 +165,40 @@ const navigation: Navigation<AppNavigationItem> = [
 ```
 
 A plain `Navigation` gives a `NavigationItem`; navigation typed `any` gives an
-`any` item. DXDashboard's `sidebar-link` slot is typed the same way. Because
-the sidebar is generic, type a template ref with `useTemplateRef` rather than
-`InstanceType<typeof DXDashboardSidebar>`, which does not compile.
+`any` item. DXDashboard's `sidebar-link` slot is typed the same way.
+
+### Template refs
+
+Type a template ref with `useTemplateRef('name')`, which needs nothing extra.
+Because the sidebar is generic (over its `navigation` type), the ref carries
+only what the sidebar exposes: `el`, its root `<aside>` element (`null` before
+mount). There is no `$el` or `$props`, and `InstanceType<typeof
+DXDashboardSidebar>` does not compile.
+
+```vue
+<script setup lang="ts">
+import { useTemplateRef } from 'vue';
+import { DXDashboardSidebar } from '@omnitend/dashboard-for-laravel';
+import type { Navigation } from '@omnitend/dashboard-for-laravel';
+
+const navigation: Navigation = [
+  { items: [{ label: 'Orders', url: '/orders' }] },
+];
+
+const sidebar = useTemplateRef('sidebarRef');
+
+// HTMLElement | null (undefined while the ref is unset).
+const sidebarWidth = () => sidebar.value?.el?.getBoundingClientRect().width ?? 0;
+</script>
+
+<template>
+  <DXDashboardSidebar ref="sidebarRef" :navigation="navigation" current-url="/orders" />
+</template>
+```
+
+If you need the ref's type by name, the optional alternative is
+`ComponentExposed<typeof DXDashboardSidebar>` from the
+`vue-component-type-helpers` package, which you have to install yourself.
 
 ## Features
 

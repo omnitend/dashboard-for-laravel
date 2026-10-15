@@ -114,8 +114,7 @@
 </template>
 
 <script setup lang="ts" generic="TNavigation extends Navigation = Navigation">
-import { ref, computed, useId, watch, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
-import type { ComponentPublicInstance } from 'vue';
+import { ref, computed, useId, useTemplateRef, watch, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
 import DXDashboardSidebar from './DXDashboardSidebar.vue';
 import DXDashboardNavbar from './DXDashboardNavbar.vue';
 import DContainer from '../base/DContainer.vue';
@@ -368,9 +367,9 @@ const phoneMenuOpen = computed(
 
 const sidebarId = `${useId()}-sidebar`;
 const layoutRef = ref<HTMLElement | null>(null);
-// Only `$el` is read. `InstanceType<typeof DXDashboardSidebar>` does not
-// compile now the sidebar is generic (a function type, not a constructor).
-const sidebarComponent = ref<ComponentPublicInstance | null>(null);
+// A ref to the generic sidebar carries only what it exposes; its root element
+// is the exposed `el`.
+const sidebarInstance = useTemplateRef('sidebarComponent');
 
 const setHidden = (isHidden: boolean): void => {
   hidden.value = isHidden;
@@ -406,8 +405,7 @@ const onSidebarNavigate = (): void => {
   closePhoneMenu();
 };
 
-const sidebarElement = (): HTMLElement | null =>
-  (sidebarComponent.value?.$el as HTMLElement | undefined) ?? null;
+const sidebarElement = (): HTMLElement | null => sidebarInstance.value?.el ?? null;
 
 const onKeydown = (event: KeyboardEvent): void => {
   if (event.key !== 'Escape') return;
@@ -507,6 +505,13 @@ defineExpose({
 
   /** Whether the sidebar is currently hidden. */
   sidebarHidden: computed(() => hidden.value),
+
+  /**
+   * The dashboard's root element (the `.dashboard-layout` `<div>`; `null`
+   * before mount). A template ref to this generic component carries only its
+   * exposed members, so read the DOM node here rather than through `$el`.
+   */
+  el: layoutRef,
 });
 </script>
 
