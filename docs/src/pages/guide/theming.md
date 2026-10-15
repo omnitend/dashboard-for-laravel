@@ -84,6 +84,18 @@ Headings are compact and restrained, all at weight 500: `h1` 1.25rem, `h2`
 text is the body colour (`#212529`) and table headers are weight 500 in the
 muted `--dx-table-header-color`.
 
+### Tabular figures
+
+The global `.dx-tabular` class sets `font-variant-numeric: tabular-nums`, so
+every digit takes the same width and amounts line up in a column. Use it in
+your own markup and slot content. DXStatCard's value and DXCurrencyInput's
+amount use tabular figures by default, and a DXTable field takes
+`tabular: true` to add the class to its column.
+
+Neither bundled face has tabular figures: in Maven Pro and Poppins the
+setting changes nothing. It takes effect when you set a body face that has
+them (Inter does, for example).
+
 ## The token model
 
 Each of the seven variants carries three colour roles, defined in one Sass map

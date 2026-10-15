@@ -995,9 +995,29 @@ interface TableField {
   formatter?: (value: any, key: string, item: any) => string; // Custom formatter function
   width?: string | number;        // Fixed column width via <colgroup> (number → px). Pair with fixedLayout (#156)
   minWidth?: string | number;     // Minimum column width, same <col> (number → px)
+  tabular?: boolean;              // Tabular figures for the column's cells and header (adds .dx-tabular)
   [key: string]: any;             // Any other Bootstrap Vue Next BTable field props
 }
 ```
+
+### Tabular columns
+
+Set `tabular: true` on a money or count column so its digits all take the
+same width and amounts line up down the column. It adds the global
+`.dx-tabular` class to the column's body cells and its header cell, next to
+the field's own `tdClass`/`thClass` (a string, array, object or `tdClass`
+function keeps working):
+
+```ts
+const fields = [
+  { key: 'name', label: 'Product' },
+  { key: 'price', label: 'Price', tabular: true, tdClass: 'text-end', thClass: 'text-end' },
+];
+```
+
+The bundled Maven Pro has no tabular figures, so the option takes effect
+only when your theme uses a face that has them (see
+[Theming](/guide/theming#tabular-figures)).
 
 ## Edit Modals
 

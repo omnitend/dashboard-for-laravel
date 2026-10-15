@@ -47,7 +47,7 @@
                         v-else-if="isProviderMode || isClientSideMode || isInertiaMode"
                         ref="tableRef"
                         :key="activeMode + ':' + tableSlotSignature($slots)"
-                        :fields="fields"
+                        :fields="renderedFields"
                         :sort-by="effectiveSortBy"
                         :multisort="false"
                         :no-sortable-icon="true"
@@ -449,6 +449,15 @@ export interface TableField {
      * A number is pixels; a string is used verbatim.
      */
     minWidth?: string | number;
+
+    /**
+     * Render this column's figures tabular (every digit the same width), so
+     * amounts line up down the column: adds the global `.dx-tabular` class to
+     * the column's body cells and its header cell. Composes with the field's
+     * own `tdClass`/`thClass` (string, array, object or `tdClass` function)
+     * rather than replacing them. Default `false`.
+     */
+    tabular?: boolean;
     [key: string]: any;
 }
 
@@ -1378,6 +1387,35 @@ const columnStyleFor = (field: TableField): Record<string, string> | undefined =
 // the table renders exactly as before (no colgroup at all), preserving the
 // content-sized default byte-for-byte.
 const fieldsHaveWidths = computed(() => props.fields.some(hasDeclaredWidth));
+
+/*
+ * Tabular columns (#215). A `tabular: true` field gets `.dx-tabular` added
+ * to its `tdClass` and `thClass`, appended to the consumer's own value
+ * (wrapped in an array, or called through when `tdClass` is a function) so
+ * their classes survive. Fields without the flag pass through as the same
+ * objects, so a table using no tabular column renders exactly as before.
+ */
+const TABULAR_CLASS = 'dx-tabular';
+
+const withTabularClass = (consumerClass: unknown): unknown[] =>
+    consumerClass === undefined || consumerClass === null
+        ? [TABULAR_CLASS]
+        : [consumerClass, TABULAR_CLASS];
+
+const renderedFields = computed<TableField[]>(() =>
+    props.fields.map((field) => {
+        if (field.tabular !== true) return field;
+        const consumerTdClass = field.tdClass;
+        return {
+            ...field,
+            tdClass:
+                typeof consumerTdClass === 'function'
+                    ? (...args: unknown[]) => withTabularClass(consumerTdClass(...args))
+                    : withTabularClass(consumerTdClass),
+            thClass: withTabularClass(field.thClass),
+        };
+    }),
+);
 
 // Computed: Get effective filter options for a field
 // The key a column's filter is SENT under, which is not always the column's own

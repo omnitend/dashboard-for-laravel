@@ -1389,6 +1389,22 @@ aside.dashboard-sidebar--light {
 // its own layout.
 
 // ----------------------------------------------------------------------------
+// Tabular figures (#215)
+// ----------------------------------------------------------------------------
+//
+// Every digit on the same advance, so amounts in a column (or a total that
+// updates in place) line up and do not jitter. Global, so consumer markup and
+// slot content can use it; DXTable's `tabular: true` field option adds it to
+// a column's cells, and DXStatCard's value and DXCurrencyInput's amount use
+// tabular figures by default. NOTE: the bundled Maven Pro and Poppins have
+// no `tnum` feature, so in the default theme this changes nothing (measured:
+// "1111" stays narrower than "0000"; pinned by tabular-figures.test.ts). It
+// takes effect in a consumer face that has one (Inter, the macOS system face).
+.dx-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+// ----------------------------------------------------------------------------
 // DXCurrencyInput — keep the amount usable in a narrow container
 // ----------------------------------------------------------------------------
 //
@@ -1396,10 +1412,12 @@ aside.dashboard-sidebar--light {
 // ("10L Bag in Box") crushed the amount to ~32px. The amount keeps room for a
 // price, the group still does not wrap (a wrapped affix would land on its own line
 // with broken corners: the theme already makes every `.input-group` nowrap),
-// and the affix text wraps onto two lines instead.
+// and the affix text wraps onto two lines instead. The amount uses tabular
+// figures (#215), like every money value the library renders.
 .dx-currency-input {
   > .form-control {
     min-width: 5.5rem;
+    font-variant-numeric: tabular-nums;
   }
 
   > .input-group-text {

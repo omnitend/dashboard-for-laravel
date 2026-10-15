@@ -41,6 +41,25 @@ period, and an optional trend/sparkline slot. Themed with Bootstrap variables.
   { name: 'invertDelta', type: 'boolean', required: 'No', default: 'false', description: 'Invert the delta colour for metrics where down is good (costs, bounce rate)' },
 ]} />
 
+## Value size
+
+The value is 1.75rem in a card wide enough for it. In a narrow card (two
+cards to a row on a phone) it shrinks with the card's width, down to
+1.125rem, so an amount like `£7,997.55` stays on one line instead of
+breaking mid-number. There is no prop for this: the value's box is a CSS
+size container (`container-type: inline-size`) and the font size is a
+`clamp()` of its width.
+
+One side effect: a card sized to its content (a flex item that does not
+grow, an inline-block) no longer widens to fit its value at full size. It
+takes at least 6rem for the value, which then shrinks to fit. Give the card
+a width (a grid column, `flex: 1`) to show the value at full size.
+
+The value uses tabular figures (`font-variant-numeric: tabular-nums`), so
+digits keep the same width as a number updates in place. The bundled Maven
+Pro has no tabular figures, so this takes effect only when your theme uses
+a face that has them.
+
 ## Slots
 
 <SlotsTable client:load slots={[

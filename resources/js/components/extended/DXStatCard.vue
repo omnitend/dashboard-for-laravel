@@ -17,15 +17,22 @@
       </div>
     </div>
 
-    <div class="dx-stat-card__value">
-      <!--
-        @slot Override the rendered value.
-        @binding {string} formatted The value formatted per `format`.
-        @binding {string | number} value The raw value prop.
-      -->
-      <slot name="value" :formatted="formattedValue" :value="value">
-        {{ formattedValue }}
-      </slot>
+    <!-- The value's size container (#213): the value's font scales with this
+         box's width (cqi), so two cards to a phone row shrink the number
+         instead of wrapping it. It wraps the value alone, not the card, so
+         inline-size containment never removes the title's or footer's
+         contribution to the width of a content-sized card. -->
+    <div class="dx-stat-card__value-box">
+      <div class="dx-stat-card__value">
+        <!--
+          @slot Override the rendered value.
+          @binding {string} formatted The value formatted per `format`.
+          @binding {string | number} value The raw value prop.
+        -->
+        <slot name="value" :formatted="formattedValue" :value="value">
+          {{ formattedValue }}
+        </slot>
+      </div>
     </div>
 
     <div v-if="hasDelta || deltaLabel || $slots.trend" class="dx-stat-card__foot">
@@ -176,8 +183,30 @@ const formattedDelta = computed<string>(() => {
   flex-shrink: 0;
 }
 
+/*
+ * Inline-size containment means the box's content no longer gives it a
+ * width, so a card sized to its content (a non-growing flex item, an
+ * inline-block) would take only its title's width and crush the value.
+ * The intrinsic fallback gives the value at least room for a typical
+ * amount at the minimum size.
+ */
+.dx-stat-card__value-box {
+  container-type: inline-size;
+  contain-intrinsic-inline-size: 6rem;
+}
+
+/*
+ * 1.75rem in any card whose value box is at least 175px wide (16cqi of
+ * 175px is 28px), so wide cards are unchanged; a narrower box shrinks the
+ * number, down to 1.125rem. `overflow-wrap: normal` undoes the card's
+ * `word-wrap: break-word`, which split a number mid-figure when it
+ * overflowed; a string value still wraps at its spaces. Tabular figures
+ * (#215) keep each digit on the same advance.
+ */
 .dx-stat-card__value {
-  font-size: 1.75rem;
+  font-size: clamp(1.125rem, 16cqi, 1.75rem);
+  overflow-wrap: normal;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   line-height: 1.1;
   color: var(--bs-emphasis-color, var(--bs-body-color));
