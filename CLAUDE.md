@@ -508,7 +508,9 @@ ignoring the fit's own `style` writes); `onActivated` (KeepAlive); web font
 loads (one shared `loadingdone` listener attached at the first registration,
 so it hears a load already under way; no `fonts.ready` fallback). A flush that
 finds a target detached sets its `fittedBoxWidth` to -1, so the resize entry
-on its return refits. Text values are never fitted (1.75rem; they wrap). The CSS baseline before the fit
+on its return refits. `fittedBoxWidth` is the box's COMPUTED width (layout px,
+what the ResizeObserver reports), not its rect (transformed px): under a
+`transform: scale()` ancestor the two differ and every fit refitted itself. Text values are never fitted (1.75rem; they wrap). The CSS baseline before the fit
 (SSR, no JS) is the width-driven clamp `1.125rem + (100cqi - 8rem) *
 0.2128` inside `@supports (width: 1cqi)`: with the `var()` the declaration
 is valid at parse time, so without container units a cqi fallback would be

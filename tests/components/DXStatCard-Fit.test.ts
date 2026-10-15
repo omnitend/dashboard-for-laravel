@@ -124,8 +124,27 @@ const expectFitted = (value: Element) => {
   expect(size).toBeGreaterThanOrEqual(FLOOR_PX);
   expect(size).toBeLessThanOrEqual(MAX_PX);
   expect(lineCount(value)).toBe(1);
-  if (size > FLOOR_PX + 0.01) expect(overflowPx(value)).toBeLessThanOrEqual(0.5);
+  if (size > FLOOR_PX + 0.01) {
+    expect(overflowPx(value)).toBeLessThanOrEqual(0.5);
+    // Positive control for the maximality check below: the same measure
+    // says the chosen size fits, so `overflowsAt` reads the layout rather
+    // than answering true regardless.
+    expect(overflowsAt(value as HTMLElement, size)).toBe(false);
+  }
   if (size < MAX_PX) expect(overflowsAt(value as HTMLElement, size + SIZE_STEP_PX)).toBe(true);
+};
+
+/**
+ * How many times the fit writes to a value's style, counted from before the
+ * first fit: every flush writes it, so a redundant refit shows as more.
+ */
+const countStyleWrites = (value: Element) => {
+  const counter = { writes: 0 };
+  const observer = new MutationObserver((records) => {
+    counter.writes += records.length;
+  });
+  observer.observe(value, { attributes: true, attributeFilter: ['style'] });
+  return { counter, stop: () => observer.disconnect() };
 };
 
 const values = (container: Element) =>
@@ -507,6 +526,34 @@ describe('DXStatCard value fits its content (#213)', () => {
     expect(value!.textContent?.trim()).toBe('£1,234,567.89');
     expect(fontSize(value!)).toBeLessThan(MAX_PX);
     expectFitted(value!);
+  });
+
+  it('fits a card under a transformed ancestor once, as it does an untransformed one', async () => {
+    // The fit measures the box in transformed px (getBoundingClientRect)
+    // while the ResizeObserver reports layout px. Comparing the two read
+    // every fit's own height change under `transform: scale()` as a new
+    // width and fitted the card a second time.
+    const card = { title: 'Net', value: 1234567.89, format: 'currency' };
+    const screen = mount(() =>
+      h('div', [
+        h('div', { class: 'fit-plain', style: 'width: 164px' }, [h(DXStatCard, card)]),
+        h('div', { class: 'fit-scaled', style: 'width: 164px; transform: scale(0.5); transform-origin: 0 0' }, [
+          h(DXStatCard, card),
+        ]),
+      ]),
+    );
+    const [plainValue] = values(screen.container.querySelector('.fit-plain')!);
+    const [scaledValue] = values(screen.container.querySelector('.fit-scaled')!);
+    const plain = countStyleWrites(plainValue!);
+    const scaled = countStyleWrites(scaledValue!);
+    await settle();
+    await settle();
+    plain.stop();
+    scaled.stop();
+    expect(plain.counter.writes).toBeGreaterThan(0);
+    expect(scaled.counter.writes).toBe(plain.counter.writes);
+    expect(fontSize(scaledValue!)).toBe(fontSize(plainValue!));
+    expectFitted(plainValue!);
   });
 
   it('measures the bundled faces, not their fallbacks', async () => {

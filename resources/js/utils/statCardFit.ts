@@ -126,7 +126,12 @@ function flushFits(): void {
     searches.forEach((search, index) => {
       const naturalWidth = widths[index]!;
       if (round === 0) {
-        search.target.fittedBoxWidth = search.boxWidth;
+        // In layout px, as the ResizeObserver reports it: `boxWidth` is in
+        // transformed px, which differ under a `transform: scale()` ancestor
+        // and made every fit's own height change read as a new width. The
+        // box has no padding or border, so its computed width is its content
+        // width.
+        search.target.fittedBoxWidth = parseFloat(getComputedStyle(search.target.box).width);
         // Hidden (display: none) or empty: nothing to fit until it shows.
         if (search.boxWidth <= 0 || naturalWidth <= 0) {
           search.measurable = false;

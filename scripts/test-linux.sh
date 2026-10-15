@@ -16,11 +16,13 @@ version="$(node -p "require('playwright-core/package.json').version")"
 port="${DX_LINUX_BROWSER_PORT:-3555}"
 container="dfl-linux-browser-$$"
 
+# Set before the container starts, so a Ctrl-C while `docker run` is still
+# starting it cannot leave it running and holding the port.
+trap 'docker stop "$container" > /dev/null 2>&1 || true' EXIT
 docker run -d --rm --name "$container" --init --ipc=host \
   -p "127.0.0.1:${port}:${port}" \
   "mcr.microsoft.com/playwright:v${version}-noble" \
   /bin/sh -c "npx -y playwright@${version} run-server --port ${port} --host 0.0.0.0" > /dev/null
-trap 'docker stop "$container" > /dev/null 2>&1 || true' EXIT
 
 # The server prints its endpoint once it listens.
 for _ in $(seq 1 120); do
