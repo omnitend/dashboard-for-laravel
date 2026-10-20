@@ -364,6 +364,10 @@ export interface FieldDefinition {
      * every `editFields` key, so those decorative fields are POSTed alongside
      * the real ones (an empty string, an empty array) purely because they were
      * declared.
+     *
+     * Applies per KEY (#228): DXTable drops a key only when no field with that
+     * key is both submitting and visible, so a `submit: false` display twin
+     * does not strip the value of a visible editable field sharing its key.
      */
     submit?: boolean;
 

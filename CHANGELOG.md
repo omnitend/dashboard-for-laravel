@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- DXTable's create and edit save no longer drops a field's value because
+  another edit field with the same key is `submit: false` or hidden (#228).
+  The strip was per key, so a display-only twin (`submit: false`, shown for
+  system-created rows) removed the key from every save, including while the
+  editable select sharing it was the visible field, and the server refused
+  the save. A key is now left out only when no field with it is both
+  submitting and visible; a key whose fields are all presentational (#110)
+  or all hidden (#117) is still left out.
+- When several submitting edit fields share a key, the form now starts the
+  key from the first of them that is visible, else the first declared. It
+  was the last declared, so a hidden alternative declared after the visible
+  field replaced its default. DXTable warns once per key when two
+  submitting fields with one key are visible together.
+
 ## [0.46.0] - 2026-10-15
 
 ### Upgrade notes
