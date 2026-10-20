@@ -266,7 +266,8 @@
         </DRow>
 
         <!-- Edit/create modal (only when editFields provided). The consumer's
-             edit-value / edit-span / tab-* slots are forwarded through to it
+             edit-value / edit-span / edit-password-actions / tab-* slots are
+             forwarded through to it
              generically; it maps them onto DXForm and provides the row context
              + a close handle (#129). -->
         <DXTableEditorModal
@@ -299,6 +300,7 @@
         >
             <!--
               @slot edit-value(<fieldKey>) / edit-span(<fieldKey>) /
+              edit-password-actions(<fieldKey>) /
               tab-content|tab-before|tab-after(<tabKey>) — forwarded to the edit
               modal (see DXTableEditorModal for their bindings).
             -->
@@ -2514,6 +2516,7 @@ const handleDelete = editor.remove;
 const EDIT_MODAL_SLOT_PREFIXES = [
     'edit-value(',
     'edit-span(',
+    'edit-password-actions(',
     'tab-content(',
     'tab-before(',
     'tab-after(',

@@ -148,6 +148,8 @@ export type {
     FormTab,
     MaybeFn,
     OptionsLoader,
+    PasswordActionsSlotProps,
+    EditPasswordActionsSlotProps,
     // Strict, discriminated field types (#131) — opt-in; canonical in a future
     // major. `FieldDef` is the union; the rest are its per-type members.
     FieldDef,

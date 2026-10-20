@@ -201,6 +201,7 @@ DXTable's own slots:
   { name: 'head-end(<key>)', props: 'field, label', description: 'Additive content at the end of a column\'s header — a period total, a badge — keeping the sort indicator and hint' },
   { name: 'edit-value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s control in the edit modal' },
   { name: 'edit-span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for an edit-modal field marked span: true' },
+  { name: 'edit-password-actions(<key>)', props: 'item, field, value, update, revealed, setRevealed, disabled', description: 'Extra controls beside an edit-modal password field\'s input, after its reveal (eye) toggle — e.g. a Generate button. item is null in create mode. See Password actions in the edit modal' },
   { name: 'tab-content(<key>) / tab-before(<key>) / tab-after(<key>)', props: 'tab, model', description: 'Edit-modal tab content slots (see DXForm)' },
 ]} />
 
@@ -1129,6 +1130,61 @@ Because the guard is awaited, the modal can be dismissed *while it is pending*.
 Any dismissal — Cancel, the header close button, Escape or a backdrop click —
 abandons the save, so nothing is written for a record the user has closed. The
 same holds for `deleteGuard`.
+
+### Password actions in the edit modal
+
+`edit-password-actions(<key>)` puts your own controls beside a password
+field's input, in the same input group after the reveal (eye) toggle. Unlike
+`edit-value`, it keeps dfl's input and eye. Its props can write the value and
+show it, so a create-user form can offer a generated password the admin can
+read out:
+
+```vue
+<script setup lang="ts">
+const editFields = [
+  { key: 'name', type: 'text', label: 'Name', required: true },
+  { key: 'password', type: 'password', label: 'Password' },
+];
+
+/** 16 characters from an unambiguous alphabet, from the browser's CSPRNG. */
+function generatePassword(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const bytes = crypto.getRandomValues(new Uint32Array(16));
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+}
+</script>
+
+<template>
+  <DXTable
+    :fields="fields"
+    :edit-fields="editFields"
+    api-url="/api/users"
+    edit-url="/api/users/:id"
+    create-url="/api/users"
+    item-name="user"
+  >
+    <template #edit-password-actions(password)="{ update, setRevealed, disabled }">
+      <DButton
+        variant="outline-secondary"
+        :disabled="disabled"
+        @click="update(generatePassword()); setRevealed(true)"
+      >
+        Generate
+      </DButton>
+    </template>
+  </DXTable>
+</template>
+```
+
+The button shares the input's row, so keep its label short: on a phone a long
+label leaves the input too narrow to read the password it just revealed. An
+icon-only `DButton` needs an `aria-label`.
+
+The generated value goes into the form like a typed one, so Create/Save
+sends it. The eye still hides it again, and the field starts masked each time
+the modal opens. `item` is the row being edited (`null` in create mode); the
+props are typed as `EditPasswordActionsSlotProps`. See
+[DXField: Password actions](/components/extended/DXField#password-actions).
 
 ## Delete Functionality
 

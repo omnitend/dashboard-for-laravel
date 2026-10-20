@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Controls beside a password input, with a handle on its reveal
+  state.** A new `password-actions` slot on `DXField`
+  (`password-actions(<key>)` on `DXForm`/`DXBasicForm`,
+  `edit-password-actions(<key>)` on `DXTable`'s edit and create modal)
+  renders inside the password input group, after the eye. Its props are
+  `field`, `model`, `value`, `update`, `revealed`, `setRevealed` and
+  `disabled` (the modal's slot passes `item` in place of `model`), so a
+  "Generate password" button can fill the field and show it:
+  `update(generatePassword()); setRevealed(true)`. Unlike `edit-value`,
+  dfl keeps drawing the input and the eye; the eye still toggles on its
+  own and keeps its `aria-label`/`aria-pressed`. A `revealable: false`
+  field with the slot gets the group but no eye, and `setRevealed` does
+  nothing there. Not rendered on a `plaintext` field. Fields without the
+  slot render exactly as before (pinned against a golden render from
+  0.46.0). New types: `PasswordActionsSlotProps`,
+  `EditPasswordActionsSlotProps`.
+
 ## [0.46.0] - 2026-10-15
 
 ### Upgrade notes

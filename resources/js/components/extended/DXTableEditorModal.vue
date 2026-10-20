@@ -1,8 +1,8 @@
 <!--
   @component
   Internal edit/create modal for `DXTable` (#129). Renders the `DModal` +
-  `DXForm` and maps DXTable's `edit-value`/`edit-span`/`tab-*` slots onto
-  DXForm's `value`/`span`/`tab-*` slots, providing the row context and a `close`
+  `DXForm` and maps DXTable's `edit-value`/`edit-span`/`edit-password-actions`/
+  `tab-*` slots onto DXForm's `value`/`span`/`password-actions`/`tab-*` slots, providing the row context and a `close`
   handle. Extracted so `DXTable` is a thin façade over the table render, the
   pagination, the editor logic (`useResourceEditor`) and this modal — rather than
   owning all four.
@@ -112,6 +112,36 @@
                         :value="sp.value"
                         :update="sp.update"
                         :close="close"
+                    />
+                </template>
+
+                <!-- Forward edit-password-actions(key) → password-actions(key):
+                     content beside the password input, inside its input group,
+                     with a handle on dfl's own reveal (eye) state. -->
+                <template
+                    v-for="key in editPasswordActionsSlotKeys"
+                    :key="`epa-${key}`"
+                    #[`password-actions(${key})`]="sp"
+                >
+                    <!--
+                      @slot Extra controls beside password field `<key>`'s input in the edit/create modal, inside its input group after the reveal (eye) toggle — e.g. a "Generate password" button. Name it `edit-password-actions(<fieldKey>)`.
+                      @binding {object} item The row being edited (null in create mode).
+                      @binding {any} value The current field value.
+                      @binding {Function} update Call with a new value to update the field.
+                      @binding {boolean} revealed Whether the password is currently shown as plain text.
+                      @binding {Function} setRevealed Call with true to show the password (as the eye does) or false to mask it.
+                      @binding {boolean} disabled Whether the field is disabled or read-only.
+                      @binding {object} field The field definition.
+                    -->
+                    <slot
+                        :name="`edit-password-actions(${key})`"
+                        :item="item"
+                        :value="sp.value"
+                        :update="sp.update"
+                        :revealed="sp.revealed"
+                        :set-revealed="sp.setRevealed"
+                        :disabled="sp.disabled"
+                        :field="sp.field"
                     />
                 </template>
 
@@ -317,6 +347,9 @@ const editValueSlotKeys = computed(() =>
 );
 const editSpanSlotKeys = computed(() =>
     fieldKeys.value.filter((key) => !!slots[`edit-span(${key})`]),
+);
+const editPasswordActionsSlotKeys = computed(() =>
+    fieldKeys.value.filter((key) => !!slots[`edit-password-actions(${key})`]),
 );
 const tabContentSlotKeys = computed(() =>
     tabKeys.value.filter((key) => !!slots[`tab-content(${key})`]),

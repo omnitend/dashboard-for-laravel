@@ -653,6 +653,51 @@ export interface FormTab {
 }
 
 /**
+ * Slot props of DXField's `password-actions` slot (DXForm:
+ * `password-actions(<key>)`): content placed beside a password input, inside
+ * its input group after the reveal (eye) toggle, such as a "Generate password"
+ * button. `setRevealed` drives the same state the eye toggles.
+ *
+ * ```vue
+ * <template #password-actions(password)="{ update, setRevealed, disabled }">
+ *   <DButton variant="outline-secondary" :disabled="disabled"
+ *     @click="update(generatePassword()); setRevealed(true)">Generate</DButton>
+ * </template>
+ * ```
+ */
+export interface PasswordActionsSlotProps {
+    /** The field definition being rendered. */
+    field: FieldDefinition;
+    /** The model passed to field predicates (defaults to the live form data). */
+    model: any;
+    /** The current field value. */
+    value: any;
+    /** Write a new value (also marks the field touched and clears its error). */
+    update: (value: any) => void;
+    /** Whether the password is currently shown as plain text. */
+    revealed: boolean;
+    /**
+     * Show (`true`) or mask (`false`) the password, exactly as the eye does.
+     * A no-op on a `revealable: false` field, which never unmasks.
+     */
+    setRevealed: (revealed: boolean) => void;
+    /** Whether the field is disabled or read-only. */
+    disabled: boolean;
+}
+
+/**
+ * Slot props of DXTable's `edit-password-actions(<key>)` slot, the edit/create
+ * modal's form of {@link PasswordActionsSlotProps}. `item` is the row being
+ * edited, `null` in create mode. (`model` is not passed, as with the modal's
+ * other field slots.)
+ */
+export interface EditPasswordActionsSlotProps
+    extends Omit<PasswordActionsSlotProps, "model"> {
+    /** The row being edited; `null` in create mode. */
+    item: any;
+}
+
+/**
  * The theme's extra colour variant, `pending`: waiting, and the next move is
  * not yours ("awaiting payment", "sent to printer, not yet confirmed").
  * theme.scss paints it everywhere a stock variant is painted (badge, soft and

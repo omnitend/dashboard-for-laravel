@@ -5,7 +5,8 @@
   Owns the single per-field render block that DXForm's tabbed and flat layouts
   both need: the `field(<key>)` full-replacement slot, the
   `field-before(<key>)`/`field-after(<key>)` wrapper slots, and the `<DXField>`
-  element with its `value`/`span`/`info`/`hint`/`repeater-row` slot forwarding.
+  element with its `value`/`span`/`info`/`hint`/`repeater-row`/
+  `switch-list-item`/`password-actions` slot forwarding.
 
   Extracted so those per-field props/slots are wired in ONE place — before this,
   DXForm carried two near-identical copies (tabbed + flat) and a new per-field
@@ -99,6 +100,7 @@ function fieldSlotMap(): Record<string, string> {
     ["hint", `hint(${key})`],
     ["repeater-row", `repeater-row(${key})`],
     ["switch-list-item", `switch-list-item(${key})`],
+    ["password-actions", `password-actions(${key})`],
   ];
   for (const [target, source] of candidates) {
     if (slots[source]) map[target] = source;

@@ -1,0 +1,429 @@
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render } from 'vitest-browser-vue';
+import { h } from 'vue';
+import { BApp } from 'bootstrap-vue-next';
+import DXField from '../../resources/js/components/extended/DXField.vue';
+import DXForm from '../../resources/js/components/extended/DXForm.vue';
+import DXTable from '../../resources/js/components/extended/DXTable.vue';
+import { useForm } from '../../resources/js/composables/useForm';
+import type {
+  FieldDefinition,
+  PasswordActionsSlotProps,
+  EditPasswordActionsSlotProps,
+} from '../../resources/js/types';
+import {
+  GOLDEN_PASSWORD_FORM_HTML,
+  GOLDEN_PASSWORD_FORM_REVEALED_HTML,
+} from '../fixtures/passwordFieldGolden';
+
+/*
+ * The `password-actions` slot (DXField), `password-actions(<key>)` (DXForm)
+ * and `edit-password-actions(<key>)` (DXTable's edit/create modal): content
+ * placed beside the password input, inside its input group, with slot props
+ * that can write the value and drive dfl's own reveal (eye) state. The need
+ * it exists for: a "Generate password" button on a create-user form that
+ * fills the field and reveals it so an admin can read it out.
+ */
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const GENERATED = 'Gen-Secret-4821';
+
+/** A slot body: one Generate button that writes the value and reveals it. */
+const generateButton = (slotProps: PasswordActionsSlotProps | EditPasswordActionsSlotProps) =>
+  h(
+    'button',
+    {
+      type: 'button',
+      class: 'btn btn-outline-secondary dx-test-generate',
+      disabled: slotProps.disabled,
+      onClick: () => {
+        slotProps.update(GENERATED);
+        slotProps.setRevealed(true);
+      },
+    },
+    'Generate',
+  );
+
+const passwordInput = (root: ParentNode) =>
+  root.querySelector('input[autocomplete], input[type="password"], input[type="text"]') as HTMLInputElement;
+
+const eye = (root: ParentNode) =>
+  root.querySelector(
+    'button[aria-label="Show password"], button[aria-label="Hide password"]',
+  ) as HTMLButtonElement | null;
+
+/**
+ * Golden render: dfl's password variants inside a DXForm with NO
+ * password-actions slot. The HTML was captured from main @ 9e24e18 (before
+ * the slot existed) and must stay byte-identical: a field that does not use
+ * the slot renders as before. Normalised: generated ids, scoped-style
+ * attributes (their hash follows the file's source), and the TEMPLATE
+ * comments a dev build keeps (a production build drops them). The `v-if`
+ * placeholder comments are kept, since they are real render output: a
+ * `v-if`'d slot would add one even when unused.
+ */
+function normaliseHtml(html: string): string {
+  return html
+    .replace(/ data-v-[0-9a-f]+=""/g, '')
+    .replace(/(id|for|aria-describedby|aria-labelledby|aria-controls|list)="[^"]*"/g, '$1="X"')
+    .replace(/<!--(?!v-if-->|-->)[\s\S]*?-->/g, '');
+}
+
+const goldenFields: FieldDefinition[] = [
+  { key: 'name', type: 'text', label: 'Name' },
+  { key: 'password', type: 'password', label: 'Password', hint: 'At least 8 characters' },
+  { key: 'pin', type: 'password', label: 'PIN', revealable: false },
+  { key: 'shown', type: 'password', label: 'Shown', plaintext: true },
+  { key: 'h', type: 'password', label: 'Horizontal', layout: 'horizontal' },
+];
+
+describe('password-actions: unused slot changes nothing', () => {
+  it('renders byte-identical HTML to main for password fields without the slot', async () => {
+    const form = useForm({ name: 'Ann', password: 'hunter2', pin: '1234', shown: 'x', h: '' });
+    const screen = render({
+      render: () => h(BApp, {}, () => h(DXForm, { form, fields: goldenFields, showSubmit: false })),
+    });
+    await flush();
+    await wait(50);
+
+    const html = normaliseHtml(screen.container.innerHTML);
+
+    // And once revealed by the eye.
+    (screen.container.querySelector(
+      '[data-dx-field-key="password"] button[aria-label="Show password"]',
+    ) as HTMLElement).click();
+    await flush();
+    const revealedHtml = normaliseHtml(screen.container.innerHTML);
+
+    expect(html).toBe(GOLDEN_PASSWORD_FORM_HTML);
+    expect(revealedHtml).toBe(GOLDEN_PASSWORD_FORM_REVEALED_HTML);
+    // Positive control: the revealed render really differs (the click landed).
+    expect(revealedHtml).not.toBe(html);
+  });
+});
+
+describe('DXField password-actions slot', () => {
+  const renderField = (field: FieldDefinition, data: Record<string, any>) => {
+    const form = useForm(data);
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXField, { field, form }, { 'password-actions': generateButton }),
+        ),
+    });
+    return { screen, form };
+  };
+
+  it('renders the slot inside the password input group, after the eye', async () => {
+    const { screen } = renderField(
+      { key: 'password', type: 'password', label: 'Password' },
+      { password: '' },
+    );
+    await flush();
+
+    const group = screen.container.querySelector('.input-group') as HTMLElement;
+    expect(group).not.toBeNull();
+    const generate = group.querySelector('.dx-test-generate');
+    expect(generate).not.toBeNull();
+    // Order inside the group: input, eye, then the slot content.
+    const children = Array.from(group.querySelectorAll('input, button'));
+    expect(children.map((el) => el.getAttribute('aria-label') ?? el.className)).toEqual([
+      expect.stringContaining('form-control'),
+      'Show password',
+      expect.stringContaining('dx-test-generate'),
+    ]);
+
+    // The label still names the input (label/for unaffected).
+    const label = screen.container.querySelector('label') as HTMLLabelElement;
+    const input = passwordInput(screen.container);
+    expect(label.htmlFor).toBe(input.id);
+  });
+
+  it('update + setRevealed fills the value and unmasks it; the eye reads "Hide"', async () => {
+    const { screen, form } = renderField(
+      { key: 'password', type: 'password', label: 'Password' },
+      { password: '' },
+    );
+    await flush();
+
+    (screen.container.querySelector('.dx-test-generate') as HTMLElement).click();
+    await flush();
+
+    const input = passwordInput(screen.container);
+    expect(form.data.password).toBe(GENERATED);
+    expect(input.value).toBe(GENERATED);
+    expect(input.type).toBe('text');
+    expect(eye(screen.container)?.getAttribute('aria-label')).toBe('Hide password');
+    expect(eye(screen.container)?.getAttribute('aria-pressed')).toBe('true');
+
+    // The eye still works by itself: toggling hides it again.
+    eye(screen.container)!.click();
+    await flush();
+    expect(input.type).toBe('password');
+    expect(eye(screen.container)?.getAttribute('aria-label')).toBe('Show password');
+    expect(eye(screen.container)?.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('hands the slot the live revealed state as the eye changes it', async () => {
+    const seen: boolean[] = [];
+    const form = useForm({ password: 'abc' });
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(
+            DXField,
+            { field: { key: 'password', type: 'password', label: 'Password' }, form },
+            {
+              'password-actions': (slotProps: PasswordActionsSlotProps) => {
+                seen.push(slotProps.revealed);
+                return h('span', { class: 'dx-test-state' }, slotProps.revealed ? 'on' : 'off');
+              },
+            },
+          ),
+        ),
+    });
+    await flush();
+    expect(screen.container.querySelector('.dx-test-state')?.textContent).toBe('off');
+
+    eye(screen.container)!.click();
+    await flush();
+    expect(screen.container.querySelector('.dx-test-state')?.textContent).toBe('on');
+    expect(seen).toContain(false);
+    expect(seen).toContain(true);
+  });
+
+  it('passes disabled to the slot when the field is disabled or readonly', async () => {
+    const { screen } = renderField(
+      { key: 'password', type: 'password', label: 'Password', readonly: true },
+      { password: '' },
+    );
+    await flush();
+    expect((screen.container.querySelector('.dx-test-generate') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('still renders the slot on a revealable: false field, but cannot unmask it', async () => {
+    const { screen, form } = renderField(
+      { key: 'pin', type: 'password', label: 'PIN', revealable: false },
+      { pin: '' },
+    );
+    await flush();
+
+    // No eye: revealable: false keeps meaning "never unmask".
+    expect(eye(screen.container)).toBeNull();
+    const generate = screen.container.querySelector('.input-group .dx-test-generate') as HTMLElement;
+    expect(generate).not.toBeNull();
+
+    generate.click();
+    await flush();
+    const input = passwordInput(screen.container);
+    expect(form.data.pin).toBe(GENERATED);
+    expect(input.value).toBe(GENERATED);
+    expect(input.type).toBe('password');
+  });
+
+  it('is not rendered on a plaintext password field (display-only, no input group)', async () => {
+    const { screen } = renderField(
+      { key: 'password', type: 'password', label: 'Password', plaintext: true },
+      { password: 'x' },
+    );
+    await flush();
+    expect(screen.container.querySelector('.dx-test-generate')).toBeNull();
+    expect(screen.container.querySelector('.input-group')).toBeNull();
+
+    // Positive control: the same harness and slot DO render on an editable
+    // password field, so the absence above is not a dead harness.
+    const control = renderField(
+      { key: 'password', type: 'password', label: 'Password' },
+      { password: 'x' },
+    );
+    await flush();
+    expect(control.screen.container.querySelector('.input-group .dx-test-generate')).not.toBeNull();
+  });
+});
+
+describe('DXForm password-actions(<key>) slot', () => {
+  it('reaches the keyed password field and drives its reveal', async () => {
+    const form = useForm({ email: '', password: '' });
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(
+            DXForm,
+            {
+              form,
+              showSubmit: false,
+              fields: [
+                { key: 'email', type: 'email', label: 'Email' },
+                { key: 'password', type: 'password', label: 'Password' },
+              ],
+            },
+            { 'password-actions(password)': generateButton },
+          ),
+        ),
+    });
+    await flush();
+
+    const generate = screen.container.querySelector(
+      '[data-dx-field-key="password"] .input-group .dx-test-generate',
+    ) as HTMLElement;
+    expect(generate).not.toBeNull();
+    // Only the keyed field gets it.
+    expect(screen.container.querySelectorAll('.dx-test-generate')).toHaveLength(1);
+
+    generate.click();
+    await flush();
+    const input = screen.container.querySelector(
+      '[data-dx-field-key="password"] input',
+    ) as HTMLInputElement;
+    expect(form.data.password).toBe(GENERATED);
+    expect(input.type).toBe('text');
+    expect(input.value).toBe(GENERATED);
+  });
+});
+
+describe('DXTable edit-password-actions(<key>) slot', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const rows = [{ id: 1, name: 'Ann', email: 'ann@example.com' }];
+  const editFields = [
+    { key: 'name', type: 'text', label: 'Name' },
+    { key: 'password', type: 'password', label: 'Password' },
+  ];
+
+  function stubFetch() {
+    return vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response(JSON.stringify({ data: { id: 2, name: 'Bob' } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+  }
+
+  const writes = (spy: ReturnType<typeof stubFetch>) =>
+    spy.mock.calls.filter(([, config]: any) =>
+      ['POST', 'PUT', 'PATCH'].includes(String(config?.method ?? 'GET').toUpperCase()),
+    );
+
+  const seenItems: any[] = [];
+
+  const renderTable = () =>
+    render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(
+            DXTable,
+            {
+              items: rows,
+              fields: [{ key: 'name', label: 'Name' }],
+              editFields,
+              itemName: 'user',
+              editUrl: '/api/users/:id',
+              createUrl: '/api/users',
+            },
+            {
+              'edit-password-actions(password)': (slotProps: EditPasswordActionsSlotProps) => {
+                seenItems.push(slotProps.item);
+                return generateButton(slotProps);
+              },
+            },
+          ),
+        ),
+    });
+
+  const modal = () => document.querySelector('.modal') as HTMLElement;
+  const modalPasswordInput = () =>
+    modal().querySelector('[data-dx-field-key="password"] input') as HTMLInputElement;
+  const modalButton = (startsWith: string) =>
+    Array.from(document.querySelectorAll('.modal button')).find((b) =>
+      b.textContent?.trim()?.startsWith(startsWith),
+    ) as HTMLButtonElement;
+
+  const openCreate = async () => {
+    const screen = renderTable();
+    await flush();
+    (Array.from(screen.container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'New user',
+    ) as HTMLElement).click();
+    await wait(80);
+    return screen;
+  };
+
+  it('create modal: Generate fills + reveals, the eye reads Hide, the POST carries it, the eye re-masks', async () => {
+    const spy = stubFetch();
+    seenItems.length = 0;
+    await openCreate();
+
+    const generate = modal().querySelector(
+      '[data-dx-field-key="password"] .input-group .dx-test-generate',
+    ) as HTMLElement;
+    expect(generate).not.toBeNull();
+    expect(modalPasswordInput().type).toBe('password');
+
+    generate.click();
+    await flush();
+
+    expect(modalPasswordInput().value).toBe(GENERATED);
+    expect(modalPasswordInput().type).toBe('text');
+    expect(eye(modal())?.getAttribute('aria-label')).toBe('Hide password');
+    expect(eye(modal())?.getAttribute('aria-pressed')).toBe('true');
+    // Create mode: no row.
+    expect(seenItems.at(-1)).toBeNull();
+
+    // The eye toggles back by itself.
+    eye(modal())!.click();
+    await flush();
+    expect(modalPasswordInput().type).toBe('password');
+    expect(eye(modal())?.getAttribute('aria-label')).toBe('Show password');
+
+    modalButton('Create').click();
+    await wait(150);
+
+    const posts = writes(spy);
+    expect(posts).toHaveLength(1);
+    expect(String(posts[0][0])).toContain('/api/users');
+    expect(String((posts[0][1] as any).method).toUpperCase()).toBe('POST');
+    expect(JSON.parse((posts[0][1] as any).body).password).toBe(GENERATED);
+  });
+
+  it('edit modal: the slot gets the row and Generate fills + reveals; the PUT carries it', async () => {
+    const spy = stubFetch();
+    seenItems.length = 0;
+    const screen = renderTable();
+    await flush();
+    (screen.container.querySelector('tbody tr') as HTMLElement).click();
+    await wait(80);
+
+    expect(seenItems.at(-1)).toMatchObject({ id: 1, name: 'Ann' });
+
+    (modal().querySelector('.dx-test-generate') as HTMLElement).click();
+    await flush();
+    expect(modalPasswordInput().type).toBe('text');
+    expect(modalPasswordInput().value).toBe(GENERATED);
+    expect(eye(modal())?.getAttribute('aria-label')).toBe('Hide password');
+
+    modalButton('Save').click();
+    await wait(150);
+    const puts = writes(spy);
+    expect(puts).toHaveLength(1);
+    expect(String((puts[0][1] as any).method).toUpperCase()).toBe('PUT');
+    expect(JSON.parse((puts[0][1] as any).body).password).toBe(GENERATED);
+  });
+
+  it('a revealed password is masked again when the modal is reopened', async () => {
+    stubFetch();
+    const screen = await openCreate();
+    (modal().querySelector('.dx-test-generate') as HTMLElement).click();
+    await flush();
+    expect(modalPasswordInput().type).toBe('text');
+
+    modalButton('Cancel').click();
+    await wait(80);
+    (Array.from(screen.container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'New user',
+    ) as HTMLElement).click();
+    await wait(80);
+    expect(modalPasswordInput().type).toBe('password');
+  });
+});

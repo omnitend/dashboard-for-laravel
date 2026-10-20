@@ -14,8 +14,8 @@ import DXFieldExampleRaw from '../../../examples/DXFieldExample.vue?raw';
 The single-field renderer that powers `DXForm` and
 `DXTable`'s edit modal. It renders one `FieldDefinition` of any type — wired to
 a `useForm` instance for value binding, validation state, and error display —
-and exposes `#value`, `#span`, `#info`, `#info-popover`, and `#hint` slots for
-per-field customisation.
+and exposes `#value`, `#span`, `#info`, `#info-popover`, `#hint` and
+`#password-actions` slots for per-field customisation.
 
 You will usually reach for `DXForm`, but `DXField` is
 available directly for one-off fields or custom layouts. It binds via a dot
@@ -49,6 +49,7 @@ path (`keyPath`), so it also works for nested values such as repeater rows
   { name: 'info', props: 'field, model', description: 'Rich info block rendered always-visible below the field (not the label popover).' },
   { name: 'info-popover', props: '-', description: 'Rich body for the label’s hover/focus info popover (lists, bold, paragraphs). Overrides the plain field.info text.' },
   { name: 'hint', props: 'field, model', description: 'Override the hint text rendered below the field.' },
+  { name: 'password-actions', props: 'field, model, value, update, revealed, setRevealed, disabled', description: 'Only for type: "password". Extra controls beside the password input, inside its input group after the reveal (eye) toggle — e.g. a Generate button. setRevealed(true) shows the password exactly as the eye does. See Password actions below.' },
 ]} />
 
 ## Display-only and password field options
@@ -78,6 +79,40 @@ password".
 
 A revealed password is also re-masked whenever the field is reseeded with a
 different record, which is what `DXTable`'s edit modal does between rows.
+
+### Password actions
+
+The `password-actions` slot places your own controls beside a password input,
+inside the same input group, after the eye. Its props can write the value
+(`update`) and drive the eye's state (`revealed`, `setRevealed`), so a
+"Generate password" button can fill the field and show what it generated
+while the input and the eye stay dfl's own:
+
+```vue
+<DXField :field="{ key: 'password', type: 'password', label: 'Password' }" :form="form">
+  <template #password-actions="{ update, setRevealed, disabled }">
+    <DButton variant="outline-secondary" :disabled="disabled"
+      @click="update(generatePassword()); setRevealed(true)">
+      Generate
+    </DButton>
+  </template>
+</DXField>
+```
+
+- The eye keeps working by itself, and keeps its `aria-label`/`aria-pressed`;
+  `setRevealed` changes the same state, so the two always agree.
+- `disabled` is true when the field is disabled or read-only.
+- The content shares the input's row, so keep it short: on a phone a long
+  button label squeezes the input until the revealed password cannot be read.
+  An icon-only `DButton` needs an `aria-label`.
+- The slot does not render on a `plaintext` field (there is no input).
+- On a `revealable: false` field the slot still renders (the input gets the
+  group for it), but there is no eye and `setRevealed` does nothing: the
+  field never unmasks.
+- A field without the slot renders exactly as before.
+- Slot props are typed as `PasswordActionsSlotProps`. In `DXForm` the slot is
+  `password-actions(<key>)`; in `DXTable`'s edit/create modal it is
+  `edit-password-actions(<key>)`.
 
 ```typescript
 const fields = [

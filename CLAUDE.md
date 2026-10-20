@@ -779,7 +779,7 @@ which are exported; they exist only to keep `DXTable` factored (#123, #129):
   modal state, form seeding + visibility rules, the `showUrl` fetch, submission,
   toasts. Pure logic; it never touches the table's data/sort/filter/page state.
 - **`DXTableEditorModal.vue`** — the edit modal: `DModal` + `DXForm` + the
-  `edit-value`/`edit-span`/`tab-*` slot mapping. DXTable forwards the consumer's
+  `edit-value`/`edit-span`/`edit-password-actions`/`tab-*` slot mapping. DXTable forwards the consumer's
   edit slots to it generically; **these reach `DXForm` across two component
   hops**, so any change there must be DOM-verified (the bindings must survive
   both hops — guarded in `tests/components/DXTable-EditTabs.test.ts`, which
