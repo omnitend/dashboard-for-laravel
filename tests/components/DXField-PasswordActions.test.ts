@@ -57,8 +57,10 @@ const eye = (root: ParentNode) =>
 /**
  * Golden render: dfl's password variants inside a DXForm with NO
  * password-actions slot. The HTML was captured from main @ 9e24e18 (before
- * the slot existed) and must stay byte-identical: a field that does not use
- * the slot renders as before. Normalised: generated ids, scoped-style
+ * the slot existed). A field that does not use the slot renders as before
+ * apart from 0.47.0's deliberate field styling (the `.dx-password-field`
+ * wrapper and the eye's classes), which the test asserts on its own and then
+ * undoes before the byte-for-byte comparison. Normalised: generated ids, scoped-style
  * attributes (their hash follows the file's source), and the TEMPLATE
  * comments a dev build keeps (a production build drops them). The `v-if`
  * placeholder comments are kept, since they are real render output: a
@@ -71,6 +73,25 @@ function normaliseHtml(html: string): string {
     .replace(/<!--(?!v-if-->|-->)[\s\S]*?-->/g, '');
 }
 
+/**
+ * Undo 0.47.0's deliberate password-field markup changes, and nothing else,
+ * so the rest of the render can still be compared byte for byte with 0.46.0's
+ * golden: unwrap `.dx-password-field` (the unused actions box leaves its
+ * `v-if` placeholder), drop the group's `dx-password-field__group` class, and
+ * the eye's `d-button--icon-only dx-password-reveal` classes. Each pattern is
+ * counted by the test before this runs, so a change that stops matching fails
+ * there rather than slipping through here.
+ */
+function undoPasswordFieldChanges(html: string): string {
+  return html
+    .replace(
+      /<div class="dx-password-field">(<div class="input-group dx-password-field__group" role="group">[\s\S]*?<\/button><\/div>)<!--v-if--><\/div>/g,
+      '$1',
+    )
+    .replace(/<div class="input-group dx-password-field__group"/g, '<div class="input-group"')
+    .replace(/ d-button--icon-only dx-password-reveal dx-password-reveal"/g, '"');
+}
+
 const goldenFields: FieldDefinition[] = [
   { key: 'name', type: 'text', label: 'Name' },
   { key: 'password', type: 'password', label: 'Password', hint: 'At least 8 characters' },
@@ -79,8 +100,8 @@ const goldenFields: FieldDefinition[] = [
   { key: 'h', type: 'password', label: 'Horizontal', layout: 'horizontal' },
 ];
 
-describe('password-actions: unused slot changes nothing', () => {
-  it('renders byte-identical HTML to main for password fields without the slot', async () => {
+describe('password-actions: an unused slot adds nothing', () => {
+  it('renders 0.46.0\'s HTML for password fields without the slot, apart from the 0.47.0 field styling', async () => {
     const form = useForm({ name: 'Ann', password: 'hunter2', pin: '1234', shown: 'x', h: '' });
     const screen = render({
       render: () => h(BApp, {}, () => h(DXForm, { form, fields: goldenFields, showSubmit: false })),
@@ -97,8 +118,21 @@ describe('password-actions: unused slot changes nothing', () => {
     await flush();
     const revealedHtml = normaliseHtml(screen.container.innerHTML);
 
-    expect(html).toBe(GOLDEN_PASSWORD_FORM_HTML);
-    expect(revealedHtml).toBe(GOLDEN_PASSWORD_FORM_REVEALED_HTML);
+    // The deliberate 0.47.0 changes, asserted on their own: every password
+    // group now sits in a `.dx-password-field` wrapper (the box a
+    // `password-actions` slot wraps inside), and the eye is an icon-only
+    // square styled as part of the input (`dx-password-reveal`). The class
+    // appears twice because DButton both binds `$attrs` and inherits them.
+    // Two fields here have an eye (password, h); the others must not change.
+    for (const rendered of [html, revealedHtml]) {
+      expect(rendered.match(/<div class="dx-password-field">/g)).toHaveLength(2);
+      expect(rendered.match(/<div class="input-group dx-password-field__group" role="group">/g)).toHaveLength(2);
+      expect(rendered.match(/ d-button--icon-only dx-password-reveal dx-password-reveal"/g)).toHaveLength(2);
+    }
+    // Everything else is still 0.46.0's markup, byte for byte: with exactly
+    // those changes undone, the golden matches.
+    expect(undoPasswordFieldChanges(html)).toBe(GOLDEN_PASSWORD_FORM_HTML);
+    expect(undoPasswordFieldChanges(revealedHtml)).toBe(GOLDEN_PASSWORD_FORM_REVEALED_HTML);
     // Positive control: the revealed render really differs (the click landed).
     expect(revealedHtml).not.toBe(html);
   });
@@ -116,24 +150,29 @@ describe('DXField password-actions slot', () => {
     return { screen, form };
   };
 
-  it('renders the slot inside the password input group, after the eye', async () => {
+  it('renders the slot after the password input group (input, then eye), in the actions box', async () => {
     const { screen } = renderField(
       { key: 'password', type: 'password', label: 'Password' },
       { password: '' },
     );
     await flush();
 
-    const group = screen.container.querySelector('.input-group') as HTMLElement;
-    expect(group).not.toBeNull();
-    const generate = group.querySelector('.dx-test-generate');
-    expect(generate).not.toBeNull();
-    // Order inside the group: input, eye, then the slot content.
-    const children = Array.from(group.querySelectorAll('input, button'));
-    expect(children.map((el) => el.getAttribute('aria-label') ?? el.className)).toEqual([
-      expect.stringContaining('form-control'),
-      'Show password',
-      expect.stringContaining('dx-test-generate'),
+    const wrapper = screen.container.querySelector('.dx-password-field') as HTMLElement;
+    expect(wrapper).not.toBeNull();
+    // The wrapper holds exactly two boxes: the input group, then the actions.
+    expect(Array.from(wrapper.children).map((child) => child.className)).toEqual([
+      expect.stringContaining('input-group'),
+      'dx-password-field__actions',
     ]);
+    // The group is the input and the eye, nothing else.
+    const group = wrapper.querySelector('.input-group') as HTMLElement;
+    expect(
+      Array.from(group.querySelectorAll('input, button')).map(
+        (el) => el.getAttribute('aria-label') ?? el.className,
+      ),
+    ).toEqual([expect.stringContaining('form-control'), 'Show password']);
+    expect(group.querySelector('.dx-test-generate')).toBeNull();
+    expect(wrapper.querySelector('.dx-password-field__actions .dx-test-generate')).not.toBeNull();
 
     // The label still names the input (label/for unaffected).
     const label = screen.container.querySelector('label') as HTMLLabelElement;
@@ -212,7 +251,7 @@ describe('DXField password-actions slot', () => {
 
     // No eye: revealable: false keeps meaning "never unmask".
     expect(eye(screen.container)).toBeNull();
-    const generate = screen.container.querySelector('.input-group .dx-test-generate') as HTMLElement;
+    const generate = screen.container.querySelector('.dx-password-field__actions .dx-test-generate') as HTMLElement;
     expect(generate).not.toBeNull();
 
     generate.click();
@@ -231,6 +270,7 @@ describe('DXField password-actions slot', () => {
     await flush();
     expect(screen.container.querySelector('.dx-test-generate')).toBeNull();
     expect(screen.container.querySelector('.input-group')).toBeNull();
+    expect(screen.container.querySelector('.dx-password-field')).toBeNull();
 
     // Positive control: the same harness and slot DO render on an editable
     // password field, so the absence above is not a dead harness.
@@ -239,7 +279,7 @@ describe('DXField password-actions slot', () => {
       { password: 'x' },
     );
     await flush();
-    expect(control.screen.container.querySelector('.input-group .dx-test-generate')).not.toBeNull();
+    expect(control.screen.container.querySelector('.dx-password-field__actions .dx-test-generate')).not.toBeNull();
   });
 });
 
@@ -266,7 +306,7 @@ describe('DXForm password-actions(<key>) slot', () => {
     await flush();
 
     const generate = screen.container.querySelector(
-      '[data-dx-field-key="password"] .input-group .dx-test-generate',
+      '[data-dx-field-key="password"] .dx-password-field__actions .dx-test-generate',
     ) as HTMLElement;
     expect(generate).not.toBeNull();
     // Only the keyed field gets it.
@@ -356,7 +396,7 @@ describe('DXTable edit-password-actions(<key>) slot', () => {
     await openCreate();
 
     const generate = modal().querySelector(
-      '[data-dx-field-key="password"] .input-group .dx-test-generate',
+      '[data-dx-field-key="password"] .dx-password-field__actions .dx-test-generate',
     ) as HTMLElement;
     expect(generate).not.toBeNull();
     expect(modalPasswordInput().type).toBe('password');

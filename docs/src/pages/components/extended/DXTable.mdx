@@ -201,7 +201,7 @@ DXTable's own slots:
   { name: 'head-end(<key>)', props: 'field, label', description: 'Additive content at the end of a column\'s header — a period total, a badge — keeping the sort indicator and hint' },
   { name: 'edit-value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s control in the edit modal' },
   { name: 'edit-span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for an edit-modal field marked span: true' },
-  { name: 'edit-password-actions(<key>)', props: 'item, field, value, update, revealed, setRevealed, disabled', description: 'Extra controls beside an edit-modal password field\'s input, after its reveal (eye) toggle — e.g. a Generate button. item is null in create mode. See Password actions in the edit modal' },
+  { name: 'edit-password-actions(<key>)', props: 'item, field, value, update, revealed, setRevealed, disabled', description: 'Extra controls beside an edit-modal password field, after its input and reveal (eye) toggle — e.g. a Generate button; they wrap below the field when the row is narrow. item is null in create mode. See Password actions in the edit modal' },
   { name: 'tab-content(<key>) / tab-before(<key>) / tab-after(<key>)', props: 'tab, model', description: 'Edit-modal tab content slots (see DXForm)' },
 ]} />
 
@@ -1165,7 +1165,7 @@ same holds for `deleteGuard`.
 ### Password actions in the edit modal
 
 `edit-password-actions(<key>)` puts your own controls beside a password
-field's input, in the same input group after the reveal (eye) toggle. Unlike
+field, after its input and reveal (eye) toggle. Unlike
 `edit-value`, it keeps dfl's input and eye. Its props can write the value and
 show it, so a create-user form can offer a generated password the admin can
 read out:
@@ -1196,7 +1196,7 @@ function generatePassword(): string {
   >
     <template #edit-password-actions(password)="{ update, setRevealed, disabled }">
       <DButton
-        variant="outline-secondary"
+        variant="secondary"
         :disabled="disabled"
         @click="update(generatePassword()); setRevealed(true)"
       >
@@ -1207,9 +1207,11 @@ function generatePassword(): string {
 </template>
 ```
 
-The button shares the input's row, so keep its label short: on a phone a long
-label leaves the input too narrow to read the password it just revealed. An
-icon-only `DButton` needs an `aria-label`.
+The button sits on the input's row while the input keeps at least
+`--dx-password-input-min-width` (11rem); in the modal's narrower widths,
+with the label column beside the field, it wraps onto its own line below the
+input, so the password it just revealed stays readable. Use an ordinary
+`secondary` `DButton`; an icon-only one needs an `aria-label`.
 
 The generated value goes into the form like a typed one, so Create/Save
 sends it. The eye still hides it again, and the field starts masked each time

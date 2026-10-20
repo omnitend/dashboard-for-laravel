@@ -15,18 +15,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   state.** A new `password-actions` slot on `DXField`
   (`password-actions(<key>)` on `DXForm`/`DXBasicForm`,
   `edit-password-actions(<key>)` on `DXTable`'s edit and create modal)
-  renders inside the password input group, after the eye. Its props are
-  `field`, `model`, `value`, `update`, `revealed`, `setRevealed` and
-  `disabled` (the modal's slot passes `item` in place of `model`), so a
-  "Generate password" button can fill the field and show it:
+  renders after the password input and its eye, with a small gap. Its
+  props are `field`, `model`, `value`, `update`, `revealed`,
+  `setRevealed` and `disabled` (the modal's slot passes `item` in place
+  of `model`), so a "Generate password" button can fill the field and
+  show it:
   `update(generatePassword()); setRevealed(true)`. Unlike `edit-value`,
   dfl keeps drawing the input and the eye; the eye still toggles on its
   own and keeps its `aria-label`/`aria-pressed`. A `revealable: false`
   field with the slot gets the group but no eye, and `setRevealed` does
-  nothing there. Not rendered on a `plaintext` field. Fields without the
-  slot render exactly as before (pinned against a golden render from
-  0.46.0). New types: `PasswordActionsSlotProps`,
+  nothing there. Not rendered on a `plaintext` field. The controls stay
+  on the input's row only while the input keeps
+  `--dx-password-input-min-width` (11rem, Sass
+  `$dx-password-input-min-width`); in a narrower column, such as the
+  edit modal with its label beside the field, they wrap onto their own
+  line below it, so the password stays readable and nothing overflows.
+  Use an ordinary button: a `secondary` `DButton` matches the form's other
+  buttons. New types: `PasswordActionsSlotProps`,
   `EditPasswordActionsSlotProps`.
+
+### Changed
+
+- **The password reveal (eye) toggle is drawn as part of the input** on
+  every password field: the input's border colour, rounded corners and
+  background, a muted icon, a square the input's height, and on keyboard
+  focus the input's own focus border and halo. It was an
+  `outline-secondary` button, a darker square-cornered box against the
+  light rounded input. Disabled, it takes the disabled input's fill.
+  Markup: the input group now sits in a `div.dx-password-field` (where
+  `password-actions` content goes), the group has
+  `dx-password-field__group`, and the eye has `dx-password-reveal` and
+  `d-button--icon-only`. Otherwise a password field renders as in 0.46.0
+  (pinned against a golden render from 0.46.0).
 
 ### Fixed
 

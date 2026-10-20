@@ -49,7 +49,7 @@ path (`keyPath`), so it also works for nested values such as repeater rows
   { name: 'info', props: 'field, model', description: 'Rich info block rendered always-visible below the field (not the label popover).' },
   { name: 'info-popover', props: '-', description: 'Rich body for the label’s hover/focus info popover (lists, bold, paragraphs). Overrides the plain field.info text.' },
   { name: 'hint', props: 'field, model', description: 'Override the hint text rendered below the field.' },
-  { name: 'password-actions', props: 'field, model, value, update, revealed, setRevealed, disabled', description: 'Only for type: "password". Extra controls beside the password input, inside its input group after the reveal (eye) toggle — e.g. a Generate button. setRevealed(true) shows the password exactly as the eye does. See Password actions below.' },
+  { name: 'password-actions', props: 'field, model, value, update, revealed, setRevealed, disabled', description: 'Only for type: "password". Extra controls beside the password field, after its input and reveal (eye) toggle — e.g. a Generate button. They wrap below the field when the row is too narrow. setRevealed(true) shows the password exactly as the eye does. See Password actions below.' },
 ]} />
 
 ## Display-only and password field options
@@ -82,8 +82,8 @@ different record, which is what `DXTable`'s edit modal does between rows.
 
 ### Password actions
 
-The `password-actions` slot places your own controls beside a password input,
-inside the same input group, after the eye. Its props can write the value
+The `password-actions` slot places your own controls beside a password field,
+after its input and eye. Its props can write the value
 (`update`) and drive the eye's state (`revealed`, `setRevealed`), so a
 "Generate password" button can fill the field and show what it generated
 while the input and the eye stay dfl's own:
@@ -91,7 +91,7 @@ while the input and the eye stay dfl's own:
 ```vue
 <DXField :field="{ key: 'password', type: 'password', label: 'Password' }" :form="form">
   <template #password-actions="{ update, setRevealed, disabled }">
-    <DButton variant="outline-secondary" :disabled="disabled"
+    <DButton variant="secondary" :disabled="disabled"
       @click="update(generatePassword()); setRevealed(true)">
       Generate
     </DButton>
@@ -102,9 +102,16 @@ while the input and the eye stay dfl's own:
 - The eye keeps working by itself, and keeps its `aria-label`/`aria-pressed`;
   `setRevealed` changes the same state, so the two always agree.
 - `disabled` is true when the field is disabled or read-only.
-- The content shares the input's row, so keep it short: on a phone a long
-  button label squeezes the input until the revealed password cannot be read.
-  An icon-only `DButton` needs an `aria-label`.
+- The eye is drawn as part of the input (its border, corners and background).
+  Your controls are not: they sit after the field with a small gap, as
+  ordinary buttons. A `secondary` `DButton` matches the form's other buttons;
+  don't try to join them to the input.
+- The controls share the input's row only while the input keeps at least
+  `--dx-password-input-min-width` (11rem by default). In a narrower column
+  (a phone, or a modal with the label beside the field) they wrap onto a line
+  of their own below the input, so a revealed password stays readable. Retune
+  the minimum with the CSS variable (or `$dx-password-input-min-width` in
+  Sass). An icon-only `DButton` needs an `aria-label`.
 - The slot does not render on a `plaintext` field (there is no input).
 - On a `revealable: false` field the slot still renders (the input gets the
   group for it), but there is no eye and `setRevealed` does nothing: the

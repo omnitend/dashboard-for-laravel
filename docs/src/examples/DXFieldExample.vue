@@ -37,11 +37,12 @@
     <DXField :field="passwordField" :form="form" />
 
     <!-- Password with a #password-actions slot: a Generate button beside the
-         eye that fills the field and reveals it, so it can be read out -->
+         field that fills it and reveals it, so it can be read out. A plain
+         secondary button; it wraps below the field when the row is narrow -->
     <DXField :field="newPasswordField" :form="form">
       <template #password-actions="{ update, setRevealed, disabled }">
         <DButton
-          variant="outline-secondary"
+          variant="secondary"
           :disabled="disabled"
           @click="update(generatePassword()); setRevealed(true)"
         >

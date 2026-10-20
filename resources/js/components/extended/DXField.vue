@@ -336,31 +336,41 @@
                 <!-- Password with a reveal toggle (the default for
                      `type: "password"`). Typing a long password blind is the one
                      place the eye really earns its keep, so it's opt-out
-                     (`revealable: false`) rather than opt-in. A
-                     `password-actions` slot also lands here (after the eye),
-                     and brings the group to a `revealable: false` field. -->
-                <DInputGroup v-else-if="isPasswordGroup()">
-                    <DFormInput
-                        v-model="textFieldModel"
-                        :required="field.required"
-                        :placeholder="field.placeholder"
-                        :state="fieldState"
-                        :disabled="isDisabled"
-                        :readonly="isReadonly"
-                        v-bind="passwordInputProps"
-                    />
-                    <template #append>
-                        <DButton
-                            v-if="isRevealablePassword"
-                            variant="outline-secondary"
-                            :icon="passwordRevealed ? 'eye-slash' : 'eye'"
-                            :aria-label="passwordRevealed ? 'Hide password' : 'Show password'"
-                            :aria-pressed="passwordRevealed"
+                     (`revealable: false`) rather than opt-in. The eye is drawn
+                     as part of the field (`.dx-password-reveal`: the input's
+                     border, radius and background). A `password-actions` slot
+                     lands AFTER the input group, in `.dx-password-field__actions`,
+                     which wraps below the group when the row cannot give the
+                     input `--dx-password-input-min-width` (theme.scss); it also
+                     brings the group to a `revealable: false` field. -->
+                <div v-else-if="isPasswordGroup()" class="dx-password-field">
+                    <DInputGroup class="dx-password-field__group">
+                        <DFormInput
+                            v-model="textFieldModel"
+                            :required="field.required"
+                            :placeholder="field.placeholder"
+                            :state="fieldState"
                             :disabled="isDisabled"
-                            @click="passwordRevealed = !passwordRevealed"
+                            :readonly="isReadonly"
+                            v-bind="passwordInputProps"
                         />
+                        <template #append>
+                            <DButton
+                                v-if="isRevealablePassword"
+                                class="dx-password-reveal"
+                                variant="outline-secondary"
+                                icon-only
+                                :icon="passwordRevealed ? 'eye-slash' : 'eye'"
+                                :aria-label="passwordRevealed ? 'Hide password' : 'Show password'"
+                                :aria-pressed="passwordRevealed"
+                                :disabled="isDisabled"
+                                @click="passwordRevealed = !passwordRevealed"
+                            />
+                        </template>
+                    </DInputGroup>
+                    <div v-if="slots['password-actions'] !== undefined" class="dx-password-field__actions">
                         <!--
-                          @slot Extra controls beside a password input, inside its input group after the reveal (eye) toggle, e.g. a "Generate password" button. Not rendered on a `plaintext` field. Buttons (`DButton`) join the group's edge styling.
+                          @slot Extra controls beside a password input, after its input group (the input and the reveal (eye) toggle), e.g. a "Generate password" button. They sit on the input's row while it keeps `--dx-password-input-min-width`, and wrap below it when the row is too narrow. Use an ordinary button (a `secondary` `DButton` matches the form's other buttons). Not rendered on a `plaintext` field.
                           @binding {FieldDefinition} field The field definition being rendered.
                           @binding {any} model The model passed to field predicates (defaults to the live form data).
                           @binding {any} value The current field value.
@@ -379,8 +389,8 @@
                             :set-revealed="setPasswordRevealed"
                             :disabled="isDisabled || isReadonly"
                         />
-                    </template>
-                </DInputGroup>
+                    </div>
+                </div>
 
                 <!-- Text-based inputs (text/email/password/url/tel/date/time/datetime) -->
                 <DFormInput
