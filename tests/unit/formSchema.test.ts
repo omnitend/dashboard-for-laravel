@@ -6,6 +6,7 @@ import {
   resolvePredicate,
   isFieldVisible,
   isSubmittableField,
+  nonSubmittedFieldKeys,
 } from '../../resources/js/utils/formSchema';
 
 /*
@@ -136,5 +137,36 @@ describe('isSubmittableField', () => {
     expect(isSubmittableField({})).toBe(true);
     expect(isSubmittableField({ submit: true })).toBe(true);
     expect(isSubmittableField({ submit: false })).toBe(false);
+  });
+});
+
+describe('nonSubmittedFieldKeys (#228)', () => {
+  const visibleUnlessHidden = (field: { hidden?: boolean }) => field.hidden !== true;
+
+  it('keeps a key while ANY field with it is submitting and visible', () => {
+    const fields = [
+      { key: 'discount_type' },
+      { key: 'discount_type', submit: false },
+      { key: 'discount_type', hidden: true },
+    ];
+    expect([...nonSubmittedFieldKeys(fields, visibleUnlessHidden)]).toEqual([]);
+  });
+
+  it('drops a key whose fields are all presentational (#110)', () => {
+    const fields = [{ key: 'name' }, { key: 'notice', submit: false }, { key: 'notice', submit: false }];
+    expect([...nonSubmittedFieldKeys(fields, visibleUnlessHidden)]).toEqual(['notice']);
+  });
+
+  it('drops a key whose fields are all hidden (#117)', () => {
+    const fields = [{ key: 'name' }, { key: 'percentage', hidden: true }, { key: 'percentage', hidden: true }];
+    expect([...nonSubmittedFieldKeys(fields, visibleUnlessHidden)]).toEqual(['percentage']);
+  });
+
+  it('drops a key whose only visible field is presentational and whose submitting field is hidden', () => {
+    const fields = [
+      { key: 'discount_type', hidden: true },
+      { key: 'discount_type', submit: false },
+    ];
+    expect([...nonSubmittedFieldKeys(fields, visibleUnlessHidden)]).toEqual(['discount_type']);
   });
 });

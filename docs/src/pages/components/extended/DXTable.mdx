@@ -1078,6 +1078,37 @@ record's own page from `row-clicked`, turn the edit modal off for row clicks:
 The row still emits `row-clicked`, and rows look clickable only while
 something listens for it.
 
+### What a save sends
+
+The payload carries one value per field key. A key is left out when **no**
+field with that key is both submitting and visible at save time: a key whose
+fields are all presentational (`submit: false`) or all hidden by `when` is
+not sent, so the stored value is left alone. Two fields may share a key, which
+is how a value is editable for some rows and display-only for others:
+
+```js
+const editFields = [
+  { key: 'source', label: 'Source', type: 'text', default: 'manual' },
+  {
+    key: 'discount_type', label: 'Type', type: 'select', default: 'percentage',
+    options: [{ value: 'percentage', text: 'Percentage' }, { value: 'amount', text: 'Amount' }],
+    when: (model) => model.source !== 'price_override',
+  },
+  // Shown instead for system-created rows; never sent.
+  {
+    key: 'discount_type', label: 'Type', type: 'text', plaintext: true,
+    submit: false, when: (model) => model.source === 'price_override',
+  },
+];
+```
+
+`discount_type` is sent while the select shows, and left out while the
+display twin shows. A `submit: false` field is never used to seed the form.
+When several submitting fields share a key, the key starts from the first
+of them that is visible (else the first declared). Two submitting fields with
+one key that are visible together edit the same value; DXTable warns about
+that once per key, since it is usually a missing `when`.
+
 ### Guarding a save (`saveGuard`)
 
 `saveGuard` runs when Save/Create is clicked, **before** the request. Return a
