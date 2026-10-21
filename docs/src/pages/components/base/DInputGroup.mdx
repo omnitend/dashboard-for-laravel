@@ -31,4 +31,23 @@ Type-safe wrapper around Bootstrap Vue Next BInputGroup component. Easily extend
 />
 
 
+## On narrow screens
+
+An input group never wraps an affix away from its input: a search box and its
+button, a "£" amount, or "@" and a username stay one joined control at every
+width.
+
+Below md (768px), a group with **two or more controls** wraps instead, so a
+filter bar's group cannot run off a phone screen. A leading text label takes
+its own row, and the controls sit beneath it as separate controls, each with
+its own corners and a small gap. From md up the group is joined as usual. Text
+and buttons do not count as controls, so `[−] [input] [+]` stays joined.
+
+```vue
+<DInputGroup prepend="Date range" class="w-auto">
+  <DFormInput type="date" />
+  <DFormInput type="date" />
+</DInputGroup>
+```
+
 <BootstrapVueNextReference client:load componentName="DInputGroup" />

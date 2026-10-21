@@ -21,6 +21,10 @@ const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 
 describe('shared control consistency', () => {
   it.each([undefined, 'sm', 'lg'] as const)('matches input, select and mixed-group button heights at size %s', async size => {
+    // Below md a multi-control group wraps onto several rows by design
+    // (DInputGroup-narrow-wrap.test.ts), and the runner's default window is
+    // narrower than that; this compares one-row heights.
+    await page.viewport(1200, 800);
     const screen = render({ render: () => h(BApp, {}, () => h('div', { style: 'width: 900px' }, [
       h(DButton, { size, 'data-test': 'button' }, () => 'Action'),
       h(DFormInput, { size, 'data-test': 'input' }),

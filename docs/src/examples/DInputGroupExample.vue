@@ -16,6 +16,14 @@
         </template>
       </DInputGroup>
     </div>
+
+    <div class="example-section">
+      <h5>Several controls (wraps below md)</h5>
+      <DInputGroup prepend="Date range" class="w-auto">
+        <DFormInput type="date" />
+        <DFormInput type="date" />
+      </DInputGroup>
+    </div>
   </div>
 </template>
 

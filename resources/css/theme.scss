@@ -796,9 +796,109 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 // visual "one control" continuity an input-group exists to provide — an
 // affix + input should shrink/scroll before it wraps, never stack. Applies
 // globally (currency/percentage fields, DAutocomplete's own `:deep()`
-// override becomes redundant but harmless here).
+// override becomes redundant but harmless here). The one exception is a group
+// of several controls on a narrow screen, below.
 .input-group {
   flex-wrap: nowrap;
+}
+
+// Below md, a group with TWO OR MORE controls wraps: a leading
+// `.input-group-text` label takes its own row and the controls flow beneath
+// it as separate controls, each with its own corners and a small gap. A
+// filter bar's "Date range [date] [date]" or "Day / Month / Year" + three
+// multi-selects cannot shrink to a phone's width, and an app shell that clips
+// sideways overflow left the last control unreachable (greendragon, where
+// this was trialled as an opt-in `.ot-filter-group` class).
+//
+// A group with ONE control keeps the nowrap rule above, so every
+// affix-plus-input shape stays one joined control: a search box with its
+// button, a "£" amount, "@" username, a password with its reveal button, the
+// number stepper and the autocomplete (buttons and text do not count as
+// controls). CSS cannot tell whether a group overflows, so a multi-control
+// group that would have fitted ("Sort [Name] [Asc]") also takes the wrapped
+// layout below md; it then reads the same as its neighbours in a filter bar.
+//
+// No `!important`: each override below is Bootstrap's own joined-group
+// selector (forms/_input-group.scss) or the theme's DFormFile one, gated on
+// `$dx-wrapping-input-group`. The gate adds specificity to the exact selector
+// it undoes, so it wins wherever that rule applies and touches nothing else.
+$dx-input-group-control: ':not(.input-group-text, .btn, .dropdown-menu, .dropdown-toggle, [type="hidden"], .valid-feedback, .invalid-feedback, .valid-tooltip, .invalid-tooltip)';
+$dx-wrapping-input-group: '.input-group:has(> #{$dx-input-group-control} ~ #{$dx-input-group-control})';
+$dx-input-group-validation-messages: '';
+@each $state in map-keys($form-validation-states) {
+  $dx-input-group-validation-messages: $dx-input-group-validation-messages + ':not(.#{$state}-tooltip):not(.#{$state}-feedback)';
+}
+
+// The radius each control gets back once it stands alone: the group's size.
+.input-group {
+  --dx-input-group-radius: #{$input-border-radius};
+}
+
+.input-group-sm {
+  --dx-input-group-radius: #{$input-border-radius-sm};
+}
+
+.input-group-lg {
+  --dx-input-group-radius: #{$input-border-radius-lg};
+}
+
+@include media-breakpoint-down(md) {
+  #{$dx-wrapping-input-group} {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    max-width: 100%;
+
+    > .input-group-text:first-child {
+      flex: 1 0 100%;
+    }
+
+    > #{$dx-input-group-control} {
+      flex: 1 1 8rem;
+      max-width: 100%;
+    }
+
+    > .btn {
+      flex: 1 1 auto;
+    }
+
+    // Undo Bootstrap's joined start edge (the -1px overlap and square corners).
+    > :not(:first-child):not(.dropdown-menu)#{$dx-input-group-validation-messages} {
+      margin-left: 0;
+      border-top-left-radius: var(--dx-input-group-radius);
+      border-bottom-left-radius: var(--dx-input-group-radius);
+    }
+
+    > .form-floating:not(:first-child) > .form-control,
+    > .form-floating:not(:first-child) > .form-select,
+    > .b-form-file-root:not(:first-child) .b-form-file-control,
+    > .b-form-file-root:not(:first-child) .b-form-file-button {
+      border-top-left-radius: var(--dx-input-group-radius);
+      border-bottom-left-radius: var(--dx-input-group-radius);
+    }
+  }
+
+  // Undo Bootstrap's joined end edge.
+  #{$dx-wrapping-input-group}:not(.has-validation) {
+    > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-floating),
+    > .dropdown-toggle:nth-last-child(n + 3),
+    > .form-floating:not(:last-child) > .form-control,
+    > .form-floating:not(:last-child) > .form-select,
+    > .b-form-file-root:not(:last-child) .b-form-file-control {
+      border-top-right-radius: var(--dx-input-group-radius);
+      border-bottom-right-radius: var(--dx-input-group-radius);
+    }
+  }
+
+  #{$dx-wrapping-input-group}.has-validation {
+    > :nth-last-child(n + 3):not(.dropdown-toggle):not(.dropdown-menu):not(.form-floating),
+    > .dropdown-toggle:nth-last-child(n + 4),
+    > .form-floating:nth-last-child(n + 3) > .form-control,
+    > .form-floating:nth-last-child(n + 3) > .form-select,
+    > .b-form-file-root:nth-last-child(n + 3) .b-form-file-control {
+      border-top-right-radius: var(--dx-input-group-radius);
+      border-bottom-right-radius: var(--dx-input-group-radius);
+    }
+  }
 }
 
 // DFormFile: bvn's BFormFile draws its own control (`.b-form-file-control`, a

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.47.3] - 2026-10-21
+
+### Changed
+
+- Below md (768px), an input group with two or more controls now wraps
+  instead of running off the screen: a leading `.input-group-text` label
+  takes its own row and the controls flow beneath it as separate controls,
+  each with its own corners and a 0.25rem gap. A filter bar's
+  "Date range [date] [date]" or a label with several selects cannot shrink to
+  a phone's width, so in an app shell that clips sideways overflow its last
+  controls could not be reached. A group with one control (a search box with
+  its button, a "£" amount, a password with its reveal button, the number
+  stepper) still never wraps, and nothing changes from md up. Done in the
+  theme's own selectors, without `!important`: each override is Bootstrap's
+  joined-group rule with a gate added, so it wins only where that rule
+  applied. Apps that worked around this with their own wrapping class can
+  drop it.
+
 ## [0.47.2] - 2026-10-21
 
 ### Fixed
