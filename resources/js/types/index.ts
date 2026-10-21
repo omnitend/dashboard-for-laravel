@@ -274,6 +274,20 @@ export interface FieldDefinition {
      */
     default?: any;
 
+    /**
+     * For a field whose value is a list of rows (a `repeater`, or a span
+     * field that renders its own rows and owns `key.N.*` error keys): the
+     * row's own name, called with the row (`model[key][index]`, or `{}` when
+     * the model has no such row) and its 0-based index. When it returns a
+     * non-empty string, the error summary lists that row's errors under it
+     * alone ("Chaucer Ale (Pint): Enter a price.") instead of
+     * "<sub-field label> (line N)". Returning `undefined`, `null` or `""`
+     * (a row with no name yet), or throwing, keeps the line-number label.
+     * Only labels: which field owns the error, and what a click on the
+     * summary row focuses, are unchanged.
+     */
+    rowLabel?: (row: Record<string, any>, index: number) => string | null | undefined;
+
     /** Label for a repeater's "add row" button (default: "Add"). */
     addLabel?: string;
 
@@ -364,6 +378,10 @@ export interface FieldDefinition {
      * every `editFields` key, so those decorative fields are POSTed alongside
      * the real ones (an empty string, an empty array) purely because they were
      * declared.
+     *
+     * Applies per KEY (#228): DXTable drops a key only when no field with that
+     * key is both submitting and visible, so a `submit: false` display twin
+     * does not strip the value of a visible editable field sharing its key.
      */
     submit?: boolean;
 
@@ -579,6 +597,7 @@ export interface ComponentFieldDef extends BaseFieldDef {
 export interface RepeaterFieldDef extends BaseFieldDef {
     type: "repeater";
     fields?: FieldDef[];
+    rowLabel?: (row: Record<string, any>, index: number) => string | null | undefined;
     addLabel?: string;
     minItems?: number;
     maxItems?: number;
@@ -650,6 +669,51 @@ export interface FormTab {
 
     /** Lazily mount tab content until first activated */
     lazy?: boolean;
+}
+
+/**
+ * Slot props of DXField's `password-actions` slot (DXForm:
+ * `password-actions(<key>)`): content placed beside a password input, inside
+ * its input group after the reveal (eye) toggle, such as a "Generate password"
+ * button. `setRevealed` drives the same state the eye toggles.
+ *
+ * ```vue
+ * <template #password-actions(password)="{ update, setRevealed, disabled }">
+ *   <DButton variant="outline-secondary" :disabled="disabled"
+ *     @click="update(generatePassword()); setRevealed(true)">Generate</DButton>
+ * </template>
+ * ```
+ */
+export interface PasswordActionsSlotProps {
+    /** The field definition being rendered. */
+    field: FieldDefinition;
+    /** The model passed to field predicates (defaults to the live form data). */
+    model: any;
+    /** The current field value. */
+    value: any;
+    /** Write a new value (also marks the field touched and clears its error). */
+    update: (value: any) => void;
+    /** Whether the password is currently shown as plain text. */
+    revealed: boolean;
+    /**
+     * Show (`true`) or mask (`false`) the password, exactly as the eye does.
+     * A no-op on a `revealable: false` field, which never unmasks.
+     */
+    setRevealed: (revealed: boolean) => void;
+    /** Whether the field is disabled or read-only. */
+    disabled: boolean;
+}
+
+/**
+ * Slot props of DXTable's `edit-password-actions(<key>)` slot, the edit/create
+ * modal's form of {@link PasswordActionsSlotProps}. `item` is the row being
+ * edited, `null` in create mode. (`model` is not passed, as with the modal's
+ * other field slots.)
+ */
+export interface EditPasswordActionsSlotProps
+    extends Omit<PasswordActionsSlotProps, "model"> {
+    /** The row being edited; `null` in create mode. */
+    item: any;
 }
 
 /**

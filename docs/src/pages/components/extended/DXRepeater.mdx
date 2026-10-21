@@ -33,7 +33,7 @@ exported directly for custom layouts.
 
 <PropsTable client:load props={[
   { name: 'form', type: 'UseFormReturn<any>', required: 'Yes', default: '-', description: 'Form instance owning the repeater array.' },
-  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey, repeaterLayout, showRowIndex.' },
+  { name: 'field', type: 'FieldDefinition', required: 'Yes', default: '-', description: 'The repeater field definition. Provides sub-fields (field.fields), addLabel, minItems, maxItems, softDeleteKey, repeaterLayout, showRowIndex, rowLabel (the row\'s name in the error summary).' },
   { name: 'keyPath', type: 'string', required: 'No', default: 'field.key', description: 'Dot path into form.data for the array.' },
   { name: 'errorKey', type: 'string', required: 'No', default: 'keyPath', description: 'Base error key for nested validation.' },
   { name: 'model', type: 'any', required: 'No', default: '-', description: 'Model passed to predicates from the parent context.' },
@@ -69,6 +69,13 @@ In `cards` layout, each row's header shows only a Remove button by default —
 set `showRowIndex: true` to also show its 1-based position (e.g. "1", "2")
 next to it, for cases where rows are meaningfully ordered/numbered. Not
 applicable to `table` layout, which has no equivalent column.
+
+A validation error on a row is listed in the form's error summary under its
+sub-field's label and line number ("Price (line 2): Must be positive."). When rows have names of their own, set
+`rowLabel: (row, index) => row.name || undefined` and the summary lists the
+row by its name instead ("Chaucer Ale (Pint): Must be positive."); a row it
+returns nothing for keeps the line number. See
+[DXForm: naming a row](/components/extended/DXForm#naming-a-row-in-the-summary-rowlabel).
 
 ## Upsert-children APIs (`softDeleteKey`)
 

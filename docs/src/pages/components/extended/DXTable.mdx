@@ -201,6 +201,7 @@ DXTable's own slots:
   { name: 'head-end(<key>)', props: 'field, label', description: 'Additive content at the end of a column\'s header — a period total, a badge — keeping the sort indicator and hint' },
   { name: 'edit-value(<key>)', props: 'field, model, value, update', description: 'Replace a field\'s control in the edit modal' },
   { name: 'edit-span(<key>)', props: 'field, model, value, update', description: 'Full-width custom block for an edit-modal field marked span: true' },
+  { name: 'edit-password-actions(<key>)', props: 'item, field, value, update, revealed, setRevealed, disabled', description: 'Extra controls beside an edit-modal password field, after its input and reveal (eye) toggle — e.g. a Generate button; they wrap below the field when the row is narrow. item is null in create mode. See Password actions in the edit modal' },
   { name: 'tab-content(<key>) / tab-before(<key>) / tab-after(<key>)', props: 'tab, model', description: 'Edit-modal tab content slots (see DXForm)' },
 ]} />
 
@@ -1077,6 +1078,37 @@ record's own page from `row-clicked`, turn the edit modal off for row clicks:
 The row still emits `row-clicked`, and rows look clickable only while
 something listens for it.
 
+### What a save sends
+
+The payload carries one value per field key. A key is left out when **no**
+field with that key is both submitting and visible at save time: a key whose
+fields are all presentational (`submit: false`) or all hidden by `when` is
+not sent, so the stored value is left alone. Two fields may share a key, which
+is how a value is editable for some rows and display-only for others:
+
+```js
+const editFields = [
+  { key: 'source', label: 'Source', type: 'text', default: 'manual' },
+  {
+    key: 'discount_type', label: 'Type', type: 'select', default: 'percentage',
+    options: [{ value: 'percentage', text: 'Percentage' }, { value: 'amount', text: 'Amount' }],
+    when: (model) => model.source !== 'price_override',
+  },
+  // Shown instead for system-created rows; never sent.
+  {
+    key: 'discount_type', label: 'Type', type: 'text', plaintext: true,
+    submit: false, when: (model) => model.source === 'price_override',
+  },
+];
+```
+
+`discount_type` is sent while the select shows, and left out while the
+display twin shows. A `submit: false` field is never used to seed the form.
+When several submitting fields share a key, the key starts from the first
+of them that is visible (else the first declared). Two submitting fields with
+one key that are visible together edit the same value; DXTable warns about
+that once per key, since it is usually a missing `when`.
+
 ### Guarding a save (`saveGuard`)
 
 `saveGuard` runs when Save/Create is clicked, **before** the request. Return a
@@ -1129,6 +1161,63 @@ Because the guard is awaited, the modal can be dismissed *while it is pending*.
 Any dismissal — Cancel, the header close button, Escape or a backdrop click —
 abandons the save, so nothing is written for a record the user has closed. The
 same holds for `deleteGuard`.
+
+### Password actions in the edit modal
+
+`edit-password-actions(<key>)` puts your own controls beside a password
+field, after its input and reveal (eye) toggle. Unlike
+`edit-value`, it keeps dfl's input and eye. Its props can write the value and
+show it, so a create-user form can offer a generated password the admin can
+read out:
+
+```vue
+<script setup lang="ts">
+const editFields = [
+  { key: 'name', type: 'text', label: 'Name', required: true },
+  { key: 'password', type: 'password', label: 'Password' },
+];
+
+/** 16 characters from an unambiguous alphabet, from the browser's CSPRNG. */
+function generatePassword(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const bytes = crypto.getRandomValues(new Uint32Array(16));
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+}
+</script>
+
+<template>
+  <DXTable
+    :fields="fields"
+    :edit-fields="editFields"
+    api-url="/api/users"
+    edit-url="/api/users/:id"
+    create-url="/api/users"
+    item-name="user"
+  >
+    <template #edit-password-actions(password)="{ update, setRevealed, disabled }">
+      <DButton
+        variant="secondary"
+        :disabled="disabled"
+        @click="update(generatePassword()); setRevealed(true)"
+      >
+        Generate
+      </DButton>
+    </template>
+  </DXTable>
+</template>
+```
+
+The button sits on the input's row while the input keeps at least
+`--dx-password-input-min-width` (11rem); in the modal's narrower widths,
+with the label column beside the field, it wraps onto its own line below the
+input, so the password it just revealed stays readable. Use an ordinary
+`secondary` `DButton`; an icon-only one needs an `aria-label`.
+
+The generated value goes into the form like a typed one, so Create/Save
+sends it. The eye still hides it again, and the field starts masked each time
+the modal opens. `item` is the row being edited (`null` in create mode); the
+props are typed as `EditPasswordActionsSlotProps`. See
+[DXField: Password actions](/components/extended/DXField#password-actions).
 
 ## Delete Functionality
 

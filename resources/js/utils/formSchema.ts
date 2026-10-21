@@ -124,3 +124,30 @@ export function isFieldVisible(
 export function isSubmittableField(field: { submit?: boolean }): boolean {
     return field.submit !== false;
 }
+
+/**
+ * The payload keys to drop on submit: every field key for which NO field with
+ * that key is both submittable (`submit !== false`) and visible (#228).
+ *
+ * Decided per KEY, across all the fields that share it, never per field. Two
+ * fields may share a key: an editable select plus a read-only display twin
+ * (`submit: false`) that shows instead for system-created rows. Stripping a
+ * key because ONE of its fields is presentational or hidden removed it from
+ * every save, including while the select was the visible field in use. A key
+ * whose fields are all presentational (#110) or all hidden (#117) is still
+ * dropped.
+ */
+export function nonSubmittedFieldKeys<
+    TField extends { key: string; submit?: boolean },
+>(fields: readonly TField[], isVisible: (field: TField) => boolean): Set<string> {
+    const submittedKeys = new Set(
+        fields
+            .filter((field) => isSubmittableField(field) && isVisible(field))
+            .map((field) => field.key),
+    );
+    return new Set(
+        fields
+            .map((field) => field.key)
+            .filter((key) => !submittedKeys.has(key)),
+    );
+}

@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.47.0] - 2026-10-20
+
+### Added
+
+- **Controls beside a password input, with a handle on its reveal
+  state.** A new `password-actions` slot on `DXField`
+  (`password-actions(<key>)` on `DXForm`/`DXBasicForm`,
+  `edit-password-actions(<key>)` on `DXTable`'s edit and create modal)
+  renders after the password input and its eye, with a small gap. Its
+  props are `field`, `model`, `value`, `update`, `revealed`,
+  `setRevealed` and `disabled` (the modal's slot passes `item` in place
+  of `model`), so a "Generate password" button can fill the field and
+  show it:
+  `update(generatePassword()); setRevealed(true)`. Unlike `edit-value`,
+  dfl keeps drawing the input and the eye; the eye still toggles on its
+  own and keeps its `aria-label`/`aria-pressed`. A `revealable: false`
+  field with the slot gets the group but no eye, and `setRevealed` does
+  nothing there. Not rendered on a `plaintext` field. The controls stay
+  on the input's row only while the input keeps
+  `--dx-password-input-min-width` (11rem, Sass
+  `$dx-password-input-min-width`); in a narrower column, such as the
+  edit modal with its label beside the field, they wrap onto their own
+  line below it, so the password stays readable and nothing overflows.
+  Use an ordinary button: a `secondary` `DButton` matches the form's other
+  buttons. New types: `PasswordActionsSlotProps`,
+  `EditPasswordActionsSlotProps`.
+- **Name a row in the error summary.** A new field option, `rowLabel:
+  (row, index) => string | undefined`, on a `repeater` (or a `span` field
+  that renders its own rows) gives each row its own name. An error on that
+  row is then listed under the name alone, "Chaucer Ale (Pint): Enter a
+  price.", instead of "<sub-field label> (line 2)". A row it returns
+  nothing for (or throws on) keeps the line-number label, and without the
+  option every label is as in 0.46.0. Only the label changes: the owning
+  field, the tab selected and the control a click on the row focuses are
+  the same.
+
+### Changed
+
+- **The password reveal (eye) toggle is drawn as part of the input** on
+  every password field: the input's border colour, rounded corners and
+  background, a muted icon, a square the input's height, and on keyboard
+  focus the input's own focus border and halo. It was an
+  `outline-secondary` button, a darker square-cornered box against the
+  light rounded input. Disabled, it takes the disabled input's fill.
+  Markup: the input group now sits in a `div.dx-password-field` (where
+  `password-actions` content goes), the group has
+  `dx-password-field__group`, and the eye has `dx-password-reveal` and
+  `d-button--icon-only`. Otherwise a password field renders as in 0.46.0
+  (pinned against a golden render from 0.46.0).
+
+### Fixed
+
+- DXTable's create and edit save no longer drops a field's value because
+  another edit field with the same key is `submit: false` or hidden (#228).
+  The strip was per key, so a display-only twin (`submit: false`, shown for
+  system-created rows) removed the key from every save, including while the
+  editable select sharing it was the visible field, and the server refused
+  the save. A key is now left out only when no field with it is both
+  submitting and visible; a key whose fields are all presentational (#110)
+  or all hidden (#117) is still left out.
+- When several submitting edit fields share a key, the form now starts the
+  key from the first of them that is visible, else the first declared. It
+  was the last declared, so a hidden alternative declared after the visible
+  field replaced its default. DXTable warns once per key when two
+  submitting fields with one key are visible together.
+
 ## [0.46.0] - 2026-10-15
 
 ### Upgrade notes

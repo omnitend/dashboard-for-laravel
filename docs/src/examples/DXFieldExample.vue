@@ -36,6 +36,21 @@
     <!-- Password: the reveal (eye) toggle is on by default -->
     <DXField :field="passwordField" :form="form" />
 
+    <!-- Password with a #password-actions slot: a Generate button beside the
+         field that fills it and reveals it, so it can be read out. A plain
+         secondary button; it wraps below the field when the row is narrow -->
+    <DXField :field="newPasswordField" :form="form">
+      <template #password-actions="{ update, setRevealed, disabled }">
+        <DButton
+          variant="secondary"
+          :disabled="disabled"
+          @click="update(generatePassword()); setRevealed(true)"
+        >
+          Generate
+        </DButton>
+      </template>
+    </DXField>
+
     <!-- Display-only: the value as static text, not a control you can't use -->
     <DXField :field="usernameField" :form="form" />
 
@@ -61,6 +76,7 @@
 
 <script setup lang="ts">
 import {
+  DButton,
   DXField,
   useForm,
   type FieldDefinition,
@@ -75,6 +91,7 @@ const form = useForm({
   branch: 'main',
   rating: 3,
   password: 'correct-horse-battery',
+  new_password: '',
   username: 'sarah.johnson',
 });
 
@@ -84,6 +101,20 @@ const passwordField: FieldDefinition = {
   label: 'Password',
   hint: 'The reveal toggle is on by default — set revealable: false for a bare input.',
 };
+
+const newPasswordField: FieldDefinition = {
+  key: 'new_password',
+  type: 'password',
+  label: 'New password',
+  hint: 'Generate fills the field and reveals it; the eye still hides it again.',
+};
+
+/** 16 characters from an unambiguous alphabet, from the browser's CSPRNG. */
+function generatePassword(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const bytes = crypto.getRandomValues(new Uint32Array(16));
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+}
 
 const usernameField: FieldDefinition = {
   key: 'username',

@@ -7,6 +7,7 @@ import {
     resolveFieldDefault,
     isFieldVisible as isFieldVisibleFor,
     isSubmittableField,
+    nonSubmittedFieldKeys as nonSubmittedFieldKeysFor,
 } from "../utils/formSchema";
 
 /**
@@ -207,23 +208,66 @@ export function useResourceEditor<T = any>(
     // Enforced at SUBMIT, not just at seeding: the modal still renders every field,
     // so a `submit: false` control — or a `span` slot calling `update` — can write
     // its key back into the form data after seeding. Strip them on the way out.
-    const nonSubmittedFieldKeys = computed(
-        () =>
-            new Set(
-                (props.editFields ?? [])
-                    .filter(
-                        (field) =>
-                            // Presentational: lays the form out, holds no data (#110).
-                            !isSubmittableField(field) ||
-                            // Hidden by `when` at submit time (#117). Submitting a field
-                            // the user cannot see is a silent write — and with `default`
-                            // set it writes a value they never chose. Omitting the key
-                            // leaves the stored value alone.
-                            !isEditFieldVisible(field),
-                    )
-                    .map((field) => field.key),
-            ),
+    //
+    // Decided per KEY (#228): a key is dropped only when no field with that key
+    // is both submitting and visible at submit time. A presentational field
+    // (#110) holds no data, and a field hidden by `when` (#117) must not write a
+    // value the user cannot see — but a display-only twin sharing its key with
+    // the visible editable field must not strip the editable field's value.
+    const nonSubmittedFieldKeys = computed(() =>
+        nonSubmittedFieldKeysFor(props.editFields ?? [], isEditFieldVisible),
     );
+
+    /*
+     * Seed the form's data, ONE value per key (#228). Presentational fields are
+     * never seeded. When several submitting fields share a key (alternative
+     * controls for one value, switched by `when`), the key is seeded from the
+     * first of them that is visible against the seeded model, else the first
+     * declared. This used to be last-declared-wins, so a hidden alternative
+     * declared after the visible field replaced its default.
+     *
+     * Two submitting fields with one key that are visible TOGETHER are almost
+     * certainly a mistake (two controls bound to one value): the first declared
+     * wins, and DXTable warns once per key.
+     */
+    const warnedSharedVisibleKeys = new Set<string>();
+    const seedFormData = (
+        valueFor: (field: FieldDefinition) => any,
+        context: Record<string, any>,
+    ): Record<string, any> => {
+        const fieldsByKey = new Map<string, FieldDefinition[]>();
+        submittableEditFields.value.forEach((field) => {
+            const sharing = fieldsByKey.get(field.key);
+            if (sharing) sharing.push(field);
+            else fieldsByKey.set(field.key, [field]);
+        });
+
+        const formData: Record<string, any> = {};
+        fieldsByKey.forEach((fields, key) => {
+            formData[key] = valueFor(fields[0]);
+        });
+
+        const seededModel = { ...context, ...formData };
+        fieldsByKey.forEach((fields, key) => {
+            if (fields.length < 2) return;
+            const visibleFields = fields.filter((field) =>
+                isFieldVisibleFor(field, seededModel),
+            );
+            if (visibleFields.length > 1 && !warnedSharedVisibleKeys.has(key)) {
+                warnedSharedVisibleKeys.add(key);
+                // eslint-disable-next-line no-console
+                console.warn(
+                    `[DXTable] ${visibleFields.length} submitting edit fields share the key "${key}" and are visible together, ` +
+                        'so they edit one value; the first declared seeds it. ' +
+                        'Give alternatives mutually exclusive `when` predicates, or mark a display-only one `submit: false`.',
+                );
+            }
+            if (visibleFields.length > 0 && visibleFields[0] !== fields[0]) {
+                formData[key] = valueFor(visibleFields[0]);
+            }
+        });
+        return formData;
+    };
 
     const stripNonSubmittedFields = (data: Record<string, any>): Record<string, any> => {
         if (nonSubmittedFieldKeys.value.size === 0) return data;
@@ -265,11 +309,9 @@ export function useResourceEditor<T = any>(
         // between successive row opens. Presentational fields (submit: false)
         // lay the form out; they hold no data and must not be POSTed just
         // because they were declared.
-        const formData: Record<string, any> = {};
-        submittableEditFields.value.forEach(field => {
-            formData[field.key] = seedValueFor(field, item);
-        });
-        startSession(formData);
+        startSession(
+            seedFormData((field) => seedValueFor(field, item), item as any),
+        );
 
         // Open modal
         editFormInstanceKey.value++;
@@ -332,11 +374,7 @@ export function useResourceEditor<T = any>(
         editLoading.value = false;
 
         // A fresh form seeded with the field defaults (see `startSession`).
-        const formData: Record<string, any> = {};
-        submittableEditFields.value.forEach(field => {
-            formData[field.key] = resolveFieldDefault(field);
-        });
-        startSession(formData);
+        startSession(seedFormData(resolveFieldDefault, {}));
         editFormInstanceKey.value++;
         showEditModal.value = true;
     };

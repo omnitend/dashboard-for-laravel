@@ -1,6 +1,6 @@
 <!--
   @component
-  Renders a single `FieldDefinition` of any type (text, select, autocomplete, checkbox, switch, repeater, currency, percentage, file/image, component, etc.) with its label, validation error, hint and help. Used by `DXForm` and `DXTable`'s edit modal; exposes `value`, `span`, `info`, `info-popover`, `hint` and `repeater-row` slots for per-field customisation.
+  Renders a single `FieldDefinition` of any type (text, select, autocomplete, checkbox, switch, repeater, currency, percentage, file/image, component, etc.) with its label, validation error, hint and help. Used by `DXForm` and `DXTable`'s edit modal; exposes `value`, `span`, `info`, `info-popover`, `hint`, `repeater-row` and `password-actions` slots for per-field customisation.
 
   Structure (#135): a thin DISPATCHER. The shared chrome (label + validation
   feedback + hint + help + info) lives in `DXFieldShell`; the numeric controls
@@ -336,28 +336,61 @@
                 <!-- Password with a reveal toggle (the default for
                      `type: "password"`). Typing a long password blind is the one
                      place the eye really earns its keep, so it's opt-out
-                     (`revealable: false`) rather than opt-in. -->
-                <DInputGroup v-else-if="isRevealablePassword">
-                    <DFormInput
-                        v-model="textFieldModel"
-                        :required="field.required"
-                        :placeholder="field.placeholder"
-                        :state="fieldState"
-                        :disabled="isDisabled"
-                        :readonly="isReadonly"
-                        v-bind="passwordInputProps"
-                    />
-                    <template #append>
-                        <DButton
-                            variant="outline-secondary"
-                            :icon="passwordRevealed ? 'eye-slash' : 'eye'"
-                            :aria-label="passwordRevealed ? 'Hide password' : 'Show password'"
-                            :aria-pressed="passwordRevealed"
+                     (`revealable: false`) rather than opt-in. The eye is drawn
+                     as part of the field (`.dx-password-reveal`: the input's
+                     border, radius and background). A `password-actions` slot
+                     lands AFTER the input group, in `.dx-password-field__actions`,
+                     which wraps below the group when the row cannot give the
+                     input `--dx-password-input-min-width` (theme.scss); it also
+                     brings the group to a `revealable: false` field. -->
+                <div v-else-if="isPasswordGroup()" class="dx-password-field">
+                    <DInputGroup class="dx-password-field__group">
+                        <DFormInput
+                            v-model="textFieldModel"
+                            :required="field.required"
+                            :placeholder="field.placeholder"
+                            :state="fieldState"
                             :disabled="isDisabled"
-                            @click="passwordRevealed = !passwordRevealed"
+                            :readonly="isReadonly"
+                            v-bind="passwordInputProps"
                         />
-                    </template>
-                </DInputGroup>
+                        <template #append>
+                            <DButton
+                                v-if="isRevealablePassword"
+                                class="dx-password-reveal"
+                                variant="outline-secondary"
+                                icon-only
+                                :icon="passwordRevealed ? 'eye-slash' : 'eye'"
+                                :aria-label="passwordRevealed ? 'Hide password' : 'Show password'"
+                                :aria-pressed="passwordRevealed"
+                                :disabled="isDisabled"
+                                @click="passwordRevealed = !passwordRevealed"
+                            />
+                        </template>
+                    </DInputGroup>
+                    <div v-if="slots['password-actions'] !== undefined" class="dx-password-field__actions">
+                        <!--
+                          @slot Extra controls beside a password input, after its input group (the input and the reveal (eye) toggle), e.g. a "Generate password" button. They sit on the input's row while it keeps `--dx-password-input-min-width`, and wrap below it when the row is too narrow. Use an ordinary button (a `secondary` `DButton` matches the form's other buttons). Not rendered on a `plaintext` field.
+                          @binding {FieldDefinition} field The field definition being rendered.
+                          @binding {any} model The model passed to field predicates (defaults to the live form data).
+                          @binding {any} value The current field value.
+                          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
+                          @binding {boolean} revealed Whether the password is currently shown as plain text.
+                          @binding {(revealed: boolean) => void} setRevealed Show (`true`) or mask (`false`) the password, exactly as the eye does. A no-op on a `revealable: false` field.
+                          @binding {boolean} disabled Whether the field is disabled or read-only, so actions that change the value can disable themselves.
+                        -->
+                        <slot
+                            name="password-actions"
+                            :field="field"
+                            :model="model"
+                            :value="fieldValue"
+                            :update="setValue"
+                            :revealed="passwordRevealed"
+                            :set-revealed="setPasswordRevealed"
+                            :disabled="isDisabled || isReadonly"
+                        />
+                    </div>
+                </div>
 
                 <!-- Text-based inputs (text/email/password/url/tel/date/time/datetime) -->
                 <DFormInput
@@ -819,6 +852,32 @@ const isRevealablePassword = computed(
         !isPlaintext.value,
 );
 
+/*
+ * The password input group: the eye (unless `revealable: false`) plus any
+ * `password-actions` slot content. A `revealable: false` field with no slot
+ * stays a bare input, as before; with the slot it gets the group so the
+ * actions have somewhere to sit, but still no eye and no way to unmask.
+ * A function, not a computed: `useSlots()` is not reactive, so a computed
+ * would keep the first render's answer if the slot came or went later.
+ */
+function isPasswordGroup(): boolean {
+    return (
+        isRevealablePassword.value ||
+        (props.field.type === "password" &&
+            !isPlaintext.value &&
+            slots["password-actions"] !== undefined)
+    );
+}
+
+/**
+ * The `password-actions` slot's handle on the reveal state: the same state
+ * the eye toggles, so the two never disagree. Refused on a `revealable: false`
+ * field, which promises never to unmask.
+ */
+function setPasswordRevealed(revealed: boolean): void {
+    passwordRevealed.value = isRevealablePassword.value && revealed === true;
+}
+
 // DXTable reuses ONE DXField instance per field key across modal opens (the
 // v-for is keyed on `field.key`, which is stable across rows) and swaps in a
 // fresh form per record. Without this, revealing row A's password leaves row
@@ -864,10 +923,14 @@ const controlPropsWithGuards = computed(() => {
     return merged;
 });
 
-// The reveal toggle owns the password input's `type`.
+// The reveal toggle owns the password input's `type`. Only a revealable field
+// can be shown as text (`setPasswordRevealed` also refuses the others).
 const passwordInputProps = computed(() => ({
     ...inputPropsWithGuards.value,
-    type: passwordRevealed.value ? "text" : "password",
+    type:
+        passwordRevealed.value && isRevealablePassword.value
+            ? "text"
+            : "password",
 }));
 
 const inputType = computed<string>(() => {

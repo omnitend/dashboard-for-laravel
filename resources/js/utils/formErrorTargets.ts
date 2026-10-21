@@ -31,7 +31,10 @@ export interface ErrorTarget {
     fieldKey: string | null;
     /** The tab holding the owning field, or `null` (flat form, or unowned). */
     tabKey: string | null;
-    /** A readable name for the key: "Price (line 1)", "Delivery date". */
+    /**
+     * A readable name for the key: "Price (line 1)", "Delivery date", or a
+     * row's own name from the field's `rowLabel`.
+     */
     label: string;
 }
 
@@ -138,6 +141,26 @@ function defaultLabel(
 }
 
 /**
+ * The field's `rowLabel` for one row, or `null` when it has none, names
+ * nothing (empty or not a string) or throws: the caller then falls back to
+ * "<label> (line N)", so a broken row name can never hide an error.
+ */
+function rowLabelFor(
+    field: FieldDefinition,
+    row: Record<string, any>,
+    index: number,
+): string | null {
+    if (typeof field.rowLabel !== "function") return null;
+    let name: unknown;
+    try {
+        name = field.rowLabel(row, index);
+    } catch {
+        return null;
+    }
+    return typeof name === "string" && name.trim() !== "" ? name : null;
+}
+
+/**
  * Resolve every key in `errors` to its owning field, tab and label, with the
  * display line for each message. Rows come in tab order, then field order
  * (the order of `tab.fieldKeys`, or of `fields` in a flat form), then the
@@ -151,7 +174,8 @@ function defaultLabel(
  *
  * Labels: the owning field's label; for `field.N.sub` the sub-field's label
  * (when the field defines `fields` and one has that key) or the field's own,
- * plus "(line N+1)"; for any other nested key (a media map's
+ * plus "(line N+1)" — unless the field's `rowLabel` names that row, when
+ * the row's name is the whole label; for any other nested key (a media map's
  * `image_media.<uuid>`) the field's label. An unowned key is humanised.
  *
  * Display lines: "Label: message", except that the label is left off when
@@ -254,6 +278,8 @@ export function resolveErrorTargets(
         // label resolves against the row here too.
         const row = getByPath(model, `${field.key}.${first}`);
         const rowModel = row !== null && typeof row === "object" ? row : {};
+        const rowName = rowLabelFor(field, rowModel, Number(first));
+        if (rowName !== null) return rowName;
         const base = subField ? labelFor(subField, rowModel) : labelFor(field);
         return `${base} (line ${Number(first) + 1})`;
     };

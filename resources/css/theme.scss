@@ -1645,6 +1645,81 @@ $dx-monospace-elements: "code, kbd, samp, pre";
 }
 
 // ----------------------------------------------------------------------------
+// DXField password fields: the eye as part of the input, actions that wrap
+// ----------------------------------------------------------------------------
+//
+// The reveal (eye) toggle is drawn as part of the field: the input's border
+// colour, radius and background, a muted icon, and the input's own focus
+// treatment (navy border + halo). As a plain `outline-secondary` button it was
+// a darker, square-cornered box stuck to a light rounded input. Driven through
+// Bootstrap's `--bs-btn-*` variables, so hover/active/focus keep Bootstrap's
+// resolution order. `.btn.` lifts it over `.btn-outline-secondary`.
+//
+// A `password-actions` slot (a Generate button) sits AFTER the input group,
+// not in it, with a gap: it is an ordinary button beside the field rather than
+// a third piece of the control. The group asks for room for
+// `--dx-password-input-min-width` of input plus the square eye; when the row
+// cannot give the group that AND the actions, the actions wrap onto their own
+// line below it, so the input never shrinks to a couple of characters. The
+// group still has `min-width: 0`: in a container narrower than the minimum it
+// shrinks rather than overflowing.
+$dx-password-input-min-width: 11rem !default;
+$dx-password-actions-gap: 0.5rem !default;
+
+:root {
+  --dx-password-input-min-width: #{$dx-password-input-min-width};
+}
+
+.btn.dx-password-reveal {
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-bg: #{$input-bg};
+  --bs-btn-border-color: var(--d-input-border-color);
+  --bs-btn-border-radius: #{$input-border-radius};
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-tertiary-bg);
+  --bs-btn-hover-border-color: var(--d-input-border-color);
+  --bs-btn-active-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-tertiary-bg);
+  --bs-btn-active-border-color: var(--d-input-border-color);
+  --bs-btn-focus-box-shadow: #{$input-focus-box-shadow};
+
+  &:focus-visible {
+    border-color: $input-focus-border-color;
+  }
+}
+
+// Disabled with its field: the disabled input's fill and border, not the
+// neutral outline-button look (`.btn:is(:disabled)` below), so the eye still
+// reads as part of the greyed-out control. `.input-group >` outranks that rule.
+.input-group > .btn.dx-password-reveal:is(:disabled, .disabled),
+fieldset:disabled .input-group > .btn.dx-password-reveal {
+  --bs-btn-disabled-bg: #{$input-disabled-bg};
+  --bs-btn-disabled-color: var(--bs-secondary-color);
+  --bs-btn-disabled-border-color: var(--d-input-border-color);
+}
+
+.dx-password-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: $dx-password-actions-gap;
+
+  > .dx-password-field__group {
+    // The eye is an icon-only square, `--dx-input-height` wide.
+    flex: 1 1 calc(var(--dx-password-input-min-width) + var(--dx-input-height));
+    min-width: 0;
+  }
+}
+
+.dx-password-field__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $dx-password-actions-gap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+// ----------------------------------------------------------------------------
 // DXCurrencyInput — keep the amount usable in a narrow container
 // ----------------------------------------------------------------------------
 //
