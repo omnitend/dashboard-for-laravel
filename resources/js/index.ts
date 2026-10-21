@@ -180,6 +180,7 @@ export type {
     FormState,
     UseFormReturn,
     SubmitFailure,
+    FailedRow,
 } from "./composables/useForm";
 
 export type {

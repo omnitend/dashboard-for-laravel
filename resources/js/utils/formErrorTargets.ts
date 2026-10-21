@@ -7,8 +7,9 @@
  * `when`/`context`-aware predicates and a standalone summary can use the
  * defaults below.
  */
+import { toRaw } from "vue";
 import type { FieldDefinition, FormTab } from "../types";
-import type { ValidationErrors } from "../composables/useForm";
+import type { FailedRow, ValidationErrors } from "../composables/useForm";
 import {
     isFieldVisible as isFieldVisibleFor,
     resolvePredicate,
@@ -19,6 +20,14 @@ import { getByPath } from "./objectPath";
 export interface ErrorTarget {
     /** The key as the server sent it (`lines.0.price`). */
     errorKey: string;
+    /**
+     * Where to take the user for this error now. The same as `errorKey`,
+     * except for a row error resolved with `failedRows`: the key at the
+     * failed row's CURRENT index (`lines.1.price` once row 0 is removed),
+     * or the owning field's key when that row is gone. Always set by
+     * `resolveErrorTargets`; optional so targets built by hand still type.
+     */
+    focusKey?: string;
     /** The server's messages for that key, as sent. */
     messages: string[];
     /**
@@ -65,6 +74,14 @@ export interface ResolveErrorTargetsOptions {
         field: FieldDefinition,
         labelModel: Record<string, any>,
     ) => string | null | undefined;
+    /**
+     * The rows a failed submit's errors named, as captured then
+     * (`SubmitFailure.failedRows`). Pass it when resolving that failure's
+     * errors after the form may have changed (the error summary does), so a
+     * row error keeps the name of the row that failed and points at where
+     * that row is now. Leave it out for the form's live errors.
+     */
+    failedRows?: Record<string, FailedRow>;
 }
 
 interface Candidate {
@@ -175,7 +192,10 @@ function rowLabelFor(
  * Labels: the owning field's label; for `field.N.sub` the sub-field's label
  * (when the field defines `fields` and one has that key) or the field's own,
  * plus "(line N+1)" — unless the field's `rowLabel` names that row, when
- * the row's name is the whole label; for any other nested key (a media map's
+ * the row's name is the whole label. With `failedRows`, a row key's label
+ * reads the row as it was when the submit failed, and its `focusKey` and
+ * line number follow that row to where it is now (see `ownedTarget`); for
+ * any other nested key (a media map's
  * `image_media.<uuid>`) the field's label. An unowned key is humanised.
  *
  * Display lines: "Label: message", except that the label is left off when
@@ -266,22 +286,68 @@ export function resolveErrorTargets(
         return longest;
     };
 
-    const ownedLabel = (errorKey: string, field: FieldDefinition): string => {
-        if (!isNestedUnder(errorKey, field.key)) return labelFor(field);
-        const [first, second] = errorKey.slice(field.key.length + 1).split(".");
-        if (!NUMERIC_SEGMENT.test(first)) return labelFor(field);
+    /**
+     * Where a failed row is now: its index in the field's live rows, found by
+     * identity, or -1 when it is gone (removed, or the rows were replaced).
+     */
+    const currentIndexOf = (field: FieldDefinition, failedRow: FailedRow): number => {
+        const liveRows = getByPath(model, field.key);
+        if (!Array.isArray(liveRows)) return -1;
+        return liveRows.findIndex((row) => toRaw(row) === failedRow.row);
+    };
+
+    /**
+     * The label and focus key for an owned error key. For a row key
+     * (`field.N.sub`) with a captured failed row, both follow that row: the
+     * label is read from the row as it was when the submit failed, and the
+     * focus key uses the row's current index, or is the field's key when the
+     * row is gone. "(line N)" then counts the row's CURRENT position while it
+     * exists (the line a click takes the user to), and the position it failed
+     * at once it is gone.
+     */
+    const ownedTarget = (
+        errorKey: string,
+        field: FieldDefinition,
+    ): { label: string; focusKey: string } => {
+        if (!isNestedUnder(errorKey, field.key)) {
+            return { label: labelFor(field), focusKey: errorKey };
+        }
+        const [first, second, ...deeper] = errorKey
+            .slice(field.key.length + 1)
+            .split(".");
+        if (!NUMERIC_SEGMENT.test(first)) {
+            return { label: labelFor(field), focusKey: errorKey };
+        }
+        const failedIndex = Number(first);
         const subField =
             second !== undefined
                 ? field.fields?.find((candidate) => candidate.key === second)
                 : undefined;
-        // DXRepeater renders a sub-field with the ROW as its model, so its
-        // label resolves against the row here too.
-        const row = getByPath(model, `${field.key}.${first}`);
-        const rowModel = row !== null && typeof row === "object" ? row : {};
-        const rowName = rowLabelFor(field, rowModel, Number(first));
-        if (rowName !== null) return rowName;
+        const failedRow = options.failedRows?.[`${field.key}.${first}`];
+
+        let rowModel: Record<string, any>;
+        let lineIndex = failedIndex;
+        let focusKey = errorKey;
+        if (failedRow !== undefined) {
+            rowModel = failedRow.snapshot;
+            const currentIndex = currentIndexOf(field, failedRow);
+            if (currentIndex >= 0) {
+                lineIndex = currentIndex;
+                const rest = second !== undefined ? [second, ...deeper] : [];
+                focusKey = [field.key, String(currentIndex), ...rest].join(".");
+            } else {
+                focusKey = field.key;
+            }
+        } else {
+            // DXRepeater renders a sub-field with the ROW as its model, so its
+            // label resolves against the row here too.
+            const row = getByPath(model, `${field.key}.${first}`);
+            rowModel = row !== null && typeof row === "object" ? row : {};
+        }
+        const rowName = rowLabelFor(field, rowModel, failedIndex);
+        if (rowName !== null) return { label: rowName, focusKey };
         const base = subField ? labelFor(subField, rowModel) : labelFor(field);
-        return `${base} (line ${Number(first) + 1})`;
+        return { label: `${base} (line ${lineIndex + 1})`, focusKey };
     };
 
     // ——— one target per error key with at least one message
@@ -298,15 +364,15 @@ export function resolveErrorTargets(
         );
         if (messages.length === 0) return;
         const owner = ownerOf(errorKey);
+        const owned = owner ? ownedTarget(errorKey, owner.field) : null;
         pending.push({
             target: {
                 errorKey,
+                focusKey: owned ? owned.focusKey : errorKey,
                 messages,
                 fieldKey: owner ? owner.field.key : null,
                 tabKey: owner ? owner.tabKey : null,
-                label: owner
-                    ? ownedLabel(errorKey, owner.field)
-                    : humaniseErrorKey(errorKey),
+                label: owned ? owned.label : humaniseErrorKey(errorKey),
             },
             rank: owner ? owner.rank : [UNOWNED_RANK, UNOWNED_RANK],
             order,

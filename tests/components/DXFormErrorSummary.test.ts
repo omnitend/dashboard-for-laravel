@@ -151,7 +151,7 @@ describe('DXFormErrorSummary', () => {
     await userEvent.click(row);
 
     expect(emitted()['select-target']).toEqual([
-      [{ fieldKey: 'lines', tabKey: 'lines', errorKey: 'lines.0.price' }],
+      [{ fieldKey: 'lines', tabKey: 'lines', errorKey: 'lines.0.price', focusKey: 'lines.0.price' }],
     ]);
   });
 
