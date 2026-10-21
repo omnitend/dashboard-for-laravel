@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.47.1] - 2026-10-21
+
+### Upgrade notes
+
+- **0.47.0 changed the password field's markup** (missing from its
+  notes). The input group now sits in a `div.dx-password-field`, the group
+  has `dx-password-field__group`, and the reveal (eye) toggle has
+  `dx-password-reveal`. Styles aimed at the eye through the group, such as
+  `.input-group > .btn-outline-secondary`, should target
+  `.dx-password-reveal` instead.
+
+### Fixed
+
+- A revealed password no longer masks itself again when the consumer
+  rebuilds its `fields` from the form data (a hint or label that follows
+  the value). The reveal reset itself on any change to the field object, so
+  `update(generatePassword()); setRevealed(true)` in `password-actions`
+  was undone at once, and so was the first keystroke after the eye. It now
+  resets only when the form or the field's key changes, as when DXTable's
+  modal opens on another row.
+- The `update` a `span` or `value` slot receives (DXTable: `edit-span`,
+  `edit-value`) now also clears validation errors under `<key>.`, as a
+  repeater's add and remove do. A slot that draws its own rows and writes
+  the array back no longer leaves a per-row error (`lines.1.price`) in
+  `form.errors` for whichever row has moved to that index.
+- The error summary names, and takes the user to, the row that actually
+  failed after rows are removed or reordered. It still lists the last
+  failure until the next submit, but it read each row error's `rowLabel`
+  and focus target from the rows as they are now: fail on row 3
+  ("Charlie"), remove row 1, and it named the new row 3 and a click focused
+  that row. A failed submit now records the rows its errors name
+  (`submitFailure.failedRows`, new type `FailedRow`), so the summary reads
+  the name from the row as it was and a click follows the row to its
+  current index (`focusKey` on `ErrorTarget` and on the `select-target`
+  selection). When that row has been removed, or the rows were replaced
+  wholesale (a reload), the click goes to the list field instead of
+  another row. Without `rowLabel`, "(line N)" counts the row's current
+  position while it exists and the position it failed at once it is gone.
+  Applies to repeaters and to span fields that render their own rows.
+- The strict `FieldDef` union accepts `rowLabel` on a `span` field: it was
+  typed on `RepeaterFieldDef` only, though documented for both. It is now
+  on `BaseFieldDef`.
+
+### Docs
+
+- The `password-actions` / `edit-password-actions(<key>)` slot docs and
+  `PasswordActionsSlotProps` described the content as inside the input
+  group after the eye. It renders after the group, in
+  `.dx-password-field__actions`, and wraps below the input in a narrow
+  column. The type's example uses `variant="secondary"`, as the slot docs
+  recommend.
+
 ## [0.47.0] - 2026-10-20
 
 ### Added

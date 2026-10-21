@@ -116,7 +116,7 @@
                 </template>
 
                 <!-- Forward edit-password-actions(key) → password-actions(key):
-                     content beside the password input, inside its input group,
+                     content after the password input group (input and eye),
                      with a handle on dfl's own reveal (eye) state. -->
                 <template
                     v-for="key in editPasswordActionsSlotKeys"
@@ -124,7 +124,7 @@
                     #[`password-actions(${key})`]="sp"
                 >
                     <!--
-                      @slot Extra controls beside password field `<key>`'s input in the edit/create modal, inside its input group after the reveal (eye) toggle — e.g. a "Generate password" button. Name it `edit-password-actions(<fieldKey>)`.
+                      @slot Extra controls beside password field `<key>`'s input in the edit/create modal, after its input group (the input and the reveal (eye) toggle); wraps below the input when the row is too narrow — e.g. a "Generate password" button. Name it `edit-password-actions(<fieldKey>)`.
                       @binding {object} item The row being edited (null in create mode).
                       @binding {any} value The current field value.
                       @binding {Function} update Call with a new value to update the field.

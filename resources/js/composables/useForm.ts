@@ -1,11 +1,13 @@
 import {
     reactive,
     computed,
+    markRaw,
     toRaw,
     type ComputedRef,
     type WritableComputedRef,
 } from "vue";
 import { api, type ApiError } from "../utils/api";
+import { getByPath } from "../utils/objectPath";
 
 export interface ValidationErrors {
     [key: string]: string[];
@@ -24,6 +26,29 @@ export interface SubmitFailure {
     message: string;
     /** The validation errors the submit returned (`{}` when none). */
     errors: ValidationErrors;
+    /**
+     * The rows the errors named, as they were when the submit failed, keyed
+     * by row path (`lines.2` for `lines.2.price`; every numeric segment of
+     * every error key gets one). Absent when no error key names a row that
+     * exists in the form data. The error summary uses it to keep naming
+     * and finding the row that failed after rows are removed or reordered.
+     */
+    failedRows?: Record<string, FailedRow>;
+}
+
+/** One row a failed submit's errors named (see `SubmitFailure.failedRows`). */
+export interface FailedRow {
+    /**
+     * The row object itself (raw, not a reactive proxy), so its current
+     * index can be found by identity. A row array replaced wholesale (a
+     * reload) holds new objects, and the row then counts as gone.
+     */
+    row: object;
+    /**
+     * A copy of the row taken when the submit failed, for labels: a row's
+     * name (`rowLabel`) reads it, so later edits do not rename the error.
+     */
+    snapshot: Record<string, any>;
 }
 
 export interface FormSubmitOptions<TPayload = unknown, TResponse = unknown> {
@@ -220,6 +245,42 @@ function submitFailureFrom(error: unknown): SubmitFailure | null {
         message: GENERIC_FAILURE_MESSAGE,
         errors: copyValidationErrors(errorsFromLaravel(error).errors),
     };
+}
+
+/**
+ * A copy of a row for `FailedRow.snapshot`: a deep clone when the row allows
+ * one, else a shallow copy (a row holding a function or a `File` proxy that
+ * `structuredClone` refuses still gets a name).
+ */
+function snapshotRow(row: object): Record<string, any> {
+    try {
+        return structuredClone(row) as Record<string, any>;
+    } catch {
+        return { ...(row as Record<string, any>) };
+    }
+}
+
+/**
+ * The `failedRows` for a failure's error keys, read from the form data as it
+ * is when the failure is recorded. Undefined when no key names a row.
+ */
+function failedRowsFor(
+    errors: ValidationErrors,
+    data: Record<string, any>,
+): Record<string, FailedRow> | undefined {
+    const rows: Record<string, FailedRow> = {};
+    for (const errorKey of Object.keys(errors)) {
+        const segments = errorKey.split(".");
+        for (let index = 1; index < segments.length; index += 1) {
+            if (!/^\d+$/.test(segments[index])) continue;
+            const rowPath = segments.slice(0, index + 1).join(".");
+            if (rows[rowPath] !== undefined) continue;
+            const row = toRaw(getByPath(data, rowPath));
+            if (row === null || typeof row !== "object") continue;
+            rows[rowPath] = markRaw({ row, snapshot: snapshotRow(row) });
+        }
+    }
+    return Object.keys(rows).length > 0 ? rows : undefined;
 }
 
 function errorsFromLaravel(error: any): {
@@ -523,6 +584,13 @@ export function useForm<TData extends Record<string, any>>(
                     setErrors(errors);
                     setMessage(message);
                     if (failure) {
+                        const failedRows = failedRowsFor(
+                            failure.errors,
+                            toRaw(state.data) as Record<string, any>,
+                        );
+                        if (failedRows !== undefined) {
+                            failure.failedRows = failedRows;
+                        }
                         state.submitFailure = failure;
                         state.failedSubmitCount += 1;
                     }

@@ -75,6 +75,14 @@ export interface ErrorSummarySelection {
     tabKey: string | null;
     /** The error key as the server sent it. */
     errorKey: string;
+    /**
+     * Where to take the user: the error key at the failed row's current
+     * index, or the field's key when that row is gone (see
+     * `ErrorTarget.focusKey`). Equal to `errorKey` for everything else.
+     * Always emitted; optional so a selection built by hand for DXForm's
+     * exposed `focusErrorTarget` still types (it then uses `errorKey`).
+     */
+    focusKey?: string;
 }
 
 interface Props {
@@ -171,6 +179,7 @@ const targets = computed<ErrorTarget[]>(() => {
         isFieldVisible: props.isFieldVisible,
         isTabVisible: props.isTabVisible,
         resolveLabel: props.resolveLabel,
+        failedRows: failure.value.failedRows,
     });
 });
 
@@ -178,6 +187,7 @@ interface Row {
     id: string;
     text: string;
     errorKey: string;
+    focusKey: string;
     fieldKey: string | null;
     tabKey: string | null;
 }
@@ -188,6 +198,7 @@ const rows = computed<Row[]>(() =>
             id: `${target.errorKey}#${index}`,
             text,
             errorKey: target.errorKey,
+            focusKey: target.focusKey ?? target.errorKey,
             fieldKey: target.fieldKey,
             tabKey: target.tabKey,
         })),
@@ -227,6 +238,7 @@ function selectRow(row: Row): void {
         fieldKey: row.fieldKey,
         tabKey: row.tabKey,
         errorKey: row.errorKey,
+        focusKey: row.focusKey,
     });
 }
 </script>

@@ -227,7 +227,11 @@ import DXFormField from "./DXFormField.vue";
 import DXSaveButton from "./DXSaveButton.vue";
 import DXFormErrorSummary, { type ErrorSummarySelection } from "./DXFormErrorSummary.vue";
 import { resolveErrorTargets, type ErrorTarget } from "../../utils/formErrorTargets";
-import type { UseFormReturn, ValidationErrors } from "../../composables/useForm";
+import type {
+    SubmitFailure,
+    UseFormReturn,
+    ValidationErrors,
+} from "../../composables/useForm";
 import type { DefineFormReturn } from "../../composables/defineForm";
 import { useContainerWidth } from "../../composables/useContainerWidth";
 import type { FieldDefinition, FormTab, LabelCols, MaybeFn } from "../../types";
@@ -590,13 +594,17 @@ const visibleTabKeys = computed<string[]>(() =>
  * field definition (consumer-rendered content) still owns its own key and
  * keys nested under it.
  */
-function errorTargetsFor(errors: ValidationErrors | null | undefined): ErrorTarget[] {
+function errorTargetsFor(
+    errors: ValidationErrors | null | undefined,
+    failedRows?: SubmitFailure["failedRows"],
+): ErrorTarget[] {
     return resolveErrorTargets(errors, {
         fields: resolvedFields.value,
         tabs: hasTabs.value ? props.tabs : undefined,
         model: model.value,
         isFieldVisible,
         isTabVisible: (tab) => visibleTabKeys.value.includes(tab.key),
+        failedRows,
     });
 }
 
@@ -605,10 +613,14 @@ const liveErrorTargets = computed<ErrorTarget[]>(() =>
     erroredKeys.value.length === 0 ? [] : errorTargetsFor(resolvedForm.value.errors),
 );
 
-/** Targets for what the last failed submit returned (the summary's rows). */
+/**
+ * Targets for what the last failed submit returned (the summary's rows). The
+ * failure's captured rows keep a row error naming, and pointing at, the row
+ * that failed after rows are removed or reordered.
+ */
 const summaryTargets = computed<ErrorTarget[]>(() => {
     const failure = resolvedForm.value.submitFailure;
-    return failure ? errorTargetsFor(failure.errors) : [];
+    return failure ? errorTargetsFor(failure.errors, failure.failedRows) : [];
 });
 
 /** Key of the first visible tab owning a visible errored field, or null. */
@@ -1094,7 +1106,7 @@ async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
     }
     const token = ++revealToken;
     let element = await renderedErrorElement(
-        target.errorKey ?? target.fieldKey,
+        target.focusKey ?? target.errorKey ?? target.fieldKey,
         target.fieldKey,
     );
     if (token !== revealToken) return;

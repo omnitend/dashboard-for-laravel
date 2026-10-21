@@ -458,6 +458,8 @@ export interface BaseFieldDef {
     plaintext?: MaybeFn<boolean>;
     submit?: boolean;
     errorKeys?: string[];
+    /** On a repeater, or a span field that renders its own rows. */
+    rowLabel?: (row: Record<string, any>, index: number) => string | null | undefined;
     when?: MaybeFn<boolean>;
     show?: () => boolean;
 }
@@ -597,7 +599,6 @@ export interface ComponentFieldDef extends BaseFieldDef {
 export interface RepeaterFieldDef extends BaseFieldDef {
     type: "repeater";
     fields?: FieldDef[];
-    rowLabel?: (row: Record<string, any>, index: number) => string | null | undefined;
     addLabel?: string;
     minItems?: number;
     maxItems?: number;
@@ -673,13 +674,16 @@ export interface FormTab {
 
 /**
  * Slot props of DXField's `password-actions` slot (DXForm:
- * `password-actions(<key>)`): content placed beside a password input, inside
- * its input group after the reveal (eye) toggle, such as a "Generate password"
- * button. `setRevealed` drives the same state the eye toggles.
+ * `password-actions(<key>)`): content placed beside a password input, such as
+ * a "Generate password" button. It renders after the input group (the input
+ * and the reveal (eye) toggle), in `.dx-password-field__actions`, and wraps
+ * onto its own line below the input when the row is too narrow to keep
+ * `--dx-password-input-min-width`. `setRevealed` drives the same state the
+ * eye toggles.
  *
  * ```vue
  * <template #password-actions(password)="{ update, setRevealed, disabled }">
- *   <DButton variant="outline-secondary" :disabled="disabled"
+ *   <DButton variant="secondary" :disabled="disabled"
  *     @click="update(generatePassword()); setRevealed(true)">Generate</DButton>
  * </template>
  * ```

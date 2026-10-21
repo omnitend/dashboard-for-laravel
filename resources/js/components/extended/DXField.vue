@@ -22,14 +22,14 @@
           @binding {FieldDefinition} field The field definition being rendered.
           @binding {any} model The model passed to field predicates (defaults to the live form data).
           @binding {any} value The current field value.
-          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
+          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error, and any error under `<key>.` (rows the slot draws itself).
         -->
         <slot
             name="span"
             :field="field"
             :model="model"
             :value="fieldValue"
-            :update="setValue"
+            :update="setValueFromSlot"
         />
     </div>
 
@@ -85,7 +85,7 @@
                 :field="field"
                 :model="model"
                 :value="fieldValue"
-                :update="setValue"
+                :update="setValueFromSlot"
             />
         </div>
         <!--
@@ -93,7 +93,7 @@
           @binding {FieldDefinition} field The field definition being rendered.
           @binding {any} model The model passed to field predicates (defaults to the live form data).
           @binding {any} value The current field value.
-          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error.
+          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error, and any error under `<key>.` (rows the slot draws itself).
         -->
         <slot
             v-else-if="showValueSlot && $slots.value"
@@ -101,7 +101,7 @@
             :field="field"
             :model="model"
             :value="fieldValue"
-            :update="setValue"
+            :update="setValueFromSlot"
         />
         <template v-else>
             <!-- Checkbox (horizontal): the row label (shell #label) names the
@@ -744,6 +744,24 @@ function setValue(value: any): void {
     props.form.clearError(errorKey.value);
 }
 
+/**
+ * `update` for the `span` and `value` slots (and so DXTable's `edit-span` /
+ * `edit-value`). Such a slot may draw rows of its own and write the whole
+ * array back, so besides the field's own error it clears every error under
+ * `<key>.` (`lines.3.price`), as the repeater's add and remove do: the rows
+ * may have moved, and a stale per-row error would stay in the summary under
+ * the wrong row. They come back on the next submit.
+ */
+function setValueFromSlot(value: any): void {
+    setValue(value);
+    const prefix = `${errorKey.value}.`;
+    for (const key of Object.keys(props.form.errors)) {
+        if (key.startsWith(prefix)) {
+            props.form.clearError(key);
+        }
+    }
+}
+
 const fieldState = computed(() => props.form.getState(errorKey.value));
 
 // A label function that throws falls back to the humanised key, as the
@@ -882,8 +900,13 @@ function setPasswordRevealed(revealed: boolean): void {
 // v-for is keyed on `field.key`, which is stable across rows) and swaps in a
 // fresh form per record. Without this, revealing row A's password leaves row
 // B's — and the create form's — showing in clear text.
+// Two sources, not one getter returning `[form, key]`: that array is new on
+// every run, so the callback would fire on ANY change the getter read,
+// including a new `field` object from a consumer that rebuilds its fields
+// from form data on each edit, re-masking straight after `setRevealed(true)`
+// or the first keystroke after the eye.
 watch(
-    () => [props.form, props.field.key],
+    [() => props.form, () => props.field.key],
     () => {
         passwordRevealed.value = false;
     },
