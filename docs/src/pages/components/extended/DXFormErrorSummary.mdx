@@ -37,6 +37,16 @@ the submit control is outside the form, such as a modal footer; see
 - A repeater row's error reads "Price (line 2)" (sub-field label and line), unless the field
   has a `rowLabel` that names that row, when it reads the row's name alone
   ("Chaucer Ale (Pint): Enter a price.").
+- A row error follows the row that failed. The failure records the rows its
+  errors name (`submitFailure.failedRows`), so after rows are removed or
+  reordered the summary still names that row, and a click goes to where it
+  is now. When the row is gone (removed, the rows replaced by a reload, or
+  flagged by the field's `softDeleteKey`), a click focuses the list field
+  itself (a repeater's labelled group, or a span field's container), never
+  another row's control. The rows are read from the form data when the
+  failure response arrives: rows changed while the request was in flight,
+  or a submit `transform` that drops or reorders rows, can attach an error
+  to the wrong row, as a bare index key always could.
 - A row is left without its "Label: " prefix when the message already names
   the field, and keeps it when the message holds a raw key (`delivery_date`)
   or two rows share a message.

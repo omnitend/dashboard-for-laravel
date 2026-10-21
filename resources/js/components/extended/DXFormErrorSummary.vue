@@ -78,7 +78,9 @@ export interface ErrorSummarySelection {
     /**
      * Where to take the user: the error key at the failed row's current
      * index, or the field's key when that row is gone (see
-     * `ErrorTarget.focusKey`). Equal to `errorKey` for everything else.
+     * `ErrorTarget.focusKey`), when DXForm's `focusErrorTarget` focuses the
+     * field's container rather than any row's control. Equal to `errorKey`
+     * for everything else.
      * Always emitted; optional so a selection built by hand for DXForm's
      * exposed `focusErrorTarget` still types (it then uses `errorKey`).
      */

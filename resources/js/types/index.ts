@@ -278,7 +278,9 @@ export interface FieldDefinition {
      * For a field whose value is a list of rows (a `repeater`, or a span
      * field that renders its own rows and owns `key.N.*` error keys): the
      * row's own name, called with the row (`model[key][index]`, or `{}` when
-     * the model has no such row) and its 0-based index. When it returns a
+     * the model has no such row) and its 0-based index (for a failure's row
+     * that has since moved, its current index; once removed, the index it
+     * failed at: the index "(line N)" counts). When it returns a
      * non-empty string, the error summary lists that row's errors under it
      * alone ("Chaucer Ale (Pint): Enter a price.") instead of
      * "<sub-field label> (line N)". Returning `undefined`, `null` or `""`

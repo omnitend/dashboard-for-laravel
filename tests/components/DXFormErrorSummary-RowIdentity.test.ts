@@ -105,6 +105,26 @@ async function renderFailed(kind: Kind, withRowLabel = true) {
   return { form, screen, summaryText, clickRow, priceInput };
 }
 
+/**
+ * 0.47.2 review: with the failed row gone, focus must land on the list field
+ * itself, not inside ANY row (0.47.1 focused row 0's input, the first
+ * editable control in the list). The list is the repeater's labelled group
+ * (its `fieldset`, which a screen reader announces by its legend), or the
+ * span field's own container when it has none.
+ */
+function expectFocusOnTheList(container: Element) {
+  const list = container.querySelector<HTMLElement>('[data-dx-field-key="lines"]');
+  expect(list, 'the list field').toBeTruthy();
+  const intended = list!.querySelector<HTMLElement>(':scope > fieldset') ?? list!;
+  const active = document.activeElement as HTMLElement | null;
+  expect(active?.closest('[data-dx-field-key^="lines."]') ?? null).toBeNull();
+  expect(active).toBe(intended);
+  // It is focusable for this focus only: Tab order is unchanged afterwards.
+  expect(intended.getAttribute('tabindex')).toBe('-1');
+  active!.blur();
+  expect(intended.hasAttribute('tabindex')).toBe(false);
+}
+
 describe.each(['repeater', 'span'] as const)('summary rows follow the failed row (%s)', (kind) => {
   afterEach(() => vi.restoreAllMocks());
 
@@ -138,9 +158,7 @@ describe.each(['repeater', 'span'] as const)('summary rows follow the failed row
 
     expect(summaryText()).toContain(`Charlie: ${MESSAGE}`);
     await clickRow();
-    expect(document.activeElement).not.toBe(priceInput(2));
-    const list = screen.container.querySelector('[data-dx-field-key="lines"]');
-    expect(list?.contains(document.activeElement)).toBe(true);
+    expectFocusOnTheList(screen.container);
   });
 
   it('rows replaced wholesale (a reload): names Charlie, and focuses the list', async () => {
@@ -151,9 +169,7 @@ describe.each(['repeater', 'span'] as const)('summary rows follow the failed row
 
     expect(summaryText()).toContain(`Charlie: ${MESSAGE}`);
     await clickRow();
-    expect(document.activeElement).not.toBe(priceInput(2));
-    const list = screen.container.querySelector('[data-dx-field-key="lines"]');
-    expect(list?.contains(document.activeElement)).toBe(true);
+    expectFocusOnTheList(screen.container);
   });
 });
 
@@ -180,5 +196,45 @@ describe('without rowLabel: "(line N)" is the row\'s CURRENT line while it exist
     form.data.lines.splice(2, 1);
     await settle();
     expect(summaryText()).toContain(`Price (line 3): ${MESSAGE}`);
+  });
+});
+
+describe('a soft-deleted failed row counts as gone (0.47.2 review)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("Charlie flagged by the field's softDeleteKey: the click focuses the list, not a row", async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => invalid());
+    const form = useForm({
+      lines: [
+        { id: 1, name: 'Alpha', price: 'a' },
+        { id: 2, name: 'Bravo', price: 'b' },
+        { id: 3, name: 'Charlie', price: 'c' },
+        { id: 4, name: 'Delta', price: 'd' },
+      ],
+    });
+    const field = { ...linesField('repeater'), softDeleteKey: 'to_delete' } as FieldDefinition;
+    const screen = render(DXForm, { props: { form, fields: [field] } });
+    await settle();
+    await expect(form.post('/api/orders')).rejects.toBeTruthy();
+    await settle();
+    await wait(100);
+
+    // As DXRepeater's Remove does for a row with an id: it stays in the
+    // array, flagged, and is no longer rendered.
+    (form.data.lines[2] as any).to_delete = true;
+    await settle();
+    expect(form.data.lines).toHaveLength(4);
+    expect(screen.container.querySelector('[data-dx-field-key="lines.2.price"]')).toBeNull();
+    // Positive control: the other rows still render.
+    expect(screen.container.querySelector('[data-dx-field-key="lines.3.price"] input')).toBeTruthy();
+
+    const row = Array.from(
+      screen.container.querySelectorAll<HTMLButtonElement>('.dx-form-error-summary__target'),
+    ).find((button) => button.textContent?.includes(MESSAGE));
+    expect(row?.textContent).toContain('Charlie');
+    (document.activeElement as HTMLElement | null)?.blur();
+    await userEvent.click(row!);
+    await wait(300);
+    expectFocusOnTheList(screen.container);
   });
 });

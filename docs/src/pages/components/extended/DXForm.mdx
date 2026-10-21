@@ -213,7 +213,8 @@ An error on a row (`lines.1.price`) is listed under its sub-field's label and li
 the field a `rowLabel` and the summary lists that row under its name instead,
 with no line number: "Chaucer Ale (Pint): Must be positive." It is called with
 the row (`model.lines[1]`, or `{}` when the model has no such row) and its
-0-based index. Return `undefined`, `null` or `""` for a row with no name yet
+0-based index: the row's current position while it exists, or the position
+it failed at once it has been removed (the same index "(line N)" counts). Return `undefined`, `null` or `""` for a row with no name yet
 (or let it throw) and that row keeps "Price (line 2)". It works on a
 `repeater` and on a `span` field that renders its own rows, for any key
 nested under the field's key. It changes only the label: the owning field,

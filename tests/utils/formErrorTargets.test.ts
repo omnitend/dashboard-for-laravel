@@ -431,3 +431,84 @@ describe('resolveErrorTargets nested labels (review finding 3)', () => {
     ]);
   });
 });
+
+describe('resolveErrorTargets with failedRows (0.47.2 review)', () => {
+  const MESSAGE = 'Enter a valid price.';
+  const rows = () => [
+    { id: 1, name: 'Alpha' },
+    { id: 2, name: 'Bravo' },
+    { id: 3, name: 'Charlie' },
+    { id: 4, name: 'Delta' },
+  ];
+  /** The failure on row 2 (Charlie), captured as useForm captures it. */
+  const failedOn = (lines: any[]) => ({
+    'lines.2': { row: lines[2], snapshot: { ...lines[2] } },
+  });
+  const linesField = (extra: Partial<FieldDefinition> = {}): FieldDefinition => ({
+    key: 'lines',
+    type: 'repeater',
+    label: 'Lines',
+    fields: [{ key: 'price', type: 'text', label: 'Price' }],
+    ...extra,
+  } as FieldDefinition);
+
+  it('control: a row present at its failed index keeps its key', () => {
+    const lines = rows();
+    const [target] = resolveErrorTargets(
+      { 'lines.2.price': [MESSAGE] },
+      { fields: [linesField({ softDeleteKey: 'to_delete' })], model: { lines }, failedRows: failedOn(lines) },
+    );
+    expect(target.focusKey).toBe('lines.2.price');
+    expect(target.label).toBe('Price (line 3)');
+  });
+
+  it("a row soft-deleted through the field's softDeleteKey counts as gone", () => {
+    const lines = rows();
+    const failedRows = failedOn(lines);
+    (lines[2] as any).to_delete = true;
+    const [target] = resolveErrorTargets(
+      { 'lines.2.price': [MESSAGE] },
+      { fields: [linesField({ softDeleteKey: 'to_delete' })], model: { lines }, failedRows },
+    );
+    expect(target.focusKey).toBe('lines');
+  });
+
+  it('a flag of the same name on a field WITHOUT softDeleteKey is just data', () => {
+    const lines = rows();
+    const failedRows = failedOn(lines);
+    (lines[2] as any).to_delete = true;
+    const [target] = resolveErrorTargets(
+      { 'lines.2.price': [MESSAGE] },
+      { fields: [linesField()], model: { lines }, failedRows },
+    );
+    expect(target.focusKey).toBe('lines.2.price');
+  });
+
+  describe('rowLabel gets the index "(line N)" would count', () => {
+    const byIndex = linesField({ rowLabel: (_row: any, index: number) => `Row ${index + 1}` });
+
+    it('the current index while the row is present (row 0 removed: Charlie is row 2)', () => {
+      const lines = rows();
+      const failedRows = failedOn(lines);
+      lines.splice(0, 1);
+      const [target] = resolveErrorTargets(
+        { 'lines.2.price': [MESSAGE] },
+        { fields: [byIndex], model: { lines }, failedRows },
+      );
+      expect(target.focusKey).toBe('lines.1.price');
+      expect(target.label).toBe('Row 2');
+    });
+
+    it('the failed index once the row is gone', () => {
+      const lines = rows();
+      const failedRows = failedOn(lines);
+      lines.splice(2, 1);
+      const [target] = resolveErrorTargets(
+        { 'lines.2.price': [MESSAGE] },
+        { fields: [byIndex], model: { lines }, failedRows },
+      );
+      expect(target.focusKey).toBe('lines');
+      expect(target.label).toBe('Row 3');
+    });
+  });
+});

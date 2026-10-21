@@ -27,11 +27,19 @@ export interface SubmitFailure {
     /** The validation errors the submit returned (`{}` when none). */
     errors: ValidationErrors;
     /**
-     * The rows the errors named, as they were when the submit failed, keyed
-     * by row path (`lines.2` for `lines.2.price`; every numeric segment of
-     * every error key gets one). Absent when no error key names a row that
-     * exists in the form data. The error summary uses it to keep naming
-     * and finding the row that failed after rows are removed or reordered.
+     * The rows the errors named, keyed by row path: the path up to the
+     * key's FIRST numeric segment (`lines.2` for `lines.2.price` and for
+     * `lines.2.options.0.name`; a row nested inside a row is not recorded,
+     * since the summary follows the outer row). Absent when no error key
+     * names a row that exists in the form data. The error summary uses it
+     * to keep naming and finding the row that failed after rows are removed
+     * or reordered.
+     *
+     * The rows are read from the form data when the failure response
+     * ARRIVES, not when the request was sent. Rows added, removed or
+     * reordered while the request was in flight, or a submit `transform`
+     * that drops or reorders rows, can attach an error to the wrong row
+     * here, exactly as a bare index key always could.
      */
     failedRows?: Record<string, FailedRow>;
 }
@@ -249,8 +257,14 @@ function submitFailureFrom(error: unknown): SubmitFailure | null {
 
 /**
  * A copy of a row for `FailedRow.snapshot`: a deep clone when the row allows
- * one, else a shallow copy (a row holding a function or a `File` proxy that
- * `structuredClone` refuses still gets a name).
+ * one (`File`, `Blob` and `Date` values clone fine), else a shallow copy, so
+ * a row `structuredClone` refuses still gets a name. It refuses a row
+ * holding a function, a symbol, a DOM node or a proxy (a reactive object
+ * nested in the row: the row itself is raw, the objects inside it may not
+ * be). A class instance does NOT make it throw: it is cloned as a plain
+ * object, losing its prototype, getters and private fields, so a `rowLabel`
+ * reading a getter on such a value reads `undefined` (and falls back to the
+ * line form).
  */
 function snapshotRow(row: object): Record<string, any> {
     try {
@@ -262,7 +276,10 @@ function snapshotRow(row: object): Record<string, any> {
 
 /**
  * The `failedRows` for a failure's error keys, read from the form data as it
- * is when the failure is recorded. Undefined when no key names a row.
+ * is when the failure is recorded. Only the row at a key's first numeric
+ * segment is recorded: that is the only one the error summary reads
+ * (`<field key>.<index>`), so deeper rows would be cloned for nothing.
+ * Undefined when no key names a row.
  */
 function failedRowsFor(
     errors: ValidationErrors,
@@ -271,14 +288,15 @@ function failedRowsFor(
     const rows: Record<string, FailedRow> = {};
     for (const errorKey of Object.keys(errors)) {
         const segments = errorKey.split(".");
-        for (let index = 1; index < segments.length; index += 1) {
-            if (!/^\d+$/.test(segments[index])) continue;
-            const rowPath = segments.slice(0, index + 1).join(".");
-            if (rows[rowPath] !== undefined) continue;
-            const row = toRaw(getByPath(data, rowPath));
-            if (row === null || typeof row !== "object") continue;
-            rows[rowPath] = markRaw({ row, snapshot: snapshotRow(row) });
-        }
+        const firstRowSegment = segments.findIndex(
+            (segment, index) => index > 0 && /^\d+$/.test(segment),
+        );
+        if (firstRowSegment < 0) continue;
+        const rowPath = segments.slice(0, firstRowSegment + 1).join(".");
+        if (rows[rowPath] !== undefined) continue;
+        const row = toRaw(getByPath(data, rowPath));
+        if (row === null || typeof row !== "object") continue;
+        rows[rowPath] = markRaw({ row, snapshot: snapshotRow(row) });
     }
     return Object.keys(rows).length > 0 ? rows : undefined;
 }

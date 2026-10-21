@@ -1086,6 +1086,33 @@ function focusSelectedTab(): void {
 }
 
 /**
+ * Focus a field's container rather than any control inside it: the field's
+ * labelled group when it has one (a repeater's `fieldset`, announced by its
+ * legend), else the marked element itself. It is made focusable for this
+ * focus only (`tabindex="-1"`, removed again on blur), so the Tab order is
+ * unchanged. Used when the row an error named is gone: every control inside
+ * the field belongs to some other row. True once it holds focus.
+ */
+function focusFieldContainer(element: HTMLElement): boolean {
+    const container =
+        element.querySelector<HTMLElement>(':scope > fieldset, :scope > [role="group"]') ??
+        element;
+    if (!container.hasAttribute("tabindex")) {
+        container.setAttribute("tabindex", "-1");
+        container.addEventListener(
+            "blur",
+            () => container.removeAttribute("tabindex"),
+            { once: true },
+        );
+    }
+    element.scrollIntoView({ block: "nearest" });
+    container.focus({ preventScroll: true });
+    if (document.activeElement === container) return true;
+    if (container.getAttribute("tabindex") === "-1") container.removeAttribute("tabindex");
+    return false;
+}
+
+/**
  * Take the user to an error a summary lists: select its tab, wait for the
  * pane to render, look the field up in the form (its marker, anywhere
  * inside the form's element, a teleport target inside the form included),
@@ -1097,7 +1124,11 @@ function focusSelectedTab(): void {
  * its key whenever its element leaves the DOM (a re-render replacing it),
  * and a moment with none at all is waited out. When no marker renders
  * within the field's render frames, or nothing in it takes focus, focus
- * moves to the selected tab's button. Exposed so a summary rendered OUTSIDE
+ * moves to the selected tab's button. When the row the error named is gone
+ * (`focusKey` is the field's key while `errorKey` names something under it:
+ * the row was removed, replaced or soft-deleted), the field's container
+ * takes focus instead of a control, since every control in it belongs to
+ * another row (`focusFieldContainer`). Exposed so a summary rendered OUTSIDE
  * the form (DXTable's modal footer) can drive it.
  */
 async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
@@ -1105,6 +1136,10 @@ async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
         commitTabKey(target.tabKey);
     }
     const token = ++revealToken;
+    const isTargetGone =
+        target.focusKey === target.fieldKey &&
+        target.errorKey !== undefined &&
+        target.errorKey !== target.fieldKey;
     let element = await renderedErrorElement(
         target.focusKey ?? target.errorKey ?? target.fieldKey,
         target.fieldKey,
@@ -1112,6 +1147,10 @@ async function focusErrorTarget(target: ErrorSummarySelection): Promise<void> {
     if (token !== revealToken) return;
     if (element === null) {
         focusSelectedTab();
+        return;
+    }
+    if (isTargetGone) {
+        if (!focusFieldContainer(element)) focusSelectedTab();
         return;
     }
     const path = element.getAttribute("data-dx-field-key") ?? target.fieldKey;

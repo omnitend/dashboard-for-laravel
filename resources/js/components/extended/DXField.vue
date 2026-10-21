@@ -22,7 +22,7 @@
           @binding {FieldDefinition} field The field definition being rendered.
           @binding {any} model The model passed to field predicates (defaults to the live form data).
           @binding {any} value The current field value.
-          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error, and any error under `<key>.` (rows the slot draws itself).
+          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error, and every error under `<key>.` when the value is an array whose rows were added, removed, replaced or reordered (rows the slot draws itself).
         -->
         <slot
             name="span"
@@ -93,7 +93,7 @@
           @binding {FieldDefinition} field The field definition being rendered.
           @binding {any} model The model passed to field predicates (defaults to the live form data).
           @binding {any} value The current field value.
-          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error, and any error under `<key>.` (rows the slot draws itself).
+          @binding {(value: any) => void} update Setter that writes the value back and clears the field's validation error, and every error under `<key>.` when the value is an array whose rows were added, removed, replaced or reordered (rows the slot draws itself).
         -->
         <slot
             v-else-if="showValueSlot && $slots.value"
@@ -420,6 +420,7 @@ import {
     onBeforeUnmount,
     provide,
     ref,
+    toRaw,
     useId,
     useSlots,
     watch,
@@ -744,16 +745,51 @@ function setValue(value: any): void {
     props.form.clearError(errorKey.value);
 }
 
+/** The raw rows of an array value, in order, or null for any other value. */
+function rowIdentitiesOf(value: unknown): unknown[] | null {
+    return Array.isArray(value) ? value.map((row) => toRaw(row)) : null;
+}
+
+/**
+ * The field's rows as last seen: refreshed by the watcher below whenever the
+ * array or its membership changes (not on edits inside a row), and by each
+ * slot `update`. The watcher runs before the next render, so a slot that
+ * changes the rows in place and calls `update` in the same handler is still
+ * compared against the rows from before the change.
+ */
+let lastSeenRows: unknown[] | null = null;
+watch(
+    () => rowIdentitiesOf(fieldValue.value),
+    (rows) => {
+        lastSeenRows = rows;
+    },
+    { immediate: true },
+);
+
+function haveRowsMoved(previous: unknown[] | null, next: unknown[]): boolean {
+    if (previous === null || previous.length !== next.length) return true;
+    return next.some((row, index) => row !== previous[index]);
+}
+
 /**
  * `update` for the `span` and `value` slots (and so DXTable's `edit-span` /
- * `edit-value`). Such a slot may draw rows of its own and write the whole
- * array back, so besides the field's own error it clears every error under
- * `<key>.` (`lines.3.price`), as the repeater's add and remove do: the rows
- * may have moved, and a stale per-row error would stay in the summary under
- * the wrong row. They come back on the next submit.
+ * `edit-value`). Like a plain set, it clears the field's own error. When the
+ * value is an array whose rows changed (added, removed, replaced or
+ * reordered, compared by identity with the rows as last seen), it also
+ * clears every error under `<key>.` (`lines.3.price`), as the repeater's add
+ * and remove do: a per-row error would otherwise stay under whichever row
+ * now sits at its index. An update that keeps the same rows in the same
+ * order (a row editor writing the array back on each keystroke), or a
+ * value that is not an array (an `address` object), keeps the nested
+ * errors: they still name the right place. They come back on the next
+ * submit either way.
  */
 function setValueFromSlot(value: any): void {
+    const nextRows = rowIdentitiesOf(value);
+    const rowsMoved = nextRows !== null && haveRowsMoved(lastSeenRows, nextRows);
     setValue(value);
+    if (nextRows !== null) lastSeenRows = nextRows;
+    if (!rowsMoved) return;
     const prefix = `${errorKey.value}.`;
     for (const key of Object.keys(props.form.errors)) {
         if (key.startsWith(prefix)) {
