@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
-import { h } from 'vue';
+import { userEvent } from 'vitest/browser';
+import { computed, h } from 'vue';
 import { BApp } from 'bootstrap-vue-next';
 import DXField from '../../resources/js/components/extended/DXField.vue';
 import DXForm from '../../resources/js/components/extended/DXForm.vue';
@@ -19,8 +20,10 @@ import {
 /*
  * The `password-actions` slot (DXField), `password-actions(<key>)` (DXForm)
  * and `edit-password-actions(<key>)` (DXTable's edit/create modal): content
- * placed beside the password input, inside its input group, with slot props
- * that can write the value and drive dfl's own reveal (eye) state. The need
+ * placed after the password input group (input and eye), in
+ * `.dx-password-field__actions`, wrapping below it when the row is narrow,
+ * with slot props that can write the value and drive dfl's own reveal (eye)
+ * state. The need
  * it exists for: a "Generate password" button on a create-user form that
  * fills the field and reveals it so an admin can read it out.
  */
@@ -465,5 +468,126 @@ describe('DXTable edit-password-actions(<key>) slot', () => {
     ) as HTMLElement).click();
     await wait(80);
     expect(modalPasswordInput().type).toBe('password');
+  });
+});
+
+/*
+ * 0.47.0 review: the reveal-reset watch compared a fresh `[form, key]` array on
+ * every run, so it fired on ANY change it depended on, including a new `field`
+ * object. A consumer whose `fields` are computed from `form.data` rebuilds the
+ * field on every edit, so `update(); setRevealed(true)` re-masked at once, and
+ * so did the first keystroke after the eye. Only a new form or a new key may
+ * reset the reveal; the row-switch test below is the control for that.
+ */
+describe('the reveal survives a consumer rebuilding its fields from form data', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  /** Fields re-created on every change to the password (a new object each time). */
+  const fieldsFromFormData = (form: ReturnType<typeof useForm<{ password: string }>>) =>
+    computed<FieldDefinition[]>(() => [
+      {
+        key: 'password',
+        type: 'password',
+        label: 'Password',
+        hint: form.data.password ? `${form.data.password.length} characters` : 'Pick one',
+      },
+    ]);
+
+  const renderForm = (withGenerate: boolean) => {
+    const form = useForm({ password: '' });
+    const fields = fieldsFromFormData(form);
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(
+            DXForm,
+            { form, fields: fields.value, showSubmit: false },
+            withGenerate ? { 'password-actions(password)': generateButton } : {},
+          ),
+        ),
+    });
+    const input = () =>
+      screen.container.querySelector('[data-dx-field-key="password"] input') as HTMLInputElement;
+    return { screen, form, input };
+  };
+
+  it('Generate (update + setRevealed) reveals and stays revealed', async () => {
+    const { screen, form, input } = renderForm(true);
+    await wait(50);
+    (screen.container.querySelector('.dx-test-generate') as HTMLElement).click();
+    await wait(50);
+
+    // Positive control: the field really was rebuilt (its hint follows the value).
+    expect(screen.container.textContent).toContain(`${GENERATED.length} characters`);
+    expect(form.data.password).toBe(GENERATED);
+    expect(input().value).toBe(GENERATED);
+    expect(input().type).toBe('text');
+    expect(eye(screen.container)?.getAttribute('aria-label')).toBe('Hide password');
+  });
+
+  it('the eye, then a keystroke, stays revealed', async () => {
+    const { screen, form, input } = renderForm(false);
+    await wait(50);
+    await userEvent.click(eye(screen.container)!);
+    await wait(50);
+    expect(input().type).toBe('text');
+
+    await userEvent.type(input(), 'a');
+    await wait(50);
+
+    expect(form.data.password).toBe('a');
+    expect(screen.container.textContent).toContain('1 characters');
+    expect(input().type).toBe('text');
+    expect(eye(screen.container)?.getAttribute('aria-label')).toBe('Hide password');
+  });
+
+  it('control: opening the edit modal on another row still re-masks', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      new Response(JSON.stringify({ data: {} }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const screen = render({
+      render: () =>
+        h(BApp, {}, () =>
+          h(DXTable, {
+            items: [
+              { id: 1, name: 'Ann' },
+              { id: 2, name: 'Bob' },
+            ],
+            fields: [{ key: 'name', label: 'Name' }],
+            editFields: [
+              { key: 'name', type: 'text', label: 'Name' },
+              { key: 'password', type: 'password', label: 'Password' },
+            ],
+            itemName: 'user',
+            editUrl: '/api/users/:id',
+          }),
+        ),
+    });
+    await flush();
+    const modal = () => document.querySelector('.modal') as HTMLElement;
+    const modalInput = () =>
+      modal().querySelector('[data-dx-field-key="password"] input') as HTMLInputElement;
+    const openRow = async (index: number) => {
+      (screen.container.querySelectorAll('tbody tr')[index] as HTMLElement).click();
+      await wait(80);
+    };
+
+    await openRow(0);
+    eye(modal())!.click();
+    await flush();
+    expect(modalInput().type).toBe('text');
+
+    (Array.from(document.querySelectorAll('.modal button')).find(
+      (b) => b.textContent?.trim() === 'Cancel',
+    ) as HTMLButtonElement).click();
+    await wait(80);
+
+    await openRow(1);
+    expect((modal().querySelector('[data-dx-field-key="name"] input') as HTMLInputElement).value).toBe('Bob');
+    expect(modalInput().type).toBe('password');
+    expect(eye(modal())?.getAttribute('aria-label')).toBe('Show password');
   });
 });
