@@ -24,8 +24,10 @@ export interface ErrorTarget {
      * Where to take the user for this error now. The same as `errorKey`,
      * except for a row error resolved with `failedRows`: the key at the
      * failed row's CURRENT index (`lines.1.price` once row 0 is removed),
-     * or the owning field's key when that row is gone. Always set by
-     * `resolveErrorTargets`; optional so targets built by hand still type.
+     * or the owning field's key when that row is gone (removed, replaced, or
+     * flagged by the field's `softDeleteKey`); DXForm then focuses the
+     * field's container, not a row. Always set by `resolveErrorTargets`;
+     * optional so targets built by hand still type.
      */
     focusKey?: string;
     /** The server's messages for that key, as sent. */
@@ -288,12 +290,21 @@ export function resolveErrorTargets(
 
     /**
      * Where a failed row is now: its index in the field's live rows, found by
-     * identity, or -1 when it is gone (removed, or the rows were replaced).
+     * identity, or -1 when it is gone (removed, the rows were replaced, or
+     * the row carries the field's `softDeleteKey` flag: DXRepeater keeps
+     * such a row in the array, so it is submitted, but no longer renders it).
      */
     const currentIndexOf = (field: FieldDefinition, failedRow: FailedRow): number => {
         const liveRows = getByPath(model, field.key);
         if (!Array.isArray(liveRows)) return -1;
-        return liveRows.findIndex((row) => toRaw(row) === failedRow.row);
+        const index = liveRows.findIndex((row) => toRaw(row) === failedRow.row);
+        if (index < 0) return -1;
+        // Read the flag through the LIVE row (a reactive proxy in a form),
+        // not the raw `failedRow.row`, so a caller's computed re-resolves
+        // when the row is flagged.
+        const softDeleteKey = field.softDeleteKey;
+        if (softDeleteKey && Boolean(liveRows[index]?.[softDeleteKey])) return -1;
+        return index;
     };
 
     /**
@@ -303,7 +314,8 @@ export function resolveErrorTargets(
      * focus key uses the row's current index, or is the field's key when the
      * row is gone. "(line N)" then counts the row's CURRENT position while it
      * exists (the line a click takes the user to), and the position it failed
-     * at once it is gone.
+     * at once it is gone. `rowLabel(row, index)` is given that same index, so
+     * a name built from the index agrees with the line form.
      */
     const ownedTarget = (
         errorKey: string,
@@ -344,7 +356,7 @@ export function resolveErrorTargets(
             const row = getByPath(model, `${field.key}.${first}`);
             rowModel = row !== null && typeof row === "object" ? row : {};
         }
-        const rowName = rowLabelFor(field, rowModel, failedIndex);
+        const rowName = rowLabelFor(field, rowModel, lineIndex);
         if (rowName !== null) return { label: rowName, focusKey };
         const base = subField ? labelFor(subField, rowModel) : labelFor(field);
         return { label: `${base} (line ${lineIndex + 1})`, focusKey };

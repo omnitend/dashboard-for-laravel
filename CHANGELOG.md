@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Correction to 0.47.1's notes:** they said a click on a summary row
+  whose row is gone "goes to the list field instead of another row". It
+  did not: it focused the first input in the list, which belongs to
+  another row (row 1's). Such a click now scrolls to the list field and
+  focuses the field itself (a repeater's labelled group, announced by its
+  legend, or a span field's container), made focusable for that focus
+  only, and no row's control.
+- A row removed through a repeater's `softDeleteKey` (kept in the array,
+  flagged, no longer shown) now counts as gone for the error summary. It
+  counted as present, so a click on its error looked for a row that no
+  longer renders.
+- A field's `rowLabel(row, index)` in the error summary now gets the
+  index "(line N)" counts: the row's current position while it exists, the
+  position it failed at once it is gone. It was given the failed position
+  even after the row had moved, so a name built from the index disagreed
+  with the line form.
+- The `update` a `span` or `value` slot receives now clears errors under
+  `<key>.` only when the value is an array whose rows changed (added,
+  removed, replaced or reordered, compared by identity). 0.47.1 cleared
+  them on every update, so a row editor that writes the array back on
+  each keystroke wiped the other rows' errors, and a value slot for an
+  object field (`address`) lost `address.postcode` when the street was
+  edited. Other updates clear only the field's own error, as before 0.47.1.
+- `submitFailure.failedRows` records only the row at each error key's
+  first numeric segment (`lines.2` for `lines.2.options.0.name`), the only
+  one the summary reads; it also deep-cloned the rows nested inside it.
+
+### Docs
+
+- `failedRows` is read from the form data when the failure response
+  arrives. Rows added, removed or reordered while the request was in
+  flight, or a submit `transform` that drops or reorders rows, can attach
+  an error to the wrong row, as a bare index key always could. Noted on
+  `SubmitFailure.failedRows` and in DXFormErrorSummary's docs, which now
+  describe how a row error follows its row.
+- The note on how a failed row is copied for its name was wrong: `File`
+  and `Blob` values clone. A row falls back to a shallow copy when it holds
+  a function, a symbol, a DOM node or a nested reactive object; a class
+  instance is copied as a plain object, without its getters.
+
 ## [0.47.1] - 2026-10-21
 
 ### Upgrade notes

@@ -198,3 +198,30 @@ describe('useForm submitFailure', () => {
     expect(form.shouldShowMessage).toBe(true);
   });
 });
+
+describe('useForm submitFailure.failedRows (0.47.2 review)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('records the row at each key\'s first numeric segment only', async () => {
+    stubResponses(
+      invalid({
+        'lines.1.options.0.name': ['Name the option.'],
+        'lines.0.price': ['Bad price.'],
+        name: ['Required.'],
+      }),
+    );
+    const form = useForm({
+      name: '',
+      lines: [
+        { price: '', options: [] as any[] },
+        { price: '1', options: [{ name: '' }] },
+      ],
+    });
+
+    await form.post('/api/things').catch(() => {});
+
+    const failedRows = form.submitFailure?.failedRows ?? {};
+    expect(Object.keys(failedRows).sort()).toEqual(['lines.0', 'lines.1']);
+    expect(failedRows['lines.1'].snapshot).toEqual({ price: '1', options: [{ name: '' }] });
+  });
+});

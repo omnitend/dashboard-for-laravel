@@ -639,7 +639,16 @@ pruned), a `when`-hidden one keeps its id. Sub-field labels in the resolver
 resolve against the ROW, as DXRepeater does, and a throwing label falls back
 to the humanised key. A field's `rowLabel(row, index)` replaces the whole
 "<label> (line N)" for a numeric row key nested under its key (not for keys
-claimed through `errorKeys`); empty/undefined/throwing keeps the line form. A tab index the parent sets while every tab is hidden
+claimed through `errorKeys`); empty/undefined/throwing keeps the line form.
+The summary follows the row that FAILED (`submitFailure.failedRows`, by
+row identity, first numeric segment only): `focusKey` is its current
+index, or the field's key when it is gone (removed, replaced, or flagged
+by `softDeleteKey`), and then `focusErrorTarget` focuses the field's
+container (`:scope > fieldset`, else the marker, with a `tabindex="-1"`
+removed on blur), never a row's control. `rowLabel` gets the same index
+"(line N)" counts. A slot's `update` clears `<key>.` errors only when the
+array's rows changed by identity/order (`haveRowsMoved` in DXField), not
+per keystroke, and never for a non-array value. A tab index the parent sets while every tab is hidden
 is held (`pendingRequestedIndex`) until tabs appear. DXTable's modal
 renders the summary in its footer with the inner form on
 `error-summary="external"` (NOT `false`, which brings the top alert back for
