@@ -206,6 +206,32 @@ const tabs: FormTab[] = [
 // A 422 with { "lines.0.price": ["Must be positive."] } selects "Lines".
 ```
 
+### Naming a row in the summary (`rowLabel`)
+
+An error on a row (`lines.1.price`) is listed under its sub-field's label and line number:
+"Price (line 2): Must be positive." When each row has a name of its own, give
+the field a `rowLabel` and the summary lists that row under its name instead,
+with no line number: "Chaucer Ale (Pint): Must be positive." It is called with
+the row (`model.lines[1]`, or `{}` when the model has no such row) and its
+0-based index. Return `undefined`, `null` or `""` for a row with no name yet
+(or let it throw) and that row keeps "Price (line 2)". It works on a
+`repeater` and on a `span` field that renders its own rows, for any key
+nested under the field's key. It changes only the label: the owning field,
+the tab chosen and what a click on the row focuses are the same as without
+it.
+
+```ts
+const fields: FieldDefinition[] = [
+  {
+    key: 'lines',
+    type: 'repeater',
+    label: 'Order lines',
+    rowLabel: (line) => line.product_name || undefined,
+    fields: [{ key: 'price', type: 'currency', label: 'Price' }],
+  },
+];
+```
+
 ### A summary outside the form
 
 When the submit control lives outside DXForm (a modal footer, a sticky
@@ -312,6 +338,7 @@ Common options beyond `key`/`type`/`label`:
   { name: 'searchable', type: 'boolean', required: 'No', default: 'false', description: 'For a select field: type to filter a long option list while the model still holds option.value (an id). Use for hundreds of options — a plain select is unusable at that size, and the autocomplete type models the typed text, so it cannot back a foreign key' },
   { name: 'options / optionsLoader', type: 'FieldOption[] | (model) => Promise<FieldOption[]>', required: 'No', default: '-', description: 'Select/radio options, synchronous or async. Set reloadOptionsOnChange to refetch on model change.' },
   { name: 'submit', type: 'boolean', required: 'No', default: 'true', description: 'Include the field\'s value in the submitted payload. Set false for a PRESENTATIONAL field (a header, an alert, an explanatory block via span) that lays the form out but holds no data — DXTable\'s edit modal seeds its form from every editFields key, so those would otherwise be POSTed alongside the real ones' },
+  { name: 'rowLabel', type: '(row, index) => string | null | undefined', required: 'No', default: '-', description: 'For a repeater (or a span field rendering its own rows): the row\'s own name, which replaces "<label> (line N)" in the error summary. Empty or undefined keeps the line-number label. See "Naming a row in the summary" above.' },
   { name: 'span', type: 'boolean', required: 'No', default: 'false', description: 'Render full-width, delegating content to the #span(<key>) slot. Also always bypasses horizontal layout\'s column split.' },
   { name: 'layout / labelCols', type: '"vertical" | "horizontal" / number | { sm?, md?, lg?, xl? }', required: 'No', default: '-', description: 'Per-field override of DXForm\'s layout/labelCols props.' },
   { name: 'currencySymbol / accept / step / min / max', type: 'string | number', required: 'No', default: '-', description: 'Type-specific options (currency symbol, file accept, numeric bounds).' },

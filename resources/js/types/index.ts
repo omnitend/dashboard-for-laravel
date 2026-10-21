@@ -274,6 +274,20 @@ export interface FieldDefinition {
      */
     default?: any;
 
+    /**
+     * For a field whose value is a list of rows (a `repeater`, or a span
+     * field that renders its own rows and owns `key.N.*` error keys): the
+     * row's own name, called with the row (`model[key][index]`, or `{}` when
+     * the model has no such row) and its 0-based index. When it returns a
+     * non-empty string, the error summary lists that row's errors under it
+     * alone ("Chaucer Ale (Pint): Enter a price.") instead of
+     * "<sub-field label> (line N)". Returning `undefined`, `null` or `""`
+     * (a row with no name yet), or throwing, keeps the line-number label.
+     * Only labels: which field owns the error, and what a click on the
+     * summary row focuses, are unchanged.
+     */
+    rowLabel?: (row: Record<string, any>, index: number) => string | null | undefined;
+
     /** Label for a repeater's "add row" button (default: "Add"). */
     addLabel?: string;
 
@@ -583,6 +597,7 @@ export interface ComponentFieldDef extends BaseFieldDef {
 export interface RepeaterFieldDef extends BaseFieldDef {
     type: "repeater";
     fields?: FieldDef[];
+    rowLabel?: (row: Record<string, any>, index: number) => string | null | undefined;
     addLabel?: string;
     minItems?: number;
     maxItems?: number;

@@ -144,6 +144,67 @@ describe('DXForm: reaching the errored field (#194 review)', () => {
       expect(input).not.toBeNull();
       expect(document.activeElement).toBe(input);
     });
+
+    describe('rowLabel names the row', () => {
+      const namedFields: FieldDefinition[] = [
+        fields[0],
+        {
+          ...fields[1],
+          rowLabel: (row: any) => (row.name ? row.name : undefined),
+        },
+      ];
+      const makeNamedForm = () =>
+        useForm({
+          name: 'Order',
+          lines: [
+            { name: 'Widget A', currency: 'gbp', price: '1' },
+            { name: 'Widget B', currency: 'eur', price: '' },
+          ],
+        });
+
+      it('the summary row reads "<row name>: <message>", with no line number', async () => {
+        stubResponses(invalid({ 'lines.1.price': ['Must be positive.'] }));
+        const form = makeNamedForm();
+        const screen = render(DXForm, { props: { form, fields: namedFields, tabs } });
+        await settle();
+        await failSubmit(form);
+        await wait(100);
+
+        const summary = screen.container.querySelector('.dx-form-error-summary');
+        expect(summary?.textContent).toContain('Widget B: Must be positive.');
+        expect(summary?.textContent).not.toContain('(line');
+      });
+
+      it('clicking that row still focuses the row field', async () => {
+        stubResponses(invalid({ 'lines.1.price': ['Must be positive.'] }));
+        const form = makeNamedForm();
+        const screen = render(DXForm, { props: { form, fields: namedFields, tabs } });
+        await settle();
+        await failSubmit(form);
+        await wait(100);
+
+        await userEvent.click(summaryRow(screen.container, 'Widget B: Must be positive.'));
+        await wait(300);
+        const rowField = screen.container.querySelector('[data-dx-field-key="lines.1.price"]');
+        expect(rowField).not.toBeNull();
+        const input = rowField!.querySelector('input');
+        expect(input).not.toBeNull();
+        expect(document.activeElement).toBe(input);
+      });
+
+      it('without rowLabel the summary row keeps "(line 2)"', async () => {
+        stubResponses(invalid({ 'lines.1.price': ['Must be positive.'] }));
+        const form = makeNamedForm();
+        const screen = render(DXForm, { props: { form, fields, tabs } });
+        await settle();
+        await failSubmit(form);
+        await wait(100);
+
+        expect(screen.container.querySelector('.dx-form-error-summary')?.textContent).toContain(
+          'EUR price (line 2): Must be positive.',
+        );
+      });
+    });
   });
 
   it('focuses the input of a field with an info button, not "More information"', async () => {

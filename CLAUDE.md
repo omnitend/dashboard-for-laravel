@@ -637,7 +637,9 @@ VALUE, not a built selector, so quotes/brackets/uuids need no escaping; a
 removed tab key gets a fresh pane id when reintroduced (the cache is
 pruned), a `when`-hidden one keeps its id. Sub-field labels in the resolver
 resolve against the ROW, as DXRepeater does, and a throwing label falls back
-to the humanised key. A tab index the parent sets while every tab is hidden
+to the humanised key. A field's `rowLabel(row, index)` replaces the whole
+"<label> (line N)" for a numeric row key nested under its key (not for keys
+claimed through `errorKeys`); empty/undefined/throwing keeps the line form. A tab index the parent sets while every tab is hidden
 is held (`pendingRequestedIndex`) until tabs appear. DXTable's modal
 renders the summary in its footer with the inner form on
 `error-summary="external"` (NOT `false`, which brings the top alert back for

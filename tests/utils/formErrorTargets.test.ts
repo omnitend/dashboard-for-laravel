@@ -43,6 +43,53 @@ describe('resolveErrorTargets ownership', () => {
     ]);
   });
 
+  describe('rowLabel', () => {
+    const named: FieldDefinition[] = [
+      {
+        key: 'lines',
+        type: 'repeater',
+        label: 'Order lines',
+        rowLabel: (row, index) => (row.name ? `${row.name} #${index}` : undefined),
+        fields: [{ key: 'price', type: 'currency', label: 'Price' }],
+      },
+    ];
+    const model = { lines: [{ name: 'Peroni' }, { name: 'Chaucer Ale' }, { name: '' }] };
+
+    it('replaces "<label> (line N)" with the row name, for a sub-field key and a row key', () => {
+      const targets = resolveErrorTargets(
+        { 'lines.1.price': ['Must be positive.'], 'lines.0': ['Row invalid.'] },
+        { fields: named, model },
+      );
+      expect(targets.map((target) => target.label)).toEqual(['Chaucer Ale #1', 'Peroni #0']);
+      expect(targets[0].lines).toEqual(['Chaucer Ale #1: Must be positive.']);
+      expect(targets[0].fieldKey).toBe('lines');
+    });
+
+    it('falls back to "<label> (line N)" when it names nothing, or the row is missing', () => {
+      const targets = resolveErrorTargets(
+        { 'lines.2.price': ['Bad.'], 'lines.7.price': ['Worse.'] },
+        { fields: named, model },
+      );
+      expect(targets.map((target) => target.label)).toEqual(['Price (line 3)', 'Price (line 8)']);
+    });
+
+    it('falls back when it throws', () => {
+      const throwing: FieldDefinition[] = [
+        { ...named[0], rowLabel: (row) => row.missing.name },
+      ];
+      const [target] = resolveErrorTargets({ 'lines.0.price': ['Bad.'] }, { fields: throwing, model });
+      expect(target.label).toBe('Price (line 1)');
+    });
+
+    it('leaves the field\'s own key and a non-row key alone', () => {
+      const targets = resolveErrorTargets(
+        { lines: ['Need one.'], 'lines.extra': ['Odd.'] },
+        { fields: named, model },
+      );
+      expect(targets.map((target) => target.label)).toEqual(['Order lines', 'Order lines']);
+    });
+  });
+
   it('labels an unknown sub-field with the repeater label and line', () => {
     const [target] = resolveErrorTargets({ 'lines.4.colour': ['Bad.'] }, { fields });
     expect(target.label).toBe('Order lines (line 5)');

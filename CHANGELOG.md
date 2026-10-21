@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Use an ordinary button: a `secondary` `DButton` matches the form's other
   buttons. New types: `PasswordActionsSlotProps`,
   `EditPasswordActionsSlotProps`.
+- **Name a row in the error summary.** A new field option, `rowLabel:
+  (row, index) => string | undefined`, on a `repeater` (or a `span` field
+  that renders its own rows) gives each row its own name. An error on that
+  row is then listed under the name alone, "Chaucer Ale (Pint): Enter a
+  price.", instead of "<sub-field label> (line 2)". A row it returns
+  nothing for (or throws on) keeps the line-number label, and without the
+  option every label is as in 0.46.0. Only the label changes: the owning
+  field, the tab selected and the control a click on the row focuses are
+  the same.
 
 ### Changed
 
