@@ -69,17 +69,25 @@
                     :titleLinkAttrs="tabButtonAttrs(tab.key)"
                     :onClick="tabControlsFor(tab.key).onClick"
                 >
-                    <!--
-                      @slot Replaces the entire body of a tab, keyed by tab (slot name `tab-content(<tabKey>)`).
-                      @binding {FormTab} tab The tab definition being rendered.
-                      @binding {object} model Live form data merged with `context`, for predicates.
-                    -->
-                    <slot
+                    <!-- A custom body gets the same top spacing as a field
+                         body (`pt-3`) when there is no card. In card mode
+                         `.card-body` already pads the pane, so it gets
+                         nothing extra. -->
+                    <div
                         v-if="$slots[`tab-content(${tab.key})`]"
-                        :name="`tab-content(${tab.key})`"
-                        :tab="tab"
-                        :model="model"
-                    />
+                        :class="{ 'pt-3': !tabsInCard }"
+                    >
+                        <!--
+                          @slot Replaces the entire body of a tab, keyed by tab (slot name `tab-content(<tabKey>)`). Without a card (`:card-tabs="false"`) the body is spaced 1rem below the tab bar, as a field tab's is; in card mode the card's own padding is the only spacing.
+                          @binding {FormTab} tab The tab definition being rendered.
+                          @binding {object} model Live form data merged with `context`, for predicates.
+                        -->
+                        <slot
+                            :name="`tab-content(${tab.key})`"
+                            :tab="tab"
+                            :model="model"
+                        />
+                    </div>
 
                     <div v-else class="pt-3">
                         <!--

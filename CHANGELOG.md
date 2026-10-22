@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- DXForm: a tab whose body comes from the `tab-content(<key>)` slot now
+  sits 1rem below the tab bar when the tabs have no card
+  (`:card-tabs="false"`), the same as a tab of fields. It used to sit flush
+  against the tab bar, so in a form with both kinds of tab the custom one
+  looked cramped. In card mode nothing changes: the card's own padding is
+  still the only spacing. The slot still replaces the whole body; its
+  content is now inside a wrapper `<div>` (with `pt-3` when there is no
+  card), so a selector that expected the content to be a direct child of
+  `.tab-pane` needs updating.
+
 ## [0.47.3] - 2026-10-21
 
 ### Changed
