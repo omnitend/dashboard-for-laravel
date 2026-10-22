@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
-- Dependency audit (dev and docs tooling only; nothing in the published
-  package or its peer ranges changes). `npm audit fix`, vitest /
+- Dependency audit (dev and docs tooling only; dependencies and peer
+  ranges are unchanged). The newer Vue compiler (3.5.25 → 3.5.44) changes
+  how `dist/dashboard-for-laravel.*` passes a `v-if` branch key to a
+  `<slot>`: as `renderSlot`'s new sixth argument rather than inside the
+  slot props. A Vue runtime older than 3.5.40 ignores that argument; every
+  affected slot's sibling branches still differ by node type or key, so
+  rendering is unchanged. The CSS, the charts entry and the types are
+  byte-identical. `npm audit fix`, vitest /
   `@vitest/browser` / `@vitest/browser-playwright` `^4.1.8` → `^4.1.11`,
   astro `7.0.5` → `7.3.8` (still pinned exact) with `@astrojs/mdx`
   `^7.0.1` → `^8.0.3` and `@astrojs/vue` `^7.0.1` → `^7.0.3`. Clears 32 of
