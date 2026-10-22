@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- DInputGroup: `wrap="never"` keeps a group joined at every width. Below md
+  a group with two or more controls wraps and its leading text takes its own
+  row as a label, which suits "Date range [date] [date]" but splits a group
+  whose text is an affix or part of a sentence: `Every [1] [days]`, or
+  `£ [cost] ex. VAT per [unit]`. CSS cannot tell the two apart, so the opt-out
+  is explicit. It renders the `dx-input-group--joined` class, which plain
+  `.input-group` markup can use too. The default, `wrap="narrow"`, keeps the
+  0.47.3 behaviour.
+
 ### Internal
 
 - Dependency audit (dev and docs tooling only; dependencies and peer

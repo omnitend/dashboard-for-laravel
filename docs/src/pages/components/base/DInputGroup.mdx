@@ -50,4 +50,25 @@ and buttons do not count as controls, so `[−] [input] [+]` stays joined.
 </DInputGroup>
 ```
 
+CSS cannot tell a label from an affix, so a group whose text is part of a
+sentence wraps too: "Every" in `Every [1] [days]` would take its own row, as
+would "£" in `£ [cost] ex. VAT per [unit]`. Set `wrap="never"` to keep such a
+group joined at every width. It adds the `dx-input-group--joined` class, which
+also works on plain `.input-group` markup. The default is `wrap="narrow"`.
+
+```vue
+<DInputGroup prepend="Every" wrap="never" class="w-auto">
+  <DFormInput type="number" v-model="interval" />
+  <DFormSelect v-model="unit" :options="['days', 'weeks', 'months']" />
+</DInputGroup>
+
+<!-- Plain markup -->
+<div class="input-group dx-input-group--joined">
+  <span class="input-group-text">£</span>
+  <input class="form-control" type="number" />
+  <span class="input-group-text">ex. VAT per</span>
+  <select class="form-select">…</select>
+</div>
+```
+
 <BootstrapVueNextReference client:load componentName="DInputGroup" />

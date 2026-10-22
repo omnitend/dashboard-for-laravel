@@ -12,6 +12,11 @@
  * at every width, and nothing changes from md up. Both are asserted here so the
  * phone rule cannot quietly spread.
  *
+ * A group whose leading text is part of a sentence ("Every [1] [days]") opts
+ * out with `wrap="never"` (or the `dx-input-group--joined` class on plain
+ * markup) and stays joined at every width; the same group without the opt-out
+ * still wraps, which is the control that proves the opt-out did the work.
+ *
  * NOTE: the rules live in theme.scss and reach the tests through the BUILT
  * dist/style.css (tests/setup.ts): `npm run build:lib` first.
  */
@@ -22,6 +27,7 @@ import { h } from 'vue';
 import DInputGroup from '../../resources/js/components/base/DInputGroup.vue';
 import DFormInput from '../../resources/js/components/base/DFormInput.vue';
 import DButton from '../../resources/js/components/base/DButton.vue';
+import DFormSelect from '../../resources/js/components/base/DFormSelect.vue';
 
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
@@ -33,8 +39,38 @@ const settled = () =>
  * A filter bar like greendragon's: a wrapping flex row whose `w-auto` group
  * sizes to its content, inside a shell that clips sideways overflow.
  */
-const mountShape = async (shape: 'date-range' | 'search' | 'currency') => {
+type Shape =
+  | 'date-range'
+  | 'search'
+  | 'currency'
+  | 'every-default'
+  | 'every-joined'
+  | 'every-joined-plain';
+
+const UNIT_OPTIONS = [
+  { value: 'days', text: 'days' },
+  { value: 'weeks', text: 'weeks' },
+];
+
+const mountShape = async (shape: Shape) => {
   const group = () => {
+    if (shape === 'every-default' || shape === 'every-joined') {
+      const props: Record<string, unknown> = { prepend: 'Every', class: 'w-auto' };
+      if (shape === 'every-joined') {
+        props.wrap = 'never';
+      }
+      return h(DInputGroup, props, () => [
+        h(DFormInput, { type: 'number', modelValue: '1' }),
+        h(DFormSelect, { modelValue: 'days', options: UNIT_OPTIONS }),
+      ]);
+    }
+    if (shape === 'every-joined-plain') {
+      return h('div', { class: 'input-group dx-input-group--joined w-auto' }, [
+        h('span', { class: 'input-group-text' }, 'Every'),
+        h('input', { class: 'form-control', type: 'number', value: '1' }),
+        h('select', { class: 'form-select' }, [h('option', { value: 'days' }, 'days')]),
+      ]);
+    }
     if (shape === 'date-range') {
       return h(DInputGroup, { prepend: 'Date range', class: 'w-auto' }, () => [
         h(DFormInput, { type: 'date' }),
@@ -125,6 +161,51 @@ describe('DInputGroup below md', () => {
     expect(rowsOf(children)).toBe(1);
     expect(style(amount).marginLeft).toBe('-1px');
     expect(style(prefix).borderTopRightRadius).toBe('0px');
+  });
+});
+
+describe('DInputGroup wrap="never" below md', () => {
+  afterEach(async () => {
+    await page.viewport(DESKTOP.width, DESKTOP.height);
+  });
+
+  it('control: "Every [n] [unit]" without the opt-out wraps', async () => {
+    await page.viewport(PHONE.width, PHONE.height);
+    const { groupEl, children } = await mountShape('every-default');
+    const [label, amount] = children;
+
+    expect(children).toHaveLength(3);
+    expect(groupEl.classList.contains('dx-input-group--joined')).toBe(false);
+    expect(style(groupEl).flexWrap).toBe('wrap');
+    expect(rowsOf([label, amount])).toBe(2);
+  });
+
+  it('keeps "Every [n] [unit]" joined on one row with wrap="never"', async () => {
+    await page.viewport(PHONE.width, PHONE.height);
+    const { groupEl, children } = await mountShape('every-joined');
+    const [label, amount, unit] = children;
+
+    expect(children).toHaveLength(3);
+    expect(groupEl.classList.contains('dx-input-group--joined')).toBe(true);
+    expect(style(groupEl).flexWrap).toBe('nowrap');
+    expect(rowsOf(children)).toBe(1);
+    expect(style(amount).marginLeft).toBe('-1px');
+    expect(style(unit).marginLeft).toBe('-1px');
+    expect(style(label).borderTopRightRadius).toBe('0px');
+    expect(style(amount).borderTopRightRadius).toBe('0px');
+  });
+
+  it('keeps plain .input-group markup joined with the dx-input-group--joined class', async () => {
+    await page.viewport(PHONE.width, PHONE.height);
+    const { groupEl, children } = await mountShape('every-joined-plain');
+    const [label, amount, unit] = children;
+
+    expect(children).toHaveLength(3);
+    expect(style(groupEl).flexWrap).toBe('nowrap');
+    expect(rowsOf(children)).toBe(1);
+    expect(style(amount).marginLeft).toBe('-1px');
+    expect(style(unit).marginLeft).toBe('-1px');
+    expect(style(label).borderTopRightRadius).toBe('0px');
   });
 });
 
