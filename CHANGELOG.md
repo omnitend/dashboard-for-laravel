@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Internal
+
+- Dependency audit (dev and docs tooling only; nothing in the published
+  package or its peer ranges changes). `npm audit fix`, vitest /
+  `@vitest/browser` / `@vitest/browser-playwright` `^4.1.8` → `^4.1.11`,
+  astro `7.0.5` → `7.3.8` (still pinned exact) with `@astrojs/mdx`
+  `^7.0.1` → `^8.0.3` and `@astrojs/vue` `^7.0.1` → `^7.0.3`. Clears 32 of
+  33 npm advisories, including the astro, vitest browser-mode and vite
+  dev-server ones. `@vitest/mocker`'s moderate advisory is left until
+  vitest 4.1.12 is past the release cooldown.
+
 ## [0.47.4] - 2026-10-22
 
 ### Fixed
