@@ -818,12 +818,17 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 // group that would have fitted ("Sort [Name] [Asc]") also takes the wrapped
 // layout below md; it then reads the same as its neighbours in a filter bar.
 //
+// CSS cannot tell a label from an affix either, so a "sentence" group whose
+// text belongs to the controls ("Every [1] [days]", "£ [cost] ex. VAT per
+// [unit]") opts out with `dx-input-group--joined` (DInputGroup's
+// `wrap="never"`) and keeps the nowrap rule above at every width.
+//
 // No `!important`: each override below is Bootstrap's own joined-group
 // selector (forms/_input-group.scss) or the theme's DFormFile one, gated on
 // `$dx-wrapping-input-group`. The gate adds specificity to the exact selector
 // it undoes, so it wins wherever that rule applies and touches nothing else.
 $dx-input-group-control: ':not(.input-group-text, .btn, .dropdown-menu, .dropdown-toggle, [type="hidden"], .valid-feedback, .invalid-feedback, .valid-tooltip, .invalid-tooltip)';
-$dx-wrapping-input-group: '.input-group:has(> #{$dx-input-group-control} ~ #{$dx-input-group-control})';
+$dx-wrapping-input-group: '.input-group:not(.dx-input-group--joined):has(> #{$dx-input-group-control} ~ #{$dx-input-group-control})';
 $dx-input-group-validation-messages: '';
 @each $state in map-keys($form-validation-states) {
   $dx-input-group-validation-messages: $dx-input-group-validation-messages + ':not(.#{$state}-tooltip):not(.#{$state}-feedback)';
