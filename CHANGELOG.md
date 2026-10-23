@@ -32,8 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   astro `7.0.5` → `7.3.8` (still pinned exact) with `@astrojs/mdx`
   `^7.0.1` → `^8.0.3` and `@astrojs/vue` `^7.0.1` → `^7.0.3`. Clears 32 of
   33 npm advisories, including the astro, vitest browser-mode and vite
-  dev-server ones. `@vitest/mocker`'s moderate advisory is left until
-  vitest 4.1.12 is past the release cooldown.
+  dev-server ones. A follow-up moved the vitest family to `^4.1.12`,
+  clearing the last two (`@vitest/mocker`), so `npm audit` is clean.
 
 ## [0.47.4] - 2026-10-22
 
