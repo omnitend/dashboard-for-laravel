@@ -1769,6 +1769,25 @@ a consistent set and the conflict looks inexplicable.
    at the **same** version. The uninstall breaks the cyclic pin; the fresh
    install resolves cleanly. (`vitest-browser-vue` has a loose `^4.0.0-0` peer
    and rides along.)
+3. If that install fails (ERESOLVE, or ETARGET because a version is still
+   inside the cooldown), the uninstall has ALREADY removed the three from
+   `package.json`: `git restore package.json package-lock.json && npm install`
+   before anything else.
+
+**The astro family has the same cyclic pin** (`astro` ↔ `@astrojs/mdx` /
+`@astrojs/vue`, with `@astrojs/markdown-remark` as astro's peer): bumping
+astro alone fails with ERESOLVE. Uninstall all three, then install them
+together (0.47.4 audit: astro 7.3.8, mdx ^8.0.3, vue ^7.0.3). Keep astro
+pinned EXACT (see the next section); `npm install` writes a caret.
+
+**A "dev-only" Vue bump changes the published bundle.** `vue` is a dev
+dependency here, but it is the compiler that builds `dist`. 3.5.25 → 3.5.44
+changed how a `v-if` branch key reaches a `<slot>`: it is now `renderSlot`'s
+sixth argument, which only runtimes 3.5.40+ read, while the peer floor is
+`^3.5.13` (older runtimes ignore it; harmless while every such slot's sibling
+branches differ by type or key). After a Vue, Vite or plugin-vue bump, build
+`main` in a worktree and diff `dist` file hashes; read any changed JS before
+calling the bump inert.
 
 ### Bumping a dev dep that raises the Node floor (learned on Astro 5→7, #7)
 
