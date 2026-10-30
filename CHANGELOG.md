@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- DAutocomplete: `provider`, a function `(term, signal) => Promise<options>`
+  that asks a server for the options matching the typed text, for a list too
+  big to download and filter in the browser (the omnitend order editor was
+  fetching 6,695 product lines, 20 MB, to fill one picker). Typing is
+  debounced (`provider-debounce`, default 250 ms), the call in flight is
+  aborted through the signal when a newer term is typed, and only the latest
+  call's result is listed, so a slow early response cannot overwrite a later
+  one. bvn's own substring filter is bypassed. `options` becomes a seed that
+  stays alongside the results, so a value bound before any search can be
+  labelled. The list reads "Type to search", "Searching…", "No matches" or
+  "Search failed" through the `empty` slot unless the consumer fills it, and
+  the root carries `aria-busy` during a call. Named for DXTable's `provider`;
+  `search` is bvn's prop for the input's text and is unchanged.
+
 ## [0.47.5] - 2026-10-23
 
 ### Added

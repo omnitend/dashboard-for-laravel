@@ -40,6 +40,50 @@ the options change and one matches the value, the input shows that option's
 label instead of the raw value. A search the user is typing is never
 overwritten, and if you bind `v-model:search` yourself the text is yours.
 
+## Searching a server as you type
+
+A list too big to download (thousands of product lines) is searched where it
+lives. Pass `provider`, a function `(term, signal) => Promise<options>`, and
+leave `options` out or use it as a seed:
+
+```vue
+<DAutocomplete
+  v-model="productLineId"
+  :provider="searchProductLines"
+  placeholder="Add a product to this order…"
+/>
+```
+
+```ts
+const searchProductLines = async (term: string, signal: AbortSignal) => {
+  const response = await fetch(`/api/product-lines?filter[name]=${encodeURIComponent(term)}`, { signal });
+  const { data } = await response.json();
+  return data.map((line) => ({ value: line.id, text: line.name }));
+};
+```
+
+- The provider is called with the trimmed text once typing has paused for
+  `provider-debounce` ms (default 250). An empty term makes no call and
+  clears the results.
+- Only the latest call's result is listed. Typing a newer term aborts the
+  call in flight through its `signal`, and a call that ignores the signal
+  and resolves late is dropped, so a slow early response cannot overwrite a
+  later one.
+- Bootstrap Vue Next's substring filter is bypassed: the server has already
+  filtered. A `filterFunction` is ignored in this mode.
+- `options` stays in the list alongside the results (deduplicated by value),
+  so a value bound before any search has run can be labelled by passing its
+  option there.
+- While the list is empty it reads **Type to search**, **Searching…**,
+  **No matches** or **Search failed** (a rejected promise, logged; an abort is
+  not a failure). Fill the `empty` slot to show something else. The root
+  element carries `aria-busy="true"` during a call.
+- Selecting an option writes its label into the input; that is not a search.
+
+The name follows DXTable's `provider`, a function that supplies rows.
+`search` is Bootstrap Vue Next's prop for the input's own text and is
+unchanged.
+
 ## Slots
 
 This component forwards all slots dynamically from the underlying Bootstrap Vue Next component.

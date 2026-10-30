@@ -25,6 +25,24 @@
         <span class="text-muted">(type: {{ typeof productLineId }})</span>
       </p>
     </div>
+
+    <div class="example-section">
+      <h5>Searching a server as you type</h5>
+      <p class="text-muted">
+        <code>provider</code> asks for the matching options once typing pauses, here from a
+        pretend server that takes 400&nbsp;ms. Type <code>fil</code>, then keep typing: only the
+        latest result is listed, and the earlier call is aborted.
+      </p>
+      <DAutocomplete
+        v-model="searchedProductLineId"
+        :provider="searchProductLines"
+        placeholder="Search thousands of product lines…"
+      />
+      <p class="mt-3">
+        Selected id: <strong>{{ searchedProductLineId ?? '—' }}</strong>
+        <span class="text-muted">(calls so far: {{ providerCalls }})</span>
+      </p>
+    </div>
   </div>
 </template>
 
@@ -53,6 +71,33 @@ const productLines = [
   { value: 3, text: 'Filters & papers' },
   { value: 4, text: 'Milk frothers' },
 ];
+
+const CATALOGUE = [
+  'Filters & papers',
+  'Filter baskets',
+  'Grinders',
+  'Espresso machines',
+  'Milk frothers',
+  'Tampers',
+  'Scales',
+].map((text, index) => ({ value: index + 1, text }));
+
+const searchedProductLineId = ref<number | null>(null);
+const providerCalls = ref(0);
+
+// A pretend server: 400 ms, and it honours the abort signal.
+const searchProductLines = (term: string, signal: AbortSignal) =>
+  new Promise<typeof CATALOGUE>((resolve, reject) => {
+    providerCalls.value += 1;
+    const timer = setTimeout(
+      () => resolve(CATALOGUE.filter((option) => option.text.toLowerCase().includes(term.toLowerCase()))),
+      400,
+    );
+    signal.addEventListener('abort', () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+  });
 </script>
 
 <style scoped>

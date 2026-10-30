@@ -40,6 +40,7 @@ export { default as DAccordionItem } from "./components/base/DAccordionItem.vue"
 export { default as DAlert } from "./components/base/DAlert.vue";
 export { default as DAspect } from "./components/base/DAspect.vue";
 export { default as DAutocomplete } from "./components/base/DAutocomplete.vue";
+export type { AutocompleteProvider } from "./components/base/DAutocomplete.vue";
 export { default as DAvatar } from "./components/base/DAvatar.vue";
 export { default as DBadge } from "./components/base/DBadge.vue";
 export { default as DBreadcrumb } from "./components/base/DBreadcrumb.vue";
