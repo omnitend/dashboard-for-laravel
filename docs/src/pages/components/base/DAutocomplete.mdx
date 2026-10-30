@@ -78,7 +78,11 @@ const searchProductLines = async (term: string, signal: AbortSignal) => {
   **No matches** or **Search failed** (a rejected promise, logged; an abort is
   not a failure). Fill the `empty` slot to show something else. The root
   element carries `aria-busy="true"` during a call.
-- Selecting an option writes its label into the input; that is not a search.
+- Only typing is a search. The text Bootstrap Vue Next writes itself (the
+  chosen option's label on selection, blur or Escape; the label or raw value
+  of a bound model) never asks the provider.
+- With `null-option` the list is never empty, so the status texts do not
+  show; `aria-busy` still does.
 
 The name follows DXTable's `provider`, a function that supplies rows.
 `search` is Bootstrap Vue Next's prop for the input's own text and is

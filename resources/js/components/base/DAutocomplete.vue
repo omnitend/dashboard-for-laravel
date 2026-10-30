@@ -132,12 +132,11 @@ const providerState = ref<ProviderState>("idle");
 
 const listedOptions = computed<AutocompleteOptions>(() => {
   if (!hasProvider.value) return props.options ?? [];
-  const resultValues = new Set(
-    providerOptions.value.map((option) => optionValueAndText(option).value),
-  );
-  const unlistedSeeds = consumerOptions.value.filter(
-    (option) => !resultValues.has(optionValueAndText(option).value),
-  );
+  const resultValues = providerOptions.value.map((option) => optionValueAndText(option).value);
+  const unlistedSeeds = consumerOptions.value.filter((seed) => {
+    const seedValue = optionValueAndText(seed).value;
+    return !resultValues.some((resultValue) => sameValue(resultValue, seedValue));
+  });
   return [...providerOptions.value, ...unlistedSeeds];
 });
 
@@ -264,24 +263,29 @@ const relabelFromOptions = () => {
 watch(computedOptions, relabelFromOptions);
 
 /*
- * Provider mode (0.48.0). Each change of the input's text schedules one call
- * after the debounce; scheduling a newer term aborts the call in flight and
- * retires its result. The sequence number is what retires it: a call that
- * ignores its signal and resolves late still cannot overwrite a newer
- * result. Selecting an option writes its label into the input, which is not
- * a search, so a text equal to the selected option's label is ignored.
+ * Provider mode (0.48.0). Text the USER types schedules one call after the
+ * debounce; a newer term aborts the call in flight and retires its result.
+ * The sequence number is what retires it: a call that ignores its signal and
+ * resolves late still cannot overwrite a newer result.
+ *
+ * Only typing is a search. bvn also writes the input's text itself: the
+ * selected option's label on selection, on blur and on Escape, and on mount
+ * or a model change the label or, with no option to match, the raw value.
+ * Those reach `update:search` exactly like typing, so a search keyed on that
+ * event asked the server for "79" on mount and for the label after every
+ * blur (#242 review). A native `input` event is raised only by the user, so
+ * the search is scheduled from that; `update:search` only clears the
+ * results when the text is emptied (the ✕, or the user deleting it), and a
+ * model change cancels a search still waiting on the debounce, since the
+ * user has chosen.
  */
 let providerDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let providerController: AbortController | null = null;
 let providerSequence = 0;
 
-const selectedOptionLabel = (): string | null => {
-  const modelValue = attr("modelValue", "model-value");
-  if (modelValue === null || modelValue === undefined || modelValue === "") return null;
-  const match = computedOptions.value
-    .map(optionValueAndText)
-    .find((option) => sameValue(option.value, modelValue));
-  return match ? String(match.text ?? "") : null;
+const cancelPendingProviderCall = () => {
+  if (providerDebounceTimer !== null) clearTimeout(providerDebounceTimer);
+  providerDebounceTimer = null;
 };
 
 const retireProviderCall = () => {
@@ -311,26 +315,43 @@ const runProvider = async (term: string) => {
   }
 };
 
+const clearProviderResults = () => {
+  cancelPendingProviderCall();
+  retireProviderCall();
+  providerOptions.value = [];
+  providerState.value = "idle";
+};
+
 const scheduleProvider = (text: string) => {
-  if (providerDebounceTimer !== null) clearTimeout(providerDebounceTimer);
-  providerDebounceTimer = null;
+  cancelPendingProviderCall();
   const term = text.trim();
   if (term === "") {
-    retireProviderCall();
-    providerOptions.value = [];
-    providerState.value = "idle";
+    clearProviderResults();
     return;
   }
-  if (text === selectedOptionLabel()) return;
   providerDebounceTimer = setTimeout(() => {
     providerDebounceTimer = null;
     void runProvider(term);
-  }, props.providerDebounce);
+  }, Number(props.providerDebounce));
 };
 
+/** The user typed (or cut, pasted, deleted) in the input: a search. */
+const onUserInput = (event: Event) => {
+  if (!hasProvider.value) return;
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  scheduleProvider(target.value);
+};
+
+/** bvn's `update:search`: the text as bvn now holds it, however it got there. */
 const onSearchInput = (text: string) => {
   searchText.value = text;
-  if (hasProvider.value) scheduleProvider(text);
+  if (hasProvider.value && text.trim() === "") clearProviderResults();
+};
+
+/** The user chose (or the consumer set) a value: a search still waiting is moot. */
+const onModelUpdate = () => {
+  if (hasProvider.value) cancelPendingProviderCall();
 };
 
 const providerStatusText = computed(() => {
@@ -347,7 +368,7 @@ const providerStatusText = computed(() => {
 });
 
 onBeforeUnmount(() => {
-  if (providerDebounceTimer !== null) clearTimeout(providerDebounceTimer);
+  cancelPendingProviderCall();
   retireProviderCall();
 });
 </script>
@@ -365,6 +386,7 @@ onBeforeUnmount(() => {
     ref="rootElement"
     class="d-autocomplete"
     :aria-busy="hasProvider && providerState === 'searching' ? 'true' : undefined"
+    @input="onUserInput"
   >
     <BAutocomplete
       v-bind="$attrs"
@@ -373,6 +395,7 @@ onBeforeUnmount(() => {
       :filter-function="effectiveFilterFunction"
       :no-clear-button="noClearButton"
       @update:search="onSearchInput"
+      @update:model-value="onModelUpdate"
     >
       <!-- Dynamically pass through all named slots with their props -->
       <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">

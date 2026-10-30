@@ -59,12 +59,14 @@ describe('DAutocomplete provider', () => {
 
   it('calls the provider once with the term after the debounce, lists its results, and selecting one sets the model', async () => {
     const { provider, calls } = makeProvider();
-    const { input, model } = mountWith({ provider });
+    // A long debounce for the control below, so a loaded machine cannot fire
+    // it between the fill and the assertion.
+    const { input, model } = mountWith({ provider, providerDebounce: 400 });
     await userEvent.click(input());
     await userEvent.fill(input(), 'al');
     // Control: nothing is asked for before typing has paused.
     expect(calls).toHaveLength(0);
-    await wait(120);
+    await wait(600);
     expect(calls.map((call) => call.term)).toEqual(['al']);
     expect(optionTexts()).toEqual(['Ales', 'Alcopop']);
 
@@ -76,8 +78,90 @@ describe('DAutocomplete provider', () => {
     expect(model.value).toBe(78);
     expect(input().value).toBe('Alcopop');
     // Writing the chosen label into the input is not a search.
-    await wait(120);
+    await wait(600);
     expect(calls.map((call) => call.term)).toEqual(['al']);
+  });
+
+  it('text bvn writes itself is not a search: a bound value with no seed, a model set from outside, blur and Escape', async () => {
+    const { provider, calls } = makeProvider();
+    // No seed: bvn writes the raw value "79" into the input on mount.
+    const { input, model } = mountWith({ provider, modelValue: 79 });
+    await wait(120);
+    expect(input().value).toBe('79');
+    expect(calls).toHaveLength(0);
+
+    model.value = 77;
+    await wait(120);
+    expect(input().value).toBe('77');
+    expect(calls).toHaveLength(0);
+
+    // Select Alcopop, then search for something that drops it from the list.
+    await userEvent.click(input());
+    await userEvent.fill(input(), 'al');
+    await wait(120);
+    const alcopop = [...document.querySelectorAll('[role="option"]')].find(
+      (option) => option.textContent?.trim() === 'Alcopop',
+    ) as HTMLElement;
+    await userEvent.click(alcopop);
+    await wait(80);
+    await userEvent.fill(input(), 'ci');
+    await wait(120);
+    expect(optionTexts()).toEqual(['Cider']);
+    expect(calls.map((call) => call.term)).toEqual(['al', 'ci']);
+
+    // Escape and blur re-write the selected label: still not a search.
+    await userEvent.keyboard('{Escape}');
+    await wait(120);
+    expect(input().value).toBe('Alcopop');
+    await userEvent.click(document.body);
+    await wait(120);
+    expect(calls.map((call) => call.term)).toEqual(['al', 'ci']);
+  });
+
+  it('uncontrolled (no v-model): selecting an option is not a search', async () => {
+    const { provider, calls } = makeProvider();
+    const screen = render({
+      render: () => h(BApp, {}, () => h(DAutocomplete, { provider, providerDebounce: 40, openOnFocus: true })),
+    });
+    const input = screen.container.querySelector('input') as HTMLInputElement;
+    await userEvent.click(input);
+    await userEvent.fill(input, 'al');
+    await wait(120);
+    const alcopop = [...document.querySelectorAll('[role="option"]')].find(
+      (option) => option.textContent?.trim() === 'Alcopop',
+    ) as HTMLElement;
+    await userEvent.click(alcopop);
+    await wait(120);
+    expect(input.value).toBe('Alcopop');
+    expect(calls.map((call) => call.term)).toEqual(['al']);
+  });
+
+  it('a selection made while a search is still waiting on the debounce cancels it', async () => {
+    const { provider, calls } = makeProvider();
+    const { input, model } = mountWith({ provider, providerDebounce: 300, options: [{ value: 79, text: 'Cider' }] });
+    await userEvent.click(input());
+    await userEvent.fill(input(), 'ci');
+    const cider = [...document.querySelectorAll('[role="option"]')].find(
+      (option) => option.textContent?.trim() === 'Cider',
+    ) as HTMLElement;
+    await userEvent.click(cider);
+    await wait(500);
+    expect(model.value).toBe(79);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('dedupes a seed against the results through `by`', async () => {
+    const provider: AutocompleteProvider = async () => [{ value: { id: 1 }, text: 'One (result)' }];
+    const { input } = mountWith({
+      provider,
+      by: 'id',
+      modelValue: { id: 1 },
+      options: [{ value: { id: 1 }, text: 'One (seed)' }],
+    });
+    await userEvent.click(input());
+    await userEvent.fill(input(), 'o');
+    await wait(120);
+    expect(optionTexts()).toEqual(['One (result)']);
   });
 
   it('keeps one call for a burst of typing, with the final text', async () => {
