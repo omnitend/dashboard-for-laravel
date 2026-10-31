@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.1] - 2026-10-31
+
+### Fixed
+
+- DAutocomplete `provider`: the list reads "Searching…" from the first
+  keystroke rather than from when the debounce lets the call go; it read
+  "Type to search" for a quarter of a second after typing.
+
 ## [0.48.0] - 2026-10-30
 
 ### Added
