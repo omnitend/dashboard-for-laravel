@@ -64,8 +64,10 @@ describe('DAutocomplete provider', () => {
     const { input, model } = mountWith({ provider, providerDebounce: 400 });
     await userEvent.click(input());
     await userEvent.fill(input(), 'al');
-    // Control: nothing is asked for before typing has paused.
+    // Control: nothing is asked for before typing has paused, but the list
+    // already says a search is coming (0.48.1).
     expect(calls).toHaveLength(0);
+    expect(statusText()).toBe('Searching…');
     await wait(600);
     expect(calls.map((call) => call.term)).toEqual(['al']);
     expect(optionTexts()).toEqual(['Ales', 'Alcopop']);

@@ -329,6 +329,10 @@ const scheduleProvider = (text: string) => {
     clearProviderResults();
     return;
   }
+  // Searching from the first keystroke, not from when the debounce lets the
+  // call go: a list that still read "Type to search" for a quarter of a
+  // second after typing looked unresponsive (0.48.1).
+  providerState.value = "searching";
   providerDebounceTimer = setTimeout(() => {
     providerDebounceTimer = null;
     void runProvider(term);
