@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `pluralize` is no longer a runtime dependency. It was already bundled
+  into `dist`, so installing the package also fetched a copy that nothing
+  loaded; it is now a build-time dependency pinned to exactly 8.0.0. The
+  built files are byte-identical.
+
+### Security
+
+- Dependency audit: dev tooling updated (vite 6.4.6, astro 7.4.11, undici,
+  hono, qs and others via `npm audit fix`; `@vue/test-utils` 2.5.1); the
+  unused `happy-dom` dev dependency removed. None of these reached the
+  published package.
+
 ## [0.48.1] - 2026-10-31
 
 ### Fixed

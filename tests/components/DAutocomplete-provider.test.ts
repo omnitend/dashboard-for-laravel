@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { userEvent } from 'vitest/browser';
 import { h, ref } from 'vue';
@@ -6,7 +6,16 @@ import { BApp } from 'bootstrap-vue-next';
 import DAutocomplete from '../../resources/js/components/base/DAutocomplete.vue';
 import type { AutocompleteProvider } from '../../resources/js/components/base/DAutocomplete.vue';
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Captured before any test fakes the clock, so `wait` always waits in real time.
+const realSetTimeout = globalThis.setTimeout.bind(globalThis);
+const wait = (ms: number) => new Promise((resolve) => realSetTimeout(resolve, ms));
+
+/**
+ * Hold the component's timers while the user acts, so a debounce cannot fire
+ * however long the actions take on a loaded machine; the test then moves the
+ * clock itself. Only setTimeout/clearTimeout are faked: the debounce's own.
+ */
+const holdTimers = () => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
 const CATALOGUE = [
   { value: 77, text: 'Ales' },
@@ -37,6 +46,10 @@ const makeProvider = (delayMs = 0) => {
  * tests run quickly; the default is 250 ms.
  */
 describe('DAutocomplete provider', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const mountWith = (props: Record<string, unknown> = {}) => {
     const model = ref<unknown>(props.modelValue ?? null);
     const screen = render({
@@ -141,13 +154,17 @@ describe('DAutocomplete provider', () => {
   it('a selection made while a search is still waiting on the debounce cancels it', async () => {
     const { provider, calls } = makeProvider();
     const { input, model } = mountWith({ provider, providerDebounce: 300, options: [{ value: 79, text: 'Cider' }] });
+    holdTimers();
     await userEvent.click(input());
     await userEvent.fill(input(), 'ci');
     const cider = [...document.querySelectorAll('[role="option"]')].find(
       (option) => option.textContent?.trim() === 'Cider',
     ) as HTMLElement;
     await userEvent.click(cider);
-    await wait(500);
+    // Well past the debounce: the search it was holding must not run.
+    await vi.advanceTimersByTimeAsync(1000);
+    vi.useRealTimers();
+    await wait(120);
     expect(model.value).toBe(79);
     expect(calls).toHaveLength(0);
   });
@@ -169,8 +186,14 @@ describe('DAutocomplete provider', () => {
   it('keeps one call for a burst of typing, with the final text', async () => {
     const { provider, calls } = makeProvider();
     const { input } = mountWith({ provider });
+    // Under load keystrokes can land further apart than the 40ms debounce;
+    // with the clock held, the burst is one burst however slowly it types.
+    holdTimers();
     await userEvent.click(input());
     await userEvent.type(input(), 'cid');
+    expect(calls).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1000);
+    vi.useRealTimers();
     await wait(120);
     expect(calls.map((call) => call.term)).toEqual(['cid']);
     expect(optionTexts()).toEqual(['Cider']);

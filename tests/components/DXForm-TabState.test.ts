@@ -362,14 +362,17 @@ describe('DXForm tab state by key (#194)', () => {
     });
 
     it('follows a late acknowledgement', async () => {
+      // The parent holds its answer until the test releases it, so "late"
+      // is ordered by the test, not by a timer racing a loaded machine.
+      let acknowledge: (() => void) | null = null;
       const { screen, boundIndex, emissions } = mountBound({
         form: makeForm(),
         tabs: threeTabs,
         initialIndex: 0,
         accept: (index, bound) => {
-          setTimeout(() => {
+          acknowledge = () => {
             bound.value = index;
-          }, 300);
+          };
         },
       });
       await settle();
@@ -381,7 +384,8 @@ describe('DXForm tab state by key (#194)', () => {
       expect(boundIndex.value).toBe(0);
       expect(shownLabels(screen.container)).toEqual(['Name']);
 
-      await wait(400);
+      expect(acknowledge).not.toBeNull();
+      acknowledge!();
       await settle();
       expect(boundIndex.value).toBe(2);
       expect(shownLabels(screen.container)).toEqual(['Description']);
