@@ -664,6 +664,27 @@ or two equal reads of 0 pass before it begins. Pinned by
 `DXForm-ErrorTab.test.ts`, `DXForm-TabState.test.ts`,
 `DXTable-ValidationSummary.test.ts`, `utils/formErrorTargets.test.ts`.
 
+### Field affixes: `append` / `prepend` (0.49.0)
+
+Unit text in an input-group cell beside the input, resolved in DXField
+(`MaybeFn`, through `resolveText`, so a throwing function shows no cell).
+**A field without an affix must keep its bare markup**: every consumer's
+layout depends on it, so the affix is a separate template branch
+(`hasTextAffixes` in DXField, `hasAffixes` in DXNumericField) placed BEFORE
+the untouched bare branch, never a wrapper around every input.
+`tests/components/DXField-AffixMarkupUnchanged.test.ts` snapshots the
+no-affix markup of every affected type, recorded on 0.48.2 before the
+feature; if it goes red, the change regressed other consumers: do not update
+the snapshot to make it pass. The group itself is the internal
+`DXFieldAffixGroup` (cells with ids for the input's `aria-describedby`;
+`plaintext` renders one line of text, "120 minutes", not a group around a
+borderless input). Currency forwards `append` to DXCurrencyInput (before
+`v-bind="inputProps"`, so `inputProps.append` still wins) and ignores
+`prepend`; a percentage's `append` replaces its "%". Percentage and
+currency WITHOUT an affix keep their old plaintext rendering (input-group
+cells around a borderless input), which is why their plaintext still
+differs from an affixed field's.
+
 ### DXBasicForm
 
 **Purpose**: Render forms from field definitions with validation

@@ -248,6 +248,10 @@ Supported field types:
   values, like `checkbox-group`. Prefer `switchVariant: 'neutral'` for lists
 - `radio` - Radio button group (requires `options`)
 - `currency`, `percentage` - Numeric input with a `£`/`%` affix
+
+A `number` or text field can show its unit beside the input with `append`
+("Online notice" with "minutes" after the box, rather than "Online notice
+(minutes)" in the label) or `prepend`; see the Field Definition below.
 - `image`, `file` - File input (`image` previews the selection, or an existing
   URL-string value). When a form field holds a selected `File`, `useForm`
   submits the whole form as `multipart/form-data` automatically — a `put`/`patch`
@@ -285,6 +289,13 @@ interface FieldDefinition {
   step?: number | string
   min?: number | string
   max?: number | string
+  append?: string | ((model) => string)  // Unit text in a cell after the input
+                                    // ("minutes"). number, text, email, url, tel and
+                                    // percentage (replaces its "%"); currency's
+                                    // per-unit cell ("per case"). Plaintext shows
+                                    // "120 minutes". No append/prepend: no input group
+  prepend?: string | ((model) => string) // Text in a cell before the input ("every");
+                                    // same types, except currency (currencySymbol)
   currencySymbol?: string           // Default: "£"
   decimals?: number                 // Currency only. Minor-unit precision the display
                                     // value is formatted to on blur/seed (default: 2;

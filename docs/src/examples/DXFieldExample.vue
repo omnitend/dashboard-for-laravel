@@ -10,6 +10,9 @@
     <!-- A currency field with a declarative info popover on the label -->
     <DXField :field="priceField" :form="form" />
 
+    <!-- A unit beside the input (append), rather than in the label -->
+    <DXField :field="noticeField" :form="form" />
+
     <!-- Switches: a full-width filled-box toggle, colour-coded by state
          (success-green when on, neutral when off) -->
     <DXField :field="defaultField" :form="form" />
@@ -84,6 +87,7 @@ import {
 
 const form = useForm({
   price: 12.5,
+  online_notice: 120,
   is_default: true,
   is_featured: false,
   allergens: [2] as number[],
@@ -131,6 +135,14 @@ const priceField: FieldDefinition = {
   currencySymbol: '£',
   hint: 'The list price before tax.',
   info: 'Shown to customers on the storefront. Taxes are added at checkout.',
+};
+
+const noticeField: FieldDefinition = {
+  key: 'online_notice',
+  type: 'number',
+  label: 'Online notice',
+  append: (model) => (Number(model.online_notice) === 1 ? 'minute' : 'minutes'),
+  hint: 'append puts the unit after the input; plaintext shows "120 minutes".',
 };
 
 const defaultField: FieldDefinition = {
