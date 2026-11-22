@@ -27,17 +27,22 @@ const toastingChild = (outcome: { error?: unknown }) => ({
   render: () => null,
 });
 
-// Shown = BToast's own v-show plus the live-region role it sets while shown
-// (see tests/composables/useToast.test.ts for why not the `.show` class).
+// Vue Test Utils stubs Transition/TransitionGroup by default, which stops a
+// toast's fade-in; turn the stubs off so `.show` is real.
+const REAL_TRANSITIONS = { global: { stubs: { transition: false, 'transition-group': false } } };
+
 const shownToastTexts = (container: Element) =>
-  Array.from(container.querySelectorAll<HTMLElement>('.toast'))
-    .filter((el) => getComputedStyle(el).display !== 'none' && el.getAttribute('role') !== null)
+  Array.from(container.querySelectorAll<HTMLElement>('.toast.show'))
+    .filter((el) => getComputedStyle(el).display !== 'none')
     .map((el) => el.textContent ?? '');
 
 describe('DApp', () => {
   it('provides what useToast() needs and renders the toast it creates', async () => {
     const outcome: { error?: unknown } = {};
-    const screen = render({ render: () => h(DApp, {}, () => h(toastingChild(outcome))) });
+    const screen = render(
+      { render: () => h(DApp, {}, () => h(toastingChild(outcome))) },
+      REAL_TRANSITIONS,
+    );
     await flush(300);
 
     expect(outcome.error).toBeUndefined();

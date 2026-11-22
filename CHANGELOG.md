@@ -72,6 +72,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     are no longer accepted.
   - `hide(trigger?, id?)` and `hideAll()` are new. `UseToastReturn` and
     `ToastCreateOptions` are exported.
+- **Toasts from `useToast()` now show at the bottom right** (`bottom-end`)
+  unless you pass `position`; they were at the top right. There they sat over
+  the navbar's actions and user menu, and reaching for those paused the
+  toast's countdown (hovering pauses it), so a toast seemed to block the page
+  until its × was clicked. Pass `position: 'top-end'` for the old placement.
+  A bottom stack sits 1rem from the screen edge, as its side does
+  (DIVERGENCES.md #11).
 - Bootstrap 5.3.9 adds `.modal-xxl` and stops placeholder animations under
   `prefers-reduced-motion`.
 

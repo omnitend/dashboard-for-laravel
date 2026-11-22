@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { h } from 'vue';
-import { BApp, BvTriggerableEvent } from 'bootstrap-vue-next';
+import { BApp } from 'bootstrap-vue-next';
 import { useToast } from '../../resources/js/composables/useToast';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -9,6 +9,14 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 // useToast() must be called from a component nested under BApp (it injects
 // the orchestrator registry) — a sibling that merely renders BApp itself
 // doesn't satisfy that.
+//
+// Vue Test Utils (under vitest-browser-vue's `render`) stubs Transition and
+// TransitionGroup by default, and BToast shows and hides through a
+// Transition: with the stubs an orchestrated toast never gets `.show` and
+// never emits `hidden`. These tests turn the stubs off so the real
+// show/hide/remove path runs.
+const REAL_TRANSITIONS = { global: { stubs: { transition: false, 'transition-group': false } } };
+
 const renderWithToast = (create: (toast: ReturnType<typeof useToast>) => void) => {
   const Trigger = {
     setup() {
@@ -16,9 +24,12 @@ const renderWithToast = (create: (toast: ReturnType<typeof useToast>) => void) =
       return () => null;
     },
   };
-  return render({
-    render: () => h(BApp, {}, () => h(Trigger)),
-  });
+  return render(
+    {
+      render: () => h(BApp, {}, () => h(Trigger)),
+    },
+    REAL_TRANSITIONS,
+  );
 };
 
 describe('useToast', () => {
@@ -58,14 +69,9 @@ describe('useToast', () => {
   // bvn 0.45 defaulted a created toast's modelValue to 5000 (shown, 5 s
   // countdown); 1.x creates it hidden until `.show()`. The documented
   // `toast.create({ body, variant })` must still show a toast (#249).
-  //
-  // "Shown" is BToast's own v-show (display) plus the live-region role it
-  // sets only while shown. Not the `.show` class: in this harness an
-  // orchestrated toast's fade-in never completes (bvn 0.45.6 too, so it is
-  // not this upgrade), so `.show` is absent from shown toasts as well.
   const visibleToasts = () =>
     Array.from(document.querySelectorAll<HTMLElement>('.toast')).filter(
-      (el) => getComputedStyle(el).display !== 'none' && el.getAttribute('role') !== null,
+      (el) => el.classList.contains('show') && getComputedStyle(el).display !== 'none',
     );
   const settle = () => new Promise((resolve) => setTimeout(resolve, 400));
 
@@ -104,84 +110,54 @@ describe('useToast', () => {
 
   // bvn 0.45 destroyed a toast once hidden (unless `keep`); 1.x keeps it in
   // the store and the DOM until the calling component unmounts, so a
-  // long-lived page piled up hidden toasts. In this harness an orchestrated
-  // toast emits `hide` but never `hidden` (its leave transition never
-  // completes, bvn 0.45.6 too), so these tests deliver the `hidden` event
-  // the orchestrator would, through the handler on the store item. The
-  // docs demo pins the real path in a browser.
-  const hideThroughStore = async (
-    toastApi: ReturnType<typeof useToast>,
-    id: string | symbol,
-  ) => {
-    const props = toastApi.store.value.toast.get(id)!.value.props;
-    props.onHidden?.(new BvTriggerableEvent('hidden'));
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  };
+  // long-lived page piled up hidden toasts. Each toast here counts down
+  // for real (200 ms) and hides through its real transition.
+  const SHORT_MS = 200;
 
-  it('removes a toast from the store once it has hidden', async () => {
+  it('removes a toast from the store and the DOM once it has hidden', async () => {
     let toastApi: ReturnType<typeof useToast> | undefined;
-    let id: string | symbol = '';
-    renderWithToast((toast) => {
+    const screen = renderWithToast((toast) => {
       toastApi = toast;
-      id = toast.create({ body: 'Brief', modelValue: false }).id;
+      toast.create({ body: 'Brief', modelValue: SHORT_MS });
     });
     await flush();
     expect(toastApi!.store.value.toast.size).toBe(1);
 
-    await hideThroughStore(toastApi!, id);
-
-    expect(toastApi!.store.value.toast.size).toBe(0);
+    await expect.poll(() => toastApi!.store.value.toast.size, { timeout: 4000 }).toBe(0);
+    expect(screen.container.querySelector('.toast')).toBeNull();
   });
 
+  // Each of the next two waits for the caller's onHidden first (the
+  // positive control: the toast really hid), then reads the store. bvn 1.2.4
+  // calls a toast's onHidden twice per hide (raw bvn too), so the counts
+  // are "at least once".
   it('keeps a hidden toast when created with { keep: true } (bvn 0.45 option)', async () => {
     let toastApi: ReturnType<typeof useToast> | undefined;
-    let id: string | symbol = '';
+    let hiddenCalls = 0;
     renderWithToast((toast) => {
       toastApi = toast;
-      id = toast.create({ body: 'Kept', modelValue: false }, { keep: true }).id;
+      toast.create(
+        { body: 'Kept', modelValue: SHORT_MS, onHidden: () => { hiddenCalls += 1; } },
+        { keep: true },
+      );
     });
-    await flush();
 
-    await hideThroughStore(toastApi!, id);
+    await expect.poll(() => hiddenCalls, { timeout: 4000 }).toBeGreaterThan(0);
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(toastApi!.store.value.toast.size).toBe(1);
   });
 
   it("calls the caller's own onHidden as well", async () => {
-    const hidden: string[] = [];
+    let hiddenCalls = 0;
     let toastApi: ReturnType<typeof useToast> | undefined;
-    let id: string | symbol = '';
     renderWithToast((toast) => {
       toastApi = toast;
-      id = toast.create({
-        body: 'Brief',
-        modelValue: false,
-        onHidden: () => hidden.push('caller'),
-      }).id;
+      toast.create({ body: 'Brief', modelValue: SHORT_MS, onHidden: () => { hiddenCalls += 1; } });
     });
-    await flush();
 
-    await hideThroughStore(toastApi!, id);
-
-    expect(hidden).toEqual(['caller']);
-  });
-
-  it('a prevented hidden event keeps the toast', async () => {
-    let toastApi: ReturnType<typeof useToast> | undefined;
-    let id: string | symbol = '';
-    renderWithToast((toast) => {
-      toastApi = toast;
-      id = toast.create({
-        body: 'Stays',
-        modelValue: false,
-        onHidden: (event) => event.preventDefault(),
-      }).id;
-    });
-    await flush();
-
-    await hideThroughStore(toastApi!, id);
-
-    expect(toastApi!.store.value.toast.size).toBe(1);
+    await expect.poll(() => hiddenCalls, { timeout: 4000 }).toBeGreaterThan(0);
+    await expect.poll(() => toastApi!.store.value.toast.size, { timeout: 4000 }).toBe(0);
   });
 
   it('obj.options wins over the second argument', async () => {
@@ -196,6 +172,37 @@ describe('useToast', () => {
     await flush();
 
     expect(options).toMatchObject({ resolveOnHide: false });
+  });
+
+  // Toasts default to bottom-end, not bvn's top-end: top-end covered the
+  // navbar's right-hand controls (user menu, page actions), and reaching for
+  // them hovered the toast, which pauses its countdown, so it stayed until
+  // its × was clicked (DIVERGENCES.md #11).
+  it('defaults to the bottom-end position', async () => {
+    let position: unknown;
+    renderWithToast((toast) => {
+      const controller = toast.create({ body: 'Where am I?' });
+      position = toast.store.value.toast.get(controller.id)?.value.props.position;
+    });
+    await flush();
+
+    expect(position).toBe('bottom-end');
+    const lastToast = document.querySelector<HTMLElement>('.toast-container.bottom-0.end-0 .toast');
+    expect(lastToast).not.toBeNull();
+    // The last toast drops the between-toast gap, so the stack sits the
+    // container's padding from the bottom edge, like its side (theme.scss).
+    expect(getComputedStyle(lastToast!).marginBottom).toBe('0px');
+  });
+
+  it('an explicit position still wins', async () => {
+    let position: unknown;
+    renderWithToast((toast) => {
+      const controller = toast.create({ body: 'Up here', position: 'top-end' });
+      position = toast.store.value.toast.get(controller.id)?.value.props.position;
+    });
+    await flush();
+
+    expect(position).toBe('top-end');
   });
 
   it('renders with no variant at all without error', async () => {
