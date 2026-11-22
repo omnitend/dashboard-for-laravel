@@ -7,6 +7,7 @@ import ComponentExample from '../../../components/ComponentExample.vue';
 import BootstrapVueNextReference from '../../../components/BootstrapVueNextReference.vue';
 import DToasterExample from '../../../examples/DToasterExample.vue';
 import DToasterExampleRaw from '../../../examples/DToasterExample.vue?raw';
+import DToastDemoButtonsRaw from '../../../examples/DToastDemoButtons.vue?raw';
 
 # DToaster
 
@@ -20,5 +21,27 @@ DToaster - A type-safe wrapper around Bootstrap Vue Next's BToaster component. C
   example="DToasterExample"
 />
 
+## Showing a toast with `useToast()`
+
+Call `useToast()` in any component inside `<DApp>`, and `create()` a toast.
+Mount `DApp` once at your app's root: it provides what `useToast()` needs
+and renders the toasts, so you don't need a `DToaster` as well.
+
+```vue
+<DApp>
+  <App />
+</DApp>
+```
+
+With no `modelValue` a toast shows for 5 seconds; a number is the duration in
+milliseconds, `true` keeps it until closed, and `false` creates it hidden
+(call `.show()` on what `create()` returns). Hovering a toast pauses its
+countdown.
+
+<ComponentExample
+  client:load
+  code={DToastDemoButtonsRaw}
+  example="DToastDemo"
+/>
 
 <BootstrapVueNextReference client:load componentName="DToaster" />

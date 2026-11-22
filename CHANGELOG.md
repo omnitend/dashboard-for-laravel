@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `DApp`, a wrapper for bootstrap-vue-next's `BApp`: the app-root provider
+  that `useToast()` and `useModal()` need above them, which also renders the
+  toasts and modals they create. Mount it once at the root. Until now the
+  only way to get it was the raw `BApp` re-export.
+- The DToaster docs page has a live `useToast()` demo, with how durations
+  and hover-to-pause work.
+
 ### Changed
 
 - bootstrap-vue-next 0.45.6 → 1.2.4 and Bootstrap 5.3.8 → 5.3.9 (#249).
