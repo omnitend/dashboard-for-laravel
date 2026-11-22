@@ -309,8 +309,11 @@ nothing with no error, and every toast a long-lived page (an Inertia
 persistent layout, a DXTable's editor) showed would stay in the DOM. bvn 0.45
 defaulted `modelValue` to 5000 and its orchestrator destroyed a toast on
 `hidden` unless `keep`; the shield restores both for a plain-object param:
-it chains an `onHidden` after the caller's own (a `preventDefault()` there
-keeps the toast, as in 0.45) and destroys the toast a microtask later.
+it chains an `onHidden` after the caller's own and destroys the toast a
+microtask later. `hidden` is not cancelable (0.45's `defaultPrevented` check
+on it was dead code), so `keep` is the only opt-out. bvn 1.2.4 calls a
+toast's `onHidden` twice per hide (raw bvn too); the second destroy is a
+no-op.
 
 **Not shielded:**
 - A ref param is passed through untouched (it always was, so its variant is
@@ -326,10 +329,9 @@ keeps the toast, as in 0.45) and destroys the toast a microtask later.
   it would mean reordering bvn's rendering, so it is documented instead.
 
 `hide`/`hideAll` (bvn 1.2) pass through. Pinned by
-`tests/composables/useToast.test.ts`; the removal tests deliver the `hidden`
-event through the store item's handler because this harness never completes
-an orchestrated toast's leave transition, so removal in a real browser is
-checked by hand on the DToaster docs demo.
+`tests/composables/useToast.test.ts`, which turns off Vue Test Utils'
+default Transition/TransitionGroup stubs so toasts really show, count down,
+hide and are removed.
 
 **Convergence (future major):** drop the default, the removal, the alias and
 the second argument. Consumers change `create(obj)` to `create(obj).show()`
@@ -337,6 +339,30 @@ the second argument. Consumers change `create(obj)` to `create(obj).show()`
 `create(obj, options)` to `create({ ...obj, options })`, all mechanical for a
 codemod; the removal needs either `controller.destroy()` after `show()`
 settles, or an upstream fix.
+
+---
+
+### 11. `useToast()` toasts default to `bottom-end`
+
+| | |
+| --- | --- |
+| **Our API** | a toast created with no `position` shows at `bottom-end` |
+| **bvn API** | `top-end` (0.45 and 1.x alike) |
+| **Shielded in** | `resources/js/composables/useToast.ts` (`prepareParam`), plus `.toast-container > :last-child > .toast { margin-bottom: 0 }` in theme.scss so a bottom stack sits 1rem from the edge, as its side does |
+| **Applies to** | this library's `useToast`, so DXTable's editor toasts too; not a ref param, not raw `BToast` |
+| **Introduced** | library 0.49.0 |
+
+**Why:** a product decision, not a bvn change. At `top-end` a toast sat over
+the navbar's right-hand end (DXDashboardNavbar's actions and user menu):
+measured in Chrome, a click at the centre of the navbar's last control landed
+on the toast's close button, and reaching for those controls hovered the
+toast, which pauses its countdown, so it stayed until its × was clicked.
+Users reported toasts as blocking the page and needing a click to dismiss.
+Pass `position: 'top-end'` for the old placement. Pinned by
+`tests/composables/useToast.test.ts`.
+
+**Convergence (future major):** none planned; it is a default this library
+chooses. If dropped, consumers wanting `bottom-end` pass `position`.
 
 ---
 

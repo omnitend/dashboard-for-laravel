@@ -1433,6 +1433,13 @@ aside.dashboard-sidebar--light {
 // sets its colours `!important` by design. An untouched (non-themed) variant
 // still falls through to BVN's default `.text-bg-*` styling.
 
+// The last toast in a stack drops the gap below it (see `.toast` below), so a
+// bottom stack (useToast's default since 0.49) sits the container's padding
+// from the edge, as its sides do. `> :last-child >` is BVN's per-toast span.
+.toast-container > :last-child > .toast {
+  margin-bottom: 0;
+}
+
 .toast {
   overflow: hidden; // clip the bottom progress bar to the rounded corners
   border: 1px solid $border-color;

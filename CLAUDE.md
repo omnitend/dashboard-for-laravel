@@ -1580,7 +1580,7 @@ headless run.
 
 ### Testing gotchas (vitest browser mode)
 
-Three things that cost real time and aren't derivable from the code:
+Four things that cost real time and aren't derivable from the code:
 
 - **Tests run in a real browser, so `node:fs` doesn't exist.** A test that reads
   a build artefact must import it through Vite — `import css from '../../dist/style.css?raw'`
@@ -1596,6 +1596,15 @@ Three things that cost real time and aren't derivable from the code:
   that changes per-page silently breaks a *later* test's `:per-page="20"`. Clear
   `dxtable-perpage-<url>` (default key: `dxtable-perpage-table`) in a
   `beforeEach`. This is a real product wart too — see #124.
+- **`render` stubs `Transition` and `TransitionGroup`** (Vue Test Utils'
+  defaults, under vitest-browser-vue), so anything bvn shows or hides through
+  a transition never finishes: an orchestrated toast or modal never gets
+  `.show`, never emits `hidden`, and the DOM holds `<transition-stub>` /
+  `<transition-group-stub>`, which also breaks child selectors such as
+  `.toast-container > :last-child > .toast`. It looks like a bvn bug (it
+  happens on every bvn version). Pass `{ global: { stubs: { transition:
+  false, 'transition-group': false } } }` as `render`'s second argument
+  (`tests/composables/useToast.test.ts`).
 
 **macOS hides Linux text layout.** CI's Linux Chromium rounds glyph
 advances per font size (text width grows in steps, not in proportion to the

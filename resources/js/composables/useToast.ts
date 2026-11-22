@@ -24,6 +24,14 @@ const THEMED_TOAST_VARIANTS = new Set(["success", "danger", "warning", "info", "
  */
 const DEFAULT_TOAST_DURATION_MS = 5000;
 
+/**
+ * Where a toast shows when the caller sets no `position`. bvn's default,
+ * `top-end`, sits over the navbar's right-hand controls (user menu, page
+ * actions); reaching for them hovered the toast, which pauses its countdown,
+ * so it stayed until its × was clicked (DIVERGENCES.md #11).
+ */
+const DEFAULT_TOAST_POSITION = "bottom-end";
+
 function themeToastParam(param: Record<string, unknown>): Record<string, unknown> {
     const variant = param.variant as string | null | undefined;
     if (!variant || !THEMED_TOAST_VARIANTS.has(variant)) return param;
@@ -60,6 +68,7 @@ function prepareParam(
     if (isRef(obj)) return obj;
     const param: Record<string, unknown> = { ...(obj ?? {}) };
     if (param.modelValue === undefined) param.modelValue = DEFAULT_TOAST_DURATION_MS;
+    if (param.position === undefined) param.position = DEFAULT_TOAST_POSITION;
 
     // bvn 0.45 took options as a second argument; 0.46+ reads `obj.options`.
     // `keep` is ours (0.45's), so it never reaches bvn.
@@ -70,13 +79,14 @@ function prepareParam(
     if (options !== undefined || param.options !== undefined) param.options = bvnOptions;
 
     // bvn 0.45's orchestrator destroyed a toast once hidden unless `keep`;
-    // 1.x leaves it in the store and the DOM. Same rule as 0.45: the
-    // caller's own onHidden runs first and can prevent the removal.
+    // 1.x leaves it in the store and the DOM. The caller's own onHidden runs
+    // first. `hidden` is not cancelable (in 0.45 either), so `keep` is the
+    // only way to opt out. bvn 1.2.4 calls onHidden twice per hide; the
+    // second destroy finds nothing to remove.
     if (!keep) {
         const callersOnHidden = param.onHidden as ((event: BvTriggerableEvent) => void) | undefined;
         param.onHidden = (event: BvTriggerableEvent) => {
             callersOnHidden?.(event);
-            if (event.defaultPrevented) return;
             removeOnceHidden();
         };
     }

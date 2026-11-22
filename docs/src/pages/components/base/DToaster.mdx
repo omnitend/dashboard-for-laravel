@@ -36,7 +36,9 @@ and renders the toasts, so you don't need a `DToaster` as well.
 With no `modelValue` a toast shows for 5 seconds; a number is the duration in
 milliseconds, `true` keeps it until closed, and `false` creates it hidden
 (call `.show()` on what `create()` returns). Hovering a toast pauses its
-countdown.
+countdown. Toasts show at the bottom right unless you pass `position` (for
+example `'top-end'`), and each is removed once it has hidden unless you pass
+`{ keep: true }` as the second argument.
 
 <ComponentExample
   client:load
