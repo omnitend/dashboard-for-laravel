@@ -55,6 +55,53 @@ describe('useToast', () => {
     expect(el.classList.contains('my-custom-class')).toBe(true);
   });
 
+  // bvn 0.45 defaulted a created toast's modelValue to 5000 (shown, 5 s
+  // countdown); 1.x creates it hidden until `.show()`. The documented
+  // `toast.create({ body, variant })` must still show a toast (#249).
+  //
+  // "Shown" is BToast's own v-show (display) plus the live-region role it
+  // sets only while shown. Not the `.show` class: in this harness an
+  // orchestrated toast's fade-in never completes (bvn 0.45.6 too, so it is
+  // not this upgrade), so `.show` is absent from shown toasts as well.
+  const visibleToasts = () =>
+    Array.from(document.querySelectorAll<HTMLElement>('.toast')).filter(
+      (el) => getComputedStyle(el).display !== 'none' && el.getAttribute('role') !== null,
+    );
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 400));
+
+  it('create() with no modelValue shows the toast', async () => {
+    renderWithToast((toast) => toast.create({ title: 'Shown by default', variant: 'success' }));
+    await settle();
+
+    expect(visibleToasts().map((el) => el.textContent)).toContain('Shown by default');
+  });
+
+  it('create() with modelValue false stays hidden (positive control)', async () => {
+    renderWithToast((toast) => toast.create({ title: 'Kept hidden', modelValue: false }));
+    await settle();
+
+    expect(document.querySelector('.toast')).not.toBeNull();
+    expect(visibleToasts().map((el) => el.textContent)).not.toContain('Kept hidden');
+  });
+
+  it('show(obj) still shows a toast (removed from bvn in 0.46)', async () => {
+    renderWithToast((toast) => toast.show({ title: 'Via show', variant: 'info' }));
+    await settle();
+
+    expect(visibleToasts().map((el) => el.textContent)).toContain('Via show');
+  });
+
+  it('create(obj, options) passes the options through (bvn 1.x takes obj.options)', async () => {
+    let options: unknown;
+    renderWithToast((toast) => {
+      const controller = toast.create({ title: 'Opts' }, { resolveOnHide: true });
+      options = toast.store.value.toast.get(controller.id)?.value.options;
+    });
+    await flush();
+
+    expect(options).toEqual({ resolveOnHide: true });
+  });
+
   it('renders with no variant at all without error', async () => {
     const screen = renderWithToast((toast) => toast.create({ title: 'Plain' }));
     await flush();

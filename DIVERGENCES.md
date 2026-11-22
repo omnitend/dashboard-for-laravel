@@ -166,6 +166,16 @@ natively, drop the encode/decode in `DFormSelect` and pass straight through. No
 consumer source change needed (types match); document in the changelog.
 (Radios likely need the same treatment — tracked in #81.)
 
+**Re-checked at bvn 1.2.4 (#249): candidate to converge.** The model
+round-trip described above does NOT fail in raw bvn, in 1.2.4 or 0.45.6:
+`BFormSelect` uses Vue's `vModelSelect`, which matches on the option's
+`_value`, so a raw `null` option is selected for a `null` model and emits
+`null` when chosen (probed both versions). What the shield still changes is
+the DOM: raw bvn renders the `null` option with no `value` attribute, so a
+native form post or `new FormData(form)` sends the option's text; ours sends
+the private sentinel. Neither is a useful posted value, so converging costs
+consumers nothing they rely on. Decide in the convergence major.
+
 ---
 
 ### 6. `DAlert` `modelValue` default — visible by default instead of bvn's hidden
@@ -221,6 +231,9 @@ the same file again still fires `change`.
 **Convergence (future major):** if bvn's watcher starts clearing the native
 input on `null` and `[]`, drop the watch. No consumer source change needed.
 
+**Re-checked at bvn 1.2.4 (#249): still needed.** The watcher is unchanged:
+`null` clears the file list and the `plain` input only, `[]` clears neither.
+
 ---
 
 ### 8. `DFormFile` ignores dropped files while disabled
@@ -244,6 +257,64 @@ changes; no prop or type does.
 **Convergence (future major):** if bvn's drop handler starts checking
 `disabled` (and the fieldset), drop the listeners. No consumer source change
 needed.
+
+**Re-checked at bvn 1.2.4 (#249): still needed.** `useDropZone`'s `onDrop`
+still checks only `noDrop`.
+
+---
+
+### 9. `DFormCheckbox` `uncheckedValue` defaults to `false`
+
+| | |
+| --- | --- |
+| **Our API** | an unticked `DFormCheckbox` emits `false` unless the consumer passes `unchecked-value` |
+| **bvn API (≥ 0.46)** | `BFormCheckbox`'s `uncheckedValue` defaults to "no value" (`undefined` in 1.2.4; the 0.46.0 notes say `null`), so an unticked box emits `undefined` |
+| **Shielded in** | `resources/js/components/base/DFormCheckbox.vue` (`uncheckedValue: false` spread before `$attrs`) |
+| **Applies to** | `DFormCheckbox`, so `DXSwitch` and `DXField`'s `checkbox`/`switch` types too |
+| **Introduced** | bvn 0.46; shield added when bumping bvn 0.45.6 → 1.2.4 (library 0.49.0, #249) |
+
+**Why:** a boolean field that unticks to `undefined` drops out of a JSON
+body, and to `null` fails Laravel's `boolean` rule; `form.data.flag === false`
+checks break too. Every boolean field in a consuming app would need
+`unchecked-value` added. The default is set as an attr, not a declared prop:
+the consumer's attrs spread after it, so their value wins in either spelling,
+an explicit `:unchecked-value="undefined"` opts into bvn's behaviour, and
+Vue's Boolean prop casting never turns `unchecked-value=""` into `true`.
+Inside a `DFormCheckboxGroup` the default is inert (the model is an array).
+Pinned by `tests/components/checkbox-unchecked-value.test.ts`.
+
+**Convergence (future major):** drop the default. Consumers who post booleans
+add `:unchecked-value="false"` (a codemod can add it to every `DFormCheckbox`
+and `DXSwitch` with a `v-model` and no `unchecked-value`), or DXField
+normalises its own boolean types.
+
+---
+
+### 10. `useToast()`: `create` shows the toast, `show` and the `options` argument kept
+
+| | |
+| --- | --- |
+| **Our API** | bvn 0.45's: `create(obj)` with no `modelValue` shows the toast for 5 s; `show(obj)` is an alias of `create`; `create(obj, options)` takes the orchestrator options as a second argument |
+| **bvn API (≥ 0.46)** | `create(obj)` registers the toast **hidden** until `.show()` is called on the returned controller; `show` is gone; options go in `obj.options` |
+| **Shielded in** | `resources/js/composables/useToast.ts` (`prepareParam`) |
+| **Applies to** | this library's `useToast` (bvn's own `useToast` is not re-exported under that name) |
+| **Introduced** | bvn 0.46 (the orchestrator refactor; not called out in bvn's changelog); shield added at library 0.49.0 (#249) |
+
+**Why:** the documented call, `toast.create({ body, variant })`, would show
+nothing with no error. bvn 0.45 defaulted `modelValue` to 5000; the shield
+restores that default for a plain-object param only. A ref param is passed
+through untouched (as before, so its variant is not themed either) and must
+set `modelValue` itself. What is NOT shielded: `create` now returns bvn 1.x's
+controller rather than 0.45's awaitable `PromiseWithComponent`, so
+`await toast.create(...)` no longer waits for the toast to close; use
+`await toast.create(...).show()`. The types changed with it, so such code fails
+`vue-tsc` rather than silently. `hide`/`hideAll` (bvn 1.2) pass through.
+Pinned by `tests/composables/useToast.test.ts`.
+
+**Convergence (future major):** drop the default, the alias and the second
+argument. Consumers change `create(obj)` to `create(obj).show()` (or set
+`modelValue`), `show(obj)` to `create(obj).show()` and `create(obj, options)`
+to `create({ ...obj, options })`; all three are mechanical for a codemod.
 
 ---
 
@@ -336,7 +407,9 @@ options [{value: '__all__', text: 'All statuses'}, {value: 'pending', …}]  -> 
 The obvious encoding of a "no filter" / "All x" option therefore silently empties
 the dropdown. **Our shield:** `DXTable`'s `FILTER_ALL_VALUE` sentinel, translated
 back to `''` on the way out. Pinned by a contrast test in
-`tests/components/DAutocomplete.test.ts`.
+`tests/components/DAutocomplete.test.ts`. **Still present in bvn 1.2.4**
+(#249: the contrast test still passes); 1.0.2's "BFormSelect preserves an
+empty-string modelValue" fix is a different component.
 
 ### 2. `BTable` captures its slot set at mount
 

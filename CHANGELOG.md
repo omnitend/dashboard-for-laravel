@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- bootstrap-vue-next 0.45.6 → 1.2.4 and Bootstrap 5.3.8 → 5.3.9 (#249).
+  Both are bundled into `dist`. The package also re-exports every
+  bootstrap-vue-next export, so the upstream changes below reach you
+  whether or not you use our `D*` wrappers. Upstream fixes that come with
+  it: toast and modal show/hide no longer deadlock or hang when dismissed
+  early, `BTabs` honours its initial index when only some tabs have ids,
+  `BFormFile` announces every selection to screen readers, and
+  `BFormTextarea` keeps typed text visible with `debounce` + `max-rows`.
+- **`BFormRating`** (re-exported as is; there is no `D*` wrapper): the
+  `stars` prop is now `length`, the default slot's `starIndex` is
+  `itemIndex`, sizes are `sm`/`lg`, and the CSS classes lost "star":
+  `.star` → `.rating-item`, `.b-form-rating-star` → `.b-form-rating-item`,
+  `.clear-button-spacing` → `.rating-clear-button`. Its border and
+  background now come from Bootstrap's `.form-control` rather than a
+  `.b-form-rating` rule, so overrides aimed at that rule stop applying.
+- **`useToast()`** now returns bootstrap-vue-next 1.x's controller from
+  `create()`, not 0.45's promise: `await toast.create(...)` no longer waits
+  for the toast to close; write `await toast.create(...).show()`. The type
+  changed with it, so `vue-tsc` flags such code. `hide(trigger?, id?)` and
+  `hideAll()` are new. What still works as before (DIVERGENCES.md #10):
+  `create({ body, variant })` with no `modelValue` shows the toast for 5 s
+  (bootstrap-vue-next 1.x would create it hidden), `show(obj)` is kept as a
+  deprecated alias of `create`, and `create(obj, options)` still takes the
+  options as a second argument.
+- Bootstrap 5.3.9 adds `.modal-xxl` and stops placeholder animations under
+  `prefers-reduced-motion`.
+
+### Removed
+
+- `useModalController`, `usePopoverController` and `useToastController`,
+  re-exported from bootstrap-vue-next, which removed them; they were
+  deprecated aliases. Use `useModal`, `usePopover` and `useToast`.
+
+### Fixed
+
+- An unticked `DFormCheckbox`, `DXSwitch` or `DXField` `checkbox`/`switch`
+  still emits `false`. bootstrap-vue-next 0.46 changed `BFormCheckbox`'s
+  `uncheckedValue` default to no value, which would have sent `undefined`
+  (dropped from a JSON body, and failing Laravel's `boolean` rule as
+  `null`). `DFormCheckbox` keeps `false` as its default; pass
+  `unchecked-value` to choose another (DIVERGENCES.md #9). A raw
+  `BFormCheckbox` gets bootstrap-vue-next's new default.
+
 ## [0.48.2] - 2026-11-22
 
 ### Changed

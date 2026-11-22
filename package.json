@@ -73,7 +73,7 @@
     }
   },
   "dependencies": {
-    "bootstrap-vue-next": "^0.45.6"
+    "bootstrap-vue-next": "^1.2.4"
   },
   "devDependencies": {
     "@astrojs/markdown-remark": "^7.3.8",
@@ -90,7 +90,7 @@
     "@vitest/browser-playwright": "^4.1.12",
     "@vue/test-utils": "^2.5.1",
     "astro": "7.4.11",
-    "bootstrap": "^5.3.8",
+    "bootstrap": "^5.3.9",
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^4.5.1",
     "highlight.js": "^11.11.1",
