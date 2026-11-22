@@ -830,7 +830,7 @@ $dx-display-only-row: '.dx-form--horizontal .row:has(> .col-form-label):not(:has
 $dx-input-group-control: ':not(.input-group-text, .btn, .dropdown-menu, .dropdown-toggle, [type="hidden"], .valid-feedback, .invalid-feedback, .valid-tooltip, .invalid-tooltip)';
 $dx-wrapping-input-group: '.input-group:not(.dx-input-group--joined):has(> #{$dx-input-group-control} ~ #{$dx-input-group-control})';
 $dx-input-group-validation-messages: '';
-@each $state in map-keys($form-validation-states) {
+@each $state in map.keys($form-validation-states) {
   $dx-input-group-validation-messages: $dx-input-group-validation-messages + ':not(.#{$state}-tooltip):not(.#{$state}-feedback)';
 }
 
@@ -947,7 +947,7 @@ $dx-input-group-validation-messages: '';
 
     &:focus-within:not([aria-disabled="true"]) {
       border-color: var(--bs-form-invalid-border-color);
-      box-shadow: map-get(map-get($form-validation-states, "invalid"), "focus-box-shadow");
+      box-shadow: map.get(map.get($form-validation-states, "invalid"), "focus-box-shadow");
     }
   }
 
@@ -957,7 +957,7 @@ $dx-input-group-validation-messages: '';
 
     &:focus-within:not([aria-disabled="true"]) {
       border-color: var(--bs-form-valid-border-color);
-      box-shadow: map-get(map-get($form-validation-states, "valid"), "focus-box-shadow");
+      box-shadow: map.get(map.get($form-validation-states, "valid"), "focus-box-shadow");
     }
   }
 }

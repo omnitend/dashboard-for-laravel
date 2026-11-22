@@ -22,6 +22,11 @@ const STORAGE_KEY = 'dx-dashboard-phone-menu-test';
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
 const MENU_OPEN_CLASS = 'dx-dashboard-menu-open';
+// The Tab-walk tests press a key and assert dozens of times, one browser
+// round trip each, so on a loaded machine they outran the 15s default. A
+// timed-out test is not stopped: its remaining key presses (and Escape) went
+// on in the next tests' DOM and failed THEIR focus assertions too.
+const TAB_WALK_TIMEOUT = 60_000;
 
 const settled = () =>
   new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -184,7 +189,7 @@ describe('keyboard focus', () => {
     expect(document.activeElement).toBe(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(lockHeld()).toBe(false);
-  });
+  }, TAB_WALK_TIMEOUT);
 
   it('returns focus to the toggle when the close button closes it', async () => {
     const screen = render(DXDashboard, { props: dashboardProps(), slots: { default: '<p>Page</p>' } });
@@ -285,7 +290,7 @@ describe('keyboard focus: what the menu covers', () => {
         expect(layout.contains(document.activeElement) && !sidebar.contains(document.activeElement)).toBe(false);
       }
     }
-  });
+  }, TAB_WALK_TIMEOUT);
 
   it('lets a modal opened from the menu move Tab between its own controls', async () => {
     const showModal = ref(false);

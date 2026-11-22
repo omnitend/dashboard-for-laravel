@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
+import { scssOptions } from './sass-options';
 import Components from 'unplugin-vue-components/vite';
 import Icons from 'unplugin-icons/vite';
 import IconsResolver from 'unplugin-icons/resolver';
@@ -25,19 +26,8 @@ export default defineConfig({
   css: {
     devSourcemap: true,
     preprocessorOptions: {
-      scss: {
-        // Bootstrap 5.3's own SCSS still uses `@import`, global built-in
-        // functions, and `red()`/`green()`/`blue()` — none migrated to the Sass
-        // module system — so compiling it floods the build with Dart Sass
-        // deprecation warnings we can't fix without Bootstrap upstreaming a
-        // module-based rewrite. `quietDeps` silences warnings originating inside
-        // node_modules (Bootstrap's internals) while still surfacing any in our
-        // own SCSS; `silenceDeprecations: ['import']` covers our own three
-        // `@import` lines in theme.scss (Bootstrap 5.3 has no clean `@use`
-        // entry point to migrate them to yet).
-        quietDeps: true,
-        silenceDeprecations: ['import'],
-      },
+      // Shared with vitest.config.ts: see sass-options.ts.
+      scss: { ...scssOptions },
     },
     postcss: {
       map: {

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
+import { scssOptions } from './sass-options';
 import Components from 'unplugin-vue-components/vite';
 import Icons from 'unplugin-icons/vite';
 import IconsResolver from 'unplugin-icons/resolver';
@@ -15,6 +16,8 @@ import { playwright } from '@vitest/browser-playwright';
 const remoteBrowserEndpoint = process.env.DX_PLAYWRIGHT_WS_ENDPOINT;
 
 export default defineConfig({
+  // theme.scss compiled for `?inline` imports: the build's Sass options.
+  css: { preprocessorOptions: { scss: { ...scssOptions } } },
   plugins: [
     vue(),
     Components({
