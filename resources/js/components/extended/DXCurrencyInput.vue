@@ -22,8 +22,9 @@
   DXField's `currency` field type renders this leaf; it exists standalone so a
   money input outside a form (an inline table correction, a quick filter)
   doesn't re-inline the `£`-prefix + toFixed + parse foot-guns. On a DXField,
-  reach the affix through the field's `inputProps` (`{ append: 'per case' }`) —
-  it binds to this prop like any other.
+  set the field's own `append` (`append: 'per case'`, or a function of the
+  model); `inputProps: { append }` still binds to this prop and wins over it,
+  as `inputProps` always does.
 -->
 <template>
     <!-- `.dx-currency-input` (theme.scss) keeps the amount usable in a narrow

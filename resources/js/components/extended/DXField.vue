@@ -301,6 +301,8 @@
                     :is-readonly="isReadonly"
                     :is-plaintext="isPlaintext"
                     :input-props="inputPropsWithGuards"
+                    :prepend="resolvedPrepend"
+                    :append="resolvedAppend"
                     @update:model-value="setValue"
                 />
 
@@ -392,6 +394,33 @@
                     </div>
                 </div>
 
+                <!-- A text-like input with the field's `prepend`/`append` unit
+                     text in input-group cells. Only a field WITH an affix
+                     takes this branch, so the bare input below keeps its
+                     markup. -->
+                <DXFieldAffixGroup
+                    v-else-if="hasTextAffixes"
+                    v-slot="{ describedBy }"
+                    :prepend="resolvedPrepend"
+                    :append="resolvedAppend"
+                    :plaintext="isPlaintext"
+                    :value="textFieldModel"
+                    :consumer-described-by="inputPropsWithGuards['aria-describedby']"
+                >
+                    <DFormInput
+                        v-model="textFieldModel"
+                        :type="inputType"
+                        :required="field.required"
+                        :placeholder="field.placeholder"
+                        :state="fieldState"
+                        :disabled="isDisabled"
+                        :readonly="isReadonly || isPlaintext"
+                        :plaintext="isPlaintext"
+                        v-bind="inputPropsWithGuards"
+                        :aria-describedby="describedBy"
+                    />
+                </DXFieldAffixGroup>
+
                 <!-- Text-based inputs (text/email/password/url/tel/date/time/datetime) -->
                 <DFormInput
                     v-else
@@ -437,6 +466,7 @@ import DXFieldLabel from "./DXFieldLabel.vue";
 import DXFieldShell from "./DXFieldShell.vue";
 import DXNumericField from "./DXNumericField.vue";
 import DXChoiceField from "./DXChoiceField.vue";
+import DXFieldAffixGroup from "./DXFieldAffixGroup.vue";
 import { useAsyncOptions } from "../../composables/useAsyncOptions";
 import type { UseFormReturn } from "../../composables/useForm";
 import type {
@@ -813,6 +843,27 @@ const resolvedLabel = computed(() => {
 const resolvedHint = computed(() => resolveText(props.field.hint));
 
 const resolvedInfo = computed(() => resolveText(props.field.info));
+
+// ————————————————— prepend / append unit text
+
+const resolvedPrepend = computed(() => resolveText(props.field.prepend));
+
+const resolvedAppend = computed(() => resolveText(props.field.append));
+
+/** The text-like types that take `prepend`/`append` (the numeric ones are
+ *  DXNumericField's). Not password, autocomplete or the date family. */
+const TEXT_AFFIX_TYPES: ReadonlySet<FieldType> = new Set([
+    "text",
+    "email",
+    "url",
+    "tel",
+]);
+
+const hasTextAffixes = computed(
+    () =>
+        TEXT_AFFIX_TYPES.has(props.field.type) &&
+        (Boolean(resolvedPrepend.value) || Boolean(resolvedAppend.value)),
+);
 
 // ————————————————— switch-list (#160)
 

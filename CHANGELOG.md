@@ -13,6 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that `useToast()` and `useModal()` need above them, which also renders the
   toasts and modals they create. Mount it once at the root. Until now the
   only way to get it was the raw `BApp` re-export.
+- Field `append` and `prepend`: short unit text in an input-group cell
+  after or before the input, so a label can read "Online notice" with
+  "minutes" after the box rather than "Online notice (minutes)". Either may
+  be a function of the model, like `hint`. They apply to `number`, `text`,
+  `email`, `url` and `tel` fields; on a `percentage`, `append` replaces the
+  "%" cell (still the default); on a `currency`, `append` is the unit the
+  price is per (DXCurrencyInput's `append`, which until now a field could
+  reach only through `inputProps`) and `prepend` is not used. The input's
+  `aria-describedby` names the cells. A `plaintext` field shows the value
+  and its unit as text ("120 minutes"), and nothing when the value is
+  empty. The strict `FieldDef` variants accept them on those types only. A
+  field with neither renders exactly as before, with no input group: a
+  snapshot recorded on 0.48.2 pins that markup for every affected type.
 - The DToaster docs page has a live `useToast()` demo, with how durations
   and hover-to-pause work.
 

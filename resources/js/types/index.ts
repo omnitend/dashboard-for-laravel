@@ -144,6 +144,30 @@ export interface FieldDefinition {
     min?: number | string;
     max?: number | string;
 
+    /**
+     * Short unit text shown in an input-group cell AFTER the input: "minutes"
+     * for "Online notice", rather than "Online notice (minutes)" in the label.
+     * May be a function of the model, like `hint`.
+     *
+     * For `number`, `text`, `email`, `url` and `tel` fields; on `currency` it
+     * is the trailing unit the price is per ("per case", DXCurrencyInput's
+     * `append`), and on `percentage` it replaces the "%" cell. Other types
+     * ignore it. The input names the cell in its `aria-describedby`, so a
+     * screen reader reads "Online notice, 120, minutes". A `plaintext` field
+     * shows the value followed by the unit as text ("120 minutes"), and an
+     * empty value shows neither. A field without `append` or `prepend`
+     * renders exactly as it did before they existed: no input group.
+     */
+    append?: MaybeFn<string>;
+
+    /**
+     * Short text shown in an input-group cell BEFORE the input ("every",
+     * "#"). The counterpart of `append`, on the same field types except
+     * `currency`, whose leading cell is `currencySymbol`. May be a function
+     * of the model.
+     */
+    prepend?: MaybeFn<string>;
+
     /** Symbol shown for `currency` fields (default: the locale's, "£"). */
     currencySymbol?: string;
 
@@ -475,6 +499,11 @@ interface WithNumericBounds {
     min?: number | string;
     max?: number | string;
 }
+/** `append`/`prepend` unit text in an input-group cell beside the input. */
+interface WithAffixes {
+    append?: MaybeFn<string>;
+    prepend?: MaybeFn<string>;
+}
 interface WithSelectableOptions {
     options?: FieldOption[];
     optionsLoader?: OptionsLoader;
@@ -482,7 +511,10 @@ interface WithSelectableOptions {
 }
 
 /** `text` / `email` / `url` / `tel` — a plain text-like `<input>`. */
-export interface TextFieldDef extends BaseFieldDef, WithPlaceholder {
+export interface TextFieldDef
+    extends BaseFieldDef,
+        WithPlaceholder,
+        WithAffixes {
     type: "text" | "email" | "url" | "tel";
 }
 
@@ -496,7 +528,8 @@ export interface PasswordFieldDef extends BaseFieldDef, WithPlaceholder {
 export interface NumberFieldDef
     extends BaseFieldDef,
         WithPlaceholder,
-        WithNumericBounds {
+        WithNumericBounds,
+        WithAffixes {
     type: "number";
 }
 
@@ -514,6 +547,8 @@ export interface CurrencyFieldDef
         WithNumericBounds {
     type: "currency";
     currencySymbol?: string;
+    /** The unit the price is per; the leading cell is `currencySymbol`. */
+    append?: MaybeFn<string>;
     decimals?: number;
     minorUnits?: boolean;
 }
@@ -522,7 +557,8 @@ export interface CurrencyFieldDef
 export interface PercentageFieldDef
     extends BaseFieldDef,
         WithPlaceholder,
-        WithNumericBounds {
+        WithNumericBounds,
+        WithAffixes {
     type: "percentage";
     asFraction?: boolean;
 }
