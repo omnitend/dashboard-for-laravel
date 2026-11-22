@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
-import { scssOptions } from './sass-options';
+import { cssPreprocessorOptions } from './sass-options';
 import Components from 'unplugin-vue-components/vite';
 import Icons from 'unplugin-icons/vite';
 import IconsResolver from 'unplugin-icons/resolver';
@@ -25,10 +25,8 @@ export default defineConfig({
   },
   css: {
     devSourcemap: true,
-    preprocessorOptions: {
-      // Shared with vitest.config.ts: see sass-options.ts.
-      scss: { ...scssOptions },
-    },
+    // Shared with vitest.config.ts: see sass-options.ts.
+    preprocessorOptions: cssPreprocessorOptions,
     postcss: {
       map: {
         inline: false,

@@ -25,8 +25,15 @@ const MENU_OPEN_CLASS = 'dx-dashboard-menu-open';
 // The Tab-walk tests press a key and assert dozens of times, one browser
 // round trip each, so on a loaded machine they outran the 15s default. A
 // timed-out test is not stopped: its remaining key presses (and Escape) went
-// on in the next tests' DOM and failed THEIR focus assertions too.
+// on in the next tests' DOM and failed THEIR focus assertions too. So they
+// get a longer timeout, AND press keys through `pressFor`, which stops a
+// walk whose test has already been replaced by the next one.
 const TAB_WALK_TIMEOUT = 60_000;
+let testRun = 0;
+const pressFor = (run: number) => async (keys: string) => {
+  if (run !== testRun) throw new Error('stopped: a later test has started');
+  await userEvent.keyboard(keys);
+};
 
 const settled = () =>
   new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -51,6 +58,7 @@ const navbarToggle = (root: ParentNode) =>
 const lockHeld = () => document.documentElement.classList.contains(MENU_OPEN_CLASS);
 
 beforeEach(async () => {
+  testRun += 1;
   await page.viewport(PHONE.width, PHONE.height);
   localStorage.removeItem(STORAGE_KEY);
   window.addEventListener('click', cancelNavigation);
@@ -142,6 +150,7 @@ describe('a standalone DXDashboardSidebar on a phone', () => {
 
 describe('keyboard focus', () => {
   it('moves focus into the open menu, keeps Tab off the page and navbar, and returns it to the toggle on Escape', async () => {
+    const press = pressFor(testRun);
     const screen = render(DXDashboard, {
       props: dashboardProps(),
       slots: { default: '<p>Page</p><button class="page-button">Behind</button>' },
@@ -155,7 +164,7 @@ describe('keyboard focus', () => {
     expect(toggle.getAttribute('aria-controls')).toBe(sidebar.id);
 
     toggle.focus();
-    await userEvent.keyboard('{Enter}');
+    await press('{Enter}');
     await settled();
 
     expect(isDisplayed(sidebar)).toBe(true);
@@ -172,18 +181,18 @@ describe('keyboard focus', () => {
     expect(focusableCount).toBeGreaterThan(2);
     let reachedSidebarAfterWrap = 0;
     for (let index = 0; index < focusableCount * 2 + 4; index++) {
-      await userEvent.keyboard('{Tab}');
+      await press('{Tab}');
       expect(landedBehindMenu()).toBe(false);
       if (sidebar.contains(document.activeElement)) reachedSidebarAfterWrap++;
     }
     for (let index = 0; index < focusableCount * 2 + 4; index++) {
-      await userEvent.keyboard('{Shift>}{Tab}{/Shift}');
+      await press('{Shift>}{Tab}{/Shift}');
       expect(landedBehindMenu()).toBe(false);
     }
     // Positive control: Tab really was moving through the menu.
     expect(reachedSidebarAfterWrap).toBeGreaterThan(focusableCount);
 
-    await userEvent.keyboard('{Escape}');
+    await press('{Escape}');
     await settled();
     expect(isDisplayed(sidebar)).toBe(false);
     expect(document.activeElement).toBe(toggle);
@@ -266,6 +275,7 @@ describe('keyboard focus: what the menu covers', () => {
   });
 
   it('never focuses a tabindex="-1" link, and keeps Tab off the page', async () => {
+    const press = pressFor(testRun);
     const screen = render(DXDashboard, {
       props: dashboardProps(),
       slots: {
@@ -279,13 +289,13 @@ describe('keyboard focus: what the menu covers', () => {
     const layout = screen.container.querySelector('.dashboard-layout') as HTMLElement;
     const skip = screen.container.querySelector('.footer-skip') as HTMLElement;
     navbarToggle(screen.container).focus();
-    await userEvent.keyboard('{Enter}');
+    await press('{Enter}');
     await settled();
     expect(sidebar.contains(document.activeElement)).toBe(true);
 
     for (const key of ['{Tab}', '{Shift>}{Tab}{/Shift}']) {
       for (let index = 0; index < 16; index++) {
-        await userEvent.keyboard(key);
+        await press(key);
         expect(document.activeElement).not.toBe(skip);
         expect(layout.contains(document.activeElement) && !sidebar.contains(document.activeElement)).toBe(false);
       }

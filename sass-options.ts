@@ -1,5 +1,7 @@
+import type { CSSOptions } from 'vite';
+
 /**
- * Sass options shared by the library build (vite.config.ts) and the test
+ * Preprocessor (Sass) options shared by the library build (vite.config.ts) and the test
  * runner (vitest.config.ts), which compiles theme.scss for tests that import
  * it `?inline`. Without the second, every test run printed Bootstrap's
  * deprecation warnings that the build already silences.
@@ -13,7 +15,9 @@
  * covers our own `@import` lines in theme.scss (Bootstrap 5.3 has no clean
  * `@use` entry point to migrate them to yet).
  */
-export const scssOptions = {
-  quietDeps: true,
-  silenceDeprecations: ['import'],
-} as const;
+export const cssPreprocessorOptions: CSSOptions['preprocessorOptions'] = {
+  scss: {
+    quietDeps: true,
+    silenceDeprecations: ['import'],
+  },
+};
