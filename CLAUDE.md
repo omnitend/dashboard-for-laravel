@@ -1596,6 +1596,14 @@ bump with rendering unchanged. Measure an input with
 `clientWidth` meaning), which is the same in every browser version.
 Playwright is pinned EXACT for this reason: its Chromium moves with it.
 
+**A vitest test that times out is NOT stopped**: its remaining
+`userEvent` actions run on in the next tests' DOM and fail THEIR
+assertions (a phone-menu Tab walk's leftover key presses failed two
+later focus tests under load). Give a long interaction loop its own
+timeout and stop it once a later test has started (`pressFor` in
+`DXDashboard.phone-menu.test.ts`). When a test fails right after one
+that timed out, suspect the timeout first.
+
 And the rule that matters most: **watch a new test fail against the unfixed code
 before trusting it.** Two tests in the 0.24 run passed for the wrong reason and
 certified live bugs as fixed — one swapped the form object where DXTable actually
