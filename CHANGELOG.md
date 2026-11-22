@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Field `append` and `prepend`: short unit text in an input-group cell
+  after or before the input, so a label can read "Online notice" with
+  "minutes" after the box rather than "Online notice (minutes)". Either may
+  be a function of the model, like `hint`. They apply to `number`, `text`,
+  `email`, `url` and `tel` fields; on a `percentage`, `append` replaces the
+  "%" cell (still the default); on a `currency`, `append` is the unit the
+  price is per (DXCurrencyInput's `append`, which until now a field could
+  reach only through `inputProps`) and `prepend` is not used. The input's
+  `aria-describedby` names the cells. A `plaintext` field shows the value
+  and its unit as text ("120 minutes"), and nothing when the value is
+  empty. The strict `FieldDef` variants accept them on those types only. A
+  field with neither renders exactly as before, with no input group: a
+  snapshot recorded on 0.48.2 pins that markup for every affected type.
+
 ## [0.48.2] - 2026-11-22
 
 ### Changed

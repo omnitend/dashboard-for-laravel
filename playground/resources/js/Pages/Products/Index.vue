@@ -62,7 +62,7 @@ const editFields = [
   { key: 'description', label: 'Description', type: 'textarea', required: false },
   { key: 'price', label: 'Price', type: 'number', required: true },
   { key: 'category', label: 'Category', type: 'text', required: true },
-  { key: 'stock', label: 'Stock', type: 'number', required: true },
+  { key: 'stock', label: 'Stock', type: 'number', required: true, append: 'units' },
 ];
 </script>
 

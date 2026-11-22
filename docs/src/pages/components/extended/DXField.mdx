@@ -134,6 +134,37 @@ const fields = [
 ];
 ```
 
+## Units beside the input
+
+`append` puts short unit text in a cell after the input, and `prepend` one
+before it, so the label can stay the name of the thing: "Online notice" with
+"minutes" after the box rather than "Online notice (minutes)". Either may be a
+function of the model, like `hint`.
+
+```typescript
+const fields = [
+  { key: 'online_notice', type: 'number', label: 'Online notice', append: 'minutes' },
+  { key: 'repeat_every', type: 'number', label: 'Repeat', prepend: 'every',
+    append: (model) => (model.repeat_every === 1 ? 'week' : 'weeks') },
+  { key: 'share', type: 'percentage', label: 'Share', append: '% of takings' },
+  { key: 'cost', type: 'currency', label: 'Cost', append: 'per case' },
+];
+```
+
+- They apply to `number`, `text`, `email`, `url` and `tel` fields. On a
+  `percentage`, `append` replaces the "%" cell (which stays the default). On a
+  `currency`, `append` is the unit the price is per, `DXCurrencyInput`'s own
+  `append`, and `prepend` is not used: the leading cell is `currencySymbol`.
+  Other types ignore both.
+- The input's `aria-describedby` names the cells (after any id you pass in
+  `inputProps`), so a screen reader reads the label as the field's name and
+  the unit as its description.
+- `readonly` keeps the input group. `plaintext` shows the value followed by
+  its unit as one line of text ("120 minutes", "every 2 weeks", "20% of
+  takings"); an empty value shows nothing rather than a unit on its own.
+- A field with neither option renders exactly as it did before they existed:
+  no input group, no extra markup.
+
 ## Extended Component
 
 This is a custom component that extends beyond simple Bootstrap Vue Next wrappers,
