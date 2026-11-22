@@ -38,6 +38,7 @@ export { default as DXUserAvatar } from "./components/extended/DXUserAvatar.vue"
 export { default as DAccordion } from "./components/base/DAccordion.vue";
 export { default as DAccordionItem } from "./components/base/DAccordionItem.vue";
 export { default as DAlert } from "./components/base/DAlert.vue";
+export { default as DApp } from "./components/base/DApp.vue";
 export { default as DAspect } from "./components/base/DAspect.vue";
 export { default as DAutocomplete } from "./components/base/DAutocomplete.vue";
 export type { AutocompleteProvider } from "./components/base/DAutocomplete.vue";
@@ -120,6 +121,7 @@ export { default as DTooltip } from "./components/base/DTooltip.vue";
 export { useForm } from "./composables/useForm";
 export { defineForm } from "./composables/defineForm";
 export { useToast } from "./composables/useToast";
+export type { UseToastReturn, ToastCreateOptions } from "./composables/useToast";
 export { useContainerWidth } from "./composables/useContainerWidth";
 
 // Utils

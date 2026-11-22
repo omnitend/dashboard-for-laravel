@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `DApp`, a wrapper for bootstrap-vue-next's `BApp`: the app-root provider
+  that `useToast()` and `useModal()` need above them, which also renders the
+  toasts and modals they create. Mount it once at the root. Until now the
+  only way to get it was the raw `BApp` re-export.
 - Field `append` and `prepend`: short unit text in an input-group cell
   after or before the input, so a label can read "Online notice" with
   "minutes" after the box rather than "Online notice (minutes)". Either may
@@ -22,6 +26,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty. The strict `FieldDef` variants accept them on those types only. A
   field with neither renders exactly as before, with no input group: a
   snapshot recorded on 0.48.2 pins that markup for every affected type.
+- The DToaster docs page has a live `useToast()` demo, with how durations
+  and hover-to-pause work.
+
+### Changed
+
+- bootstrap-vue-next 0.45.6 → 1.2.4 and Bootstrap 5.3.8 → 5.3.9 (#249).
+  Both are bundled into `dist`. The package also re-exports every
+  bootstrap-vue-next export, so the upstream changes below reach you
+  whether or not you use our `D*` wrappers. Upstream fixes that come with
+  it: toast and modal show/hide no longer deadlock or hang when dismissed
+  early, `BTabs` honours its initial index when only some tabs have ids,
+  `BFormFile` announces every selection to screen readers, and
+  `BFormTextarea` keeps typed text visible with `debounce` + `max-rows`.
+- **`BFormRating`** (re-exported as is; there is no `D*` wrapper): the
+  `stars` prop is now `length`, the default slot's `starIndex` is
+  `itemIndex`, sizes are `sm`/`lg`, and the CSS classes lost "star":
+  `.star` → `.rating-item`, `.b-form-rating-star` → `.b-form-rating-item`,
+  `.clear-button-spacing` → `.rating-clear-button`. Its border and
+  background now come from Bootstrap's `.form-control` rather than a
+  `.b-form-rating` rule, so overrides aimed at that rule stop applying.
+- **`useToast()`.** What works as before (DIVERGENCES.md #10): `create({
+  body, variant })` with no `modelValue` shows the toast for 5 s
+  (bootstrap-vue-next 1.x would create it hidden); a toast is removed once
+  it has hidden unless you pass `{ keep: true }` (1.x would keep every one
+  until the calling component unmounts); `show(obj)` is kept as a
+  deprecated alias of `create`; `create(obj, options)` still takes the
+  options as a second argument. What changed:
+  - `create()` returns bootstrap-vue-next 1.x's controller, not 0.45's
+    promise, so `await toast.create(...)` no longer waits for the toast to
+    close. TypeScript does NOT flag a bare `await` (only code that then
+    reads the event, such as `.ok`), so search for `await toast.create`
+    and write `await toast.create(...).show()`.
+  - New toasts stack below the older ones (0.45 put the newest on top), and
+    `appendToast` (on `DApp`/`BApp`, `DToaster` or a toast) no longer has
+    any effect: bootstrap-vue-next 1.x stores toasts in insertion order and
+    never reads it.
+  - A param passed as a `ref` gets none of the above: it is created hidden
+    unless it sets `modelValue`, the second argument is ignored, and it
+    stays in the store after hiding. A `reactive()` param is copied when
+    created, so later changes to it do not reach the toast.
+  - `toast.store` is now `{ toast: Map, modal, popover, tooltip }`, not an
+    array. 0.45's `pos` and `props` keys are no longer read (use `position`
+    and put props at the top level), and `title`/`body` getter functions
+    are no longer accepted.
+  - `hide(trigger?, id?)` and `hideAll()` are new. `UseToastReturn` and
+    `ToastCreateOptions` are exported.
+- Bootstrap 5.3.9 adds `.modal-xxl` and stops placeholder animations under
+  `prefers-reduced-motion`.
+
+### Removed
+
+- `useModalController`, `usePopoverController` and `useToastController`,
+  re-exported from bootstrap-vue-next, which removed them; they were
+  deprecated aliases. Use `useModal`, `usePopover` and `useToast`.
+- Type re-exports bootstrap-vue-next removed: `ToastOrchestratorParam`,
+  `ModalOrchestratorParam`, `PopoverOrchestratorParam`,
+  `TooltipOrchestratorParam`, `PromiseWithComponent`,
+  `PromiseWithComponentInternal`, `ShowPromiseWithComponent`. The
+  `*OrchestratorCreateParam` types and `ComponentController` replace them.
+
+### Fixed
+
+- An unticked `DFormCheckbox`, `DXSwitch` or `DXField` `checkbox`/`switch`
+  still emits `false`. bootstrap-vue-next 0.46 changed `BFormCheckbox`'s
+  `uncheckedValue` default to no value, which would have sent `undefined`
+  (dropped from a JSON body, and failing Laravel's `boolean` rule as
+  `null`). `DFormCheckbox` keeps `false` as its default; pass
+  `unchecked-value` to choose another (DIVERGENCES.md #9). A raw
+  `BFormCheckbox` gets bootstrap-vue-next's new default.
 
 ## [0.48.2] - 2026-11-22
 
