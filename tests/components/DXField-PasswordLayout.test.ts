@@ -44,6 +44,14 @@ const generateButton = (slotProps: PasswordActionsSlotProps) =>
     () => 'Generate',
   );
 
+/**
+ * The input's outer width: what `--dx-password-input-min-width` reserves
+ * (the group's basis is that plus the eye). Not `clientWidth`: Chrome 159
+ * stopped counting an `<input>`'s padding in it (a 200px input with 16px
+ * padding reads 166 there, 198 in Chrome 141; a div still reads 198).
+ */
+const inputWidth = (input: HTMLInputElement) => input.getBoundingClientRect().width;
+
 /** `--dx-password-input-min-width` resolved to px on the root. */
 function inputMinWidthPx(): number {
   const probe = document.createElement('div');
@@ -134,7 +142,7 @@ describe('password field: the input stays readable at every width', () => {
       // Whenever the column has room for the minimum input and the eye, the
       // input gets at least the minimum, whatever the Generate button needs.
       if (column.clientWidth >= minimum + eye.offsetWidth) {
-        expect(input.clientWidth).toBeGreaterThanOrEqual(minimum);
+        expect(inputWidth(input)).toBeGreaterThanOrEqual(minimum);
       }
       expectInside(input, column);
       expectInside(eye, column);
@@ -198,7 +206,7 @@ describe('password field: the input stays readable at every width', () => {
       expect(input.value).toBe('Gen-Secret-4821xQ');
       expect(input.type).toBe('text');
 
-      expect(input.clientWidth).toBeGreaterThanOrEqual(inputMinWidthPx());
+      expect(inputWidth(input)).toBeGreaterThanOrEqual(inputMinWidthPx());
       expectInside(input, column);
       expectInside(eye, column);
       expectInside(generate, column);
