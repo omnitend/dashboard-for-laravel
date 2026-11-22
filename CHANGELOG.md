@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-11-22
+
 ### Added
 
 - `DApp`, a wrapper for bootstrap-vue-next's `BApp`: the app-root provider
