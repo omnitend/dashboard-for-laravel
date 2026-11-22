@@ -45,12 +45,20 @@ const generateButton = (slotProps: PasswordActionsSlotProps) =>
   );
 
 /**
- * The input's outer width: what `--dx-password-input-min-width` reserves
- * (the group's basis is that plus the eye). Not `clientWidth`: Chrome 159
- * stopped counting an `<input>`'s padding in it (a 200px input with 16px
- * padding reads 166 there, 198 in Chrome 141; a div still reads 198).
+ * The input's width inside its border (its padding box), the measure these
+ * checks have always used. Not `clientWidth`: Chrome 159 stopped counting an
+ * `<input>`'s padding in it (a 200px input with 16px padding reads 166 there,
+ * 198 in Chrome 141; a div still reads 198). So: the border box from the
+ * rect, minus the computed borders, which means the same in every version.
  */
-const inputWidth = (input: HTMLInputElement) => input.getBoundingClientRect().width;
+const inputWidth = (input: HTMLInputElement) => {
+  const style = getComputedStyle(input);
+  return (
+    input.getBoundingClientRect().width -
+    parseFloat(style.borderLeftWidth) -
+    parseFloat(style.borderRightWidth)
+  );
+};
 
 /** `--dx-password-input-min-width` resolved to px on the root. */
 function inputMinWidthPx(): number {

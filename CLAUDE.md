@@ -1592,8 +1592,9 @@ arm64 on this Mac and CI is x86, so it narrows the gap rather than closing it.
 in Chrome 141; a `<div>` reads 198 in both. A width check on an input
 compared with a token (`DXField-PasswordLayout.test.ts`) went red on the
 bump with rendering unchanged. Measure an input with
-`getBoundingClientRect().width` (outer box), which means the same thing
-in every browser version.
+`getBoundingClientRect().width` (minus the computed borders for the old
+`clientWidth` meaning), which is the same in every browser version.
+Playwright is pinned EXACT for this reason: its Chromium moves with it.
 
 And the rule that matters most: **watch a new test fail against the unfixed code
 before trusting it.** Two tests in the 0.24 run passed for the wrong reason and

@@ -4,7 +4,9 @@
 # Linux lays text out differently from macOS (each glyph's advance is
 # rounded per font size, so text width grows in steps rather than in
 # proportion to the size), which hid CI-only failures in measurement-driven
-# code such as DXStatCard's value fit. Needs Docker.
+# code such as DXStatCard's value fit. The image is Ubuntu 26.04
+# (`resolute`), matching CI's `runs-on` in test.yml: move them together.
+# Needs Docker.
 #
 #   npm run test:linux -- tests/components/DXStatCard-Fit.test.ts
 #
@@ -21,7 +23,7 @@ container="dfl-linux-browser-$$"
 trap 'docker stop "$container" > /dev/null 2>&1 || true' EXIT
 docker run -d --rm --name "$container" --init --ipc=host \
   -p "127.0.0.1:${port}:${port}" \
-  "mcr.microsoft.com/playwright:v${version}-noble" \
+  "mcr.microsoft.com/playwright:v${version}-resolute" \
   /bin/sh -c "npx -y playwright@${version} run-server --port ${port} --host 0.0.0.0" > /dev/null
 
 # The server prints its endpoint once it listens.
