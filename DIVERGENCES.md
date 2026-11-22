@@ -281,6 +281,10 @@ the consumer's attrs spread after it, so their value wins in either spelling,
 an explicit `:unchecked-value="undefined"` opts into bvn's behaviour, and
 Vue's Boolean prop casting never turns `unchecked-value=""` into `true`.
 Inside a `DFormCheckboxGroup` the default is inert (the model is an array).
+One side effect: bvn's `useDefaults` prefers a passed prop over app-wide
+defaults, so a `BFormCheckbox.uncheckedValue` set through `DApp`/`BApp`
+`defaults` (or `createBootstrap`) no longer reaches `DFormCheckbox`; set
+`unchecked-value` on the component instead.
 Pinned by `tests/components/checkbox-unchecked-value.test.ts`.
 
 **Convergence (future major):** drop the default. Consumers who post booleans
@@ -290,31 +294,49 @@ normalises its own boolean types.
 
 ---
 
-### 10. `useToast()`: `create` shows the toast, `show` and the `options` argument kept
+### 10. `useToast()`: `create` shows the toast and removes it once hidden; `show` and the `options` argument kept
 
 | | |
 | --- | --- |
-| **Our API** | bvn 0.45's: `create(obj)` with no `modelValue` shows the toast for 5 s; `show(obj)` is an alias of `create`; `create(obj, options)` takes the orchestrator options as a second argument |
-| **bvn API (≥ 0.46)** | `create(obj)` registers the toast **hidden** until `.show()` is called on the returned controller; `show` is gone; options go in `obj.options` |
+| **Our API** | bvn 0.45's: `create(obj)` with no `modelValue` shows the toast for 5 s; a hidden toast is removed from the store unless `{ keep: true }`; `show(obj)` is an alias of `create`; `create(obj, options)` takes the orchestrator options as a second argument |
+| **bvn API (≥ 0.46)** | `create(obj)` registers the toast **hidden** until `.show()` is called on the returned controller; a hidden toast stays in the store (and the DOM) until the calling component's scope is disposed; `keep` is gone; `show` is gone; options go in `obj.options` |
 | **Shielded in** | `resources/js/composables/useToast.ts` (`prepareParam`) |
 | **Applies to** | this library's `useToast` (bvn's own `useToast` is not re-exported under that name) |
 | **Introduced** | bvn 0.46 (the orchestrator refactor; not called out in bvn's changelog); shield added at library 0.49.0 (#249) |
 
 **Why:** the documented call, `toast.create({ body, variant })`, would show
-nothing with no error. bvn 0.45 defaulted `modelValue` to 5000; the shield
-restores that default for a plain-object param only. A ref param is passed
-through untouched (as before, so its variant is not themed either) and must
-set `modelValue` itself. What is NOT shielded: `create` now returns bvn 1.x's
-controller rather than 0.45's awaitable `PromiseWithComponent`, so
-`await toast.create(...)` no longer waits for the toast to close; use
-`await toast.create(...).show()`. The types changed with it, so such code fails
-`vue-tsc` rather than silently. `hide`/`hideAll` (bvn 1.2) pass through.
-Pinned by `tests/composables/useToast.test.ts`.
+nothing with no error, and every toast a long-lived page (an Inertia
+persistent layout, a DXTable's editor) showed would stay in the DOM. bvn 0.45
+defaulted `modelValue` to 5000 and its orchestrator destroyed a toast on
+`hidden` unless `keep`; the shield restores both for a plain-object param:
+it chains an `onHidden` after the caller's own (a `preventDefault()` there
+keeps the toast, as in 0.45) and destroys the toast a microtask later.
 
-**Convergence (future major):** drop the default, the alias and the second
-argument. Consumers change `create(obj)` to `create(obj).show()` (or set
-`modelValue`), `show(obj)` to `create(obj).show()` and `create(obj, options)`
-to `create({ ...obj, options })`; all three are mechanical for a codemod.
+**Not shielded:**
+- A ref param is passed through untouched (it always was, so its variant is
+  not themed either): no default duration, no folded options, no removal. A
+  `reactive()` param is copied, so later changes to it do not reach the toast
+  (0.45 and raw 1.x both tracked it).
+- `create` returns bvn 1.x's controller rather than 0.45's awaitable
+  `PromiseWithComponent`, so `await toast.create(...)` no longer waits for the
+  toast to close; use `await toast.create(...).show()`. TypeScript does not
+  catch a bare `await` of a non-promise, so this fails silently.
+- Toast order: 1.x renders toasts in insertion order (newest last) and never
+  reads `appendToast`; 0.45 put the newest first unless appending. Restoring
+  it would mean reordering bvn's rendering, so it is documented instead.
+
+`hide`/`hideAll` (bvn 1.2) pass through. Pinned by
+`tests/composables/useToast.test.ts`; the removal tests deliver the `hidden`
+event through the store item's handler because this harness never completes
+an orchestrated toast's leave transition, so removal in a real browser is
+checked by hand on the DToaster docs demo.
+
+**Convergence (future major):** drop the default, the removal, the alias and
+the second argument. Consumers change `create(obj)` to `create(obj).show()`
+(or set `modelValue`), `show(obj)` to `create(obj).show()` and
+`create(obj, options)` to `create({ ...obj, options })`, all mechanical for a
+codemod; the removal needs either `controller.destroy()` after `show()`
+settles, or an upstream fix.
 
 ---
 

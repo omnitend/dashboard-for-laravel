@@ -110,6 +110,17 @@ describe('unticking emits exactly false (#249)', () => {
     expect(emittedValues).toEqual(['']);
   });
 
+  it('DFormCheckbox: an explicit undefined unchecked-value opts into bvn\'s default', async () => {
+    const { screen, emittedValues } = mountWithModel(DFormCheckbox, true, {
+      uncheckedValue: undefined,
+    });
+    await flush();
+
+    await userEvent.click(checkboxInput(screen.container));
+
+    expect(emittedValues).toEqual([undefined]);
+  });
+
   it('DXSwitch', async () => {
     const { screen, emittedValues } = mountWithModel(DXSwitch, true, { label: 'Visible' });
     await flush();
@@ -145,6 +156,8 @@ describe('unticking emits exactly false (#249)', () => {
     });
   }
 
+  // Regression check only: DXField coerces each row's emit with `=== true`,
+  // so this passes with or without DFormCheckbox's default.
   it('DXField switch-list row: unticking removes the value, leaves no null', async () => {
     const { screen, form } = renderField(
       {

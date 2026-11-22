@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render } from 'vitest-browser-vue';
 import { h } from 'vue';
-import { BApp } from 'bootstrap-vue-next';
+import { BApp, BvTriggerableEvent } from 'bootstrap-vue-next';
 import { useToast } from '../../resources/js/composables/useToast';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -100,6 +100,102 @@ describe('useToast', () => {
     await flush();
 
     expect(options).toEqual({ resolveOnHide: true });
+  });
+
+  // bvn 0.45 destroyed a toast once hidden (unless `keep`); 1.x keeps it in
+  // the store and the DOM until the calling component unmounts, so a
+  // long-lived page piled up hidden toasts. In this harness an orchestrated
+  // toast emits `hide` but never `hidden` (its leave transition never
+  // completes, bvn 0.45.6 too), so these tests deliver the `hidden` event
+  // the orchestrator would, through the handler on the store item. The
+  // docs demo pins the real path in a browser.
+  const hideThroughStore = async (
+    toastApi: ReturnType<typeof useToast>,
+    id: string | symbol,
+  ) => {
+    const props = toastApi.store.value.toast.get(id)!.value.props;
+    props.onHidden?.(new BvTriggerableEvent('hidden'));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  };
+
+  it('removes a toast from the store once it has hidden', async () => {
+    let toastApi: ReturnType<typeof useToast> | undefined;
+    let id: string | symbol = '';
+    renderWithToast((toast) => {
+      toastApi = toast;
+      id = toast.create({ body: 'Brief', modelValue: false }).id;
+    });
+    await flush();
+    expect(toastApi!.store.value.toast.size).toBe(1);
+
+    await hideThroughStore(toastApi!, id);
+
+    expect(toastApi!.store.value.toast.size).toBe(0);
+  });
+
+  it('keeps a hidden toast when created with { keep: true } (bvn 0.45 option)', async () => {
+    let toastApi: ReturnType<typeof useToast> | undefined;
+    let id: string | symbol = '';
+    renderWithToast((toast) => {
+      toastApi = toast;
+      id = toast.create({ body: 'Kept', modelValue: false }, { keep: true }).id;
+    });
+    await flush();
+
+    await hideThroughStore(toastApi!, id);
+
+    expect(toastApi!.store.value.toast.size).toBe(1);
+  });
+
+  it("calls the caller's own onHidden as well", async () => {
+    const hidden: string[] = [];
+    let toastApi: ReturnType<typeof useToast> | undefined;
+    let id: string | symbol = '';
+    renderWithToast((toast) => {
+      toastApi = toast;
+      id = toast.create({
+        body: 'Brief',
+        modelValue: false,
+        onHidden: () => hidden.push('caller'),
+      }).id;
+    });
+    await flush();
+
+    await hideThroughStore(toastApi!, id);
+
+    expect(hidden).toEqual(['caller']);
+  });
+
+  it('a prevented hidden event keeps the toast', async () => {
+    let toastApi: ReturnType<typeof useToast> | undefined;
+    let id: string | symbol = '';
+    renderWithToast((toast) => {
+      toastApi = toast;
+      id = toast.create({
+        body: 'Stays',
+        modelValue: false,
+        onHidden: (event) => event.preventDefault(),
+      }).id;
+    });
+    await flush();
+
+    await hideThroughStore(toastApi!, id);
+
+    expect(toastApi!.store.value.toast.size).toBe(1);
+  });
+
+  it('obj.options wins over the second argument', async () => {
+    let options: unknown;
+    renderWithToast((toast) => {
+      const controller = toast.create(
+        { title: 'Opts', options: { resolveOnHide: false } },
+        { resolveOnHide: true },
+      );
+      options = toast.store.value.toast.get(controller.id)?.value.options;
+    });
+    await flush();
+
+    expect(options).toMatchObject({ resolveOnHide: false });
   });
 
   it('renders with no variant at all without error', async () => {

@@ -121,6 +121,7 @@ export { default as DTooltip } from "./components/base/DTooltip.vue";
 export { useForm } from "./composables/useForm";
 export { defineForm } from "./composables/defineForm";
 export { useToast } from "./composables/useToast";
+export type { UseToastReturn, ToastCreateOptions } from "./composables/useToast";
 export { useContainerWidth } from "./composables/useContainerWidth";
 
 // Utils
