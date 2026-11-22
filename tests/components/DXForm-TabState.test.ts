@@ -384,6 +384,11 @@ describe('DXForm tab state by key (#194)', () => {
       expect(boundIndex.value).toBe(0);
       expect(shownLabels(screen.container)).toEqual(['Name']);
 
+      // Let the click's frame-driven work and the tab fade finish first, so
+      // the answer is really late; the order is still the test's, not a race.
+      await wait(350);
+      expect(boundIndex.value).toBe(0);
+      expect(shownLabels(screen.container)).toEqual(['Name']);
       expect(acknowledge).not.toBeNull();
       acknowledge!();
       await settle();
