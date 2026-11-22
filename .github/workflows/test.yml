@@ -8,10 +8,10 @@ on:
 
 jobs:
   test:
-    # Pinned, not ubuntu-latest: Playwright 1.56 has no Chromium build for
-    # Ubuntu 26.04, and the image moving under us broke `playwright install`
-    # (2026-11-22). Move to 26.04 with a Playwright bump that supports it.
-    runs-on: ubuntu-24.04
+    # Pinned, not ubuntu-latest: the image moving under us (to 26.04, which
+    # Playwright 1.56 could not install Chromium on) broke CI on 2026-11-22.
+    # Move the image deliberately, with a Playwright that supports it.
+    runs-on: ubuntu-26.04
 
     strategy:
       matrix:

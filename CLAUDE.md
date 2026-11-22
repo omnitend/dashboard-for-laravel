@@ -1587,6 +1587,15 @@ Playwright's Docker image of the installed playwright-core version, through
 `DX_PLAYWRIGHT_WS_ENDPOINT` in vitest.config.ts. Build first. The image is
 arm64 on this Mac and CI is x86, so it narrows the gap rather than closing it.
 
+**An `<input>`'s `clientWidth` excludes its padding from Chrome 159**
+(Playwright 1.65): a 200px input with 16px padding reads 166 there and 198
+in Chrome 141; a `<div>` reads 198 in both. A width check on an input
+compared with a token (`DXField-PasswordLayout.test.ts`) went red on the
+bump with rendering unchanged. Measure an input with
+`getBoundingClientRect().width` (minus the computed borders for the old
+`clientWidth` meaning), which is the same in every browser version.
+Playwright is pinned EXACT for this reason: its Chromium moves with it.
+
 And the rule that matters most: **watch a new test fail against the unfixed code
 before trusting it.** Two tests in the 0.24 run passed for the wrong reason and
 certified live bugs as fixed — one swapped the form object where DXTable actually
