@@ -190,6 +190,24 @@ describe('DXForm error summary (#194)', () => {
       expect(alert.textContent).toContain('This order is locked.');
     });
 
+    it("a 403's reason, not a fixed sentence", async () => {
+      stubResponses(
+        () =>
+          new Response(JSON.stringify({ message: 'This order has been sent to the kitchen.' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      );
+      const form = makeFlatForm();
+      const screen = render(DXForm, { props: { form, fields: flatFields } });
+      await settle();
+      await failSubmit(form);
+
+      const alert = expectOneAlertBesideSubmit(screen.container);
+      expect(alert.textContent).toContain('This order has been sent to the kitchen.');
+      expect(alert.textContent).not.toContain('Forbidden. You do not have permission.');
+    });
+
     it('a key on a hidden field', async () => {
       stubResponses(invalid({ discount: ['The discount may not exceed 50%.'] }));
       const form = makeFlatForm();
