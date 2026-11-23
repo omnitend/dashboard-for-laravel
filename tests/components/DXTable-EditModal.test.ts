@@ -68,7 +68,7 @@ describe('DXTable edit modal — item-named buttons (B12)', () => {
     await flush();
     // The header "New {item}" button opens the create modal.
     const newBtn = Array.from(screen.container.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'New category',
+      (b) => b.textContent?.trim() === 'New Category',
     ) as HTMLElement;
     newBtn.click();
     await wait(60);

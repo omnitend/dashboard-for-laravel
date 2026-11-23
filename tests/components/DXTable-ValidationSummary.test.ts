@@ -71,7 +71,7 @@ const footer = () => document.querySelector<HTMLElement>('.modal .modal-footer')
 async function openCreate(screen: ReturnType<typeof renderTable>) {
   await flush();
   const newButton = Array.from(screen.container.querySelectorAll('button')).find(
-    (button) => button.textContent?.trim() === 'New category',
+    (button) => button.textContent?.trim() === 'New Category',
   ) as HTMLElement;
   newButton.click();
   await wait(80);

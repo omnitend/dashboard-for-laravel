@@ -99,7 +99,7 @@ const openCreate = async (extra: any = {}) => {
   const screen = renderTable(extra);
   await flush();
   const newBtn = Array.from(screen.container.querySelectorAll('button')).find(
-    (b) => b.textContent?.trim() === 'New category',
+    (b) => b.textContent?.trim() === 'New Category',
   ) as HTMLElement;
   newBtn.click();
   await wait(80);

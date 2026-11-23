@@ -21,7 +21,7 @@
                                     size="sm"
                                     @click="handleCreateNew"
                                 >
-                                    New {{ singularItemName }}
+                                    New {{ titleCasedItemName }}
                                 </DButton>
                             </div>
                         </slot>
@@ -322,6 +322,7 @@ import { api } from "../../utils/api";
 import pluralize from "pluralize";
 import { useResourceEditor } from "../../composables/useResourceEditor";
 import { getByPath } from "../../utils/objectPath";
+import { titleCaseItemName } from "../../utils/itemNameCase";
 import type { FieldDefinition, LabelCols } from "../../types";
 import DContainer from "../base/DContainer.vue";
 import DRow from "../base/DRow.vue";
@@ -538,7 +539,11 @@ export interface Props<TItem = any> {
     /** Table title */
     title?: string;
 
-    /** Name for item (singular) - automatically pluralized (e.g., "product" → "products") */
+    /**
+     * Name for item (singular), as written mid-sentence - automatically
+     * pluralized (e.g., "product" → "products"). Titles and buttons Title-Case
+     * it ("New Booking Period"); toasts start it with a capital.
+     */
     itemName?: string;
 
     /** Table data items (Inertia mode) */
@@ -2475,6 +2480,9 @@ const tablePassthroughProps = computed(() => ({
 // Computed: Singular and plural item names
 const singularItemName = computed(() => props.itemName);
 const pluralItemName = computed(() => pluralize(props.itemName));
+// For titles and buttons ("New Booking Period"); mid-sentence text keeps the
+// name as written.
+const titleCasedItemName = computed(() => titleCaseItemName(props.itemName));
 
 // The built-in "New {item}" button needs both a create endpoint and consent.
 // Gating the header's own v-if on this (not on `createUrl`) means a table that

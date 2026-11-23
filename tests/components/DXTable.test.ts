@@ -135,14 +135,14 @@ describe('DXTable', () => {
       const screen = renderTable();
       await flush();
 
-      expect(screen.container.textContent).toContain('New customer');
+      expect(screen.container.textContent).toContain('New Customer');
     });
 
     it('drops the New button when showCreateButton is false', async () => {
       const screen = renderTable({ showCreateButton: false });
       await flush();
 
-      expect(screen.container.textContent).not.toContain('New customer');
+      expect(screen.container.textContent).not.toContain('New Customer');
     });
 
     // A consumer drives the modal from a navbar button and hides the header
@@ -161,7 +161,7 @@ describe('DXTable', () => {
 
       expect(screen.container.querySelector('.card-header')).not.toBeNull();
       expect(screen.container.textContent).toContain('Customers');
-      expect(screen.container.textContent).not.toContain('New customer');
+      expect(screen.container.textContent).not.toContain('New Customer');
     });
 
     it('still opens the create modal via openCreate() with the button suppressed', async () => {
@@ -185,7 +185,7 @@ describe('DXTable', () => {
       tableRef.value.openCreate();
       await wait(50);
 
-      expect(document.body.textContent).toContain('New customer');
+      expect(document.body.textContent).toContain('New Customer');
     });
   });
 

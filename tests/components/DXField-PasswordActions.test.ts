@@ -387,7 +387,7 @@ describe('DXTable edit-password-actions(<key>) slot', () => {
     const screen = renderTable();
     await flush();
     (Array.from(screen.container.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'New user',
+      (b) => b.textContent?.trim() === 'New User',
     ) as HTMLElement).click();
     await wait(80);
     return screen;
@@ -464,7 +464,7 @@ describe('DXTable edit-password-actions(<key>) slot', () => {
     modalButton('Cancel').click();
     await wait(80);
     (Array.from(screen.container.querySelectorAll('button')).find(
-      (b) => b.textContent?.trim() === 'New user',
+      (b) => b.textContent?.trim() === 'New User',
     ) as HTMLElement).click();
     await wait(80);
     expect(modalPasswordInput().type).toBe('password');
