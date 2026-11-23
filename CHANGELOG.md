@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A 403 keeps the server's message. The `api` client replaced every 403's
+  `message` with "Forbidden. You do not have permission.", so a form,
+  `useForm`'s `submitFailure` and DXForm's error summary could not show
+  why an action was refused (`abort(403, 'reason')`, a policy's
+  `Response::deny('reason')`). The fixed sentence is now only the fallback
+  for a 403 with no message, or an empty or whitespace-only one. A bare
+  `abort(403)` or failed gate shows Laravel's own "This action is
+  unauthorized.". 401, 404, 419 and 500 still show their fixed sentences.
+
 ## [0.49.0] - 2026-11-22
 
 ### Added

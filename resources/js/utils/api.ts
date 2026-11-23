@@ -14,6 +14,11 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
     body?: BodyInit | null; // allow FormData/Blob/etc.
 }
 
+/** `value` when it is a string with something other than whitespace, else `null`. */
+function nonBlankString(value: unknown): string | null {
+    return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
 class ApiClient {
     private baseURL = "";
     private defaultHeaders: Record<string, string> = {
@@ -70,7 +75,13 @@ class ApiClient {
                 error.message = "Unauthenticated. Please log in.";
                 break;
             case 403:
-                error.message = "Forbidden. You do not have permission.";
+                // A 403 is how a Laravel app says WHY an action is refused
+                // (`abort(403, 'reason')`, a policy's `Response::deny()`), so
+                // keep the server's message; Laravel's bare default ("This
+                // action is unauthorized.") is still better than ours.
+                error.message =
+                    nonBlankString(data?.message) ??
+                    "Forbidden. You do not have permission.";
                 break;
             case 404:
                 error.message = "Resource not found.";

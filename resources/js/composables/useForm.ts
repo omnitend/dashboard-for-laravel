@@ -230,8 +230,8 @@ export function isAbortError(error: unknown): boolean {
  * The `submitFailure` for a rejected submit, or `null` for an abort (the
  * caller cancelled it; nothing failed). Only an `ApiError` from the client
  * (an HTTP failure: it carries a numeric `status`, and the client has already
- * replaced 401/403/404/419/500 bodies with user-facing text) supplies the
- * message. Anything else (a network `TypeError`, an exception thrown from
+ * replaced 401/404/419/500 bodies, and a 403 that carries no message, with
+ * user-facing text) supplies the message. Anything else (a network `TypeError`, an exception thrown from
  * `onSuccess`) gets the generic message, so a summary never shows
  * "Failed to fetch" or a stack-trace line.
  */
