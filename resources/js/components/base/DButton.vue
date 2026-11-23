@@ -232,7 +232,7 @@ const hasAdornment = computed(
       :key="name"
       #[name]="slotProps"
     >
-      <slot :name="name" v-bind="slotProps" />
+      <slot :name="name" v-bind="slotProps ?? {}" />
     </template>
   </BButton>
 </template>

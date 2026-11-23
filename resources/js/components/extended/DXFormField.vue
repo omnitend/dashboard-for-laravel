@@ -49,7 +49,7 @@
         #[target]="slotProps"
       >
         <!-- Per-field overrides forwarded to DXField: value/span/info/hint/repeater-row. -->
-        <slot :name="slotName" v-bind="slotProps" />
+        <slot :name="slotName" v-bind="slotProps ?? {}" />
       </template>
     </DXField>
 

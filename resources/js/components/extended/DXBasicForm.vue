@@ -37,7 +37,7 @@ onMounted(() => {
         <!-- Forward all slots (#value(<key>), #footer, etc.) to DXForm. -->
         <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
             <!-- @slot Passes every DXForm slot (e.g. `value(<key>)`, `footer`) straight through to the wrapped DXForm, along with its slot props. -->
-            <slot :name="name" v-bind="slotProps" />
+            <slot :name="name" v-bind="slotProps ?? {}" />
         </template>
     </DXForm>
 </template>

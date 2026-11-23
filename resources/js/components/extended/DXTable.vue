@@ -236,7 +236,7 @@
                             <!--
                               @slot Any slot the underlying table supports, forwarded with its scope: `cell(<fieldKey>)` for a cell, `foot(<fieldKey>)` for a footer cell (needs `footClone`), `empty` for the no-rows message, `row-expansion` for expandable row detail, plus `custom-foot`, `top-row`, `bottom-row`, `thead-sub` and the `table-*` slots.
                             -->
-                            <slot :name="name" v-bind="slotProps" />
+                            <slot :name="name" v-bind="slotProps ?? {}" />
                         </template>
                     </DTable>
 
@@ -309,7 +309,7 @@
                 :key="name"
                 #[name]="slotProps"
             >
-                <slot :name="name" v-bind="slotProps" />
+                <slot :name="name" v-bind="slotProps ?? {}" />
             </template>
         </DXTableEditorModal>
     </DContainer>

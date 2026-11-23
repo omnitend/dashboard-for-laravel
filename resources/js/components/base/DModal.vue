@@ -11,13 +11,13 @@
 <template>
   <BModal size="lg" :fullscreen="defaultFullscreen()" v-bind="$attrs">
     <template #default="slotProps">
-      <slot v-bind="slotProps" />
+      <slot v-bind="slotProps ?? {}" />
       <DXModalActions v-if="$slots.actions" class="mt-3">
-        <slot name="actions" v-bind="slotProps" />
+        <slot name="actions" v-bind="slotProps ?? {}" />
       </DXModalActions>
     </template>
     <template v-for="name in forwardedSlots" #[name]="slotProps">
-      <slot :name="name" v-bind="slotProps" />
+      <slot :name="name" v-bind="slotProps ?? {}" />
     </template>
   </BModal>
 </template>
