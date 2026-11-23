@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `DFormCheckbox` renders again on Vue older than 3.5.41. On 0.49.0 and
+  0.49.1 a checkbox with label content threw "Cannot read properties of
+  null (reading 'key')" and rendered nothing, which broke every `DXSwitch`
+  (its on/off text is label content), every `DXField` of type `switch` or
+  `checkbox`, and any `<d-form-checkbox>` with a label. On those Vue
+  versions the same error also hit `DFormRadio`'s label, `DFormFile`'s
+  `label` and `placeholder` slots, `DAvatar`'s default and `badge` slots,
+  `DModal`'s `header-close` slot and `DOffcanvas`'s `header-close` and
+  `footer` slots. bootstrap-vue-next 1.x checks whether a slot has content
+  by calling it with no argument, and our wrappers passed that missing
+  argument on to Vue as `null` slot props, which Vue before 3.5.41 cannot
+  handle. Every wrapper now forwards an empty object instead. Nothing to
+  change in your app: upgrade. Apps on Vue 3.5.41 or later were not
+  affected.
+
 ## [0.49.1] - 2026-11-23
 
 ### Fixed

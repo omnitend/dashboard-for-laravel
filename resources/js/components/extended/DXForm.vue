@@ -110,7 +110,7 @@
                                  its keyed field(<key>)/field-before/field-after/
                                  value/span/info/hint/repeater-row slots. -->
                             <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
-                                <slot :name="name" v-bind="slotProps" />
+                                <slot :name="name" v-bind="slotProps ?? {}" />
                             </template>
                         </DXFormField>
 
@@ -144,7 +144,7 @@
                          keyed field(<key>)/field-before/field-after/value/span/
                          info/hint/repeater-row slots. -->
                     <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
-                        <slot :name="name" v-bind="slotProps" />
+                        <slot :name="name" v-bind="slotProps ?? {}" />
                     </template>
                 </DXFormField>
 

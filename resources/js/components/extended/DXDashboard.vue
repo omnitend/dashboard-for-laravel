@@ -43,7 +43,7 @@
         -->
         <slot
           :name="originalName"
-          v-bind="slotProps"
+          v-bind="slotProps ?? {}"
           :toggleSidebar="toggleSidebar"
           :sidebarHidden="hidden"
         />
@@ -81,7 +81,7 @@
           -->
           <slot
             :name="originalName"
-            v-bind="slotProps"
+            v-bind="slotProps ?? {}"
             :toggleSidebar="toggleSidebar"
             :sidebarHidden="hidden"
           />

@@ -1365,7 +1365,7 @@ defineOptions({
   <BComponent v-bind="$attrs">
     <!-- Dynamically pass through all named slots with their props -->
     <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
-      <slot :name="name" v-bind="slotProps" />
+      <slot :name="name" v-bind="slotProps ?? {}" />
     </template>
   </BComponent>
 </template>
@@ -1373,7 +1373,17 @@ defineOptions({
 
 **Key Points:**
 1. Use `#[name]="slotProps"` to capture slot props from the underlying component
-2. Use `v-bind="slotProps"` to forward those props to the parent slot
+2. Use `v-bind="slotProps ?? {}"` to forward those props to the parent slot
+   — keep the `?? {}`. bvn 1.x checks whether a slot has content by calling
+   it with NO argument (`isEmptySlot(slots.default)` in BFormCheckbox,
+   BFormRadio, BFormFile, BAvatar, BModal, BOffcanvas, BCard, BSpinner), so
+   `slotProps` is `undefined`; a bare `v-bind="slotProps"` hands `renderSlot`
+   `null` props, and Vue before 3.5.41 throws "Cannot read properties of null
+   (reading 'key')" and renders nothing. 0.49.0/0.49.1 broke every DXSwitch
+   in an app on Vue 3.5.38 this way. Our own suite runs a newer Vue that
+   tolerates `null`, so only the source guard in
+   `tests/components/forwarded-slot-without-props.test.ts` catches the bare
+   form (0.49.2).
 3. Add `inheritAttrs: false` to prevent double attribute binding
 4. This pattern is essential for components like dropdowns where the parent passes data via slot props
 
@@ -1414,7 +1424,7 @@ const sidebarSlots = computed(() => {
       :key="strippedName"
       #[strippedName]="slotProps"
     >
-      <slot :name="originalName" v-bind="slotProps" />
+      <slot :name="originalName" v-bind="slotProps ?? {}" />
     </template>
   </ChildComponent>
 </template>
