@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.2] - 2026-11-23
+
 ### Fixed
 
 - `DFormCheckbox` renders again on Vue older than 3.5.41. On 0.49.0 and
