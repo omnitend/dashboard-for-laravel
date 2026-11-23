@@ -2,6 +2,7 @@ import { computed, ref, watch, type Ref } from "vue";
 import { api } from "../utils/api";
 import { isAbortError, useForm, type FormError } from "./useForm";
 import { useToast } from "./useToast";
+import { capitaliseFirst, titleCaseItemName } from "../utils/itemNameCase";
 import type { FieldDefinition } from "../types";
 import {
     resolveFieldDefault,
@@ -279,13 +280,10 @@ export function useResourceEditor<T = any>(
     // Modal title (supports function)
     const computedModalTitle = computed(() => {
         if (isCreateMode.value) {
-            return `New ${singularItemName.value}`;
+            return `New ${titleCaseItemName(singularItemName.value)}`;
         }
-        if (!selectedItem.value) {
-            return `Edit ${singularItemName.value}`;
-        }
-        if (!props.editModalTitle) {
-            return `Edit ${singularItemName.value}`;
+        if (!selectedItem.value || !props.editModalTitle) {
+            return `Edit ${titleCaseItemName(singularItemName.value)}`;
         }
         return typeof props.editModalTitle === 'function'
             ? props.editModalTitle(selectedItem.value)
@@ -538,7 +536,7 @@ export function useResourceEditor<T = any>(
                     onSuccess: (data: any) => {
                         createToast?.({
                             title: 'Success',
-                            body: `${singularItemName.value} created successfully`,
+                            body: capitaliseFirst(`${singularItemName.value} created successfully`),
                             variant: 'success',
                             modelValue: 3000,
                         });
@@ -581,7 +579,7 @@ export function useResourceEditor<T = any>(
                         // Show success toast
                         createToast?.({
                             title: 'Success',
-                            body: `${singularItemName.value} updated successfully`,
+                            body: capitaliseFirst(`${singularItemName.value} updated successfully`),
                             variant: 'success',
                             modelValue: 3000, // Auto-dismiss after 3 seconds
                         });
@@ -670,7 +668,7 @@ export function useResourceEditor<T = any>(
                     // Show success toast
                     createToast?.({
                         title: 'Success',
-                        body: `${singularItemName.value} deleted successfully`,
+                        body: capitaliseFirst(`${singularItemName.value} deleted successfully`),
                         variant: 'success',
                         modelValue: 3000, // Auto-dismiss after 3 seconds
                     });

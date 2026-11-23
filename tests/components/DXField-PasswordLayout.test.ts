@@ -198,7 +198,7 @@ describe('password field: the input stays readable at every width', () => {
       });
       await wait(80);
       (Array.from(screen.container.querySelectorAll('button')).find(
-        (button) => button.textContent?.trim() === 'New user',
+        (button) => button.textContent?.trim() === 'New User',
       ) as HTMLElement).click();
       await wait(300);
 

@@ -245,6 +245,7 @@ import DXForm from "./DXForm.vue";
 import DXFormErrorSummary from "./DXFormErrorSummary.vue";
 import type { EditTab } from "./DXTable.vue";
 import type { LabelCols } from "../../types";
+import { titleCaseItemName } from "../../utils/itemNameCase";
 
 interface Props {
     /** Whether the modal is open (v-model:show). */
@@ -305,10 +306,7 @@ const innerForm = ref<InstanceType<typeof DXForm> | null>(null);
 
 // Title-case the singular item noun for button labels ("customer" → "Customer",
 // "sales order" → "Sales Order") — capitalize the first letter of each word.
-const capitalizedItem = computed(() => {
-    const noun = props.itemName?.trim() || 'item';
-    return noun.replace(/\b\w/g, (char) => char.toUpperCase());
-});
+const capitalizedItem = computed(() => titleCaseItemName(props.itemName));
 
 // Buttons default to item-named copy ("Save Customer" / "Create Customer" /
 // "Delete Customer") — clearer than a generic "Save Changes" — overridable per

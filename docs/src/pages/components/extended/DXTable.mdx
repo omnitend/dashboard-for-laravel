@@ -115,7 +115,7 @@ shows there too, with no toast. See
 
 <PropsTable client:load props={[
   { name: 'title', type: 'string', required: 'No', default: '-', description: 'Table title' },
-  { name: 'itemName', type: 'string', required: 'No', default: 'item', description: 'Singular item name (auto-pluralized for display)' },
+  { name: 'itemName', type: 'string', required: 'No', default: 'item', description: 'Singular item name, written lower case mid-sentence ("booking period"; auto-pluralized for display). Titles and buttons Title-Case it ("New Booking Period", "Create Booking Period") and toasts start it with a capital ("Booking period created successfully")' },
   { name: 'items', type: 'TItem[]', required: 'No', default: '-', description: 'Table data items (for Inertia or client-side mode)' },
   { name: 'footClone', type: 'boolean', required: 'No', default: 'false', description: 'Render a <tfoot> mirroring the header, so #foot(<key>) slots can hold per-column totals' },
   { name: 'showEmpty', type: 'boolean', required: 'No', default: 'true', description: 'Show a message row when there are no rows (an empty body otherwise looks broken)' },

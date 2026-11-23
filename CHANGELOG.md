@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- DXTable cases its `itemName` consistently. The header's "New {item}"
+  button and the create and default edit modal titles now Title-Case it,
+  as the modal's buttons already did: "New Booking Period" beside "Create
+  Booking Period", where the title read "New booking period". Success
+  toasts start with a capital ("Booking period created successfully", was
+  "booking period created successfully"). Mid-sentence text ("No booking
+  periods found", the pager's count) keeps the name as written. A test or
+  script that finds the button by its text needs the new casing. The
+  Title-Casing no longer capitalises the letter after an apostrophe
+  ("Customer's Table", was "Customer'S Table").
+
 ## [0.49.0] - 2026-11-22
 
 ### Added
