@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.1] - 2026-11-23
+
 ### Fixed
 
 - A 403 keeps the server's message. The `api` client replaced every 403's
