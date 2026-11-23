@@ -589,11 +589,11 @@ hljs.registerLanguage('typescript', typescript);
 hljs.registerLanguage('css', css);
 ```
 
-### Issue: useToast not found error
+### Issue: useToast() throws "must be called within setup(), and BApp … must be installed"
 
-**Cause:** `useToast` is not exported from bootstrap-vue-next in the version we're using
+**Cause:** `useToast()` (and `useModal()`) inject from a `DApp` above them. Each docs example is its own Vue app (an Astro island), so the layout's app does not provide it.
 
-**Solution:** For DToast/DToaster examples, demonstrate the components visually without the composable, or provide usage notes explaining how to use them with the composable in actual applications.
+**Solution:** Mount `<DApp>` inside the example and call `useToast()` in a child component, as `DToastDemo.vue` (root) and `DToastDemoButtons.vue` (the code shown) do on the DToaster page. Show the child's code with `?raw`; the root is boilerplate.
 
 ### Issue: 404 error for /pagefind/pagefind.js
 

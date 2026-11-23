@@ -1520,7 +1520,9 @@ was live 10 s later), so since #203 the verify asks for three minutes and
 also reads the registry document (no-cache header, cache-busting query,
 `curl -q`) for the version in BOTH `versions` and `time` (an unpublished
 version keeps its `time` entry), counting either source; a ✗ now means three minutes of
-misses from both. The stub harness for all of this is
+misses from both. Even that is not proof of failure: 0.49.0 and 0.49.1 both
+reported ✗ and were live when checked by hand a few minutes later, so check
+before re-running. The stub harness for all of this is
 `bash scripts/test-release-npm-check.sh` (about three and a half minutes, real time;
 not in vitest, which cannot run bash). Checking by hand, use the same command (or `curl`
 with `-H 'Cache-Control: no-cache'` and a `?t=$(date +%s)` query) and give it
