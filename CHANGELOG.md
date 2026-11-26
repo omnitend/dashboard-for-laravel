@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `DXStatCard`'s title is no longer forced into tracked capitals: it shows
+  as you write it, at 0.875rem, weight 600, in the body colour (it was
+  0.8125rem, uppercase, letter-spaced, in the secondary colour). Write
+  titles in the case you want them shown, e.g. "Revenue this week".
+
 ## [0.49.2] - 2026-11-23
 
 ### Fixed

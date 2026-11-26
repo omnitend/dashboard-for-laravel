@@ -247,12 +247,15 @@ const formattedDelta = computed<string>(() => {
   gap: 0.75rem;
 }
 
+/*
+ * The title is shown as the caller writes it (sentence case): no
+ * text-transform, no tracking. Body colour rather than the secondary one,
+ * so a lower-case label stays readable at this size.
+ */
 .dx-stat-card__title {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--bs-secondary-color);
+  color: var(--bs-body-color);
 }
 
 .dx-stat-card__subtitle {
